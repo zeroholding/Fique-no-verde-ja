@@ -1,0 +1,24 @@
+version: "2"
+# Arquivo de configuração do ngrok para o projeto FQNJ
+# Para usar: ngrok start --config ngrok.yml fqnj
+
+# IMPORTANTE: Substitua SEU_TOKEN_AQUI pelo seu token de autenticação do ngrok
+# Obtenha seu token em: https://dashboard.ngrok.com/get-started/your-authtoken
+authtoken: SEU_TOKEN_AQUI
+
+# Configurações de tunelamento
+tunnels:
+  fqnj:
+    proto: http
+    addr: 3000
+    # Adicionar headers para pular aviso do ngrok
+    request_header:
+      add:
+        - "ngrok-skip-browser-warning: true"
+    response_header:
+      add:
+        - "ngrok-skip-browser-warning: true"
+    # Configurações adicionais
+    inspect: true
+    # Para domínio fixo (requer plano pago):
+    # hostname: seu-dominio.ngrok-free.app
