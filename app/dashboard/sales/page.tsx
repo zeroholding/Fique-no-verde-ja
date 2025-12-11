@@ -633,6 +633,7 @@ export default function SalesPage() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    console.log("SALE SUBMIT - FIX V2 ACTIVE");
     let effectiveClientId = formData.clientId;
 
     if (formData.saleType === "03") {
@@ -1006,8 +1007,7 @@ export default function SalesPage() {
       if (sale.saleType === "02") {
         return { type: "02", label: "VENDA DE PACOTE", color: "bg-purple-500/20 text-purple-300 border-purple-500/40" };
       }
-      if (sale.saleType === "03") {
-        return { type: "03", label: "OPÇÃO DE PACOTE", color: "bg-orange-500/20 text-orange-300 border-orange-500/40" };
+        return { type: "03", label: "CONSUMO DE PACOTE", color: "bg-orange-500/20 text-orange-300 border-orange-500/40" };
       }
       return { type: "01", label: "COMUM", color: "bg-blue-500/20 text-blue-300 border-blue-500/40" };
     }
@@ -1016,7 +1016,7 @@ export default function SalesPage() {
 
     if (clientType === "package") {
       // Mesmo logica de fallback se nao tiver saleType explicito
-      return { type: "02", label: "OPÇÃO DE PACOTE", color: "bg-purple-500/20 text-purple-300 border-purple-500/40" };
+      return { type: "02", label: "CONSUMO DE PACOTE", color: "bg-purple-500/20 text-purple-300 border-purple-500/40" };
     }
 
     return { type: "01", label: "COMUM", color: "bg-blue-500/20 text-blue-300 border-blue-500/40" };
