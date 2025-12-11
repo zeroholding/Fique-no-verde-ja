@@ -989,6 +989,56 @@ export default function SalesPage() {
     return { type: "01", label: "COMUM", color: "bg-blue-500/20 text-blue-300 border-blue-500/40" };
   };
 
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [showClientList, setShowClientList] = useState(false);
+  const [clientSearch, setClientSearch] = useState("");
+
+  const handleQuickRegister = async (nameToRegister: string) => {
+    if (!nameToRegister.trim()) return;
+    
+    setIsRegistering(true);
+    const token = localStorage.getItem("token");
+    if (!token) { 
+      error("Sessão expirada");
+      setIsRegistering(false);
+      return; 
+    }
+
+    try {
+      const response = await fetch("/api/admin/clients", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name: nameToRegister }), 
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.client) {
+        success(`Cliente '${data.client.name}' cadastrado!`);
+        
+        // Refresh clients list
+        await fetchClients();
+
+        // Auto-select
+        setFormData(prev => ({ ...prev, clientId: data.client.id }));
+        
+        // Clear Search
+        const input = document.getElementById('client-search-input') as HTMLInputElement;
+        if(input) input.value = "";
+        
+      } else {
+        error(data.error || "Erro ao cadastrar.");
+      }
+    } catch (err) {
+      error("Erro ao conectar.");
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
   return (
     <div className="p-8 space-y-6 text-white">
       <div className="flex flex-col gap-2">
@@ -1405,24 +1455,92 @@ export default function SalesPage() {
               <label className="block text-xs uppercase text-gray-400 mb-2">
                 Cliente
               </label>
-              <select
-                name="clientId"
-                value={formData.clientId}
-                onChange={handleChange}
-                required
-                className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-white focus:border-white focus:outline-none"
-              >
-                <option value="">Selecione o cliente</option>
-                {clientOptions && clientOptions.length > 0 ? (
-                  clientOptions.map((client) => (
-                    <option key={client.id} value={client.id}>
-                      {client.name}
-                    </option>
-                  ))
-                ) : (
-                  <option value="" disabled>Nenhum cliente cadastrado</option>
-                )}
-              </select>
+              <div className="relative">
+                 <input
+                     type="text"
+                     value={clientSearch}
+                     placeholder="Selecione ou busque o cliente..."
+                     className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-white focus:border-white focus:outline-none uppercase"
+                     onChange={(e) => {
+                        const upperValue = e.target.value.toUpperCase();
+                        setClientSearch(upperValue);
+                        setShowClientList(true);
+                        // Reset selection if user changes text manually
+                        // setFormData(prev => ({ ...prev, clientId: "" })); // Option: Force re-selection
+                     }}
+                     onFocus={() => setShowClientList(true)}
+                     onBlur={() => setTimeout(() => setShowClientList(false), 200)} // Delay to allow click
+                 />
+                 
+                 {/* Arrow Icon */}
+                 <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                 </div>
+
+                 {showClientList && (
+                    <div className="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto rounded-xl border border-white/10 bg-[#1a1a1a] shadow-2xl">
+                       
+                       {/* Section: Existing Clients */}
+                       {clientOptions.filter(c => c.name.toUpperCase().includes(clientSearch.toUpperCase())).length > 0 && (
+                          <div className="px-4 py-2 text-[10px] uppercase tracking-wider text-gray-500 font-semibold bg-black/20">
+                             Clientes Encontrados
+                          </div>
+                       )}
+
+                       {clientOptions
+                          .filter(c => c.name.toUpperCase().includes(clientSearch.toUpperCase()))
+                          .map(client => (
+                             <div 
+                                key={client.id}
+                                className="px-4 py-3 hover:bg-white/10 cursor-pointer text-sm text-gray-200 transition-colors border-b border-white/5 last:border-0 uppercase"
+                                onClick={() => {
+                                   setFormData(prev => ({ ...prev, clientId: client.id }));
+                                   setClientSearch(client.name.toUpperCase());
+                                   setShowClientList(false);
+                                }}
+                             >
+                                {client.name.toUpperCase()}
+                             </div>
+                          ))
+                       }
+                       
+                       {/* Quick Register Option */}
+                       {clientSearch.length > 2 && 
+                        !clientOptions.some(c => c.name.toUpperCase() === clientSearch.toUpperCase()) && (
+                           <>
+                              {clientOptions.filter(c => c.name.toUpperCase().includes(clientSearch.toUpperCase())).length > 0 && (
+                                  <div className="border-t border-white/10 my-1"></div>
+                              )}
+                              <div 
+                                 className="px-4 py-3 bg-white/5 hover:bg-emerald-900/20 cursor-pointer transition-colors group border-t border-white/5"
+                                 onClick={() => handleQuickRegister(clientSearch)}
+                              >
+                                 <div className="flex flex-col gap-0.5">
+                                    <span className="text-[10px] uppercase text-gray-500 font-semibold group-hover:text-emerald-500/80 transition-colors">
+                                       Não encontrou?
+                                    </span>
+                                    <div className="flex items-center gap-2 text-gray-400 group-hover:text-emerald-400 transition-colors">
+                                       <span className="font-bold text-lg">+</span>
+                                       <span>Cadastrar novo: <strong className="text-gray-300 group-hover:text-white transition-colors">{clientSearch.toUpperCase()}</strong></span>
+                                    </div>
+                                 </div>
+                              </div>
+                           </>
+                        )
+                       }
+
+                       {clientOptions.filter(c => c.name.toUpperCase().includes(clientSearch.toUpperCase())).length === 0 &&
+                        clientSearch.length <= 2 && (
+                           <div className="px-4 py-3 text-gray-500 text-xs text-center italic">
+                              Digite para buscar...
+                           </div>
+                        )
+                       }
+                    </div>
+                 )}
+              </div>
             </div>
           )}
 

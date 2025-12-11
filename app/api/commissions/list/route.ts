@@ -66,6 +66,7 @@ export async function GET(request: NextRequest) {
     const attendantFilter = searchParams.get("attendantId");
     const statusFilter = searchParams.get("status");
     const dayType = searchParams.get("dayType");
+    const saleType = searchParams.get("saleType");
 
     console.log("[COMMISSIONS LIST] Query params:", {
       startDate,
@@ -110,9 +111,18 @@ export async function GET(request: NextRequest) {
           sale_type
         )
       `)
-      .in("sale_items.sale_type", ["01", "03"])
       .order("reference_date", { ascending: false })
       .order("created_at", { ascending: false });
+
+
+    // GARANTIA: Nunca mostrar tipo 02 (Pacote)
+    // Se um tipo específico foi solicitado, verifique se é permitido
+    if (saleType && ["01", "03"].includes(saleType)) {
+      queryBuilder = queryBuilder.eq("sale_items.sale_type", saleType);
+    } else {
+      // Se não tem filtro ou é inválido, traz padrão (01 e 03)
+      queryBuilder = queryBuilder.in("sale_items.sale_type", ["01", "03"]);
+    }
 
     // Aplicar filtros
     if (!user.is_admin) {

@@ -50,6 +50,7 @@ export default function CommissionsPage() {
   const [endDate, setEndDate] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [dayType, setDayType] = useState<"" | "weekday" | "non_working">("");
+  const [saleType, setSaleType] = useState("");
 
   useEffect(() => {
     const stored = localStorage.getItem("user");
@@ -103,6 +104,7 @@ export default function CommissionsPage() {
       const params = new URLSearchParams();
       if (isAdmin && attendantId) params.set("attendantId", attendantId);
       if (dayType) params.set("dayType", dayType);
+      if (saleType) params.set("saleType", saleType);
       const url = `/api/commissions/list?${params.toString()}`;
       console.log("[COMMISSIONS PAGE] Fetching:", url);
       console.log("[COMMISSIONS PAGE] Filters:", { isAdmin, attendantId, dayType });
@@ -125,13 +127,15 @@ export default function CommissionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [attendantId, dayType, error, isAdmin]);
+  }, [attendantId, dayType, saleType, error, isAdmin]);
 
   useEffect(() => {
     fetchCommissions();
   }, [fetchCommissions]);
 
   const filteredCommissions = useMemo(() => {
+    // ... logic inside useMemo remains correctly using closure variables, 
+    // but the dependency array needs update below
     const toStart = (value: string) => {
       const d = new Date(value);
       if (isNaN(d.getTime())) return null;
@@ -171,6 +175,7 @@ export default function CommissionsPage() {
     setEndDate("");
     setStatusFilter("");
     setDayType("");
+    setSaleType("");
     if (isAdmin) {
       setAttendantId("");
     }
@@ -242,6 +247,21 @@ export default function CommissionsPage() {
                   { value: "", label: "Todos" },
                   { value: "weekday", label: "Dia útil" },
                   { value: "non_working", label: "Dia não útil" },
+                ]}
+                placeholder="Todos"
+                containerClassName="h-[42px]"
+                className="py-2 text-sm"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs uppercase text-gray-400">Tipo de Venda</label>
+              <Select
+                value={saleType}
+                onChange={(e: any) => setSaleType(e.target.value)}
+                options={[
+                  { value: "", label: "Todos" },
+                  { value: "01", label: "Venda Comum" },
+                  { value: "03", label: "Consumo de Pacote" },
                 ]}
                 placeholder="Todos"
                 containerClassName="h-[42px]"

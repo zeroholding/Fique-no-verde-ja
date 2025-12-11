@@ -113,64 +113,77 @@ export async function POST(request: NextRequest) {
         [saleId]
       );
 
-      // Buscar itens da venda para gerar comissões
+      // Buscar itens da venda para gerar comissões (agora incluindo product_id)
       const itemsResult = await query(
-        `SELECT id, total, quantity, sale_type FROM sale_items WHERE sale_id = $1`,
+        `SELECT id, total, quantity, sale_type, product_id FROM sale_items WHERE sale_id = $1`,
         [saleId]
       );
 
-      // Buscar políticas de comissão ativas
-      const policiesResult = await query(
-        `SELECT * FROM commission_policies
-         WHERE is_active = true
-         AND (valid_from IS NULL OR valid_from <= CURRENT_DATE)
-         AND (valid_until IS NULL OR valid_until >= CURRENT_DATE)`,
-        []
-      );
-
-      const policies = policiesResult.rows;
+      // Não precisamos mais buscar todas as políticas na memória. Vamos perguntar ao Banco qual a certa.
 
       for (const item of itemsResult.rows) {
         const itemSaleType = item.sale_type || "01";
         const itemTotal = parseFloat(item.total);
         const itemQuantity = parseInt(item.quantity || 1);
 
-        // Buscar política aplicável para o sale_type do item
-        let policy = policies.find((p: any) => p.sale_type === itemSaleType && p.scope === 'general');
-
-        // Se não encontrar política específica, usar a política geral
-        if (!policy) {
-          policy = policies.find((p: any) => (p.sale_type === 'all' || !p.sale_type) && p.scope === 'general');
+        // GARANTIA: Venda de Pacote (02) nunca gera comissão na confirmação
+        if (itemSaleType === "02") {
+            console.log(`[CONFIRM SALE] Skipping commission for item ${item.id} (Type 02 - Package Sale)`);
+            continue;
         }
 
-        if (!policy) {
-          console.warn(`[CONFIRM SALE] Nenhuma política encontrada para sale_type: ${itemSaleType}`);
-          continue;
-        }
-
+        let policy = null;
         let commissionAmount = 0;
         let commissionType = 'percentage';
-        let commissionRate = 0;
+        let commissionRate = 5.00; // Default fallback
 
-        // Calcular comissão baseado no tipo da política
-        if (policy.type === 'fixed_per_unit') {
-          commissionAmount = parseFloat(policy.value) * itemQuantity;
-          commissionType = 'fixed_per_unit';
-          commissionRate = parseFloat(policy.value);
-        } else if (policy.type === 'percentage') {
-          commissionRate = parseFloat(policy.value);
-          commissionAmount = itemTotal * (commissionRate / 100);
-          commissionType = 'percentage';
-        } else {
-          // Tipo padrão (porcentagem)
-          commissionRate = 5.00;
-          commissionAmount = itemTotal * (commissionRate / 100);
+        // 1. Perguntar ao banco qual a política certa para este item/atendente/data
+        try {
+            const policyIdResult = await query(
+            `SELECT get_applicable_commission_policy($1, $2, $3::DATE, $4) as policy_id`,
+            [sale.attendant_id, item.product_id || null, sale.sale_date, itemSaleType]
+            );
+
+            if (policyIdResult.rows.length > 0 && policyIdResult.rows[0].policy_id) {
+                const policyId = policyIdResult.rows[0].policy_id;
+                // 2. Buscar detalhes da política encontrada
+                const policyDetails = await query(
+                `SELECT * FROM commission_policies WHERE id = $1`,
+                [policyId]
+                );
+                if (policyDetails.rows.length > 0) {
+                policy = policyDetails.rows[0];
+                console.log(`[CONFIRM SALE] Política encontrada via DB Function: ${policy.name} (ID: ${policy.id})`);
+                }
+            }
+        } catch (err) {
+            console.error("[CONFIRM SALE] Erro ao buscar política via DB:", err);
         }
 
-        console.log(`[CONFIRM SALE] Commission for item ${item.id.slice(0, 8)}: ${commissionAmount} (type: ${commissionType}, rate: ${commissionRate}, sale_type: ${itemSaleType})`);
+        // 3. Se achou política, calcula baseado nela. Se não, usa fallback.
+        if (policy) {
+            if (policy.type === 'fixed_per_unit') {
+                commissionRate = parseFloat(policy.value);
+                commissionAmount = commissionRate * itemQuantity;
+                commissionType = 'fixed_per_unit';
+            } else {
+                // Percentage
+                commissionRate = parseFloat(policy.value);
+                commissionAmount = itemTotal * (commissionRate / 100);
+                commissionType = 'percentage';
+            }
+        } else {
+            // Fallback 5% (Mantendo a lógica "boazinha" se não achar nada)
+            console.log(`[CONFIRM SALE] Nenhuma política encontrada para item ${item.id}. Usando Fallback 5%.`);
+            commissionRate = 5.00;
+            commissionAmount = itemTotal * (commissionRate / 100);
+            commissionType = 'percentage';
+        }
+
+        console.log(`[CONFIRM SALE] Commission for item ${item.id.slice(0, 8)}: ${commissionAmount} (type: ${commissionType}, rate: ${commissionRate})`);
 
         await query(
-          `INSERT INTO commissions (
+            `INSERT INTO commissions (
             sale_id,
             sale_item_id,
             user_id,
@@ -181,8 +194,8 @@ export async function POST(request: NextRequest) {
             reference_date,
             status,
             commission_policy_id
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::DATE, 'a_pagar', $9)`,
-          [
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::DATE, 'a_pagar', $9)`,
+            [
             saleId,
             item.id,
             sale.attendant_id,
@@ -191,8 +204,8 @@ export async function POST(request: NextRequest) {
             commissionRate,
             commissionAmount,
             sale.sale_date,
-            policy.id,
-          ]
+            policy ? policy.id : null,
+            ]
         );
       }
 

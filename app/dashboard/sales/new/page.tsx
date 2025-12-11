@@ -24,16 +24,17 @@ type PaymentMethod =
 type Client = {
   id: string;
   name: string;
+  clientType?: string;
 };
 
 type ClientsResponse = {
-  clients: Array<{
     id: string;
     name: string;
+    clientType?: string;
   }>;
 };
 
-type SaleType = "01" | "02";
+type SaleType = "01" | "02" | "03";
 
 type ServiceRange = {
   id: string;
@@ -91,6 +92,7 @@ const saleTypeOptions: Array<{ value: SaleType; label: string }> = [
 const saleTypeLabels: Record<SaleType, string> = {
   "01": "01 - Comum",
   "02": "02 - Pacote",
+  "03": "03 - Consumo de Pacote",
 };
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
@@ -133,6 +135,58 @@ export default function NewSalePage() {
   const [collaboratorName, setCollaboratorName] = useState("Carregando...");
   const [saleDate] = useState(() => new Date());
   const [clientSearch, setClientSearch] = useState("");
+  const [packages, setPackages] = useState<any[]>([]);
+  const [selectedPackageId, setSelectedPackageId] = useState("");
+  const [isRegistering, setIsRegistering] = useState(false);
+
+  const handleQuickRegister = async (nameToRegister: string) => {
+    if (!nameToRegister.trim()) return;
+    
+    setIsRegistering(true);
+    const token = localStorage.getItem("token");
+    if (!token) { 
+      error("Sessão expirada");
+      setIsRegistering(false);
+      return; 
+    }
+
+    try {
+      const response = await fetch("/api/admin/clients", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name: nameToRegister }), // Back-end defaults clientType to 'common'
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.client) {
+        success(`Cliente '${data.client.name}' cadastrado com sucesso!`);
+        
+        // Add to local list and select it
+        const newClient = {
+           id: data.client.id,
+           name: data.client.name,
+           clientType: "common"
+        };
+        
+        setClients(prev => [newClient, ...prev]); // Prepend to list
+        setClientSearch(""); // Clear search to show the new client clearly in the select? Or keep it?
+                             // Better: Clear search so the Select shows the selected value properly without filtering issues if name differs slightly
+                             // Actually user might want to keep typing, but usually quick register implies selection.
+        setFormData(prev => ({ ...prev, clientId: newClient.id }));
+        
+      } else {
+        error(data.error || "Erro ao cadastrar cliente rápido.");
+      }
+    } catch (err) {
+      error("Erro ao conectar com servidor.");
+    } finally {
+      setIsRegistering(false);
+    }
+  };
 
   const selectedServiceDefinition = useMemo(() => {
     return services.find((service) => service.id === selectedService) ?? null;
@@ -232,6 +286,25 @@ export default function NewSalePage() {
     }
   }, [error]);
 
+  const fetchPackages = useCallback(async (currentClientId: string) => {
+    const token = localStorage.getItem("token");
+    if (!token || !currentClientId) return;
+
+    try {
+      const response = await fetch(`/api/packages?clientId=${currentClientId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (response.ok && data.packages) {
+        setPackages(data.packages);
+      } else {
+        setPackages([]);
+      }
+    } catch {
+      setPackages([]);
+    }
+  }, []);
+
   const fetchClients = useCallback(async () => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -252,6 +325,7 @@ export default function NewSalePage() {
           data.clients.map((client) => ({
             id: client.id,
             name: client.name,
+            clientType: client.client_type, // Persisting clientType
           })),
         );
       }
@@ -264,6 +338,15 @@ export default function NewSalePage() {
     fetchClients();
     fetchServices();
   }, [fetchClients, fetchServices]);
+
+  // Update packages when client changes
+  useEffect(() => {
+    if (formData.clientId) {
+      fetchPackages(formData.clientId);
+    } else {
+      setPackages([]);
+    }
+  }, [formData.clientId, fetchPackages]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -294,7 +377,13 @@ export default function NewSalePage() {
       timeStyle: "short",
     }).format(saleDate);
   }, [saleDate]);
+
   const subtotal = useMemo(() => {
+    // 03 - Consumo de Pacote (Preco Zero na Venda, abate do pacote)
+    if (saleType === "03") {
+       return 0; // Consumption doesn't charge the customer again
+    }
+
     if (!selectedServiceDefinition) {
       return 0;
     }
@@ -380,6 +469,10 @@ export default function NewSalePage() {
     }));
   };
 
+  const handlePackageChange = (e: ChangeEvent<HTMLSelectElement>) => {
+     setSelectedPackageId(e.target.value);
+  }
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -393,16 +486,29 @@ export default function NewSalePage() {
       return;
     }
 
-    if (!selectedServiceDefinition) {
-      error("Servico selecionado invalido.");
-      return;
-    }
+    // Validation for Type 03
+    if (saleType === "03") {
+       if (!selectedPackageId) {
+          error("Selecione um pacote para consumo");
+          return;
+       }
+       // Validate balance
+       const pkg = packages.find(p => p.id === selectedPackageId);
+       if (pkg && pkg.availableQuantity < quantity) {
+          error(`Saldo insuficiente no pacote. Disponivel: ${pkg.availableQuantity}`);
+          return;
+       }
+    } else {
+        // Validation for Type 01/02
+        if (!selectedServiceDefinition) {
+          error("Servico selecionado invalido.");
+          return;
+        }
 
-    if (!applicablePriceRange) {
-      error(
-        "Nao ha faixa de preco disponivel para este tipo de venda e quantidade.",
-      );
-      return;
+        if (!applicablePriceRange) {
+          error("Nao ha faixa de preco disponivel para este tipo de venda e quantidade.");
+          return;
+        }
     }
 
     if (quantity <= 0) {
@@ -423,25 +529,28 @@ export default function NewSalePage() {
       console.log("DEBUG - Valores sendo enviados:");
       console.log("Quantidade:", quantity);
       console.log("Subtotal calculado:", subtotal);
-      console.log("Unit Price da faixa:", applicablePriceRange.unitPrice);
+      
+      const unitPriceToSend = saleType === "03" ? 0 : applicablePriceRange?.unitPrice || 0;
 
       const payload = {
         ...formData,
         items: [
           {
             productId: null,
-            productName: selectedServiceDefinition.name,
+            productName: selectedServiceDefinition?.name || "Servico",
             quantity,
-            unitPrice: applicablePriceRange.unitPrice,
-            calculatedSubtotal: subtotal, // Envia o subtotal já calculado corretamente
+            unitPrice: unitPriceToSend,
+            calculatedSubtotal: subtotal,
             discountType: "percentage",
             discountValue: 0,
             saleType,
-            priceRangeId: applicablePriceRange.id,
+            priceRangeId: applicablePriceRange?.id || null,
           },
         ],
-        serviceId: selectedServiceDefinition.id,
+        serviceId: selectedServiceDefinition?.id,
         saleType,
+        packageId: saleType === "03" ? selectedPackageId : undefined,
+        carrierId: saleType === "03" ? formData.clientId : undefined // For Type 03, clientId IS carrierId
       };
 
       console.log("Payload completo:", JSON.stringify(payload, null, 2));
@@ -473,6 +582,16 @@ export default function NewSalePage() {
   };
 
   const renderPriceRanges = () => {
+    // Hide for Package Consumption
+    if (saleType === "03") {
+       return (
+         <div className="md:col-span-2 rounded-2xl border border-white/10 bg-emerald-500/10 p-4">
+            <p className="text-emerald-400 font-medium mb-1">Modo Consumo de Pacote</p>
+            <p className="text-xs text-gray-400">O valor será debitado do saldo do pacote selecionado. Não gera cobrança financeira nesta venda.</p>
+         </div>
+       );
+    }
+
     if (
       !selectedServiceDefinition ||
       selectedServiceDefinition.priceRanges.length === 0
@@ -514,6 +633,12 @@ export default function NewSalePage() {
       </div>
     );
   };
+
+  // Filter packages for the selected service
+  const availablePackages = useMemo(() => {
+     if (!selectedService) return [];
+     return packages.filter(p => p.serviceId === selectedService);
+  }, [packages, selectedService]);
 
   return (
     <div className="p-8 space-y-6 text-white [&_input[type=number]]:[-moz-appearance:textfield] [&_input[type=number]::-webkit-outer-spin-button]:appearance-none [&_input[type=number]::-webkit-inner-spin-button]:appearance-none">
@@ -567,13 +692,25 @@ export default function NewSalePage() {
               <label className="block text-sm font-medium text-gray-300">
                 Cliente *
               </label>
-              <input
-                type="text"
-                placeholder="Buscar cliente..."
-                value={clientSearch}
-                onChange={(event) => setClientSearch(event.target.value)}
-                className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-2.5 text-white placeholder-gray-400 focus:border-white focus:outline-none"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Buscar cliente..."
+                  value={clientSearch}
+                  onChange={(event) => setClientSearch(event.target.value)}
+                  className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-2.5 text-white placeholder-gray-400 focus:border-white focus:outline-none"
+                />
+                {clientSearch.length > 2 && !filteredClients.some(c => c.name.toLowerCase() === clientSearch.toLowerCase()) && (
+                  <Button
+                    type="button"
+                    onClick={() => handleQuickRegister(clientSearch)}
+                    disabled={isRegistering}
+                    className="whitespace-nowrap bg-emerald-600 hover:bg-emerald-500 text-white px-4 rounded-xl text-sm"
+                  >
+                    {isRegistering ? "..." : "+ Rápido"}
+                  </Button>
+                )}
+              </div>
               <Select
                 name="clientId"
                 value={formData.clientId}
@@ -581,7 +718,9 @@ export default function NewSalePage() {
                 required
                 options={filteredClients.map((client) => ({
                   value: client.id,
-                  label: client.name
+                  label: client.clientType === 'package' 
+                         ? `${client.name} (Transportadora)` 
+                         : client.name
                 }))}
               />
             </div>
@@ -591,6 +730,7 @@ export default function NewSalePage() {
                 name="paymentMethod"
                 value={formData.paymentMethod}
                 onChange={handleChange}
+                disabled={saleType === "03"} // No payment for package consumption
                 options={Object.entries(paymentMethodLabels).map(([value, label]) => ({
                   value,
                   label
@@ -610,6 +750,7 @@ export default function NewSalePage() {
                 onChange={(event: any) => {
                   setSelectedService(event.target.value);
                   setSaleType("01");
+                  setSelectedPackageId("");
                 }}
                 required
                 disabled={availableServices.length === 0}
@@ -626,29 +767,39 @@ export default function NewSalePage() {
                 onChange={(event: any) =>
                   setSaleType(event.target.value as SaleType)
                 }
-                disabled={
-                  !selectedServiceDefinition ||
-                  selectedServiceDefinition.priceRanges.length === 0
-                }
-                options={saleTypeOptions.filter((option) => {
-                  if (!selectedServiceDefinition) return true;
-                  return selectedServiceDefinition.priceRanges.some(
-                    (range) => range.saleType === option.value,
-                  );
-                })}
+                disabled={!selectedService}
+                options={[
+                   ...saleTypeOptions.filter((option) => {
+                      if (!selectedServiceDefinition) return true;
+                      return selectedServiceDefinition.priceRanges.some(
+                        (range) => range.saleType === option.value,
+                      );
+                   }),
+                   // Add '03' option if user has packages for this service
+                   ...(availablePackages.length > 0 ? [{ value: "03", label: "03 - Consumo de Pacote" }] : [])
+                ]}
               />
-              {!selectedServiceDefinition && (
-                <p className="text-xs text-gray-400 mt-1">
-                  Selecione um servico para escolher o tipo de venda.
-                </p>
+              {availablePackages.length === 0 && selectedService && (
+                 <p className="text-xs text-gray-500 mt-1">Este cliente nao possui pacotes ativos para este servico.</p>
               )}
-              {selectedServiceDefinition &&
-                selectedServiceDefinition.priceRanges.length === 0 && (
-                  <p className="text-xs text-amber-300 mt-1">
-                    Este servico ainda nao possui faixas cadastradas.
-                  </p>
-                )}
             </div>
+
+            {/* PACKAGE SELECTION (Only for Type 03) */}
+            {saleType === "03" && (
+              <div className="md:col-span-2 bg-emerald-900/20 p-4 rounded-xl border border-emerald-500/30">
+                 <Select
+                    label="Selecione o Pacote para Consumo *"
+                    value={selectedPackageId}
+                    onChange={handlePackageChange}
+                    required={saleType === "03"}
+                    options={availablePackages.map(pkg => ({
+                       value: pkg.id,
+                       label: `Pacote iniciado em ${new Date(pkg.createdAt).toLocaleDateString()} - Restam ${pkg.availableQuantity} unidades`
+                    }))}
+                 />
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Valor unitario *
@@ -663,14 +814,8 @@ export default function NewSalePage() {
                 placeholder="0,00"
               />
               <p className="text-xs text-gray-400 mt-1">
-                Valor calculado automaticamente a partir da faixa de preco
-                vigente.
+                {saleType === "03" ? "Sem custo (debito de saldo)" : "Valor calculado automaticamente."}
               </p>
-              {selectedServiceDefinition && !applicablePriceRange && (
-                <p className="text-xs text-amber-300">
-                  Nenhuma faixa encontrada para este tipo de venda e quantidade.
-                </p>
-              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">

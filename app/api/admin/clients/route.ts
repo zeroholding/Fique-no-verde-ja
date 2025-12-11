@@ -154,9 +154,10 @@ export async function GET(request: NextRequest) {
   try {
     const user = await authenticateUser(request);
 
-    // Mostrar apenas clientes criados pelo usuário logado (escopo estrito por conta)
-    const whereClause = "WHERE c.created_by_user_id = $1";
-    const params = [user.id];
+    // MOSTRAR TODOS OS CLIENTES (Global Visibility)
+    // Antes restringia por created_by_user_id, agora permite que todos vejam todos.
+    const whereClause = ""; 
+    const params: any[] = [];
 
     const clients = await query(
       `SELECT
