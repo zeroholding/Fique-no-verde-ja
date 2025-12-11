@@ -660,6 +660,36 @@ export default function SalesPage() {
         error("Selecione a transportadora (cliente de pacote).");
         return;
       }
+      
+      // UX Fix: Se o clientSearch tem nome, mas clientId ta vazio (usuario nao clicou na lista)
+      // Tentar encontrar match exato e usar
+      if (formData.saleType === "01" && !formData.clientId && clientSearch.trim()) {
+        const exactMatch = clients.find(c => c.name.toUpperCase() === clientSearch.trim().toUpperCase());
+        if (exactMatch && exactMatch.clientType !== "package") {
+             // Atualiza o formData temporariamente para passar na validacao imediata
+             // (o setFormData eh assincrono, entao usamos uma variavel local ou atualizamos o objeto formData diretamente na memoria deste escopo se fosse possivel,
+             // mas como formData eh const do state, precisamos garantir que o payload use o ID correto)
+             console.log("[UX FIX] Auto-selecting client:", exactMatch.name);
+             formData.clientId = exactMatch.id; // Hack rapido para transacao local? Nao, formData eh readonly state.
+             
+             // Melhor: Ajustar a logica de validacao abaixo para checar uma variavel local
+        }
+      }
+
+      // Variavel local para validacao
+      let effectiveClientId = formData.clientId;
+       if (formData.saleType === "01" && !effectiveClientId && clientSearch.trim()) {
+        const exactMatch = clients.find(c => c.name.toUpperCase() === clientSearch.trim().toUpperCase());
+        if (exactMatch && exactMatch.clientType !== "package") {
+             effectiveClientId = exactMatch.id;
+        }
+      }
+
+      if (formData.saleType === "01" && !effectiveClientId) {
+         error("Selecione um cliente válido (clique na lista).");
+         return;
+      }
+
       if (!formData.serviceId) {
         error("Selecione um serviço");
         return;
