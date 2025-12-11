@@ -1448,7 +1448,7 @@ export default function SalesPage() {
               className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-white focus:border-white focus:outline-none"
             >
               <option value="01">01 - Comum (Compra e usa na hora)</option>
-              {/* <option value="02">02 - Venda de Pacote (Cliente compra créditos)</option> */}
+              <option value="02">02 - Venda de Pacote (Cliente compra créditos)</option>
               <option value="03">03 - Opção de Pacote (Cliente usa créditos)</option>
             </select>
           </div>
