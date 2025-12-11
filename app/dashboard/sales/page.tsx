@@ -1019,22 +1019,30 @@ export default function SalesPage() {
   };
 
   const getSaleTypeLabel = (sale: Sale): { type: string; label: string; color: string } => {
+    // 1. Explicit priority
     if (sale.saleType) {
       if (sale.saleType === "02") {
         return { type: "02", label: "VENDA DE PACOTE", color: "bg-purple-500/20 text-purple-300 border-purple-500/40" };
       }
+      if (sale.saleType === "03") {
         return { type: "03", label: "CONSUMO DE PACOTE", color: "bg-orange-500/20 text-orange-300 border-orange-500/40" };
       }
-      return { type: "01", label: "COMUM", color: "bg-blue-500/20 text-blue-300 border-blue-500/40" };
+      if (sale.saleType === "01") {
+        return { type: "01", label: "COMUM", color: "bg-blue-500/20 text-blue-300 border-blue-500/40" };
+      }
     }
 
+    // 2. Fallback inferred from client
     const clientType = sale.clientType || clients.find((c) => c.name === sale.clientName)?.clientType;
 
     if (clientType === "package") {
-      // Mesmo logica de fallback se nao tiver saleType explicito
-      return { type: "02", label: "CONSUMO DE PACOTE", color: "bg-purple-500/20 text-purple-300 border-purple-500/40" };
+      // Default fallback for package clients -> Venda de Pacote (usually)
+      // Or maybe they bought credits? 
+      // Assuming legacy logic was mapping 'package' client -> '02'
+      return { type: "02", label: "VENDA DE PACOTE", color: "bg-purple-500/20 text-purple-300 border-purple-500/40" };
     }
 
+    // 3. Default
     return { type: "01", label: "COMUM", color: "bg-blue-500/20 text-blue-300 border-blue-500/40" };
   };
 
