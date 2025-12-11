@@ -29,7 +29,7 @@ export default async function DashboardLayout({
   const authenticated = await validateSession();
 
   if (!authenticated) {
-    redirect("/login");
+    redirect("/api/auth/logout");
   }
 
   return <DashboardLayoutClient>{children}</DashboardLayoutClient>;

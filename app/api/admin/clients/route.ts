@@ -362,10 +362,10 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Erro ao criar cliente:", error);
+    console.error("Erro CRITICO ao criar cliente (POST):", error);
     const message = error instanceof Error ? error.message : "Erro ao criar cliente";
     const status = message.includes("autenticacao") ? 401 : 400;
-    return NextResponse.json({ error: message }, { status });
+    return NextResponse.json({ error: message, details: String(error) }, { status });
   }
 }
 

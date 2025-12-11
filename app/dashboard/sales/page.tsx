@@ -768,7 +768,7 @@ export default function SalesPage() {
             ? formData.clientId
             : formData.saleType === "02"
               ? formData.carrierId
-              : formData.clientId,
+              : (effectiveClientId || formData.clientId), // Use auto-resolved ID if available
         observations: formData.observations,
         paymentMethod: formData.paymentMethod,
         saleType: formData.saleType,
