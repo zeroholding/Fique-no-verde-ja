@@ -633,6 +633,7 @@ export default function SalesPage() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    let effectiveClientId = formData.clientId;
 
     if (formData.saleType === "03") {
       if (!formData.carrierId) {
@@ -677,8 +678,7 @@ export default function SalesPage() {
       }
 
       // Variavel local para validacao
-      let effectiveClientId = formData.clientId;
-       if (formData.saleType === "01" && !effectiveClientId && clientSearch.trim()) {
+      if (formData.saleType === "01" && !effectiveClientId && clientSearch.trim()) {
         const exactMatch = clients.find(c => c.name.toUpperCase() === clientSearch.trim().toUpperCase());
         if (exactMatch && exactMatch.clientType !== "package") {
              effectiveClientId = exactMatch.id;
