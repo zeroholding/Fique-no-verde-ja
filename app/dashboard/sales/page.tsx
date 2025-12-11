@@ -151,6 +151,22 @@ export default function SalesPage() {
     [startDate, endDate, serviceFilter, attendantFilter, dayType, saleTypeFilter]
   );
 
+  const clientOptions = useMemo(() => {
+     let filtered = clients;
+     // Se for venda comum (01), esconde cliente 'package' (transportadoras)
+     if (formData.saleType === "01") {
+       filtered = filtered.filter(c => c.clientType !== "package");
+     }
+     
+     // Se tiver busca (para combobox do 01)
+     if (formData.saleType === "01" && clientSearch.trim()) {
+        const search = clientSearch.toUpperCase();
+        filtered = filtered.filter(c => c.name.toUpperCase().includes(search));
+     }
+
+     return filtered;
+  }, [clients, formData.saleType, clientSearch]);
+
   const filteredSales = useMemo(() => {
     let result = [...sales];
 
@@ -518,7 +534,7 @@ export default function SalesPage() {
     [clients]
   );
 
-  const clientOptions = useMemo(() => commonClients, [commonClients]);
+
 
   const availablePackages = useMemo(() => {
     if (formData.saleType !== "03" || !formData.carrierId) {
@@ -1071,6 +1087,7 @@ export default function SalesPage() {
       setIsRegistering(false);
     }
   };
+
 
   return (
     <div className="p-8 space-y-6 text-white">
