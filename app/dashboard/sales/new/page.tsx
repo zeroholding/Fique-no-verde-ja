@@ -28,10 +28,7 @@ type Client = {
 };
 
 type ClientsResponse = {
-    id: string;
-    name: string;
-    clientType?: string;
-  }>;
+  data: Client[];
 };
 
 type SaleType = "01" | "02" | "03";
