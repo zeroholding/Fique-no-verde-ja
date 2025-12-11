@@ -25,10 +25,11 @@ type Client = {
   id: string;
   name: string;
   clientType?: string;
+  client_type?: string;
 };
 
 type ClientsResponse = {
-  data: Client[];
+  clients: Client[];
 };
 
 type SaleType = "01" | "02" | "03";
