@@ -160,6 +160,9 @@ export default function SalesPage() {
       return dow === 0 || dow === 6 ? "non_working" : "weekday";
     };
 
+    // Global Filter: Ocultar Vendas de Pacote (02) conforme solicitado
+    result = result.filter(sale => sale.saleType !== "02");
+
     if (startDate) {
       const start = new Date(`${startDate}T00:00:00`);
       result = result.filter((sale) => new Date(sale.saleDate) >= start);
@@ -187,10 +190,9 @@ export default function SalesPage() {
         const clientType = sale.clientType || clients.find((c) => c.name === sale.clientName)?.clientType;
 
         if (saleTypeFilter === "package") {
-          // Inclui:
-          // 1. Tipos explicitos de pacote (02 - Venda, 03 - Consumo)
-          // 2. Tipo 01 (padrao) MAS cliente eh transportadora (Legado/Migracao)
-          return (sale.saleType === "02" || sale.saleType === "03") || 
+          // Inclui apenas Tipo 03 (Consumo) -> "Opcao de Pacote"
+          // O Tipo 02 ja foi removido pelo filtro global acima
+          return sale.saleType === "03" || 
                  (sale.saleType === "01" && clientType === "package");
         } 
         
@@ -975,7 +977,7 @@ export default function SalesPage() {
         return { type: "02", label: "VENDA DE PACOTE", color: "bg-purple-500/20 text-purple-300 border-purple-500/40" };
       }
       if (sale.saleType === "03") {
-        return { type: "03", label: "CONSUMO PACOTE", color: "bg-orange-500/20 text-orange-300 border-orange-500/40" };
+        return { type: "03", label: "OPÇÃO DE PACOTE", color: "bg-orange-500/20 text-orange-300 border-orange-500/40" };
       }
       return { type: "01", label: "COMUM", color: "bg-blue-500/20 text-blue-300 border-blue-500/40" };
     }
@@ -983,7 +985,8 @@ export default function SalesPage() {
     const clientType = sale.clientType || clients.find((c) => c.name === sale.clientName)?.clientType;
 
     if (clientType === "package") {
-      return { type: "02", label: "VENDA DE PACOTE", color: "bg-purple-500/20 text-purple-300 border-purple-500/40" };
+      // Mesmo logica de fallback se nao tiver saleType explicito
+      return { type: "02", label: "OPÇÃO DE PACOTE", color: "bg-purple-500/20 text-purple-300 border-purple-500/40" };
     }
 
     return { type: "01", label: "COMUM", color: "bg-blue-500/20 text-blue-300 border-blue-500/40" };
