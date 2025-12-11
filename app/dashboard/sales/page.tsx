@@ -122,6 +122,9 @@ export default function SalesPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [clientPackages, setClientPackages] = useState<ClientPackage[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [showClientList, setShowClientList] = useState(false);
+  const [clientSearch, setClientSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState(initialForm);
   const [saving, setSaving] = useState(false);
@@ -1046,9 +1049,7 @@ export default function SalesPage() {
     return { type: "01", label: "COMUM", color: "bg-blue-500/20 text-blue-300 border-blue-500/40" };
   };
 
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [showClientList, setShowClientList] = useState(false);
-  const [clientSearch, setClientSearch] = useState("");
+
 
   const handleQuickRegister = async (nameToRegister: string) => {
     if (!nameToRegister.trim()) return;
