@@ -1934,7 +1934,7 @@ export default function SalesPage() {
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">Estornos aplicados:</span>
                   <span className="text-red-300">
-                    -{formatCurrency(viewingSale.refundTotal)}
+                    -{formatCurrency(viewingSale.refundTotal || 0)}
                   </span>
                 </div>
               ) : null}
