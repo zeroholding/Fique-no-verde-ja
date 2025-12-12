@@ -797,7 +797,14 @@ export async function POST(request: NextRequest) {
               [
                 saleId,
                 item.id,
-                user.id,
+                finalAttendantId, // [FIX] Usar o atendente definido (pode ser outro se Admin alterou)
+                user.id, // Log who performed the action? No, table expects 'user_id' as beneficiary? 
+                // Wait. 'user_id' in commissions table usually means beneficiary.
+                // So YES, it must be finalAttendantId.
+                // But let's check the columns.
+                // sale_id, sale_item_id, user_id...
+                // Yes, user_id is the attendant.
+
                 itemBaseValue,
                 itemCommissionType,
                 itemCommissionRate,
@@ -979,11 +986,12 @@ export async function POST(request: NextRequest) {
 
     console.error("Erro ao criar venda:", error);
 
-    const message = error instanceof Error ? error.message : "Erro ao criar venda";
+    const message = error instanceof Error ? error.message : "Erro desconhecido ao criar venda";
+    const details = JSON.stringify(error, Object.getOwnPropertyNames(error));
 
     const status = message.includes("autenticacao") ? 401 : 400;
 
-    return NextResponse.json({ error: message }, { status });
+    return NextResponse.json({ error: `${message} || DETAILS: ${details}` }, { status });
 
   }
 
