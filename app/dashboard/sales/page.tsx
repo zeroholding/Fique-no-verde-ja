@@ -661,12 +661,22 @@ export default function SalesPage() {
     console.log("SALE SUBMIT - FIX V2 ACTIVE");
     let effectiveClientId = formData.clientId;
 
+    // [SMART SUBMIT] Tentar resolver ID pelo nome digitado se o usuário não clicou na lista
+    // (Aplica-se para Tipo 01 e Tipo 03)
+    if ((formData.saleType === "01" || formData.saleType === "03") && !effectiveClientId && clientSearch.trim()) {
+      const exactMatch = clients.find(c => c.name.toUpperCase() === clientSearch.trim().toUpperCase());
+      // Só aceita se for cliente COMUM (não package)
+      if (exactMatch && exactMatch.clientType !== "package") {
+           effectiveClientId = exactMatch.id;
+      }
+    }
+
     if (formData.saleType === "03") {
       if (!formData.carrierId) {
         error("Selecione a transportadora (cliente de pacote).");
         return;
       }
-      if (!formData.clientId) {
+      if (!effectiveClientId) {
         error("Selecione o cliente final.");
         return;
       }
@@ -678,50 +688,29 @@ export default function SalesPage() {
         error("Pacote nao encontrado");
         return;
       }
-      if (formData.quantity > selectedPackage.availableQuantity) {
-        error(`Quantidade solicitada (${formData.quantity}) excede o saldo disponivel (${selectedPackage.availableQuantity})`);
-        return;
-      }
+      // REMOVIDO: Bloqueio de saldo insuficiente (conforme solicitação de saldo negativo)
+      // if (formData.quantity > selectedPackage.availableQuantity) { ... }
+      
     } else {
+      // Validações para Tipo 01 e 02
       if (formData.saleType === "02" && !formData.carrierId) {
         error("Selecione a transportadora (cliente de pacote).");
         return;
       }
       
-      // UX Fix: Se o clientSearch tem nome, mas clientId ta vazio (usuario nao clicou na lista)
-      // Tentar encontrar match exato e usar
-      if (formData.saleType === "01" && !formData.clientId && clientSearch.trim()) {
-        const exactMatch = clients.find(c => c.name.toUpperCase() === clientSearch.trim().toUpperCase());
-        if (exactMatch && exactMatch.clientType !== "package") {
-             // Atualiza o formData temporariamente para passar na validacao imediata
-             // (o setFormData eh assincrono, entao usamos uma variavel local ou atualizamos o objeto formData diretamente na memoria deste escopo se fosse possivel,
-             // mas como formData eh const do state, precisamos garantir que o payload use o ID correto)
-             console.log("[UX FIX] Auto-selecting client:", exactMatch.name);
-             formData.clientId = exactMatch.id; // Hack rapido para transacao local? Nao, formData eh readonly state.
-             
-             // Melhor: Ajustar a logica de validacao abaixo para checar uma variavel local
-        }
-      }
-
-      // Variavel local para validacao
-      if ((formData.saleType === "01" || formData.saleType === "03") && !effectiveClientId && clientSearch.trim()) {
-        const exactMatch = clients.find(c => c.name.toUpperCase() === clientSearch.trim().toUpperCase());
-        // Para Type 03, tambem deve ser cliente COMUM (nao package), conforme filtros da UI
-        if (exactMatch && exactMatch.clientType !== "package") {
-             effectiveClientId = exactMatch.id;
-        }
-      }
-
       if (formData.saleType === "01" && !effectiveClientId) {
          error("Selecione um cliente válido (clique na lista).");
          return;
       }
 
-      if (!formData.serviceId) {
+      if (formData.saleType !== "03" && !formData.serviceId) {
         error("Selecione um serviço");
         return;
       }
-      if (!selectedService) {
+      
+      // Note: serviceId é necessário para 01 e 02.
+      // selectedService variable is used later for price calc.
+      if (!selectedService && formData.saleType !== "03") {
         error("Serviço não encontrado");
         return;
       }
