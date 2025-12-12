@@ -550,7 +550,7 @@ export async function POST(request: NextRequest) {
           general_discount_value,
           status,
           confirmed_at
-        ] VALUES ($1, $2, CURRENT_TIMESTAMP, $3, $4, $5, $6, 'confirmada', CURRENT_TIMESTAMP)
+        ) VALUES ($1, $2, CURRENT_TIMESTAMP, $3, $4, $5, $6, 'confirmada', CURRENT_TIMESTAMP)
         RETURNING id, sale_date`,
         [
           saleClientId,
