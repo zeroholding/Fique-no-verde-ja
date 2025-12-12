@@ -1290,6 +1290,30 @@ export default function SalesPage() {
                   className="px-6 py-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between hover:bg-white/5 transition-colors border-l-2 border-l-transparent hover:border-l-blue-500"
                 >
                   <div className="flex-1">
+                    <div className="flex items-baseline justify-between md:justify-start gap-4">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold text-lg text-white">{sale.clientName}</p>
+                        {(() => {
+                          const saleTypeInfo = getSaleTypeLabel(sale);
+                          const carrierMatch = sale.observations?.match(/\[PCT: (.*?)\]/);
+                          const carrierName = carrierMatch ? carrierMatch[1] : null;
+
+                          return (
+                            <div className="flex gap-2">
+                              <span className={`text-[10px] px-2 py-0.5 rounded border font-medium ${saleTypeInfo.color}`}>
+                                {saleTypeInfo.type} - {saleTypeInfo.label}
+                              </span>
+                              {carrierName && (
+                                <span className="text-[10px] px-2 py-0.5 rounded border font-medium bg-indigo-500/20 text-indigo-300 border-indigo-500/40 uppercase">
+                                  {carrierName}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
+                        {sale.status === "cancelada" && (
+                          <span className={`text-[10px] px-2 py-0.5 rounded border font-medium uppercase ${statusColors[sale.status].bg} ${statusColors[sale.status].text} ${statusColors[sale.status].border}`}>
+                            CANCELADA
                           </span>
                         )}
                         {(sale.refundTotal ?? 0) > 0 && (
