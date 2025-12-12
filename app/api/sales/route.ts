@@ -717,15 +717,23 @@ export async function POST(request: NextRequest) {
 
       // RECUPERAR ITENS PARA GERAR COMISSÃO DETALHADA E GRAVAR NO EXTRATO
       // Wrap em try/catch para garantir que ERRO DE COMISSAO nao trave a VENDA
+      // RECUPERAR ITENS PARA GERAR COMISSÃO DETALHADA E GRAVAR NO EXTRATO
+      // Wrap em try/catch para garantir que ERRO DE COMISSAO nao trave a VENDA
       try {
+          // [FIX] Incluir subtotal na query para usar como base em Consumo de Pacote (03)
           const savedItemsResult = await query(
-            `SELECT id, total, quantity, sale_type, product_id FROM sale_items WHERE sale_id = $1`,
+            `SELECT id, total, subtotal, quantity, sale_type, product_id FROM sale_items WHERE sale_id = $1`,
             [saleId]
           );
 
           for (const item of savedItemsResult.rows) {
             const itemSaleType = item.sale_type || "01";
-            const itemTotal = parseFloat(item.total);
+            // [FIX] Para Tipo 03 (Consumo), usar o subtotal (valor teórico) como base.
+            // Para outros, usar o total (valor pago).
+            const itemBaseValue = itemSaleType === "03" 
+              ? parseFloat(item.subtotal || "0") 
+              : parseFloat(item.total || "0");
+              
             const itemQuantity = parseInt(item.quantity || 1);
 
             if (itemSaleType === "02") continue; // Venda de pacote nao gera comissao
@@ -755,12 +763,12 @@ export async function POST(request: NextRequest) {
                   if (p.type === 'fixed_per_unit') {
                      itemCommission = itemCommissionRate * itemQuantity;
                   } else {
-                     itemCommission = itemTotal * (itemCommissionRate / 100);
+                     itemCommission = itemBaseValue * (itemCommissionRate / 100);
                   }
                }
             } else {
                // Fallback
-               itemCommission = itemTotal * 0.05;
+               itemCommission = itemBaseValue * 0.05;
             }
 
             commissionAmount += itemCommission;
@@ -782,7 +790,7 @@ export async function POST(request: NextRequest) {
                 saleId,
                 item.id,
                 user.id,
-                itemTotal,
+                itemBaseValue,
                 itemCommissionType,
                 itemCommissionRate,
                 itemCommission,
