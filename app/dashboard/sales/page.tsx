@@ -703,14 +703,14 @@ export default function SalesPage() {
          return;
       }
 
-      if (formData.saleType !== "03" && !formData.serviceId) {
+      if (!formData.serviceId) {
         error("Selecione um serviço");
         return;
       }
       
       // Note: serviceId é necessário para 01 e 02.
       // selectedService variable is used later for price calc.
-      if (!selectedService && formData.saleType !== "03") {
+      if (!selectedService) {
         error("Serviço não encontrado");
         return;
       }
