@@ -704,8 +704,9 @@ export default function SalesPage() {
       }
 
       // Variavel local para validacao
-      if (formData.saleType === "01" && !effectiveClientId && clientSearch.trim()) {
+      if ((formData.saleType === "01" || formData.saleType === "03") && !effectiveClientId && clientSearch.trim()) {
         const exactMatch = clients.find(c => c.name.toUpperCase() === clientSearch.trim().toUpperCase());
+        // Para Type 03, tambem deve ser cliente COMUM (nao package), conforme filtros da UI
         if (exactMatch && exactMatch.clientType !== "package") {
              effectiveClientId = exactMatch.id;
         }
@@ -791,7 +792,7 @@ export default function SalesPage() {
       const payload: any = {
         clientId:
           formData.saleType === "03"
-            ? formData.clientId
+            ? (effectiveClientId || formData.clientId)
             : formData.saleType === "02"
               ? formData.carrierId
               : (effectiveClientId || formData.clientId), // Use auto-resolved ID if available
