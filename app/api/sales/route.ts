@@ -374,6 +374,7 @@ export async function POST(request: NextRequest) {
       serviceId, // Usado para tipo "02" (Venda de Pacote)
       packageId, // Usado para tipo "03" (Consumo de Pacote)
       carrierId, // Transportadora (dona do pacote) para tipo "02" e "03"
+      attendantId, // [NEW] ID do atendente (opcional, apenas para admin)
     } = body;
 
     const normalizedSaleType: "01" | "02" | "03" = saleType || "01";
@@ -520,6 +521,13 @@ export async function POST(request: NextRequest) {
       console.log("[SALES POST] Carrier validated:", carrierTypeResult.rows[0].name);
     }
 
+    // Determine Attendant ID (Logic for Admin)
+    let finalAttendantId = user.id;
+    if (user.is_admin && attendantId) {
+       // Validate if attendantId exists? Omitted for speed/trust, or checks FK constraint on insert.
+       finalAttendantId = attendantId;
+    }
+
 
     // Iniciar transaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o
 
@@ -542,11 +550,11 @@ export async function POST(request: NextRequest) {
           general_discount_value,
           status,
           confirmed_at
-        ) VALUES ($1, $2, CURRENT_TIMESTAMP, $3, $4, $5, $6, 'confirmada', CURRENT_TIMESTAMP)
+        ] VALUES ($1, $2, CURRENT_TIMESTAMP, $3, $4, $5, $6, 'confirmada', CURRENT_TIMESTAMP)
         RETURNING id, sale_date`,
         [
           saleClientId,
-          user.id,
+          finalAttendantId, // [MODIFIED] Use logic-determined ID
           observations || null,
           paymentMethod,
           generalDiscountType || null,

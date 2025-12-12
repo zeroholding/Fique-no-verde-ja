@@ -91,6 +91,7 @@ const initialForm = {
   observations: "",
   paymentMethod: "pix" as PaymentMethod,
   packageId: "", // Usado quando saleType = "03"
+  attendantId: "", // [NEW] Para Admin selecionar outro atendente
 };
 
 const ITEMS_PER_PAGE = 7;
@@ -145,6 +146,7 @@ export default function SalesPage() {
   const [dayType, setDayType] = useState<"" | "weekday" | "non_working">("");
   const [attendants, setAttendants] = useState<AttendantOption[]>([]);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null); // [NEW] Guarda ID do admin
   const [sortField, setSortField] = useState<"date" | "client" | "total">("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [saleTypeFilter, setSaleTypeFilter] = useState<"" | "common" | "package">("");
@@ -156,8 +158,8 @@ export default function SalesPage() {
 
   const clientOptions = useMemo(() => {
      let filtered = clients;
-     // Se for venda comum (01), esconde cliente 'package' (transportadoras)
-     if (formData.saleType === "01") {
+     // Se for venda comum (01) OU consumo (03), o "Cliente Final" deve ser comum (não transportadora)
+     if (formData.saleType === "01" || formData.saleType === "03") {
        filtered = filtered.filter(c => c.clientType !== "package");
      }
      
@@ -397,6 +399,7 @@ export default function SalesPage() {
       if (response.ok && data.user) {
         const adminFlag = Boolean(data.user.is_admin);
         setIsAdmin(adminFlag);
+        setCurrentUserId(data.user.id); // [NEW]
         if (adminFlag) {
           fetchAttendants();
         }
@@ -502,7 +505,10 @@ export default function SalesPage() {
   };
 
   const openModal = () => {
-    setFormData(initialForm);
+    setFormData({
+      ...initialForm,
+      attendantId: currentUserId || "", // [NEW] Default to self
+    });
     setIsModalOpen(true);
   };
 
@@ -792,6 +798,7 @@ export default function SalesPage() {
         observations: formData.observations,
         paymentMethod: formData.paymentMethod,
         saleType: formData.saleType,
+        attendantId: formData.attendantId, // [NEW] Enviar ID do atendente (se admin tiver selecionado)
         generalDiscountType: "percentage" as DiscountType,
         generalDiscountValue: 0,
         items: [
@@ -1493,6 +1500,28 @@ export default function SalesPage() {
       >
         <form id="sale-form" className="space-y-4" onSubmit={handleSubmit}>
           <div>
+            {/* [NEW] Campo de Atendente (Apenas Admin) */}
+            {isAdmin && attendants.length > 0 && (
+              <div className="mb-4 p-3 rounded-xl bg-orange-500/10 border border-orange-500/30">
+                <label className="block text-xs uppercase text-orange-200 mb-2 font-bold">
+                  Atribuir venda ao atendente:
+                </label>
+                <select
+                  name="attendantId"
+                  value={formData.attendantId}
+                  onChange={handleChange}
+                  className="w-full rounded-xl border border-orange-500/30 bg-black/50 px-4 py-2 text-white focus:border-orange-500 focus:outline-none text-sm"
+                >
+                  <option value="">Selecione...</option>
+                  {attendants.map((att) => (
+                    <option key={att.value} value={att.value}>
+                      {att.label} {att.value === currentUserId ? "(Eu)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <label className="block text-xs uppercase text-gray-400 mb-2">
               Tipo de Venda
             </label>

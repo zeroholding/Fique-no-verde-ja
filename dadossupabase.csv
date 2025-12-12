@@ -1,0 +1,187 @@
+tabela,coluna,tipo_dado,aceita_nulo
+client_origins,id,uuid,NO
+client_origins,name,character varying,NO
+client_origins,description,text,YES
+client_origins,is_active,boolean,YES
+client_origins,created_at,timestamp with time zone,YES
+client_origins,updated_at,timestamp with time zone,YES
+client_packages,id,uuid,NO
+client_packages,client_id,uuid,NO
+client_packages,service_id,uuid,NO
+client_packages,sale_id,uuid,NO
+client_packages,initial_quantity,integer,NO
+client_packages,consumed_quantity,integer,NO
+client_packages,available_quantity,integer,NO
+client_packages,unit_price,numeric,NO
+client_packages,total_paid,numeric,NO
+client_packages,expires_at,date,YES
+client_packages,is_active,boolean,YES
+client_packages,created_at,timestamp with time zone,YES
+client_packages,updated_at,timestamp with time zone,YES
+clients,id,uuid,NO
+clients,name,character varying,NO
+clients,phone,character varying,YES
+clients,birth_date,date,YES
+clients,email,character varying,YES
+clients,cpf_cnpj,character varying,YES
+clients,origin_id,uuid,YES
+clients,is_active,boolean,YES
+clients,created_at,timestamp with time zone,YES
+clients,updated_at,timestamp with time zone,YES
+clients,created_by_user_id,uuid,YES
+clients,account_link,text,YES
+clients,client_type,character varying,NO
+clients,responsible_name,character varying,YES
+clients,reference_contact,character varying,YES
+commission_policies,id,uuid,NO
+commission_policies,name,character varying,NO
+commission_policies,description,text,YES
+commission_policies,type,character varying,NO
+commission_policies,value,numeric,NO
+commission_policies,scope,character varying,NO
+commission_policies,product_id,uuid,YES
+commission_policies,user_id,uuid,YES
+commission_policies,applies_to,character varying,NO
+commission_policies,consider_business_days,boolean,YES
+commission_policies,valid_from,date,NO
+commission_policies,valid_until,date,YES
+commission_policies,is_active,boolean,YES
+commission_policies,created_at,timestamp with time zone,YES
+commission_policies,updated_at,timestamp with time zone,YES
+commission_policies,created_by_user_id,uuid,YES
+commission_policies,sale_type,character varying,NO
+commissions,id,uuid,NO
+commissions,sale_id,uuid,NO
+commissions,sale_item_id,uuid,YES
+commissions,user_id,uuid,NO
+commissions,base_amount,numeric,NO
+commissions,commission_type,character varying,NO
+commissions,commission_rate,numeric,NO
+commissions,commission_amount,numeric,NO
+commissions,status,character varying,NO
+commissions,reference_date,date,NO
+commissions,payment_date,date,YES
+commissions,considers_business_days,boolean,YES
+commissions,created_at,timestamp without time zone,YES
+commissions,updated_at,timestamp without time zone,YES
+holidays,id,uuid,NO
+holidays,date,date,NO
+holidays,name,character varying,NO
+holidays,is_national,boolean,YES
+holidays,is_active,boolean,YES
+holidays,created_at,timestamp with time zone,YES
+holidays,updated_at,timestamp with time zone,YES
+mercado_livre_credentials,id,uuid,NO
+mercado_livre_credentials,user_id,uuid,NO
+mercado_livre_credentials,ml_user_id,bigint,YES
+mercado_livre_credentials,access_token,text,NO
+mercado_livre_credentials,refresh_token,text,YES
+mercado_livre_credentials,token_type,text,YES
+mercado_livre_credentials,scope,text,YES
+mercado_livre_credentials,expires_at,timestamp with time zone,YES
+mercado_livre_credentials,created_at,timestamp with time zone,YES
+mercado_livre_credentials,updated_at,timestamp with time zone,YES
+mercado_livre_credentials,nickname,text,YES
+package_consumptions,id,uuid,NO
+package_consumptions,package_id,uuid,NO
+package_consumptions,sale_id,uuid,NO
+package_consumptions,quantity,integer,NO
+package_consumptions,unit_price,numeric,NO
+package_consumptions,total_value,numeric,NO
+package_consumptions,consumed_at,timestamp with time zone,YES
+package_consumptions,created_at,timestamp with time zone,YES
+price_ranges,id,uuid,NO
+price_ranges,product_id,uuid,NO
+price_ranges,min_quantity,integer,NO
+price_ranges,max_quantity,integer,YES
+price_ranges,unit_price,numeric,NO
+price_ranges,valid_from,date,NO
+price_ranges,valid_until,date,YES
+price_ranges,is_active,boolean,YES
+price_ranges,created_at,timestamp without time zone,YES
+price_ranges,updated_at,timestamp without time zone,YES
+products,id,uuid,NO
+products,name,character varying,NO
+products,description,text,YES
+products,sku,character varying,YES
+products,is_active,boolean,YES
+products,created_at,timestamp without time zone,YES
+products,updated_at,timestamp without time zone,YES
+sale_items,id,uuid,NO
+sale_items,sale_id,uuid,NO
+sale_items,product_id,uuid,YES
+sale_items,product_name,character varying,NO
+sale_items,quantity,integer,NO
+sale_items,unit_price,numeric,NO
+sale_items,discount_type,character varying,YES
+sale_items,discount_value,numeric,YES
+sale_items,subtotal,numeric,NO
+sale_items,discount_amount,numeric,NO
+sale_items,total,numeric,NO
+sale_items,created_at,timestamp without time zone,YES
+sale_items,updated_at,timestamp without time zone,YES
+sale_items,sale_type,character varying,NO
+sale_refunds,id,uuid,NO
+sale_refunds,sale_id,uuid,NO
+sale_refunds,amount,numeric,NO
+sale_refunds,reason,text,YES
+sale_refunds,created_by,uuid,YES
+sale_refunds,created_at,timestamp without time zone,NO
+sales,id,uuid,NO
+sales,client_id,uuid,NO
+sales,attendant_id,uuid,NO
+sales,sale_date,timestamp without time zone,NO
+sales,observations,text,YES
+sales,status,character varying,NO
+sales,payment_method,character varying,NO
+sales,general_discount_type,character varying,YES
+sales,general_discount_value,numeric,YES
+sales,subtotal,numeric,NO
+sales,total_discount,numeric,NO
+sales,total,numeric,NO
+sales,confirmed_at,timestamp without time zone,YES
+sales,cancelled_at,timestamp without time zone,YES
+sales,created_at,timestamp without time zone,YES
+sales,updated_at,timestamp without time zone,YES
+sales,commission_amount,numeric,YES
+sales,commission_policy_id,uuid,YES
+sales,discount_amount,numeric,YES
+sales,refund_total,numeric,NO
+sales,sale_number,bigint,NO
+service_price_ranges,id,uuid,NO
+service_price_ranges,service_id,uuid,NO
+service_price_ranges,sale_type,character varying,NO
+service_price_ranges,min_quantity,integer,NO
+service_price_ranges,max_quantity,integer,YES
+service_price_ranges,unit_price,numeric,NO
+service_price_ranges,effective_from,date,NO
+service_price_ranges,created_at,timestamp with time zone,YES
+services,id,uuid,NO
+services,name,character varying,NO
+services,description,text,NO
+services,base_price,numeric,NO
+services,sla,character varying,NO
+services,highlights,jsonb,NO
+services,is_active,boolean,YES
+services,created_at,timestamp with time zone,YES
+services,updated_at,timestamp with time zone,YES
+sessions,id,uuid,NO
+sessions,user_id,uuid,NO
+sessions,token,text,NO
+sessions,expires_at,timestamp with time zone,NO
+sessions,created_at,timestamp with time zone,YES
+sessions,ip_address,character varying,YES
+sessions,user_agent,text,YES
+users,id,uuid,NO
+users,first_name,character varying,NO
+users,last_name,character varying,NO
+users,email,character varying,NO
+users,phone,character varying,YES
+users,password_hash,character varying,NO
+users,created_at,timestamp with time zone,YES
+users,updated_at,timestamp with time zone,YES
+users,last_login,timestamp with time zone,YES
+users,is_active,boolean,YES
+users,is_admin,boolean,YES
+users,created_by_admin,boolean,YES
+users,admin_generated_password,text,YES
