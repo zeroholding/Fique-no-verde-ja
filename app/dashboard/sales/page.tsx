@@ -813,6 +813,8 @@ export default function SalesPage() {
         payload.carrierId = formData.carrierId;
       }
 
+      console.log("[DEBUG PAYLOAD]", payload); // Log payload to console
+
       const response = await fetch("/api/sales", {
         method: "POST",
         headers: {
@@ -824,6 +826,7 @@ export default function SalesPage() {
 
       const data = await response.json();
       if (!response.ok) {
+        console.error("[DEBUG API ERROR]", data); // Log server error details
         throw new Error(data.error || "Erro ao criar venda");
       }
 
