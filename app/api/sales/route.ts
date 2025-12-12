@@ -378,6 +378,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     const normalizedSaleType: "01" | "02" | "03" = saleType || "01";
+    let carrierName: string | null = null; // [NEW] Para armazenar nome da transportadora no Tipo 03
 
     console.log("[SALES POST] Request body:", {
       saleType: normalizedSaleType,
@@ -519,6 +520,7 @@ export async function POST(request: NextRequest) {
       }
 
       console.log("[SALES POST] Carrier validated:", carrierTypeResult.rows[0].name);
+      carrierName = carrierTypeResult.rows[0].name; // [NEW] Save for observations
     }
 
     // Determine Attendant ID (Logic for Admin)
@@ -555,7 +557,9 @@ export async function POST(request: NextRequest) {
         [
           saleClientId,
           finalAttendantId, // [MODIFIED] Use logic-determined ID
-          observations || null,
+          (normalizedSaleType === "03" && carrierName 
+              ? `[PCT: ${carrierName}] ${observations || ""}`.trim() 
+              : observations || null), // [NEW] Prepend Carrier Name tag
           paymentMethod,
           generalDiscountType || null,
           generalDiscountValue || 0,
