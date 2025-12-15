@@ -39,8 +39,9 @@ const formatDateTime = (value: string) => {
 };
 
 export default function CommissionsPage() {
-  const { error } = useToast();
+  const { error, success } = useToast();
   const [commissions, setCommissions] = useState<Commission[]>([]);
+  const [isRegenerating, setIsRegenerating] = useState(false); // [NEW]
   const [attendants, setAttendants] = useState<Array<{ value: string; label: string }>>([]);
   const [attendantId, setAttendantId] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
@@ -132,6 +133,34 @@ export default function CommissionsPage() {
   useEffect(() => {
     fetchCommissions();
   }, [fetchCommissions]);
+
+  const handleRegenerate = async () => {
+    if (!confirm("Isso irá verificar todas as vendas passadas sem comissão e tentar gerá-las. Continuar?")) return;
+    
+    setIsRegenerating(true);
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const res = await fetch("/api/admin/commissions/regenerate", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        success(`Regeração concluída! ${data.stats.created} novas, ${data.stats.processed} processadas.`);
+        fetchCommissions();
+      } else {
+        error(data.error || "Erro ao regerar.");
+      }
+    } catch (err) {
+      console.error(err);
+      error("Erro de conexão.");
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
 
   const filteredCommissions = useMemo(() => {
     // ... logic inside useMemo remains correctly using closure variables, 
@@ -287,6 +316,17 @@ export default function CommissionsPage() {
               <Button size="sm" variant="ghost" className="rounded-xl w-full" onClick={clearFilters}>
                 Limpar filtros
               </Button>
+              {isAdmin && (
+                <Button 
+                    size="sm" 
+                    variant="ghost" // or distinct style
+                    className="rounded-xl w-full bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 border border-blue-500/20"
+                    onClick={handleRegenerate}
+                    disabled={isRegenerating || loading}
+                >
+                    {isRegenerating ? "Gerando..." : "Regerar Faltantes"}
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="secondary"
