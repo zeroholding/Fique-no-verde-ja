@@ -1123,7 +1123,7 @@ export default function SalesPage() {
        if (res.ok) {
           success("Data atualizada e comissões recalculadas!");
           setEditingDateSale(null);
-          fetchSales(currentPage);
+          fetchSales();
        } else {
           error(data.error || "Erro ao atualizar data");
        }
