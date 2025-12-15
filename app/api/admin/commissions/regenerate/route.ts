@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
         si.quantity,
         si.sale_type,
         si.subtotal as item_base_value, 
-        s.user_id as attendant_id
+        s.attendant_id
       FROM sales s
       JOIN sale_items si ON s.id = si.sale_id
       WHERE si.sale_type IN ('01', '03')
