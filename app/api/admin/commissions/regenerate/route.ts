@@ -31,9 +31,8 @@ export async function POST(request: NextRequest) {
         si.product_id,
         si.quantity,
         si.sale_type,
-        si.calculated_subtotal as item_base_value, -- Use calculated subtotal
-        s.attendant_id,
-        s.user_id as creator_id
+        si.subtotal as item_base_value, 
+        s.user_id as attendant_id
       FROM sales s
       JOIN sale_items si ON s.id = si.sale_id
       WHERE si.sale_type IN ('01', '03')
@@ -51,8 +50,8 @@ export async function POST(request: NextRequest) {
         try {
             results.processed++;
             
-            const saleDate = item.sale_date; // Date object or string
-            const attendantId = item.attendant_id || item.creator_id; // Fallback
+            const saleDate = item.sale_date; 
+            const attendantId = item.attendant_id;
             
             let itemCommission = 0;
             let itemCommissionType = 'percentage';
