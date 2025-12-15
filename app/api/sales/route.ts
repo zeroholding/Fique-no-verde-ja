@@ -801,14 +801,7 @@ export async function POST(request: NextRequest) {
               [
                 saleId,
                 item.id,
-                finalAttendantId, // [FIX] Usar o atendente definido (pode ser outro se Admin alterou)
-                user.id, // Log who performed the action? No, table expects 'user_id' as beneficiary? 
-                // Wait. 'user_id' in commissions table usually means beneficiary.
-                // So YES, it must be finalAttendantId.
-                // But let's check the columns.
-                // sale_id, sale_item_id, user_id...
-                // Yes, user_id is the attendant.
-
+                finalAttendantId, // [FIX] Usar o atendente definido
                 itemBaseValue,
                 itemCommissionType,
                 itemCommissionRate,
