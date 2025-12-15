@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     const missingItemsResult = await query(`
       SELECT 
         s.id as sale_id, 
-        s.created_at::DATE as sale_date, -- Use creation date as default reference
+        s.created_at::DATE as sale_date,
         si.id as item_id,
         si.product_id,
         si.quantity,
