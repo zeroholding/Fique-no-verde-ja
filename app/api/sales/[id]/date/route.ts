@@ -4,10 +4,12 @@ import { query } from "@/lib/db";
 import { getTokenFromRequest, verifyToken } from "@/lib/auth";
 
 // PUT /api/sales/[id]/date
+// PUT /api/sales/[id]/date
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
+  const params = await props.params;
   try {
     const token = getTokenFromRequest(request);
     if (!token) {
