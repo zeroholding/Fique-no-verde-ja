@@ -1121,15 +1121,15 @@ export default function SalesPage() {
        const data = await res.json();
        
        if (res.ok) {
-          toastSuccess("Data atualizada e comissões recalculadas!");
+          success("Data atualizada e comissões recalculadas!");
           setEditingDateSale(null);
           fetchSales(currentPage);
        } else {
-          toastError(data.error || "Erro ao atualizar data");
+          error(data.error || "Erro ao atualizar data");
        }
     } catch (err) {
        console.error(err);
-       toastError("Erro de conexão");
+       error("Erro de conexão");
     } finally {
        setUpdatingDate(false);
     }
