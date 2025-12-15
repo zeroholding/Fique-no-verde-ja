@@ -375,7 +375,7 @@ export async function POST(request: NextRequest) {
       packageId, // Usado para tipo "03" (Consumo de Pacote)
       carrierId, // Transportadora (dona do pacote) para tipo "02" e "03"
       attendantId, // [NEW] ID do atendente (opcional, apenas para admin)
-      saleDate, // [NEW] Data personalizada (opcional, apenas para admin)
+      saleDate: requestedSaleDate, // [FIX] Avoid shadowing collision with inner variable
     } = body;
 
     const normalizedSaleType: "01" | "02" | "03" = saleType || "01";
@@ -558,7 +558,7 @@ export async function POST(request: NextRequest) {
         [
           saleClientId,
           finalAttendantId,
-          saleDate ? new Date(saleDate) : new Date(), // [MODIFIED] Use custom date or now
+          requestedSaleDate ? new Date(requestedSaleDate) : new Date(), // [FIX] Use renamed variable
           (normalizedSaleType === "03" && carrierName 
               ? `[PCT: ${carrierName}] ${observations || ""}`.trim() 
               : observations || null),
