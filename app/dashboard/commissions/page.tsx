@@ -352,7 +352,7 @@ export default function CommissionsPage() {
                 <th className="px-6 py-3">Data Ref.</th>
                 <th className="px-6 py-3">Venda</th>
                 <th className="px-6 py-3">Tipo</th>
-                <th className="px-6 py-3">Servico/Produto</th>
+                <th className="px-6 py-3">Serviço/Produto</th>
                 <th className="px-6 py-3 text-right">Qtde</th>
                 <th className="px-6 py-3 text-right">Bruto</th>
                 <th className="px-6 py-3 text-right">Desconto</th>
@@ -391,8 +391,6 @@ export default function CommissionsPage() {
                       <div className="flex flex-col">
                         <span className="font-medium text-white">{comm.productName}</span>
                         <span className="text-xs text-gray-400">
-                          {comm.status === "a_pagar" ? "A Pagar" : comm.status}
-                          {" · "}
                           {formatDateTime(comm.createdAt)}
                         </span>
                       </div>

@@ -92,6 +92,7 @@ const initialForm = {
   paymentMethod: "pix" as PaymentMethod,
   packageId: "", // Usado quando saleType = "03"
   attendantId: "", // [NEW] Para Admin selecionar outro atendente
+  saleDate: new Date().toISOString().split("T")[0], // [NEW] Para Admin selecionar data retroativa
 };
 
 const ITEMS_PER_PAGE = 7;
@@ -789,6 +790,7 @@ export default function SalesPage() {
         paymentMethod: formData.paymentMethod,
         saleType: formData.saleType,
         attendantId: formData.attendantId, // [NEW] Enviar ID do atendente (se admin tiver selecionado)
+        saleDate: formData.saleDate, // [NEW] Enviar data personalizada (se admin)
         generalDiscountType: "percentage" as DiscountType,
         generalDiscountValue: 0,
         items: [
@@ -1505,24 +1507,39 @@ export default function SalesPage() {
           <div>
             {/* [NEW] Campo de Atendente (Apenas Admin) */}
             {isAdmin && attendants.length > 0 && (
-              <div className="mb-4 p-3 rounded-xl bg-orange-500/10 border border-orange-500/30">
-                <label className="block text-xs uppercase text-orange-200 mb-2 font-bold">
-                  Atribuir venda ao atendente:
-                </label>
-                <select
-                  name="attendantId"
-                  value={formData.attendantId}
-                  onChange={handleChange}
-                  className="w-full rounded-xl border border-orange-500/30 bg-black/50 px-4 py-2 text-white focus:border-orange-500 focus:outline-none text-sm"
-                >
-                  <option value="">Selecione...</option>
-                  {attendants.map((att) => (
-                    <option key={att.value} value={att.value}>
-                      {att.label} {att.value === currentUserId ? "(Eu)" : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <>
+                <div className="mb-4 p-3 rounded-xl bg-orange-500/10 border border-orange-500/30">
+                  <label className="block text-xs uppercase text-orange-200 mb-2 font-bold">
+                    Atribuir venda ao atendente:
+                  </label>
+                  <select
+                    name="attendantId"
+                    value={formData.attendantId}
+                    onChange={handleChange}
+                    className="w-full rounded-xl border border-orange-500/30 bg-black/50 px-4 py-2 text-white focus:border-orange-500 focus:outline-none text-sm"
+                  >
+                    <option value="">Selecione...</option>
+                    {attendants.map((att) => (
+                      <option key={att.value} value={att.value}>
+                        {att.label} {att.value === currentUserId ? "(Eu)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="mb-4 p-3 rounded-xl bg-purple-500/10 border border-purple-500/30">
+                  <label className="block text-xs uppercase text-purple-200 mb-2 font-bold">
+                      Data da Venda (Retroativo):
+                  </label>
+                  <input
+                      type="date"
+                      name="saleDate"
+                      value={formData.saleDate}
+                      onChange={handleChange}
+                      className="w-full rounded-xl border border-purple-500/30 bg-black/50 px-4 py-2 text-white focus:border-purple-500 focus:outline-none text-sm"
+                  />
+                </div>
+              </>
             )}
 
             <label className="block text-xs uppercase text-gray-400 mb-2">

@@ -375,6 +375,7 @@ export async function POST(request: NextRequest) {
       packageId, // Usado para tipo "03" (Consumo de Pacote)
       carrierId, // Transportadora (dona do pacote) para tipo "02" e "03"
       attendantId, // [NEW] ID do atendente (opcional, apenas para admin)
+      saleDate, // [NEW] Data personalizada (opcional, apenas para admin)
     } = body;
 
     const normalizedSaleType: "01" | "02" | "03" = saleType || "01";
@@ -552,14 +553,15 @@ export async function POST(request: NextRequest) {
           general_discount_value,
           status,
           confirmed_at
-        ) VALUES ($1, $2, CURRENT_TIMESTAMP, $3, $4, $5, $6, 'confirmada', CURRENT_TIMESTAMP)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'confirmada', CURRENT_TIMESTAMP)
         RETURNING id, sale_date`,
         [
           saleClientId,
-          finalAttendantId, // [MODIFIED] Use logic-determined ID
+          finalAttendantId,
+          saleDate ? new Date(saleDate) : new Date(), // [MODIFIED] Use custom date or now
           (normalizedSaleType === "03" && carrierName 
               ? `[PCT: ${carrierName}] ${observations || ""}`.trim() 
-              : observations || null), // [NEW] Prepend Carrier Name tag
+              : observations || null),
           paymentMethod,
           generalDiscountType || null,
           generalDiscountValue || 0,
