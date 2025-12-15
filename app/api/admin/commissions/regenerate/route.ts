@@ -126,8 +126,8 @@ export async function POST(request: NextRequest) {
         remaining: itemsToProcess.length === 100 ? "More items might exist" : "All done"
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Regeneration API Error:", error);
-    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Internal Error" }, { status: 500 });
   }
 }
