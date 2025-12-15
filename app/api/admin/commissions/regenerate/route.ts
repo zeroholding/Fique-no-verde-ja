@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
         AND NOT EXISTS (
            SELECT 1 FROM commissions c WHERE c.sale_item_id = si.id
         )
-      LIMIT 100 -- Process in batches to avoid timeout
+      LIMIT 100
     `);
 
     const itemsToProcess = missingItemsResult.rows;
