@@ -90,6 +90,8 @@ export async function PUT(
 
       console.log(`[UPDATE SALE DATE] Recalculating ${salesResult.rows.length} items.`);
 
+      let totalCommission = 0; // [NEW] Accumulator
+
       for (const item of salesResult.rows) {
           const attendantId = item.attendant_id;
           // Determine Base Value
@@ -128,6 +130,9 @@ export async function PUT(
               itemCommission = baseValue * 0.05;
           }
 
+          // [NEW] Accumulate
+          totalCommission += itemCommission;
+
           // INSERT New Commission
           await query(
               `INSERT INTO commissions (
@@ -154,6 +159,12 @@ export async function PUT(
               ]
           );
       }
+
+      // [NEW] Update Sale Commission Total
+      await query(
+          `UPDATE sales SET commission_amount = $1 WHERE id = $2`,
+          [totalCommission, saleId]
+      );
 
       await query("COMMIT");
       return NextResponse.json({ success: true, message: "Date updated and commissions recalculated" });
