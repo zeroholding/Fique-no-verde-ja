@@ -360,6 +360,30 @@ export async function DELETE(
          await query("DELETE FROM package_consumptions WHERE sale_id = $1", [saleId]);
       }
 
+      // 2.5 Handle Genesis Package Deletion (If this sale CREATED a wallet)
+      const packageResult = await query(
+        "SELECT id, consumed_quantity FROM client_packages WHERE sale_id = $1",
+        [saleId]
+      );
+
+      if (packageResult.rowCount > 0) {
+        // Verificar se ALGUM pacote ja foi consumido
+        const usedPackages = packageResult.rows.filter((pkg: any) => pkg.consumed_quantity > 0);
+        
+        if (usedPackages.length > 0) {
+          await query("ROLLBACK");
+          return NextResponse.json(
+            { error: "Nao e possivel excluir esta venda pois um ou mais pacotes gerados ja foram utilizados. Estorne os consumos primeiro." },
+            { status: 400 }
+          );
+        }
+
+        // Se nenhum foi consumido, deletar TODOS os pacotes (Genesis)
+        for (const pkg of packageResult.rows) {
+            await query("DELETE FROM client_packages WHERE id = $1", [pkg.id]);
+        }
+      }
+
       // 3. Delete Dependencies (Speculative Cleanup for hidden constraints)
       const potentialTables = ['financial_transactions', 'notifications', 'invoices', 'commission_payments', 'logs'];
       for (const table of potentialTables) {
