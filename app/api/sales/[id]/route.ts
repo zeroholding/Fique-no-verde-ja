@@ -433,24 +433,20 @@ export async function DELETE(
           constraint: error.constraint,
           stack: error.stack
       });
-      throw error;
-    }
-  } catch (error: any) {
-    console.error("Erro ao excluir venda (Outer Catch):", error);
-    const message = error.message || "Erro ao excluir venda";
-    
-    // Construct a detailed error message for the frontend
-    const details = [
-        error.detail,
-        error.constraint ? `Constraint: ${error.constraint}` : null,
-        error.table ? `Table: ${error.table}` : null
-    ].filter(Boolean).join(" | ");
 
-    const status = message.includes("autenticacao") ? 401 : 500;
-    
-    return NextResponse.json({ 
-        error: message, 
-        details: details || undefined 
-    }, { status });
-  }
+      // Construct a detailed error message for the frontend
+      const message = error.message || "Erro ao excluir venda";
+      const details = [
+          error.detail,
+          error.constraint ? `Constraint: ${error.constraint}` : null,
+          error.table ? `Table: ${error.table}` : null
+      ].filter(Boolean).join(" | ");
+
+      const status = message.includes("autenticacao") ? 401 : 500;
+      
+      return NextResponse.json({ 
+          error: message, 
+          details: details || undefined 
+      }, { status });
+    }
 }
