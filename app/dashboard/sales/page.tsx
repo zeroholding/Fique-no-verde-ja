@@ -156,6 +156,7 @@ export default function SalesPage() {
   const [sortField, setSortField] = useState<"date" | "client" | "total">("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [saleTypeFilter, setSaleTypeFilter] = useState<"" | "common" | "package">("");
+  const [searchTerm, setSearchTerm] = useState(""); // [NEW] Search State
 
   const hasFilters = useMemo(
     () => Boolean(startDate || endDate || serviceFilter || attendantFilter || dayType || saleTypeFilter),
@@ -282,6 +283,9 @@ export default function SalesPage() {
       if (isAdmin && attendantFilter) {
         params.set("attendantId", attendantFilter);
       }
+      if (searchTerm) { // [NEW] Add search param
+         params.set("search", searchTerm);
+      }
       const response = await fetch(`/api/sales?${params.toString()}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -303,7 +307,7 @@ export default function SalesPage() {
     } finally {
       setLoading(false);
     }
-  }, [attendantFilter, error, isAdmin]);
+  }, [attendantFilter, error, isAdmin, searchTerm]);
 
   const fetchClients = useCallback(async () => {
     const token = localStorage.getItem("token");
@@ -1157,6 +1161,35 @@ export default function SalesPage() {
         </div>
 
         <div className="px-6 py-4 border-b border-white/10 bg-black/20 space-y-4">
+          
+          {/* [NEW] Search Bar */}
+          <div className="w-full">
+              <div className="relative">
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && fetchSales()} // Search on Enter
+                    placeholder="Buscar por Nome do Cliente ou ID da Venda..."
+                    className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 pl-10 text-white placeholder-gray-500 focus:border-white focus:outline-none"
+                  />
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="11" cy="11" r="8"></circle>
+                          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                      </svg>
+                  </div>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <button 
+                        onClick={() => fetchSales()}
+                        className="bg-white/10 hover:bg-white/20 text-xs px-3 py-1.5 rounded-lg text-white transition-colors"
+                      >
+                         Buscar
+                      </button>
+                  </div>
+              </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="flex flex-col gap-1">
               <p className="text-xs uppercase text-gray-400">Data (de)</p>
@@ -1328,6 +1361,27 @@ export default function SalesPage() {
                   className="px-6 py-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between hover:bg-white/5 transition-colors border-l-2 border-l-transparent hover:border-l-blue-500"
                 >
                   <div className="flex-1">
+                    {/* [NEW] Sale ID Badge */}
+                    <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] font-mono text-gray-500 flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
+                            ID: {sale.id.slice(0, 8)}...
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigator.clipboard.writeText(sale.id);
+                                    success("ID copiado!");
+                                }} 
+                                className="hover:text-white transition-colors"
+                                title="Copiar ID Completo"
+                            >
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </button>
+                        </span>
+                    </div>
+
                     <div className="flex items-baseline justify-between md:justify-start gap-4">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-semibold text-lg text-white">{sale.clientName}</p>
@@ -1859,76 +1913,78 @@ export default function SalesPage() {
               {formData.carrierId && (
                 <div>
                   <label className="block text-xs uppercase text-gray-400 mb-2">
-                    Pacote para Consumir
+                    Carteira de Créditos
                   </label>
-                  <select
-                    name="packageId"
-                    value={formData.packageId}
-                    onChange={handleChange}
-                    required
-                    className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-white focus:border-white focus:outline-none"
-                  >
-                    <option value="">Selecione o pacote</option>
-                    {availablePackages.length > 0 ? (
-                      availablePackages.map((pkg) => (
-                        <option key={pkg.id} value={pkg.id}>
-                          {pkg.serviceName} ({pkg.availableQuantity} disponíveis) - R$ {pkg.unitPrice.toFixed(2)}
-                        </option>
-                      ))
-                    ) : (
-                      <option value="" disabled>
-                        {clientPackages.filter(p => p.clientId === formData.carrierId).length === 0
-                          ? "Esta transportadora não possui pacotes cadastrados"
-                          : "Todos os pacotes desta transportadora foram consumidos"}
-                      </option>
-                    )}
-                  </select>
+                  
+                  {/* Unified Wallet: Auto-select or show status */}
+                  {availablePackages.length > 0 ? (
+                    (() => {
+                        const wallet = availablePackages[0];
+                        // Auto-select the first package (Wallet) if not selected
+                        if (!formData.packageId && wallet) {
+                            // Using timeout to avoid render-cycle issues or just render info directly
+                             setTimeout(() => {
+                                setFormData(prev => ({ ...prev, packageId: wallet.id }));
+                                setSelectedPackage(wallet);
+                             }, 0);
+                        }
 
-                  {selectedPackage && (
-                    <div className="mt-3 p-4 rounded-xl bg-white/5 border border-white/10">
-                      <div className="flex items-center justify-between mb-3">
-                        <p className="text-sm font-semibold text-white">
-                          Informações do Pacote
-                        </p>
-                        <p className="text-xs text-gray-400">
-                          Preço unitário: <span className="text-white font-semibold">{formatCurrency(selectedPackage.unitPrice)}</span>
-                        </p>
+                        return (
+                            <div className="mt-3 p-4 rounded-xl bg-white/5 border border-white/10">
+                              <div className="flex items-center justify-between mb-3">
+                                <p className="text-sm font-semibold text-white">
+                                  Resumo da Carteira
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                  Preço Médio: <span className="text-white font-semibold">{formatCurrency(wallet.unitPrice)}</span>
+                                </p>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                                  <p className="text-xs text-gray-400 mb-1">Saldo Atual</p>
+                                  <p className={`text-2xl font-bold ${wallet.availableQuantity < 0 ? 'text-red-400' : 'text-white'}`}>
+                                    {wallet.availableQuantity}
+                                  </p>
+                                  <p className="text-xs text-gray-500">créditos</p>
+                                </div>
+
+                                <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                                  <p className="text-xs text-gray-400 mb-1">Após Consumo</p>
+                                  {(() => {
+                                      const projected = wallet.availableQuantity - formData.quantity;
+                                      return (
+                                          <p className={`text-2xl font-bold ${projected < 0 ? 'text-red-400' : 'text-white'}`}>
+                                            {projected}
+                                          </p>
+                                      );
+                                  })()}
+                                  <p className="text-xs text-gray-500">créditos</p>
+                                </div>
+                              </div>
+
+                              {/* Info about negative balance */}
+                              <div className="mt-3 p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                                <p className="text-xs text-blue-300">
+                                  ℹ️ O sistema permite saldo negativo (ciclo único). O valor consumido será deduzido do saldo atual.
+                                </p>
+                              </div>
+
+                              {formData.quantity > 0 && (
+                                <div className="mt-3 p-2 rounded-lg bg-white/10 border border-white/20">
+                                  <p className="text-xs text-gray-300">
+                                    Consumirá <span className="font-semibold text-white">{formData.quantity}</span> unidades
+                                    = <span className="font-semibold text-white">{formatCurrency(wallet.unitPrice * formData.quantity)}</span>
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                        );
+                    })()
+                  ) : (
+                      <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-center">
+                        <p className="text-sm text-red-300">Nenhuma carteira ativa encontrada para esta transportadora.</p>
                       </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-                          <p className="text-xs text-gray-400 mb-1">Saldo Atual</p>
-                          <p className="text-2xl font-bold text-white">
-                            {selectedPackage.availableQuantity}
-                          </p>
-                          <p className="text-xs text-gray-500">unidades disponíveis</p>
-                        </div>
-
-                        <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-                          <p className="text-xs text-gray-400 mb-1">Após Consumo</p>
-                          <p className="text-2xl font-bold text-white">
-                            {Math.max(0, selectedPackage.availableQuantity - formData.quantity)}
-                          </p>
-                          <p className="text-xs text-gray-500">unidades restantes</p>
-                        </div>
-                      </div>
-
-                      {formData.quantity > selectedPackage.availableQuantity && (
-                        <div className="mt-3 p-2 rounded-lg bg-red-500/20 border border-red-500/40">
-                          <p className="text-xs text-red-300">
-                            ⚠️ Quantidade solicitada ({formData.quantity}) excede o saldo disponível ({selectedPackage.availableQuantity})
-                          </p>
-                        </div>
-                      )}
-
-                      {formData.quantity > 0 && formData.quantity <= selectedPackage.availableQuantity && (
-                        <div className="mt-3 p-2 rounded-lg bg-white/10 border border-white/20">
-                          <p className="text-xs text-gray-300">
-                            Consumirá <span className="font-semibold text-white">{formData.quantity}</span> unidades = <span className="font-semibold text-white">{formatCurrency(selectedPackage.unitPrice * formData.quantity)}</span>
-                          </p>
-                        </div>
-                      )}
-                    </div>
                   )}
                 </div>
               )}

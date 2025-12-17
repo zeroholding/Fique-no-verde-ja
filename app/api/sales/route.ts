@@ -119,15 +119,32 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const attendantId = searchParams.get("attendantId");
     const user = await authenticateUser(request);
-    // Escopo: atendente vÃƒÆ’Ã‚Âª apenas suas vendas; admin vÃƒÆ’Ã‚Âª todas ou filtra por atendente se fornecido
-    let whereClause = "";
+    const search = searchParams.get("search");
+    
+    // Build WHERE clause dynamically
+    const conditions: string[] = [];
     const queryParams: any[] = [];
+
+    // Filter by Attendant (Role based)
     if (user.is_admin && attendantId) {
-      whereClause = "WHERE s.attendant_id = $1";
+      conditions.push(`s.attendant_id = $${queryParams.length + 1}`);
       queryParams.push(attendantId);
     } else if (!user.is_admin) {
-      whereClause = "WHERE s.attendant_id = $1";
+      conditions.push(`s.attendant_id = $${queryParams.length + 1}`);
       queryParams.push(user.id);
+    }
+
+    // Filter by Search (Name or ID)
+    if (search) {
+       const searchParamIndex = queryParams.length + 1;
+       // Cast UUID to text for search
+       conditions.push(`(c.name ILIKE $${searchParamIndex} OR s.id::text ILIKE $${searchParamIndex})`);
+       queryParams.push(`%${search.trim()}%`);
+    }
+
+    let whereClause = "";
+    if (conditions.length > 0) {
+        whereClause = "WHERE " + conditions.join(" AND ");
     }
 
 
@@ -864,35 +881,59 @@ export async function POST(request: NextRequest) {
 
 
       if (normalizedSaleType === "02" && serviceId) {
-        // Tipo 02 - VENDA DE PACOTE: Criar pacote para o cliente
+        // Tipo 02 - VENDA DE PACOTE: Unified Wallet Logic (Upsert)
         const firstItem = items[0];
-        const totalQuantity = firstItem.quantity;
+        const totalQuantity = parseInt(firstItem.quantity);
         const totalPaid = finalTotal;
         const unitPricePackage = totalPaid / totalQuantity;
 
-        await query(
-          `INSERT INTO client_packages (
-            client_id,
-            service_id,
-            sale_id,
-
-            initial_quantity,
-
-            consumed_quantity,
-
-            available_quantity,
-
-            unit_price,
-
-            total_paid,
-
-            is_active
-
-          ) VALUES ($1, $2, $3, $4, 0, $4, $5, $6, true)`,
-          [carrierId, serviceId, saleId, totalQuantity, unitPricePackage, totalPaid]
+        // 1. Check if an active wallet exists
+        const walletResult = await query(
+          `SELECT id, initial_quantity, available_quantity, total_paid FROM client_packages 
+           WHERE client_id = $1 AND service_id = $2 AND is_active = true`,
+          [carrierId, serviceId]
         );
 
-        console.log(`Pacote criado: ${totalQuantity} creditos para cliente ${carrierId}`);
+        if (walletResult.rows.length > 0) {
+           // UPDATE (Renovation)
+           const wallet = walletResult.rows[0];
+           const newInitial = Number(wallet.initial_quantity) + totalQuantity;
+           const newAvailable = Number(wallet.available_quantity) + totalQuantity;
+           const newTotalPaid = Number(wallet.total_paid) + totalPaid;
+           
+           // Calculate new weighted average unit price (Lifetime average)
+           const newUnitPrice = newTotalPaid / (newInitial > 0 ? newInitial : 1);
+
+           await query(
+             `UPDATE client_packages SET
+                initial_quantity = $1,
+                available_quantity = $2,
+                total_paid = $3,
+                unit_price = $4,
+                updated_at = NOW()
+              WHERE id = $5`,
+             [newInitial, newAvailable, newTotalPaid, newUnitPrice, wallet.id]
+           );
+           console.log(`Pacote (Carteira) atualizado: +${totalQuantity} creditos.`);
+
+        } else {
+            // INSERT (New Wallet)
+            await query(
+              `INSERT INTO client_packages (
+                client_id,
+                service_id,
+                sale_id,
+                initial_quantity,
+                consumed_quantity,
+                available_quantity,
+                unit_price,
+                total_paid,
+                is_active
+              ) VALUES ($1, $2, $3, $4, 0, $4, $5, $6, true)`,
+              [carrierId, serviceId, saleId, totalQuantity, unitPricePackage, totalPaid]
+            );
+            console.log(`Pacote criado: ${totalQuantity} creditos para cliente ${carrierId}`);
+        }
       } else if (normalizedSaleType === "03" && packageId) {
         // Tipo 03 - CONSUMO DE PACOTE: Consumir do pacote existente
         const firstItem = items[0];
