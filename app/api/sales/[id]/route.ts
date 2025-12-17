@@ -294,9 +294,8 @@ export async function DELETE(
 
       // 1b. Get Items (Simple Query)
       const itemsResult = await query(
-        `SELECT si.quantity, si.product_id, p.service_id 
+        `SELECT si.quantity, si.product_id 
          FROM sale_items si
-         LEFT JOIN products p ON si.product_id = p.id
          WHERE si.sale_id = $1`,
         [saleId]
       );
@@ -330,9 +329,11 @@ export async function DELETE(
           const creditsByService: Record<string, number> = {};
           
           for (const item of items) {
-              if (item.service_id) {
+              // Safe check as service_id might be missing from query now
+              const serviceId = (item as any).service_id;
+              if (serviceId) {
                   const qty = Number(item.quantity || 0);
-                  creditsByService[item.service_id] = (creditsByService[item.service_id] || 0) + qty;
+                  creditsByService[serviceId] = (creditsByService[serviceId] || 0) + qty;
               }
           }
 
