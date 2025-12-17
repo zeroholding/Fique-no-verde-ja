@@ -380,7 +380,7 @@ export async function DELETE(
       // Logic from before (re-using genesisPackageResult)
       if (genesisPackageResult.rowCount > 0) {
         // Verificar se ALGUM pacote ja foi consumido
-        const usedPackages = packageResult.rows.filter((pkg: any) => pkg.consumed_quantity > 0);
+        const usedPackages = genesisPackageResult.rows.filter((pkg: any) => pkg.consumed_quantity > 0);
         
         if (usedPackages.length > 0) {
           await query("ROLLBACK");
@@ -391,7 +391,7 @@ export async function DELETE(
         }
 
         // Se nenhum foi consumido, deletar TODOS os pacotes (Genesis)
-        for (const pkg of packageResult.rows) {
+        for (const pkg of genesisPackageResult.rows) {
             await query("DELETE FROM client_packages WHERE id = $1", [pkg.id]);
         }
       }
