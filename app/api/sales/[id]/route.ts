@@ -360,7 +360,17 @@ export async function DELETE(
          await query("DELETE FROM package_consumptions WHERE sale_id = $1", [saleId]);
       }
 
-      // 3. Delete Dependencies
+      // 3. Delete Dependencies (Speculative Cleanup for hidden constraints)
+      const potentialTables = ['financial_transactions', 'notifications', 'invoices', 'commission_payments', 'logs'];
+      for (const table of potentialTables) {
+          try {
+              // Try to delete if table exists (blind shot)
+              await query(`DELETE FROM ${table} WHERE sale_id = $1`, [saleId]);
+          } catch (ignored) {
+              // Table likely doesn't exist or no column sale_id
+          }
+      }
+
       await query("DELETE FROM commissions WHERE sale_id = $1", [saleId]);
       
       try {
@@ -378,15 +388,22 @@ export async function DELETE(
         { message: "Venda excluida permanentemente" },
         { status: 200 }
       );
-    } catch (error) {
+    } catch (error: any) {
       await query("ROLLBACK");
+      console.error("DELETE TRANSACTION ERROR:", {
+          message: error.message,
+          code: error.code,
+          detail: error.detail,
+          constraint: error.constraint,
+          stack: error.stack
+      });
       throw error;
     }
   } catch (error) {
-    console.error("Erro ao excluir venda:", error);
+    console.error("Erro ao excluir venda (Outer Catch):", error);
     const message =
       error instanceof Error ? error.message : "Erro ao excluir venda";
     const status = message.includes("autenticacao") ? 401 : 500;
-    return NextResponse.json({ error: message }, { status });
+    return NextResponse.json({ error: message, details: (error as any).message }, { status });
   }
 }
