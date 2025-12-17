@@ -150,9 +150,23 @@ export default function PackagesIndexPage() {
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3">
+                <div className={`rounded-lg border p-3 ${
+                  (s.balanceQuantityCurrent ?? 0) < 0 
+                    ? "bg-red-500/10 border-red-500/20" 
+                    : (s.balanceQuantityCurrent ?? 0) === 0 
+                      ? "bg-yellow-500/10 border-yellow-500/20" 
+                      : "bg-emerald-500/10 border-emerald-500/20"
+                }`}>
                   <p className="text-xs text-gray-300">Saldo (qtde)</p>
-                  <p className="text-xl font-bold text-emerald-200">{s.balanceQuantityCurrent ?? 0}</p>
+                  <p className={`text-xl font-bold ${
+                    (s.balanceQuantityCurrent ?? 0) < 0 
+                      ? "text-red-400" 
+                      : (s.balanceQuantityCurrent ?? 0) === 0 
+                        ? "text-yellow-400" 
+                        : "text-emerald-200"
+                  }`}>
+                    {s.balanceQuantityCurrent ?? 0}
+                  </p>
                 </div>
                 <div className="rounded-lg bg-white/5 border border-white/10 p-3">
                   <p className="text-xs text-gray-300">Saldo financeiro</p>
