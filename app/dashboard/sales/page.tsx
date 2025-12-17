@@ -1925,7 +1925,6 @@ export default function SalesPage() {
                             // Using timeout to avoid render-cycle issues or just render info directly
                              setTimeout(() => {
                                 setFormData(prev => ({ ...prev, packageId: wallet.id }));
-                                setSelectedPackage(wallet);
                              }, 0);
                         }
 
