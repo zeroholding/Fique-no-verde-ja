@@ -953,9 +953,9 @@ export async function POST(request: NextRequest) {
           throw new Error("Pacote nao pertence ÃƒÆ’Ã‚Â  transportadora selecionada");
         }
 
-        if (pkgRow.available_quantity < quantityToConsume) {
-          throw new Error("Saldo insuficiente no pacote selecionado");
-        }
+        // if (pkgRow.available_quantity < quantityToConsume) {
+        //   throw new Error("Saldo insuficiente no pacote selecionado");
+        // }
 
 
         // Usar a funÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o consume_package para garantir atomicidade
