@@ -276,10 +276,9 @@ export async function DELETE(
 
     await query("BEGIN");
 
-    try {
-      // 1. Get Sale Details (Simple Query)
+      // 1. Get Sale Details (Simple Query - Removed sale_type as it might be missing in production DB)
       const saleResult = await query(
-        `SELECT id, client_id, attendant_id, sale_type, CAST(sale_date AS TEXT) as sale_date FROM sales WHERE id = $1`,
+        `SELECT id, client_id, attendant_id, CAST(sale_date AS TEXT) as sale_date FROM sales WHERE id = $1`,
         [saleId]
       );
 
@@ -304,9 +303,30 @@ export async function DELETE(
       
       const items = itemsResult.rows;
 
+      // 1c. Infer Sale Type based on Relationships
+      // Check if it's Type 03 (Consumption)
+      const consumptionResult = await query(
+          `SELECT package_id, quantity FROM package_consumptions WHERE sale_id = $1`,
+          [saleId]
+      );
+      const isType03 = consumptionResult.rowCount > 0;
+
+      // Check if it's Type 02 (Genesis - Created Package)
+      // We check this later for deletion, but for now we need to know if we should reverse credit addition
+      // We assume if it has items with service_id AND it created a package, it was a Type 02.
+      // But simpler: just check if packages exist with this sale_id
+      const genesisPackageResult = await query(
+        "SELECT id, consumed_quantity FROM client_packages WHERE sale_id = $1",
+        [saleId]
+      );
+      const isType02 = genesisPackageResult.rowCount > 0;
+
+
       // 2. Handle Unified Wallet Reversal
-      if (saleData.sale_type === "02") {
-          // TYPE 02: Package Purchase (Top-up)
+      if (isType02) {
+          // TYPE 02: Package Purchase (Top-up) logic infered
+          console.log("Infered Type 02 (Package Purchase) - Reversing Credits");
+          
           const creditsByService: Record<string, number> = {};
           
           for (const item of items) {
@@ -331,16 +351,11 @@ export async function DELETE(
                  );
               }
           }
-      } else if (saleData.sale_type === "03") {
-          // TYPE 03: Package Consumption
-          // We must REFUND the wallet (Increment balance)
-          // And DELETE existing consumption records
-
-          // 2a. Get consumption details from package_consumptions table (most accurate)
-          const consumptionResult = await query(
-              `SELECT package_id, quantity FROM package_consumptions WHERE sale_id = $1`,
-              [saleId]
-          );
+      } 
+      
+      if (isType03) {
+          // TYPE 03: Package Consumption logic infered
+          console.log("Infered Type 03 (Consumption) - Refunding Wallet");
 
           for (const consumption of consumptionResult.rows) {
               // Refund Client Package
@@ -354,20 +369,16 @@ export async function DELETE(
               );
           }
 
-          // 2b. Delete Consumption Records
+          // Delete Consumption Records
           await query("DELETE FROM package_consumptions WHERE sale_id = $1", [saleId]);
       } else {
-         // Check if this sale had any related package_consumptions (orphan check)
+         // Orphan check for hygiene
          await query("DELETE FROM package_consumptions WHERE sale_id = $1", [saleId]);
       }
 
       // 2.5 Handle Genesis Package Deletion (If this sale CREATED a wallet)
-      const packageResult = await query(
-        "SELECT id, consumed_quantity FROM client_packages WHERE sale_id = $1",
-        [saleId]
-      );
-
-      if (packageResult.rowCount > 0) {
+      // Logic from before (re-using genesisPackageResult)
+      if (genesisPackageResult.rowCount > 0) {
         // Verificar se ALGUM pacote ja foi consumido
         const usedPackages = packageResult.rows.filter((pkg: any) => pkg.consumed_quantity > 0);
         
