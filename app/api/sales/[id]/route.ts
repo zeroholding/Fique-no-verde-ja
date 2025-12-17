@@ -277,14 +277,9 @@ export async function DELETE(
     await query("BEGIN");
 
     try {
-      // 1. Get Sale Details & Items
+      // 1. Get Sale Details (Simple Query)
       const saleResult = await query(
-        `SELECT s.id, s.client_id as carrier_id, s.attendant_id, s.sale_type, 
-                si.quantity, si.product_id, p.service_id
-         FROM sales s
-         LEFT JOIN sale_items si ON s.id = si.sale_id
-         LEFT JOIN products p ON si.product_id = p.id
-         WHERE s.id = $1`,
+        `SELECT id, client_id, attendant_id, sale_type, CAST(sale_date AS TEXT) as sale_date FROM sales WHERE id = $1`,
         [saleId]
       );
 
@@ -296,16 +291,22 @@ export async function DELETE(
         );
       }
 
-      // Group items (assuming items belong to same service/package logic usually)
       const saleData = saleResult.rows[0];
-      const items = saleResult.rows;
+
+      // 1b. Get Items (Simple Query)
+      const itemsResult = await query(
+        `SELECT si.quantity, si.product_id, p.service_id 
+         FROM sale_items si
+         LEFT JOIN products p ON si.product_id = p.id
+         WHERE si.sale_id = $1`,
+        [saleId]
+      );
+      
+      const items = itemsResult.rows;
 
       // 2. Handle Unified Wallet Reversal
       if (saleData.sale_type === "02") {
           // TYPE 02: Package Purchase (Top-up)
-          // We must DECREMENT the wallet balance
-          // Logic: Group items by service_id and decrement respective wallets
-          
           const creditsByService: Record<string, number> = {};
           
           for (const item of items) {
@@ -315,7 +316,7 @@ export async function DELETE(
               }
           }
 
-          const carrierId = saleData.carrier_id;
+          const carrierId = saleData.client_id;
 
           for (const [serviceId, totalCredits] of Object.entries(creditsByService)) {
               if (totalCredits > 0) {
