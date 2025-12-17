@@ -26,7 +26,9 @@ async function run() {
   try {
     console.log("Connecting...");
     
-    const sqlPath = path.resolve(__dirname, '../merge_packages_migration.sql');
+    const args = process.argv.slice(2);
+    const filename = args[0] || 'merge_packages_migration.sql';
+    const sqlPath = path.resolve(__dirname, '..', filename);
     
     if (!fs.existsSync(sqlPath)) {
         console.error("Migration file not found at:", sqlPath);
@@ -38,9 +40,12 @@ async function run() {
     console.log("Executing migration against database...");
 
     // Execute the raw SQL
-    await query(sqlContent);
+    const result = await query(sqlContent);
     
     console.log("Migration executed successfully!");
+    if (result && result.rows) {
+        console.log("Query Result:", JSON.stringify(result.rows, null, 2));
+    }
     console.log("Unified Wallet structure applied.");
 
   } catch (err) {

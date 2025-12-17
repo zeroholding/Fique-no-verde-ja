@@ -277,9 +277,14 @@ export async function DELETE(
     await query("BEGIN");
 
     try {
-      // 1. Verificar se a venda existe e pegar dados basicos
+      // 1. Get Sale Details & Items
       const saleResult = await query(
-        "SELECT id, attendant_id, status FROM sales WHERE id = $1",
+        `SELECT s.id, s.client_id as carrier_id, s.attendant_id, s.sale_type, 
+                si.quantity, si.product_id, p.service_id
+         FROM sales s
+         LEFT JOIN sale_items si ON s.id = si.sale_id
+         LEFT JOIN products p ON si.product_id = p.id
+         WHERE s.id = $1`,
         [saleId]
       );
 
@@ -291,46 +296,80 @@ export async function DELETE(
         );
       }
 
-      // 2. Verificar se a venda gerou pacote (Compra de Pacote)
-      const packageResult = await query(
-        "SELECT id, consumed_quantity FROM client_packages WHERE sale_id = $1",
-        [saleId]
-      );
+      // Group items (assuming items belong to same service/package logic usually)
+      const saleData = saleResult.rows[0];
+      const items = saleResult.rows;
 
-      if (packageResult.rowCount > 0) {
-        const pkg = packageResult.rows[0];
-        // Se o pacote gerado ja foi consumido, nao permitir exclusao
-        if (pkg.consumed_quantity > 0) {
-          await query("ROLLBACK");
-          return NextResponse.json(
-            { error: "Nao e possivel excluir esta venda pois o pacote gerado ja foi utilizado. Estorne os consumos primeiro." },
-            { status: 400 }
+      // 2. Handle Unified Wallet Reversal
+      if (saleData.sale_type === "02") {
+          // TYPE 02: Package Purchase (Top-up)
+          // We must DECREMENT the wallet balance
+          // Logic: Group items by service_id and decrement respective wallets
+          
+          const creditsByService: Record<string, number> = {};
+          
+          for (const item of items) {
+              if (item.service_id) {
+                  const qty = Number(item.quantity || 0);
+                  creditsByService[item.service_id] = (creditsByService[item.service_id] || 0) + qty;
+              }
+          }
+
+          const carrierId = saleData.carrier_id;
+
+          for (const [serviceId, totalCredits] of Object.entries(creditsByService)) {
+              if (totalCredits > 0) {
+                 // Decrement Wallet for this Service
+                 await query(
+                     `UPDATE client_packages 
+                      SET available_quantity = available_quantity - $1,
+                          initial_quantity = initial_quantity - $1,
+                          updated_at = NOW()
+                      WHERE client_id = $2 AND service_id = $3 AND is_active = true`,
+                     [totalCredits, carrierId, serviceId]
+                 );
+              }
+          }
+      } else if (saleData.sale_type === "03") {
+          // TYPE 03: Package Consumption
+          // We must REFUND the wallet (Increment balance)
+          // And DELETE existing consumption records
+
+          // 2a. Get consumption details from package_consumptions table (most accurate)
+          const consumptionResult = await query(
+              `SELECT package_id, quantity FROM package_consumptions WHERE sale_id = $1`,
+              [saleId]
           );
-        }
-        // Se nao foi consumido, deletar o pacote
-        await query("DELETE FROM client_packages WHERE id = $1", [pkg.id]);
+
+          for (const consumption of consumptionResult.rows) {
+              // Refund Client Package
+              await query(
+                  `UPDATE client_packages
+                   SET available_quantity = available_quantity + $1,
+                       consumed_quantity = consumed_quantity - $1,
+                       updated_at = NOW()
+                   WHERE id = $2`,
+                  [consumption.quantity, consumption.package_id]
+              );
+          }
+
+          // 2b. Delete Consumption Records
+          await query("DELETE FROM package_consumptions WHERE sale_id = $1", [saleId]);
+      } else {
+         // Check if this sale had any related package_consumptions (orphan check)
+         await query("DELETE FROM package_consumptions WHERE sale_id = $1", [saleId]);
       }
 
-      // 3. Verificar se a venda foi um Consumo de Pacote
-      // Se sim, estornar o consumo para devolver o saldo ao pacote original
-      try {
-        await query("SELECT refund_package_consumption($1)", [saleId]);
-      } catch (refundError) {
-        // Ignorar erro se nao houver consumo (funcao pode nao existir ou nao ter nada pra estornar, mas refund_package_consumption costuma ser safe)
-        console.log("Info: Tentativa de estorno de consumo retornou:", refundError);
-      }
-
-      // 4. Deletar registros dependentes
+      // 3. Delete Dependencies
       await query("DELETE FROM commissions WHERE sale_id = $1", [saleId]);
       
-      // Tentar deletar refunds se a tabela existir (tratamento de erro silencioso se nao existir)
       try {
         await query("DELETE FROM sale_refunds WHERE sale_id = $1", [saleId]);
       } catch (e) { /* ignore */ }
       
       await query("DELETE FROM sale_items WHERE sale_id = $1", [saleId]);
 
-      // 5. Deletar a venda
+      // 4. Delete Sale
       await query("DELETE FROM sales WHERE id = $1", [saleId]);
 
       await query("COMMIT");
