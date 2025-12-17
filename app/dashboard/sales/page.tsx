@@ -953,10 +953,11 @@ export default function SalesPage() {
       success("Venda excluida permanentemente!");
       setDeleteTarget(null);
       await fetchSales();
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Erro ao excluir venda";
-      error(message);
+    } catch (err: any) {
+      console.error("Erro ao excluir:", err);
+      // [DEBUG] Show detailed error to user
+      const message = err instanceof Error ? err.message : "Erro desconhecido";
+      error(`FALHA AO EXCLUIR: ${message}`);
     } finally {
       setProcessing(false);
     }

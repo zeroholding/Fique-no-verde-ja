@@ -423,11 +423,22 @@ export async function DELETE(
       });
       throw error;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro ao excluir venda (Outer Catch):", error);
-    const message =
-      error instanceof Error ? error.message : "Erro ao excluir venda";
+    const message = error.message || "Erro ao excluir venda";
+    
+    // Construct a detailed error message for the frontend
+    const details = [
+        error.detail,
+        error.constraint ? `Constraint: ${error.constraint}` : null,
+        error.table ? `Table: ${error.table}` : null
+    ].filter(Boolean).join(" | ");
+
     const status = message.includes("autenticacao") ? 401 : 500;
-    return NextResponse.json({ error: message, details: (error as any).message }, { status });
+    
+    return NextResponse.json({ 
+        error: message, 
+        details: details || undefined 
+    }, { status });
   }
 }
