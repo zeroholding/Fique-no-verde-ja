@@ -398,7 +398,8 @@ export async function POST(request: NextRequest) {
     const normalizedSaleType: "01" | "02" | "03" = saleType || "01";
     let carrierName: string | null = null; // [NEW] Para armazenar nome da transportadora no Tipo 03
 
-    console.log("[SALES POST] Request body:", {
+    console.log("[SALES POST] FULL BODY:", JSON.stringify(body));
+    console.log("[SALES POST] Parsed logic:", {
       saleType: normalizedSaleType,
       clientId,
       carrierId,
@@ -937,20 +938,26 @@ export async function POST(request: NextRequest) {
       } else if (normalizedSaleType === "03" && packageId) {
         // Tipo 03 - CONSUMO DE PACOTE: Consumir do pacote existente
         const firstItem = items[0];
-        const quantityToConsume = firstItem.quantity;
+        const quantityToConsume = Number(firstItem.quantity);
+
+        console.log(`[CONSUMO DEBUG] Inicando consumo. PackageId: ${packageId}, Qtd: ${quantityToConsume}`);
 
         const packageCheck = await query(
-          `SELECT client_id, available_quantity FROM client_packages WHERE id = $1`,
+          `SELECT id, client_id, available_quantity FROM client_packages WHERE id = $1`,
           [packageId]
         );
 
         if (packageCheck.rowCount === 0) {
+          console.error(`[CONSUMO ERROR] Pacote ${packageId} não encontrado.`);
           throw new Error("Pacote nao encontrado");
         }
 
         const pkgRow = packageCheck.rows[0];
+        console.log(`[CONSUMO DEBUG] Pacote encontrado. ClientId no pacote: ${pkgRow.client_id}, Saldo Atual: ${pkgRow.available_quantity}`);
+
         if (carrierId && pkgRow.client_id !== carrierId) {
-          throw new Error("Pacote nao pertence ÃƒÆ’Ã‚Â  transportadora selecionada");
+          console.error(`[CONSUMO ERROR] Divergencia de transportadora. CarrierId: ${carrierId}, PkgClientId: ${pkgRow.client_id}`);
+          throw new Error("Pacote nao pertence a transportadora selecionada");
         }
 
         // if (pkgRow.available_quantity < quantityToConsume) {
@@ -958,10 +965,11 @@ export async function POST(request: NextRequest) {
         // }
 
 
-        // Usar a funÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o consume_package para garantir atomicidade
+        // Usar a função consume_package para garantir atomicidade
 
         try {
-
+          console.log(`[CONSUMO DEBUG] Chamando consume_package(${packageId}, ${saleId}, ${quantityToConsume})...`);
+          
           await query("SELECT consume_package($1, $2, $3)", [
 
             packageId,
@@ -976,17 +984,17 @@ export async function POST(request: NextRequest) {
 
           console.log(
 
-            `Consumido ${quantityToConsume} unidades do pacote ${packageId}`
+            `[CONSUMO SUCCESS] Consumido ${quantityToConsume} unidades do pacote ${packageId}`
 
           );
 
         } catch (pkgError: any) {
-
+          console.error(`[CONSUMO ERROR] Falha no consume_package:`, pkgError);
           // Se falhar, reverter tudo
 
           throw new Error(
 
-            `Erro ao consumir pacote: ${pkgError.message || "Saldo insuficiente ou pacote invÃƒÆ’Ã‚Â¡lido"}`
+            `Erro ao consumir pacote: ${pkgError.message || "Saldo insuficiente ou pacote inválido"}`
 
           );
 
