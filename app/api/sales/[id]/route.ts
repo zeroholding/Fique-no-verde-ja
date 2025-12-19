@@ -380,23 +380,22 @@ export async function DELETE(
       }
 
       // 2.5 Handle Genesis Package Deletion (If this sale CREATED a wallet)
-      // Logic from before (re-using genesisPackageResult)
+      // We no longer block deletion if used. We just decouple the sale.
       if (genesisPackageResult.rowCount > 0) {
-        // Verificar se ALGUM pacote ja foi consumido
-        const usedPackages = genesisPackageResult.rows.filter((pkg: any) => pkg.consumed_quantity > 0);
-        
-        if (usedPackages.length > 0) {
-          await query("ROLLBACK");
-          return NextResponse.json(
-            { error: "Nao e possivel excluir esta venda pois um ou mais pacotes gerados ja foram utilizados. Estorne os consumos primeiro." },
-            { status: 400 }
-          );
-        }
-
-        // Se nenhum foi consumido, deletar TODOS os pacotes (Genesis)
-        for (const pkg of genesisPackageResult.rows) {
-            await query("DELETE FROM client_packages WHERE id = $1", [pkg.id]);
-        }
+          for (const pkg of genesisPackageResult.rows) {
+              if (Number(pkg.consumed_quantity || 0) > 0) {
+                  // Package has usage, just break the link to allow sale deletion
+                  console.log(`Package ${pkg.id} has usage. NULLing sale_id instead of deleting.`);
+                  await query(
+                      "UPDATE client_packages SET sale_id = NULL WHERE id = $1",
+                      [pkg.id]
+                  );
+              } else {
+                  // No usage, we can safely delete the package entirely
+                  console.log(`Package ${pkg.id} is empty. Deleting entirely.`);
+                  await query("DELETE FROM client_packages WHERE id = $1", [pkg.id]);
+              }
+          }
       }
 
       // 3. Delete Dependencies (Speculative Cleanup for hidden constraints)
