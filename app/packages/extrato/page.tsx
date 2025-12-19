@@ -217,15 +217,26 @@ function PackagesStatementContent() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="rounded-2xl border border-emerald-400/30 bg-emerald-500/5 p-4">
-                <p className="text-xs uppercase text-emerald-200/80 mb-1">Saldo de creditos (qtde)</p>
-                <p className="text-3xl font-bold text-emerald-200">
-                  {summary ? summary.balanceQuantityCurrent ?? 0 : "-"}
-                </p>
-                <p className="text-xs text-emerald-100/70 mt-1">
-                  Saldo financeiro: {formatCurrency(summary?.balanceCurrent ?? 0)}
-                </p>
-              </div>
+              {(() => {
+                const isNegative = (summary?.balanceQuantityCurrent ?? 0) < 0;
+                const cardColor = isNegative 
+                  ? "border-red-500/30 bg-red-500/5 text-red-200" 
+                  : "border-emerald-400/30 bg-emerald-500/5 text-emerald-200";
+                const labelColor = isNegative ? "text-red-200/80" : "text-emerald-200/80";
+                const financeColor = isNegative ? "text-red-100/70" : "text-emerald-100/70";
+
+                return (
+                  <div className={`rounded-2xl border ${cardColor} p-4`}>
+                    <p className={`text-xs uppercase ${labelColor} mb-1`}>Saldo de creditos (qtde)</p>
+                    <p className="text-3xl font-bold">
+                      {summary ? summary.balanceQuantityCurrent ?? 0 : "-"}
+                    </p>
+                    <p className={`text-xs ${financeColor} mt-1`}>
+                      Saldo financeiro: {formatCurrency(summary?.balanceCurrent ?? 0)}
+                    </p>
+                  </div>
+                );
+              })()}
               <div className="rounded-2xl border border-white/15 bg-white/5 p-4">
                 <p className="text-xs uppercase text-gray-300 mb-1">Creditos adquiridos</p>
                 <p className="text-xl font-semibold text-white">
@@ -295,8 +306,12 @@ function PackagesStatementContent() {
                           </td>
                           <td className="px-4 py-3 text-gray-200">{op.serviceName || "-"}</td>
                           <td className="px-4 py-3 text-white">{op.quantity ?? 0}</td>
-                          <td className="px-4 py-3 text-emerald-200">{op.balanceQuantityAfter ?? 0}</td>
-                          <td className="px-4 py-3 text-gray-200">{formatCurrency(op.balanceAfter ?? 0)}</td>
+                          <td className={`px-4 py-3 ${op.balanceQuantityAfter < 0 ? "text-red-400" : "text-emerald-200"}`}>
+                            {op.balanceQuantityAfter ?? 0}
+                          </td>
+                          <td className={`px-4 py-3 ${op.balanceQuantityAfter < 0 ? "text-red-400/80" : "text-gray-200"}`}>
+                            {formatCurrency(op.balanceAfter ?? 0)}
+                          </td>
                           <td className="px-4 py-3 text-gray-200">{op.attendantName}</td>
                           <td className="px-4 py-3 text-right">
                             {op.operationType === "consumo" ? (
