@@ -342,10 +342,12 @@ export async function DELETE(
           for (const [serviceId, totalCredits] of Object.entries(creditsByService)) {
               if (totalCredits > 0) {
                  // Decrement Wallet for this Service
+                 // USER RULE: Negative balances are NOT allowed on deletion. We cap at 0.
+                 console.log(`Decreasing wallet for client ${carrierId}, service ${serviceId} by ${totalCredits} (Capped at 0)`);
                  await query(
                      `UPDATE client_packages 
-                      SET available_quantity = available_quantity - $1,
-                          initial_quantity = initial_quantity - $1,
+                      SET available_quantity = GREATEST(0, available_quantity - $1),
+                          initial_quantity = GREATEST(0, initial_quantity - $1),
                           updated_at = NOW()
                       WHERE client_id = $2 AND service_id = $3 AND is_active = true`,
                      [totalCredits, carrierId, serviceId]
