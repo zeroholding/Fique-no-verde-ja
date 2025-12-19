@@ -98,7 +98,6 @@ export async function GET(request: NextRequest) {
       JOIN clients c ON cp.client_id = c.id
       JOIN services s ON cp.service_id = s.id
       WHERE cp.is_active = true
-        AND cp.available_quantity > 0
         AND (cp.expires_at IS NULL OR cp.expires_at >= CURRENT_DATE)
     `;
 

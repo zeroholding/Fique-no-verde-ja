@@ -155,7 +155,7 @@ export default function SalesPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null); // [NEW] Guarda ID do admin
   const [sortField, setSortField] = useState<"date" | "client" | "total">("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-  const [saleTypeFilter, setSaleTypeFilter] = useState<"" | "common" | "package">("");
+  const [saleTypeFilter, setSaleTypeFilter] = useState<"" | "common" | "package" | "purchase">("");
   const [searchTerm, setSearchTerm] = useState(""); // [NEW] Search State
 
   const hasFilters = useMemo(
@@ -188,8 +188,8 @@ export default function SalesPage() {
       return dow === 0 || dow === 6 ? "non_working" : "weekday";
     };
 
-    // Global Filter: Ocultar Vendas de Pacote (02) conforme solicitado
-    result = result.filter(sale => sale.saleType !== "02");
+    // Global Filter: Ocultar Vendas de Pacote (02) conforme solicitado - REMOVED (User now wants to see it)
+    // result = result.filter(sale => sale.saleType !== "02");
 
     if (startDate) {
       const start = new Date(`${startDate}T00:00:00`);
@@ -219,14 +219,17 @@ export default function SalesPage() {
 
         if (saleTypeFilter === "package") {
           // Inclui apenas Tipo 03 (Consumo) -> "Opcao de Pacote"
-          // O Tipo 02 ja foi removido pelo filtro global acima
           return sale.saleType === "03" || 
                  (sale.saleType === "01" && clientType === "package");
         } 
         
+        if (saleTypeFilter === "purchase") {
+          // Inclui apenas Tipo 02 (Compra/Recarga)
+          return sale.saleType === "02";
+        }
+
         if (saleTypeFilter === "common") {
           // Inclui apenas Tipo 01 (Comum) E que nao seja de transportadora
-          // (Se for transportadora com tipo 01, cai na regra de pacote acima)
           return sale.saleType === "01" && clientType !== "package";
         }
 
@@ -486,7 +489,6 @@ export default function SalesPage() {
         ...prev,
         carrierId: value,
         clientId: prev.saleType === "02" ? value : prev.clientId,
-        packageId: prev.saleType === "03" ? "" : prev.packageId,
       }));
       return;
     }
@@ -494,7 +496,6 @@ export default function SalesPage() {
       setFormData((prev) => ({
         ...prev,
         clientId: value,
-        packageId: prev.saleType === "03" ? "" : prev.packageId,
       }));
       return;
     }
@@ -557,25 +558,13 @@ export default function SalesPage() {
 
   const availablePackages = useMemo(() => {
     if (formData.saleType !== "03" || !formData.carrierId) {
-      console.log("[SALES PAGE] availablePackages: returning empty (saleType or carrierId missing)", {
-        saleType: formData.saleType,
-        carrierId: formData.carrierId,
-      });
       return [];
     }
 
-    console.log("[SALES PAGE] Filtering packages for carrierId:", formData.carrierId);
-    console.log("[SALES PAGE] Total packages:", clientPackages.length);
-
     const filtered = clientPackages.filter((pkg) => {
-      const matches = pkg.clientId === formData.carrierId && pkg.availableQuantity > 0;
-      if (matches) {
-        console.log("[SALES PAGE] Package matches:", pkg);
-      }
-      return matches;
+      // Regra: Pertencer à transportadora (Não filtramos por saldo > 0 pois permitimos saldo negativo)
+      return pkg.clientId === formData.carrierId;
     });
-
-    console.log("[SALES PAGE] Filtered packages:", filtered.length);
 
     return filtered;
   }, [clientPackages, formData.saleType, formData.carrierId]);
@@ -1274,14 +1263,15 @@ export default function SalesPage() {
               <select
                 value={saleTypeFilter}
                 onChange={(e) => {
-                  setSaleTypeFilter(e.target.value as "" | "common" | "package");
+                  setSaleTypeFilter(e.target.value as "" | "common" | "package" | "purchase");
                   setCurrentPage(1);
                 }}
                 className="rounded-xl border border-white/20 bg-black/30 px-3 py-2 text-white text-sm focus:border-white focus:outline-none"
               >
                 <option value="">Todos os tipos</option>
                 <option value="common">Vendas Comuns</option>
-                <option value="package">Vendas de Pacote</option>
+                <option value="purchase">Vendas de Pacote (Recarga)</option>
+                <option value="package">Consumos de Pacote</option>
               </select>
             </div>
           </div>
