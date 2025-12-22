@@ -527,7 +527,7 @@ export default function AdminClientsPage() {
                       </span>
                     )}
                     <span className="px-3 py-1 rounded-full border border-white/20 text-gray-200">
-                      {new Date(client.createdAt).toLocaleDateString("pt-BR")}
+                      {new Date(client.createdAt).toLocaleDateString("pt-BR")} {new Date(client.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </div>
 

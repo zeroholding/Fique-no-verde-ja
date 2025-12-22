@@ -792,7 +792,7 @@ export default function NewSalePage() {
                     required={saleType === "03"}
                     options={availablePackages.map(pkg => ({
                        value: pkg.id,
-                       label: `Pacote iniciado em ${new Date(pkg.createdAt).toLocaleDateString()} - Restam ${pkg.availableQuantity} unidades`
+                       label: `Pacote iniciado em ${new Date(pkg.createdAt).toLocaleDateString("pt-BR")} ${new Date(pkg.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} - Restam ${pkg.availableQuantity} unidades`
                     }))}
                  />
               </div>

@@ -218,7 +218,7 @@ export default function RefundsPage() {
                       <td className="px-6 py-3 text-gray-200">{ref.productName || "-"}</td>
                       <td className="px-6 py-3 text-gray-200">{ref.quantity ?? "-"}</td>
                       <td className="px-6 py-3 text-gray-200">
-                        {new Date(ref.saleDate).toLocaleDateString("pt-BR")}
+                        {formatDateTime(ref.saleDate)}
                       </td>
                       <td className="px-6 py-3 text-gray-200">{formatDateTime(ref.createdAt)}</td>
                       <td className="px-6 py-3 text-yellow-200">{formatCurrency(ref.amount)}</td>

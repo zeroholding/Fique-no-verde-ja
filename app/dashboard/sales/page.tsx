@@ -117,6 +117,16 @@ const paymentMethodLabels: Record<PaymentMethod, string> = {
   boleto: "Boleto",
 };
 
+const formatDateTime = (value: string | Date | undefined) => {
+  if (!value) return "-";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "-";
+  return `${d.toLocaleDateString("pt-BR")} ${d.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  })}`;
+};
+
 export default function SalesPage() {
   const { success, error } = useToast();
   const [sales, setSales] = useState<Sale[]>([]);
@@ -1107,7 +1117,7 @@ export default function SalesPage() {
     if (!editingDateSale || !newSaleDate) return;
     
     // Safety check with user
-    if (!confirm(`Tem certeza? Alterar DATA de ${new Date(editingDateSale.saleDate).toLocaleDateString("pt-BR")} para ${new Date(newSaleDate).toLocaleDateString("pt-BR")} vai recalcular comissões!`)) return;
+    if (!confirm(`Tem certeza? Alterar DATA de ${formatDateTime(editingDateSale.saleDate)} para ${formatDateTime(newSaleDate)} vai recalcular comissões!`)) return;
 
     setUpdatingDate(true);
     try {
@@ -1439,11 +1449,11 @@ export default function SalesPage() {
                   <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
                     <div className="hidden md:block text-right mr-4">
                       <p className="text-2xl font-bold text-emerald-400">{formatCurrency(sale.total)}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{new Date(sale.saleDate).toLocaleDateString("pt-BR")}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{formatDateTime(sale.saleDate)}</p>
                     </div>
 
                     <div className="md:hidden">
-                      <p className="text-xs text-gray-500">{new Date(sale.saleDate).toLocaleDateString("pt-BR")}</p>
+                      <p className="text-xs text-gray-500">{formatDateTime(sale.saleDate)}</p>
                     </div>
 
                     <div className="flex gap-2 md:ml-2">
@@ -2111,7 +2121,7 @@ export default function SalesPage() {
               </div>
               <div className="space-y-2">
                 <p className="text-sm text-gray-400">Data da Venda</p>
-                <p>{new Date(viewingSale.saleDate).toLocaleDateString("pt-BR")}</p>
+                <p>{formatDateTime(viewingSale.saleDate)}</p>
               </div>
               <div className="space-y-2">
                 <p className="text-sm text-gray-400">Status</p>

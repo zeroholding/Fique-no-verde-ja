@@ -365,7 +365,7 @@ export default function CommissionsPage() {
                 {filteredCommissions.map((comm) => (
                   <tr key={comm.id} className="hover:bg-white/5 transition-colors">
                     <td className="px-6 py-3 text-gray-200">
-                      {new Date(comm.referenceDate).toLocaleDateString("pt-BR")}
+                      {formatDateTime(comm.referenceDate)}
                     </td>
                     <td className="px-6 py-3">
                       <a

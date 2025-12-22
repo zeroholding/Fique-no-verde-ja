@@ -156,7 +156,7 @@ function CommissionsPolicies() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-xs">
-                    {new Date(p.created_at).toLocaleDateString("pt-BR")}
+                    {formatDateTime(p.created_at)}
                   </td>
                 </tr>
               ))}
@@ -400,7 +400,7 @@ function CommissionsStatement() {
               {filteredCommissions.map((comm) => (
                 <tr key={comm.id} className="hover:bg-white/5 transition-colors">
                   <td className="px-6 py-3 text-gray-200">
-                    {new Date(comm.referenceDate).toLocaleDateString("pt-BR")}
+                    {formatDateTime(comm.referenceDate)}
                   </td>
                   <td className="px-6 py-3 text-blue-300 font-mono text-xs">
                     <a href={`/dashboard/sales?saleId=${comm.saleId}`} target="_blank" rel="noopener noreferrer" className="hover:underline">

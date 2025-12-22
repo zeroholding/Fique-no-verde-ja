@@ -92,11 +92,21 @@ const formatDate = (dateString: string) => {
   const date = isDateOnly
     ? new Date(`${dateString}T00:00:00`)
     : new Date(dateString);
-  return date.toLocaleDateString("pt-BR", {
+  
+  const dateStr = date.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   });
+
+  if (isDateOnly) return dateStr;
+
+  const timeStr = date.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  return `${dateStr} ${timeStr}`;
 };
 
 const formatServiceLabel = (value: string) => {
