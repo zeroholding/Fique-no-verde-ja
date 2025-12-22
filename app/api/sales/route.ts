@@ -558,6 +558,19 @@ export async function POST(request: NextRequest) {
 
     try {
 
+      // [FIX] Preserve time and handle timezone correctly
+      let finalSaleDate = new Date();
+      if (requestedSaleDate) {
+        try {
+          const [y, m, d] = requestedSaleDate.split("-").map(Number);
+          if (y && m && d) {
+            finalSaleDate.setFullYear(y, m - 1, d);
+          }
+        } catch (e) {
+          console.error("Erro ao processar data personalizada:", e);
+        }
+      }
+
       // Criar a venda
 
       const saleResult = await query(
@@ -576,7 +589,7 @@ export async function POST(request: NextRequest) {
         [
           saleClientId,
           finalAttendantId,
-          requestedSaleDate ? new Date(requestedSaleDate) : new Date(), // [FIX] Use renamed variable
+          finalSaleDate,
           (normalizedSaleType === "03" && carrierName 
               ? `[PCT: ${carrierName}] ${observations || ""}`.trim() 
               : observations || null),

@@ -40,7 +40,14 @@ export async function PUT(
       );
     }
 
-    const newDate = new Date(saleDate);
+    // 1.5 Fetch current sale to preserve time
+    const originalResult = await query("SELECT sale_date FROM sales WHERE id = $1", [saleId]);
+    const originalDate = originalResult.rows[0]?.sale_date ? new Date(originalResult.rows[0].sale_date) : new Date();
+    
+    const [y, m, d] = saleDate.split("-").map(Number);
+    const newDate = new Date(originalDate);
+    newDate.setFullYear(y, m - 1, d);
+
     if (isNaN(newDate.getTime())) {
       return NextResponse.json(
         { error: "Data inválida" },
