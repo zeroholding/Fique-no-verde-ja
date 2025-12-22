@@ -244,7 +244,12 @@ export default function SalesPage() {
     const sorted = [...filteredSales];
     sorted.sort((a, b) => {
       if (sortField === "date") {
-        return (new Date(a.saleDate).getTime() - new Date(b.saleDate).getTime()) * (sortDirection === "asc" ? 1 : -1);
+        const dateDiff = new Date(a.saleDate).getTime() - new Date(b.saleDate).getTime();
+        if (dateDiff === 0) {
+          // Tie-breaker: use createdAt (registration time)
+          return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * (sortDirection === "asc" ? 1 : -1);
+        }
+        return dateDiff * (sortDirection === "asc" ? 1 : -1);
       }
       if (sortField === "client") {
         return a.clientName.localeCompare(b.clientName) * (sortDirection === "asc" ? 1 : -1);

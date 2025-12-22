@@ -178,7 +178,7 @@ export async function GET(request: NextRequest) {
          JOIN clients c ON s.client_id = c.id
          JOIN users u ON s.attendant_id = u.id
          ${whereClause}
-         ORDER BY s.sale_date DESC`,
+         ORDER BY s.sale_date DESC, s.created_at DESC`,
         queryParams
       );
     } catch (err: any) {
@@ -211,7 +211,7 @@ export async function GET(request: NextRequest) {
            JOIN clients c ON s.client_id = c.id
            JOIN users u ON s.attendant_id = u.id
            ${whereClause}
-           ORDER BY s.sale_date DESC`,
+           ORDER BY s.sale_date DESC, s.created_at DESC`,
           queryParams
         );
       } else {
