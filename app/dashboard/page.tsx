@@ -4,6 +4,20 @@ import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/components/Toast";
 import Card from "@/components/Card";
 import { Select } from "@/components/Select";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  ComposedChart,
+  Area,
+  Cell,
+} from "recharts";
 
 type PeriodTotals = {
   salesCount: number;
@@ -130,19 +144,25 @@ export default function Dashboard() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [analysisPeriod, setAnalysisPeriod] = useState("30");
+  const [analysisPeriod, setAnalysisPeriod] = useState("custom");
   const [services, setServices] = useState<ServiceOption[]>([]);
   const [selectedService, setSelectedService] = useState("");
   const [attendants, setAttendants] = useState<Array<{ value: string; label: string }>>([]);
   const [attendantFilter, setAttendantFilter] = useState("");
+  const [dayTypeFilter, setDayTypeFilter] = useState("");
+  const [saleTypeFilter, setSaleTypeFilter] = useState("");
+
   const [customRangeDraft, setCustomRangeDraft] = useState({
-    start: "",
-    end: "",
+    start: new Date().toISOString().slice(0, 10),
+    end: new Date().toISOString().slice(0, 10),
   });
   const [appliedCustomRange, setAppliedCustomRange] = useState<{
     start: string;
     end: string;
-  } | null>(null);
+  } | null>({
+    start: new Date().toISOString().slice(0, 10),
+    end: new Date().toISOString().slice(0, 10),
+  });
   const [showFilters, setShowFilters] = useState(false);
   const periodOptions = [
     { label: "7 dias", value: "7" },
@@ -279,6 +299,12 @@ export default function Dashboard() {
       if (currentUser?.isAdmin && attendantFilter) {
         params.set("attendantId", attendantFilter);
       }
+      if (dayTypeFilter) {
+        params.set("dayType", dayTypeFilter);
+      }
+      if (saleTypeFilter) {
+        params.set("saleType", saleTypeFilter);
+      }
 
       const response = await fetch(`/api/dashboard/metrics?${params.toString()}`, {
         headers: {
@@ -299,7 +325,7 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, [analysisPeriod, appliedCustomRange, selectedService, attendantFilter, error, currentUser?.isAdmin]);
+  }, [analysisPeriod, appliedCustomRange, selectedService, attendantFilter, dayTypeFilter, saleTypeFilter, error, currentUser?.isAdmin]);
 
   const handleSelectPeriod = (value: string) => {
     setAnalysisPeriod(value);
@@ -393,191 +419,145 @@ export default function Dashboard() {
     clientFrequencyData.length > 0
       ? Math.max(...clientFrequencyData.map((item) => item.salesCount || 0))
       : 1;
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="rounded-xl border border-white/10 bg-black/60 p-3 backdrop-blur-md shadow-2xl">
+          <p className="text-sm font-bold text-white mb-2">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <div key={index} className="flex items-center gap-2 text-xs text-gray-300">
+              <div
+                className="h-2 w-2 rounded-full"
+                style={{ backgroundColor: entry.color }}
+              />
+              <span>{entry.name}:</span>
+              <span className="font-mono text-white ml-auto">
+                {entry.name.includes("Receita")
+                  ? formatCurrency(entry.value)
+                  : `${entry.value} ${entry.name.includes("Atendimentos") ? "atend." : "itens"}`}
+              </span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
   const renderClientSpendingChart = () => {
     if (!clientSpendingData.length) {
       return (
-        <p className="text-gray-400 text-sm">
+        <p className="text-gray-400 text-sm text-center py-10">
           Sem dados de clientes no período selecionado.
         </p>
       );
     }
 
-    const axisY = 90;
-    const chartWidth = 80;
-    const chartHeight = 70;
-    const baseX = 10;
-    const slotWidth = chartWidth / clientSpendingData.length;
-    const barWidth = Math.max(slotWidth - 4, 4);
-    const linePoints = clientSpendingData
-      .map((client, index) => {
-        const x = baseX + index * slotWidth + barWidth / 2;
-        const ratio = maxClientValue > 0 ? client.totalValue / maxClientValue : 0;
-        const y = axisY - ratio * chartHeight;
-        return `${x},${y}`;
-      })
-      .join(" ");
+    const data = clientSpendingData.map((c) => ({
+      name: c.clientName,
+      "Remoções Realizadas": c.totalQuantity,
+      "Receita Gerada": c.totalValue,
+    }));
 
     return (
-      <>
-        <div className="relative h-64">
-          <svg
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-            className="absolute inset-0 h-full w-full"
-          >
-            <line
-              x1="10"
-              y1="90"
-              x2="90"
-              y2="90"
-              stroke="rgba(255,255,255,0.1)"
-              strokeWidth="0.8"
+      <div className="h-72 w-full mt-4">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={data} margin={{ top: 20, right: 20, bottom: 20, left: 10 }}>
+            <defs>
+              <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.8} />
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.1} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+            <XAxis
+              dataKey="name"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: "#9ca3af", fontSize: 10 }}
+              interval={0}
             />
-            <line
-              x1="10"
-              y1="20"
-              x2="10"
-              y2="90"
-              stroke="rgba(255,255,255,0.1)"
-              strokeWidth="0.8"
+            <YAxis
+              yAxisId="left"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: "#9ca3af", fontSize: 10 }}
             />
-            {clientSpendingData.map((client, index) => {
-              const barHeight =
-                maxClientQuantity > 0
-                  ? (client.totalQuantity / maxClientQuantity) * chartHeight
-                  : 0;
-              const x =
-                baseX + index * slotWidth + (slotWidth - barWidth) / 2;
-              const y = axisY - barHeight;
-              return (
-                <rect
-                  key={`spending-bar-${client.clientName}-${index}`}
-                  x={x}
-                  y={y}
-                  width={barWidth}
-                  height={barHeight}
-                  rx={1.5}
-                  fill="rgba(59,130,246,0.65)"
-                />
-              );
-            })}
-            {linePoints && (
-              <polyline
-                fill="none"
-                stroke="rgb(16,185,129)"
-                strokeWidth={1.5}
-                points={linePoints}
-              />
-            )}
-            {clientSpendingData.map((client, index) => {
-              const ratio = maxClientValue > 0 ? client.totalValue / maxClientValue : 0;
-              const x = baseX + index * slotWidth + barWidth / 2;
-              const y = axisY - ratio * chartHeight;
-              return (
-                <circle
-                  key={`spending-point-${client.clientName}-${index}`}
-                  cx={x}
-                  cy={y}
-                  r={1.5}
-                  fill="rgb(16,185,129)"
-                  stroke="white"
-                  strokeWidth={0.4}
-                />
-              );
-            })}
-          </svg>
-        </div>
-        <div className="mt-4 space-y-2 text-xs text-gray-400">
-          {clientSpendingData.map((client, index) => (
-            <div
-              key={`spending-legend-${client.clientName}-${index}`}
-              className="flex items-center justify-between gap-4"
-            >
-              <span className="text-white truncate">{client.clientName}</span>
-              <span>
-                {client.totalQuantity} itens · {formatCurrency(client.totalValue)}
-              </span>
-            </div>
-          ))}
-        </div>
-      </>
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: "#9ca3af", fontSize: 10 }}
+            />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.05)" }} />
+            <Bar
+              yAxisId="left"
+              dataKey="Remoções Realizadas"
+              fill="url(#barGradient)"
+              radius={[4, 4, 0, 0]}
+              barSize={30}
+              animationDuration={1500}
+            />
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="Receita Gerada"
+              stroke="#10b981"
+              strokeWidth={3}
+              dot={{ r: 4, fill: "#10b981", strokeWidth: 2, stroke: "#fff" }}
+              activeDot={{ r: 6, strokeWidth: 0 }}
+              animationDuration={2000}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
     );
   };
 
   const renderClientFrequencyChart = () => {
     if (!clientFrequencyData.length) {
       return (
-        <p className="text-gray-400 text-sm">
-          Sem vendas comuns no período selecionado.
+        <p className="text-gray-400 text-sm text-center py-10">
+          Sem atendimentos comuns no período selecionado.
         </p>
       );
     }
 
-    const axisY = 90;
-    const chartWidth = 80;
-    const chartHeight = 70;
-    const baseX = 10;
-    const slotWidth = chartWidth / clientFrequencyData.length;
-    const barWidth = Math.max(slotWidth - 6, 4);
+    const data = clientFrequencyData.map((c) => ({
+      name: c.clientName,
+      Atendimentos: c.salesCount,
+    }));
 
     return (
-      <>
-        <div className="relative h-64">
-          <svg
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-            className="absolute inset-0 h-full w-full"
-          >
-            <line
-              x1="10"
-              y1="90"
-              x2="90"
-              y2="90"
-              stroke="rgba(255,255,255,0.1)"
-              strokeWidth="0.8"
+      <div className="h-72 w-full mt-4">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} margin={{ top: 20, right: 20, bottom: 20, left: 10 }}>
+            <defs>
+              <linearGradient id="freqGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#a855f7" stopOpacity={0.8} />
+                <stop offset="100%" stopColor="#a855f7" stopOpacity={0.1} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+            <XAxis
+              dataKey="name"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: "#9ca3af", fontSize: 10 }}
             />
-            <line
-              x1="10"
-              y1="20"
-              x2="10"
-              y2="90"
-              stroke="rgba(255,255,255,0.1)"
-              strokeWidth="0.8"
+            <YAxis axisLine={false} tickLine={false} tick={{ fill: "#9ca3af", fontSize: 10 }} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.05)" }} />
+            <Bar
+              dataKey="Atendimentos"
+              fill="url(#freqGradient)"
+              radius={[4, 4, 0, 0]}
+              barSize={40}
+              animationDuration={1500}
             />
-            {clientFrequencyData.map((client, index) => {
-              const barHeight =
-                maxFrequency > 0
-                  ? (client.salesCount / maxFrequency) * chartHeight
-                  : 0;
-              const x =
-                baseX + index * slotWidth + (slotWidth - barWidth) / 2;
-              const y = axisY - barHeight;
-              return (
-                <rect
-                  key={`frequency-bar-${client.clientName}-${index}`}
-                  x={x}
-                  y={y}
-                  width={barWidth}
-                  height={barHeight}
-                  rx={1.5}
-                  fill="rgba(168,85,247,0.7)"
-                />
-              );
-            })}
-          </svg>
-        </div>
-        <div className="mt-4 space-y-2 text-xs text-gray-400">
-          {clientFrequencyData.map((client, index) => (
-            <div
-              key={`frequency-legend-${client.clientName}-${index}`}
-              className="flex items-center justify-between gap-4"
-            >
-              <span className="text-white truncate">{client.clientName}</span>
-              <span>{client.salesCount} vendas</span>
-            </div>
-          ))}
-        </div>
-      </>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
     );
   };
 
@@ -719,6 +699,34 @@ export default function Dashboard() {
                 </div>
               )}
 
+              {/* Filtro de Tipo de Dia */}
+              <div className="min-w-[150px]">
+                <Select
+                  value={dayTypeFilter}
+                  onChange={(e: any) => setDayTypeFilter(e.target.value)}
+                  options={[
+                    { value: "", label: "Tipo de Dia: Todos" },
+                    { value: "weekday", label: "Dias Úteis" },
+                    { value: "non_working", label: "Finais de Semana" },
+                  ]}
+                  className="rounded-lg border border-white/20 bg-black/30 px-3 py-1.5 text-xs"
+                />
+              </div>
+
+              {/* Filtro de Tipo de Venda/Atendimento */}
+              <div className="min-w-[180px]">
+                <Select
+                  value={saleTypeFilter}
+                  onChange={(e: any) => setSaleTypeFilter(e.target.value)}
+                  options={[
+                    { value: "", label: "Tipo de Venda: Todos" },
+                    { value: "01", label: "Venda Comum" },
+                    { value: "03", label: "Consumo de Pacote" },
+                  ]}
+                  className="rounded-lg border border-white/20 bg-black/30 px-3 py-1.5 text-xs"
+                />
+              </div>
+
               {/* Separador */}
               <div className="h-6 w-px bg-white/20"></div>
 
@@ -798,7 +806,7 @@ export default function Dashboard() {
           <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-400 mb-1">Faturamento Bruto</p>
+                <p className="text-sm text-gray-400 mb-1">Receita Bruta Gerada</p>
                 <p className="text-3xl font-bold text-white">
                   {formatCurrency(periodTotals?.totalValue ?? 0)}
                 </p>
@@ -848,7 +856,7 @@ export default function Dashboard() {
           <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-400 mb-1">Faturamento Líquido</p>
+                <p className="text-sm text-gray-400 mb-1">Receita Líquida Gerada</p>
                 <p className="text-3xl font-bold text-white">
                   {formatCurrency((periodTotals?.totalValue ?? 0) - (periodTotals?.totalDiscount ?? 0) - refundTotal)}
                 </p>
@@ -871,7 +879,7 @@ export default function Dashboard() {
           <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-400 mb-1">Comissões</p>
+                <p className="text-sm text-gray-400 mb-1">Comissão gerada</p>
                 <p className="text-3xl font-bold text-white">
                   {formatCurrency(periodTotals?.totalCommission ?? 0)}
                 </p>
@@ -894,7 +902,7 @@ export default function Dashboard() {
           <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-400 mb-1">Vendas</p>
+                <p className="text-sm text-gray-400 mb-1">Atendimentos</p>
                 <p className="text-3xl font-bold text-white">
                   {periodTotals?.salesCount ?? 0}
                 </p>
@@ -981,7 +989,7 @@ export default function Dashboard() {
                         <div>
                           <p className="text-white font-medium">{service.displayName}</p>
                           <p className="text-xs text-gray-400">
-                            {service.totalSales} vendas · {service.totalQuantity} unidades
+                            {service.totalSales} atendimentos · {service.totalQuantity} remoções realizadas
                           </p>
                         </div>
                         <p className="text-sm text-gray-200">
@@ -1018,20 +1026,20 @@ export default function Dashboard() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
               <div className="rounded-2xl bg-white/5 border border-white/5 p-4">
-                <p className="text-xs uppercase text-gray-400">Faturamento</p>
+                <p className="text-xs uppercase text-gray-400">Receita Bruta Gerada</p>
                 <p className="text-2xl font-bold text-white mt-2">
                   {formatCurrency(metrics?.attendantPerformance?.totalValue || 0)}
                 </p>
               </div>
               <div className="rounded-2xl bg-white/5 border border-white/5 p-4">
-                <p className="text-xs uppercase text-gray-400">Qtde de vendas</p>
+                <p className="text-xs uppercase text-gray-400">Qtde de atendimentos</p>
                 <p className="text-2xl font-bold text-white mt-2">
                   {metrics?.attendantPerformance?.totalSales || 0}
                 </p>
               </div>
               <div className="rounded-2xl bg-white/5 border border-white/5 p-4">
                 <p className="text-xs uppercase text-gray-400">
-                  Unidades vendidas
+                  Remoções Realizadas
                 </p>
                 <p className="text-2xl font-bold text-white mt-2">
                   {metrics?.attendantPerformance?.totalQuantity || 0}
@@ -1048,7 +1056,7 @@ export default function Dashboard() {
                     <div>
                       <p className="text-white font-medium">{service.displayName}</p>
                       <p className="text-xs text-gray-500">
-                        {service.totalSales} vendas · {service.totalQuantity} unidades
+                        {service.totalSales} atendimentos · {service.totalQuantity} remoções realizadas
                       </p>
                     </div>
                     <p className="text-sm text-white">
@@ -1059,7 +1067,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <p className="text-gray-400 text-sm">
-                Comece registrando novas vendas para ver seus números aqui.
+                Comece registrando novos atendimentos para ver seus números aqui.
               </p>
             )}
           </Card>
@@ -1069,7 +1077,7 @@ export default function Dashboard() {
           {/* Top Serviços */}
           <Card>
             <h2 className="text-xl font-semibold text-white mb-4">
-              Serviços Mais Vendidos
+              Serviços por Atendimento
             </h2>
             {metrics?.topServices && metrics.topServices.length > 0 ? (
               <div className="space-y-3">
@@ -1086,7 +1094,7 @@ export default function Dashboard() {
                         </div>
                         <div>
                           <p className="text-white font-medium">{displayName}</p>
-                          <p className="text-xs text-gray-400">{service.count} vendas</p>
+                          <p className="text-xs text-gray-400">{service.count} atendimentos</p>
                         </div>
                       </div>
                       <p className="text-green-400 font-semibold">
@@ -1106,7 +1114,7 @@ export default function Dashboard() {
           {/* Vendas Recentes */}
           <Card>
             <h2 className="text-xl font-semibold text-white mb-4">
-              Vendas Recentes
+              Atendimentos Recentes
             </h2>
             {metrics?.recentSales && metrics.recentSales.length > 0 ? (
               <div className="space-y-3">
@@ -1131,7 +1139,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <p className="text-gray-400 text-center py-8">
-                Nenhuma venda recente
+                Nenhum atendimento recente
               </p>
             )}
           </Card>
@@ -1154,7 +1162,7 @@ export default function Dashboard() {
             </div>
             <div>
               <p className="text-sm text-gray-300 font-semibold mb-2">
-                Frequência de compras por cliente (vendas comuns)
+                Frequência de compras por cliente (atendimentos comuns)
               </p>
               {renderClientFrequencyChart()}
             </div>
