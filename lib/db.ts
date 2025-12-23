@@ -68,6 +68,8 @@ export async function query<T = any>(text: string, params?: any[]) {
 
         if (param === null || param === undefined) {
           value = 'NULL';
+        } else if (param instanceof Date) {
+          value = `'${param.toISOString()}'`;
         } else if (typeof param === 'string') {
           value = `'${param.replace(/'/g, "''")}'`;
         } else if (typeof param === 'number' || typeof param === 'boolean') {

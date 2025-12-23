@@ -561,13 +561,16 @@ export async function POST(request: NextRequest) {
       // [FIX] Preserve time and handle timezone correctly
       let finalSaleDate = new Date();
       if (requestedSaleDate) {
-        try {
-          const [y, m, d] = requestedSaleDate.split("-").map(Number);
-          if (y && m && d) {
-            finalSaleDate.setFullYear(y, m - 1, d);
+        const parsed = new Date(requestedSaleDate);
+        if (!isNaN(parsed.getTime())) {
+          // Se for uma string de data sem hora (ex: YYYY-MM-DD), parsed terá 00:00:00 UTC.
+          // Se for ISO string completa, terá o horário.
+          // Para garantir que sempre temos o horário atual se for apenas data:
+          if (requestedSaleDate.length <= 10) {
+             const now = new Date();
+             parsed.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
           }
-        } catch (e) {
-          console.error("Erro ao processar data personalizada:", e);
+          finalSaleDate = parsed;
         }
       }
 
@@ -601,7 +604,6 @@ export async function POST(request: NextRequest) {
 
 
       const saleId = saleResult.rows[0].id;
-
       const saleDate = saleResult.rows[0].sale_date;
 
 
@@ -830,7 +832,7 @@ export async function POST(request: NextRequest) {
                 commission_amount,
                 reference_date,
                 status
-              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::DATE, 'a_pagar')`,
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'a_pagar')`,
               [
                 saleId,
                 item.id,
