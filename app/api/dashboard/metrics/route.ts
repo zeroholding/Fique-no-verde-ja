@@ -246,7 +246,7 @@ export async function GET(request: NextRequest) {
 
     // Executamos a busca de IDs base primeiro para evitar colisão de parâmetros em subqueries complexas
     const baseSalesResult = await query(baseFilterQuery, baseFilters.params);
-    const saleIds = baseSalesResult.rows.map(r => r.id);
+    const saleIds = baseSalesResult.rows.map((r: any) => r.id);
 
     // Se não houver vendas, retornamos zerado precocemente para evitar queries vazias
     if (saleIds.length === 0) {
