@@ -234,7 +234,6 @@ export async function GET(request: NextRequest) {
       dayType,
       saleType,
     });
-    const commonParams = baseFilters.params;
 
     const baseFilterQuery = `
         SELECT DISTINCT s.id
@@ -245,28 +244,48 @@ export async function GET(request: NextRequest) {
           ${baseFilters.clause}
       `;
 
-    // Recriamos uma versão dos filtros que OBRIGATORIAMENTE olha para os itens
-    // para usar dentro das somas de item_value
+    // Executamos a busca de IDs base primeiro para evitar colisão de parâmetros em subqueries complexas
+    const baseSalesResult = await query(baseFilterQuery, baseFilters.params);
+    const saleIds = baseSalesResult.rows.map(r => r.id);
+
+    // Se não houver vendas, retornamos zerado precocemente para evitar queries vazias
+    if (saleIds.length === 0) {
+      const emptyMetrics = {
+        analysisPeriodDays,
+        periodTotals: { salesCount: 0, totalValue: 0, refundTotal: 0, totalUnits: 0, reclamacoesUnits: 0, atrasosUnits: 0, totalCommission: 0, totalDiscount: 0 },
+        activePackages: 0,
+        pendingSales: 0,
+        topServices: [],
+        recentSales: [],
+        servicePerformance: [],
+        attendantPerformance: { attendantName: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email, totalValue: 0, totalQuantity: 0, totalSales: 0, services: [] },
+        clientSpending: [],
+        clientFrequency: []
+      };
+      return NextResponse.json(emptyMetrics);
+    }
+
+    const saleIdsClause = `(${saleIds.join(',')})`;
+
+    // Agora as queries de agregação usam os IDs fixos, removendo a necessidade de interpolar params de data repetidamente
     const periodTotalsQuery = `
       SELECT
-        (SELECT COUNT(*) FROM (${baseFilterQuery}) as fs) AS sales_count,
+        ${saleIds.length} AS sales_count,
         (
           SELECT COALESCE(SUM(CASE WHEN si.sale_type = '03' THEN si.subtotal ELSE si.total END), 0)
           FROM sale_items si
           JOIN sales s ON si.sale_id = s.id
-          LEFT JOIN services serv ON si.product_id = serv.id
-          WHERE s.status != 'cancelada'
-            ${baseFilters.clause}
+          WHERE s.id IN ${saleIdsClause}
+            ${baseFilters.clause.replace(/s\./g, 's.').replace(/si\./g, 'si.')} 
         )::numeric AS total_value,
-        (SELECT COALESCE(SUM(refund_total), 0) FROM sales WHERE id IN (${baseFilterQuery}))::numeric AS total_refund,
-        (SELECT COALESCE(SUM(commission_amount), 0) FROM sales WHERE id IN (${baseFilterQuery}))::numeric AS total_commission,
-        (SELECT COALESCE(SUM(total_discount), 0) FROM sales WHERE id IN (${baseFilterQuery}))::numeric AS total_discount,
+        (SELECT COALESCE(SUM(refund_total), 0) FROM sales WHERE id IN ${saleIdsClause})::numeric AS total_refund,
+        (SELECT COALESCE(SUM(commission_amount), 0) FROM sales WHERE id IN ${saleIdsClause})::numeric AS total_commission,
+        (SELECT COALESCE(SUM(total_discount), 0) FROM sales WHERE id IN ${saleIdsClause})::numeric AS total_discount,
         (
           SELECT COALESCE(SUM(si.quantity), 0)
           FROM sale_items si
           JOIN sales s ON si.sale_id = s.id
-          LEFT JOIN services serv ON si.product_id = serv.id
-          WHERE s.status != 'cancelada'
+          WHERE s.id IN ${saleIdsClause}
             ${baseFilters.clause}
         )::int AS total_units,
         (
@@ -274,7 +293,7 @@ export async function GET(request: NextRequest) {
           FROM sale_items si
           JOIN sales s ON si.sale_id = s.id
           LEFT JOIN services serv ON si.product_id = serv.id
-          WHERE s.status != 'cancelada'
+          WHERE s.id IN ${saleIdsClause}
             AND (${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE 'reclam%')
             ${baseFilters.clause}
         )::int AS reclamacoes_units,
@@ -283,7 +302,7 @@ export async function GET(request: NextRequest) {
           FROM sale_items si
           JOIN sales s ON si.sale_id = s.id
           LEFT JOIN services serv ON si.product_id = serv.id
-          WHERE s.status != 'cancelada'
+          WHERE s.id IN ${saleIdsClause}
             AND (${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE 'atras%')
             ${baseFilters.clause}
         )::int AS atrasos_units
@@ -470,14 +489,14 @@ export async function GET(request: NextRequest) {
       clientFrequencyResult,
       attendantPerformanceResult,
     ] = await Promise.all([
-      query(periodTotalsQuery, commonParams),
+      query(periodTotalsQuery, baseFilters.params),
       query(pendingQuery, pendingFilters.params),
       query(packagesQuery, packagesFilters.params),
-      query(topServicesQuery, commonParams),
-      query(recentSalesQuery, commonParams),
-      query(servicePerformanceQuery, commonParams),
-      query(clientSpendingQuery, commonParams),
-      query(clientFrequencyQuery, commonParams),
+      query(topServicesQuery, baseFilters.params),
+      query(recentSalesQuery, baseFilters.params),
+      query(servicePerformanceQuery, baseFilters.params),
+      query(clientSpendingQuery, baseFilters.params),
+      query(clientFrequencyQuery, baseFilters.params),
       query(attendantPerformanceQuery, attendantPerformanceFilters.params),
     ]);
 
