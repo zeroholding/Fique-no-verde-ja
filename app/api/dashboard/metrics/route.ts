@@ -265,7 +265,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(emptyMetrics);
     }
 
-    const saleIdsClause = `(${saleIds.join(',')})`;
+    const saleIdsClause = `(${saleIds.map((id: string) => `'${id}'`).join(',')})`;
+
+    // Filtro específico para ITENS (como saleType e serviceName) que deve acompanhar a soma
+    const itemLevelFilters = buildFilters({
+      includeService: true,
+      saleType,
+      includePeriod: false,      // Não precisa, já temos os IDs
+      applyUserFilter: false,    // Não precisa, já temos os IDs
+      includeDayType: false,     // Não precisa, já temos os IDs
+    });
 
     // Agora as queries de agregação usam os IDs fixos, removendo a necessidade de interpolar params de data repetidamente
     const periodTotalsQuery = `
@@ -275,8 +284,9 @@ export async function GET(request: NextRequest) {
           SELECT COALESCE(SUM(CASE WHEN si.sale_type = '03' THEN si.subtotal ELSE si.total END), 0)
           FROM sale_items si
           JOIN sales s ON si.sale_id = s.id
+          LEFT JOIN services serv ON si.product_id = serv.id
           WHERE s.id IN ${saleIdsClause}
-            ${baseFilters.clause.replace(/s\./g, 's.').replace(/si\./g, 'si.')} 
+            ${itemLevelFilters.clause}
         )::numeric AS total_value,
         (SELECT COALESCE(SUM(refund_total), 0) FROM sales WHERE id IN ${saleIdsClause})::numeric AS total_refund,
         (SELECT COALESCE(SUM(commission_amount), 0) FROM sales WHERE id IN ${saleIdsClause})::numeric AS total_commission,
@@ -285,8 +295,9 @@ export async function GET(request: NextRequest) {
           SELECT COALESCE(SUM(si.quantity), 0)
           FROM sale_items si
           JOIN sales s ON si.sale_id = s.id
+          LEFT JOIN services serv ON si.product_id = serv.id
           WHERE s.id IN ${saleIdsClause}
-            ${baseFilters.clause}
+            ${itemLevelFilters.clause}
         )::int AS total_units,
         (
           SELECT COALESCE(SUM(si.quantity), 0)
@@ -295,7 +306,7 @@ export async function GET(request: NextRequest) {
           LEFT JOIN services serv ON si.product_id = serv.id
           WHERE s.id IN ${saleIdsClause}
             AND (${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE 'reclam%')
-            ${baseFilters.clause}
+            ${itemLevelFilters.clause}
         )::int AS reclamacoes_units,
         (
           SELECT COALESCE(SUM(si.quantity), 0)
@@ -304,7 +315,7 @@ export async function GET(request: NextRequest) {
           LEFT JOIN services serv ON si.product_id = serv.id
           WHERE s.id IN ${saleIdsClause}
             AND (${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE 'atras%')
-            ${baseFilters.clause}
+            ${itemLevelFilters.clause}
         )::int AS atrasos_units
     `;
 
@@ -358,8 +369,8 @@ export async function GET(request: NextRequest) {
       FROM sales s
       LEFT JOIN sale_items si ON si.sale_id = s.id
       LEFT JOIN services serv ON si.product_id = serv.id
-      WHERE s.status != 'cancelada'
-        ${baseFilters.clause}
+      WHERE s.id IN ${saleIdsClause}
+        ${itemLevelFilters.clause}
       GROUP BY 1
       ORDER BY sale_count DESC, total_revenue DESC
       LIMIT 5
@@ -375,9 +386,7 @@ export async function GET(request: NextRequest) {
       FROM sales s
       JOIN clients c ON s.client_id = c.id
       LEFT JOIN sale_items si ON si.sale_id = s.id
-      LEFT JOIN services serv ON si.product_id = serv.id
-      WHERE s.status != 'cancelada'
-        ${baseFilters.clause}
+      WHERE s.id IN ${saleIdsClause}
       GROUP BY s.id
       ORDER BY MAX(s.sale_date) DESC, MAX(s.created_at) DESC
       LIMIT 5
@@ -399,8 +408,8 @@ export async function GET(request: NextRequest) {
       FROM sale_items si
       LEFT JOIN sales s ON si.sale_id = s.id
       LEFT JOIN services serv ON si.product_id = serv.id
-      WHERE s.status != 'cancelada'
-        ${baseFilters.clause}
+      WHERE s.id IN ${saleIdsClause}
+        ${itemLevelFilters.clause}
       GROUP BY 1
       ORDER BY total_value DESC
       LIMIT 6
@@ -415,8 +424,8 @@ export async function GET(request: NextRequest) {
       LEFT JOIN sale_items si ON si.sale_id = s.id
       JOIN clients c ON s.client_id = c.id
       LEFT JOIN services serv ON si.product_id = serv.id
-      WHERE s.status != 'cancelada'
-        ${baseFilters.clause}
+      WHERE s.id IN ${saleIdsClause}
+        ${itemLevelFilters.clause}
       GROUP BY c.id, c.name
       ORDER BY total_value DESC
       LIMIT 6
@@ -430,8 +439,8 @@ export async function GET(request: NextRequest) {
       LEFT JOIN sale_items si ON si.sale_id = s.id
       JOIN clients c ON s.client_id = c.id
       LEFT JOIN services serv ON si.product_id = serv.id
-      WHERE s.status != 'cancelada'
-        ${baseFilters.clause}
+      WHERE s.id IN ${saleIdsClause}
+        ${itemLevelFilters.clause}
         AND NOT EXISTS (
           SELECT 1 FROM client_packages cp WHERE cp.sale_id = s.id
         )
@@ -489,14 +498,14 @@ export async function GET(request: NextRequest) {
       clientFrequencyResult,
       attendantPerformanceResult,
     ] = await Promise.all([
-      query(periodTotalsQuery, baseFilters.params),
+      query(periodTotalsQuery, itemLevelFilters.params),
       query(pendingQuery, pendingFilters.params),
       query(packagesQuery, packagesFilters.params),
-      query(topServicesQuery, baseFilters.params),
-      query(recentSalesQuery, baseFilters.params),
-      query(servicePerformanceQuery, baseFilters.params),
-      query(clientSpendingQuery, baseFilters.params),
-      query(clientFrequencyQuery, baseFilters.params),
+      query(topServicesQuery, itemLevelFilters.params),
+      query(recentSalesQuery, []),
+      query(servicePerformanceQuery, itemLevelFilters.params),
+      query(clientSpendingQuery, itemLevelFilters.params),
+      query(clientFrequencyQuery, itemLevelFilters.params),
       query(attendantPerformanceQuery, attendantPerformanceFilters.params),
     ]);
 
