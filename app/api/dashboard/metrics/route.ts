@@ -151,25 +151,29 @@ export async function GET(request: NextRequest) {
       const clauses: string[] = [];
       const params = customParams;
 
+      // Importante: paramOffset deve refletir QUANTOS parâmetros já existem FORA do array params
+      // Se params já vem preenchido, o $N deve considerar params.length + paramOffset
+      const getNextIdx = () => params.length + 1 + paramOffset;
+
       if (applyUserFilter) {
         if (!user.is_admin) {
-          clauses.push(`${saleAlias}.attendant_id = $${params.length + 1 + paramOffset}`);
+          clauses.push(`${saleAlias}.attendant_id = $${getNextIdx()}`);
           params.push(user.id);
         } else if (adminAttendantId) {
-          clauses.push(`${saleAlias}.attendant_id = $${params.length + 1 + paramOffset}`);
+          clauses.push(`${saleAlias}.attendant_id = $${getNextIdx()}`);
           params.push(adminAttendantId);
         }
       }
 
       if (includePeriod) {
         if (useCustomRange && startDate && endDate) {
-          clauses.push(`${saleAlias}.sale_date::date >= $${params.length + 1 + paramOffset}::date`);
+          clauses.push(`${saleAlias}.sale_date::date >= $${getNextIdx()}::date`);
           params.push(startDate);
-          clauses.push(`${saleAlias}.sale_date::date <= $${params.length + 1 + paramOffset}::date`);
+          clauses.push(`${saleAlias}.sale_date::date <= $${getNextIdx()}::date`);
           params.push(endDate);
         } else {
           clauses.push(
-            `${saleAlias}.sale_date >= CURRENT_DATE - $${params.length + 1 + paramOffset} * INTERVAL '1 day'`,
+            `${saleAlias}.sale_date >= CURRENT_DATE - $${getNextIdx()} * INTERVAL '1 day'`,
           );
           params.push(periodDays);
         }
@@ -179,7 +183,7 @@ export async function GET(request: NextRequest) {
         const expr = normalizeServiceSql(
           `COALESCE(${serviceAlias}.name, ${saleItemAlias}.product_name)`,
         );
-        clauses.push(`${expr} = $${params.length + 1 + paramOffset}`);
+        clauses.push(`${expr} = $${getNextIdx()}`);
         params.push(normalizedServiceName);
       }
 
@@ -187,7 +191,7 @@ export async function GET(request: NextRequest) {
         if (saleType === "common") {
           clauses.push(`${saleItemAlias}.sale_type != '03'`);
         } else {
-          clauses.push(`${saleItemAlias}.sale_type = $${params.length + 1 + paramOffset}`);
+          clauses.push(`${saleItemAlias}.sale_type = $${getNextIdx()}`);
           params.push(saleType);
         }
       }
@@ -223,15 +227,14 @@ export async function GET(request: NextRequest) {
       console.warn("Error checking for client_package_consumptions table:", err);
     }
 
-    const commonParams: any[] = [];
     const baseFilters = buildFilters({
       includePeriod: true,
       includeService: true,
       adminAttendantId,
       dayType,
       saleType,
-      customParams: commonParams
     });
+    const commonParams = baseFilters.params;
 
     const baseFilterQuery = `
         SELECT DISTINCT s.id
@@ -292,7 +295,6 @@ export async function GET(request: NextRequest) {
       adminAttendantId,
       dayType,
       saleType,
-      customParams: commonParams
     });
 
     const pendingQuery = `
@@ -312,7 +314,6 @@ export async function GET(request: NextRequest) {
       adminAttendantId,
       dayType,
       saleType,
-      customParams: commonParams
     });
 
     const packagesQuery = `
@@ -470,14 +471,14 @@ export async function GET(request: NextRequest) {
       attendantPerformanceResult,
     ] = await Promise.all([
       query(periodTotalsQuery, commonParams),
-      query(pendingQuery, commonParams),
-      query(packagesQuery, commonParams),
+      query(pendingQuery, pendingFilters.params),
+      query(packagesQuery, packagesFilters.params),
       query(topServicesQuery, commonParams),
       query(recentSalesQuery, commonParams),
       query(servicePerformanceQuery, commonParams),
       query(clientSpendingQuery, commonParams),
       query(clientFrequencyQuery, commonParams),
-      query(attendantPerformanceQuery, attendantSpecificParams),
+      query(attendantPerformanceQuery, attendantPerformanceFilters.params),
     ]);
 
     const pendingSales = Number(pendingResult.rows[0]?.count ?? 0);
