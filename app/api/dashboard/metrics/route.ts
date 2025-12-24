@@ -151,9 +151,7 @@ export async function GET(request: NextRequest) {
       const clauses: string[] = [];
       const params = customParams;
 
-      // Importante: paramOffset deve refletir QUANTOS parâmetros já existem FORA do array params
-      // Se params já vem preenchido, o $N deve considerar params.length + paramOffset
-      const getNextIdx = () => params.length + 1 + paramOffset;
+      const getNextIdx = () => params.length + 1;
 
       if (applyUserFilter) {
         if (!user.is_admin) {
@@ -457,7 +455,6 @@ export async function GET(request: NextRequest) {
       saleAlias: "s",
       saleItemAlias: "si",
       serviceAlias: "serv",
-      paramOffset: 1,
       adminAttendantId,
       dayType,
       saleType,
