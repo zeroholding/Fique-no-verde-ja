@@ -720,7 +720,7 @@ export default function Dashboard() {
                   onChange={(e: any) => setSaleTypeFilter(e.target.value)}
                   options={[
                     { value: "", label: "Tipo de Venda: Todos" },
-                    { value: "01", label: "Venda Comum" },
+                    { value: "common", label: "Venda Comum" },
                     { value: "03", label: "Consumo de Pacote" },
                   ]}
                   className="rounded-lg border border-white/20 bg-black/30 px-3 py-1.5 text-xs"
@@ -1106,7 +1106,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <p className="text-gray-400 text-center py-8">
-                Nenhum serviço vendido ainda
+                Nenhum serviço realizado ainda
               </p>
             )}
           </Card>
@@ -1162,7 +1162,7 @@ export default function Dashboard() {
             </div>
             <div>
               <p className="text-sm text-gray-300 font-semibold mb-2">
-                Frequência de compras por cliente (atendimentos comuns)
+                Frequência de atendimentos por cliente (atendimentos comuns)
               </p>
               {renderClientFrequencyChart()}
             </div>

@@ -146,9 +146,10 @@ export async function GET(request: NextRequest) {
       saleType = null,
       includeSaleType = true,
       includeDayType = true,
-    }: FilterOptions = {}) => {
+      customParams = [] as any[],
+    }: FilterOptions & { customParams?: any[] } = {}) => {
       const clauses: string[] = [];
-      const params: Array<string | number> = [];
+      const params = customParams;
 
       if (applyUserFilter) {
         if (!user.is_admin) {
@@ -183,8 +184,12 @@ export async function GET(request: NextRequest) {
       }
 
       if (includeSaleType && saleType) {
-        clauses.push(`${saleItemAlias}.sale_type = $${params.length + 1 + paramOffset}`);
-        params.push(saleType);
+        if (saleType === "common") {
+          clauses.push(`${saleItemAlias}.sale_type != '03'`);
+        } else {
+          clauses.push(`${saleItemAlias}.sale_type = $${params.length + 1 + paramOffset}`);
+          params.push(saleType);
+        }
       }
 
       if (includeDayType && dayType) {
@@ -203,14 +208,6 @@ export async function GET(request: NextRequest) {
       "COALESCE(serv.name, si.product_name)",
     );
 
-    const periodTotalsFilters = buildFilters({
-      includePeriod: true,
-      includeService: true,
-      adminAttendantId,
-      dayType,
-      saleType,
-    });
-
     // Verificar se a tabela client_package_consumptions existe
     let hasConsumptionsTable = false;
     try {
@@ -226,23 +223,37 @@ export async function GET(request: NextRequest) {
       console.warn("Error checking for client_package_consumptions table:", err);
     }
 
+    const commonParams: any[] = [];
+    const baseFilters = buildFilters({
+      includePeriod: true,
+      includeService: true,
+      adminAttendantId,
+      dayType,
+      saleType,
+      customParams: commonParams
+    });
+
     const baseFilterQuery = `
         SELECT DISTINCT s.id
         FROM sales s
         LEFT JOIN sale_items si ON si.sale_id = s.id
         LEFT JOIN services serv ON si.product_id = serv.id
-        LEFT JOIN clients c ON s.client_id = c.id
         WHERE s.status != 'cancelada'
-          ${periodTotalsFilters.clause}
+          ${baseFilters.clause}
       `;
 
-const periodTotalsQuery = `
+    // Recriamos uma versão dos filtros que OBRIGATORIAMENTE olha para os itens
+    // para usar dentro das somas de item_value
+    const periodTotalsQuery = `
       SELECT
         (SELECT COUNT(*) FROM (${baseFilterQuery}) as fs) AS sales_count,
         (
           SELECT COALESCE(SUM(CASE WHEN si.sale_type = '03' THEN si.subtotal ELSE si.total END), 0)
           FROM sale_items si
-          WHERE si.sale_id IN (${baseFilterQuery})
+          JOIN sales s ON si.sale_id = s.id
+          LEFT JOIN services serv ON si.product_id = serv.id
+          WHERE s.status != 'cancelada'
+            ${baseFilters.clause}
         )::numeric AS total_value,
         (SELECT COALESCE(SUM(refund_total), 0) FROM sales WHERE id IN (${baseFilterQuery}))::numeric AS total_refund,
         (SELECT COALESCE(SUM(commission_amount), 0) FROM sales WHERE id IN (${baseFilterQuery}))::numeric AS total_commission,
@@ -250,21 +261,28 @@ const periodTotalsQuery = `
         (
           SELECT COALESCE(SUM(si.quantity), 0)
           FROM sale_items si
-          WHERE si.sale_id IN (${baseFilterQuery})
+          JOIN sales s ON si.sale_id = s.id
+          LEFT JOIN services serv ON si.product_id = serv.id
+          WHERE s.status != 'cancelada'
+            ${baseFilters.clause}
         )::int AS total_units,
         (
           SELECT COALESCE(SUM(si.quantity), 0)
           FROM sale_items si
+          JOIN sales s ON si.sale_id = s.id
           LEFT JOIN services serv ON si.product_id = serv.id
-          WHERE si.sale_id IN (${baseFilterQuery})
-          AND (${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE 'reclam%')
+          WHERE s.status != 'cancelada'
+            AND (${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE 'reclam%')
+            ${baseFilters.clause}
         )::int AS reclamacoes_units,
         (
           SELECT COALESCE(SUM(si.quantity), 0)
           FROM sale_items si
+          JOIN sales s ON si.sale_id = s.id
           LEFT JOIN services serv ON si.product_id = serv.id
-          WHERE si.sale_id IN (${baseFilterQuery})
-          AND (${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE 'atras%')
+          WHERE s.status != 'cancelada'
+            AND (${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE 'atras%')
+            ${baseFilters.clause}
         )::int AS atrasos_units
     `;
 
@@ -274,6 +292,7 @@ const periodTotalsQuery = `
       adminAttendantId,
       dayType,
       saleType,
+      customParams: commonParams
     });
 
     const pendingQuery = `
@@ -293,25 +312,19 @@ const periodTotalsQuery = `
       adminAttendantId,
       dayType,
       saleType,
+      customParams: commonParams
     });
 
     const packagesQuery = `
       SELECT COUNT(*)::int AS count
       FROM client_packages cp
       JOIN sales sp ON cp.sale_id = sp.id
+      LEFT JOIN sale_items si ON si.sale_id = sp.id
       WHERE cp.is_active = true
         AND cp.available_quantity > 0
         AND (cp.expires_at IS NULL OR cp.expires_at >= CURRENT_DATE)
         ${packagesFilters.clause}
     `;
-
-    const topServicesFilters = buildFilters({
-      includePeriod: true,
-      includeService: true,
-      adminAttendantId,
-      dayType,
-      saleType,
-    });
 
     const topServicesQuery = `
       SELECT
@@ -326,45 +339,29 @@ const periodTotalsQuery = `
       LEFT JOIN sale_items si ON si.sale_id = s.id
       LEFT JOIN services serv ON si.product_id = serv.id
       WHERE s.status != 'cancelada'
-        ${topServicesFilters.clause}
+        ${baseFilters.clause}
       GROUP BY 1
       ORDER BY sale_count DESC, total_revenue DESC
       LIMIT 5
     `;
 
-    const recentSalesFilters = buildFilters({
-      includePeriod: true,
-      includeService: true,
-      adminAttendantId,
-      dayType,
-      saleType,
-    });
-
     const recentSalesQuery = `
       SELECT
         s.id,
-        COALESCE(c.name, 'Cliente sem nome') AS client_name,
-        s.total,
-        s.status,
-        s.sale_date
+        MAX(COALESCE(c.name, 'Cliente sem nome')) AS client_name,
+        MAX(s.total) as total,
+        MAX(s.status) as status,
+        MAX(s.sale_date) as sale_date
       FROM sales s
       JOIN clients c ON s.client_id = c.id
       LEFT JOIN sale_items si ON si.sale_id = s.id
       LEFT JOIN services serv ON si.product_id = serv.id
       WHERE s.status != 'cancelada'
-        ${recentSalesFilters.clause}
-      GROUP BY s.id, c.name, s.total, s.status, s.sale_date
-      ORDER BY s.sale_date DESC, s.created_at DESC
+        ${baseFilters.clause}
+      GROUP BY s.id
+      ORDER BY MAX(s.sale_date) DESC, MAX(s.created_at) DESC
       LIMIT 5
     `;
-
-    const servicePerformanceFilters = buildFilters({
-      includePeriod: true,
-      includeService: true,
-      adminAttendantId,
-      dayType,
-      saleType,
-    });
 
     const servicePerformanceQuery = `
       SELECT
@@ -374,11 +371,7 @@ const periodTotalsQuery = `
           'Nao informado'
         ) AS service_name,
         COALESCE(
-          SUM(
-            (CASE WHEN si.sale_type = '03' THEN si.subtotal ELSE si.total END)
-            - COALESCE(s.refund_total, 0)
-              * (si.total / NULLIF((s.total + COALESCE(s.refund_total, 0)), 0))
-          ),
+          SUM(CASE WHEN si.sale_type = '03' THEN si.subtotal ELSE si.total END),
           0
         )::numeric AS total_value,
         COALESCE(SUM(si.quantity), 0)::int AS total_quantity,
@@ -387,19 +380,11 @@ const periodTotalsQuery = `
       LEFT JOIN sales s ON si.sale_id = s.id
       LEFT JOIN services serv ON si.product_id = serv.id
       WHERE s.status != 'cancelada'
-        ${servicePerformanceFilters.clause}
+        ${baseFilters.clause}
       GROUP BY 1
       ORDER BY total_value DESC
       LIMIT 6
     `;
-
-    const clientSpendingFilters = buildFilters({
-      includePeriod: true,
-      includeService: true,
-      adminAttendantId,
-      dayType,
-      saleType,
-    });
 
     const clientSpendingQuery = `
       SELECT
@@ -411,19 +396,11 @@ const periodTotalsQuery = `
       JOIN clients c ON s.client_id = c.id
       LEFT JOIN services serv ON si.product_id = serv.id
       WHERE s.status != 'cancelada'
-        ${clientSpendingFilters.clause}
+        ${baseFilters.clause}
       GROUP BY c.id, c.name
       ORDER BY total_value DESC
       LIMIT 6
     `;
-
-    const clientFrequencyFilters = buildFilters({
-      includePeriod: true,
-      includeService: true,
-      adminAttendantId,
-      dayType,
-      saleType,
-    });
 
     const clientFrequencyQuery = `
       SELECT
@@ -434,7 +411,7 @@ const periodTotalsQuery = `
       JOIN clients c ON s.client_id = c.id
       LEFT JOIN services serv ON si.product_id = serv.id
       WHERE s.status != 'cancelada'
-        ${clientFrequencyFilters.clause}
+        ${baseFilters.clause}
         AND NOT EXISTS (
           SELECT 1 FROM client_packages cp WHERE cp.sale_id = s.id
         )
@@ -443,7 +420,8 @@ const periodTotalsQuery = `
       LIMIT 6
     `;
 
-    const attendantServiceFilters = buildFilters({
+    const attendantSpecificParams = [adminAttendantId ?? user.id];
+    const attendantPerformanceFilters = buildFilters({
       includePeriod: true,
       includeService: true,
       applyUserFilter: false,
@@ -454,6 +432,7 @@ const periodTotalsQuery = `
       adminAttendantId,
       dayType,
       saleType,
+      customParams: attendantSpecificParams
     });
 
     const attendantPerformanceQuery = `
@@ -464,11 +443,7 @@ const periodTotalsQuery = `
           'Nao informado'
         ) AS service_name,
         COALESCE(
-          SUM(
-            (CASE WHEN si.sale_type = '03' THEN si.subtotal ELSE si.total END)
-            - COALESCE(s.refund_total, 0)
-              * (si.total / NULLIF((s.total + COALESCE(s.refund_total, 0)), 0))
-          ),
+          SUM(CASE WHEN si.sale_type = '03' THEN si.subtotal ELSE si.total END),
           0
         )::numeric AS total_value,
         COALESCE(SUM(si.quantity), 0)::int AS total_quantity,
@@ -478,7 +453,7 @@ const periodTotalsQuery = `
       LEFT JOIN services serv ON si.product_id = serv.id
       WHERE s.status != 'cancelada'
         AND s.attendant_id = $1
-        ${attendantServiceFilters.clause}
+        ${attendantPerformanceFilters.clause}
       GROUP BY 1
       ORDER BY total_value DESC
     `;
@@ -494,18 +469,15 @@ const periodTotalsQuery = `
       clientFrequencyResult,
       attendantPerformanceResult,
     ] = await Promise.all([
-      query(periodTotalsQuery, periodTotalsFilters.params),
-      query(pendingQuery, pendingFilters.params),
-      query(packagesQuery, packagesFilters.params),
-      query(topServicesQuery, topServicesFilters.params),
-      query(recentSalesQuery, recentSalesFilters.params),
-      query(servicePerformanceQuery, servicePerformanceFilters.params),
-      query(clientSpendingQuery, clientSpendingFilters.params),
-      query(clientFrequencyQuery, clientFrequencyFilters.params),
-      query(attendantPerformanceQuery, [
-        adminAttendantId ?? user.id,
-        ...attendantServiceFilters.params,
-      ]),
+      query(periodTotalsQuery, commonParams),
+      query(pendingQuery, commonParams),
+      query(packagesQuery, commonParams),
+      query(topServicesQuery, commonParams),
+      query(recentSalesQuery, commonParams),
+      query(servicePerformanceQuery, commonParams),
+      query(clientSpendingQuery, commonParams),
+      query(clientFrequencyQuery, commonParams),
+      query(attendantPerformanceQuery, attendantSpecificParams),
     ]);
 
     const pendingSales = Number(pendingResult.rows[0]?.count ?? 0);
