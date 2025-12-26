@@ -154,9 +154,10 @@ export async function GET(request: NextRequest) {
   try {
     const user = await authenticateUser(request);
 
-    // MOSTRAR TODOS OS CLIENTES (Global Visibility)
-    // Antes restringia por created_by_user_id, agora permite que todos vejam todos.
-    const whereClause = ""; 
+    // MOSTRAR APENAS CLIENTES ATIVOS POR PADRAO
+    // Se quiser ver todos (incluindo arquivados), poderiamos passar ?all=true na query string,
+    // mas por enquanto o requisito e "Exibimos apenas clientes `Ativos`".
+    const whereClause = "WHERE c.is_active = true"; 
     const params: any[] = [];
 
     const clients = await query(
@@ -193,6 +194,90 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// ... (POST and PUT methods remain unchanged)
+
+// DELETE - Remover ou Arquivar cliente
+export async function DELETE(request: NextRequest) {
+  try {
+    await authenticateAdmin(request);
+    const { clientId } = await request.json();
+
+    if (!clientId) {
+      return NextResponse.json(
+        { error: "ID do cliente obrigatorio" },
+        { status: 400 }
+      );
+    }
+
+    // 1. Verificar se existem registros vinculados (Vendas ou Pacotes)
+    const salesCheck = await query(
+      "SELECT id FROM sales WHERE client_id = $1 LIMIT 1",
+      [clientId]
+    );
+
+    const packagesCheck = await query(
+      "SELECT id FROM client_packages WHERE client_id = $1 LIMIT 1",
+      [clientId]
+    );
+
+    const hasRelatedRecords = salesCheck.rowCount > 0 || packagesCheck.rowCount > 0;
+
+    if (hasRelatedRecords) {
+      // 2. Se houver vinculos, realizar SOFT DELETE (Arquivamento)
+      const archiveResult = await query(
+        "UPDATE clients SET is_active = false WHERE id = $1 RETURNING id, name",
+        [clientId]
+      );
+
+      if (archiveResult.rowCount === 0) {
+        return NextResponse.json(
+          { error: "Cliente nao encontrado" },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json(
+        { 
+          success: true, 
+          message: "Cliente arquivado com sucesso", 
+          action: "archived",
+          details: "O cliente foi inativado pois possui histórico de vendas ou pacotes. Ele não aparecerá mais na lista, mas os dados financeiros foram preservados."
+        },
+        { status: 200 }
+      );
+
+    } else {
+      // 3. Se NAO houver vinculos, realizar HARD DELETE (Exclusao Fisica)
+      const deleteResult = await query(
+        "DELETE FROM clients WHERE id = $1 RETURNING id",
+        [clientId]
+      );
+
+       if (deleteResult.rowCount === 0) {
+        return NextResponse.json(
+          { error: "Cliente nao encontrado" },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json(
+        { 
+          success: true, 
+          message: "Cliente removido permanentemente", 
+          action: "deleted" 
+        },
+        { status: 200 }
+      );
+    }
+
+  } catch (error: any) {
+    console.error("Erro ao excluir cliente:", error);
+    
+    const message = error instanceof Error ? error.message : "Erro ao excluir cliente";
+    const status = message.includes("autenticacao") ? 401 : 400;
+    return NextResponse.json({ error: message }, { status });
+  }
+}
 // POST - Criar novo cliente
 export async function POST(request: NextRequest) {
   try {
@@ -583,51 +668,4 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// DELETE - Remover cliente
-export async function DELETE(request: NextRequest) {
-  try {
-    await authenticateAdmin(request);
-    const { clientId } = await request.json();
 
-    if (!clientId) {
-      return NextResponse.json(
-        { error: "ID do cliente obrigatorio" },
-        { status: 400 }
-      );
-    }
-
-    const result = await query(
-      "DELETE FROM clients WHERE id = $1 RETURNING id",
-      [clientId]
-    );
-
-    if (result.rowCount === 0) {
-      return NextResponse.json(
-        { error: "Cliente nao encontrado" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(
-      { success: true, message: "Cliente removido com sucesso" },
-      { status: 200 }
-    );
-  } catch (error: any) {
-    console.error("Erro ao excluir cliente:", error);
-    
-    // Tratamento especifico para erro de chave estrangeira (FK Constraint)
-    if (error?.code === '23503') {
-      return NextResponse.json(
-        { 
-          error: "Nao e possivel excluir este cliente pois ele possui registros vinculados (Vendas, Pacotes, ou Historico).",
-          details: "Para excluir este cliente, e necessario primeiro remover todos os registros associados a ele."
-        },
-        { status: 409 } // Conflict
-      );
-    }
-
-    const message = error instanceof Error ? error.message : "Erro ao excluir cliente";
-    const status = message.includes("autenticacao") ? 401 : 400;
-    return NextResponse.json({ error: message }, { status });
-  }
-}

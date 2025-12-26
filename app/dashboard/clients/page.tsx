@@ -474,7 +474,11 @@ export default function ClientsPage() {
         throw new Error(errorMessage);
       }
 
-      success("Cliente removido com sucesso!");
+      if (data.action === "archived") {
+        success("Cliente arquivado com sucesso! (Histórico preservado)");
+      } else {
+        success("Cliente removido permanentemente!");
+      }
       setIsDeleteModalOpen(false);
       setClientToDelete(null);
       await fetchClients();
