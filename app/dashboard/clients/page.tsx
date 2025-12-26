@@ -8,7 +8,7 @@ import {
   ChangeEvent,
   FormEvent,
 } from "react";
-import { Edit2, Trash2 } from "lucide-react";
+import { Edit2, Trash2, AlertTriangle } from "lucide-react";
 import { Modal } from "@/components/Modal";
 import { Button } from "@/components/Button";
 import { useToast } from "@/components/Toast";
@@ -69,6 +69,11 @@ export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // [NEW] Estados para o modal de exclusao
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const [formData, setFormData] = useState(initialForm);
   const [saving, setSaving] = useState(false);
   const [viewingClient, setViewingClient] = useState<Client | null>(null);
@@ -431,16 +436,23 @@ export default function ClientsPage() {
     setIsModalOpen(true);
   };
 
-  // [NEW] Funcao para excluir cliente
-  const handleDelete = async (clientId: string, clientName: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Evitar abrir detalhes
-    
-    if (!window.confirm(`Tem certeza que deseja excluir o cliente "${clientName}"?`)) {
-      return;
-    }
+  // [NEW] Abrir modal de exclusao
+  const handleDeleteClick = (client: Client, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setClientToDelete({ id: client.id, name: client.name });
+    setIsDeleteModalOpen(true);
+  };
 
+  // [NEW] Confirmar exclusao
+  const confirmDelete = async () => {
+    if (!clientToDelete) return;
+    
+    setIsDeleting(true);
     const token = localStorage.getItem("token");
-    if (!token) return;
+    if (!token) {
+       error("Sessão expirada");
+       return;
+    }
 
     try {
       const response = await fetch("/api/admin/clients", {
@@ -449,20 +461,28 @@ export default function ClientsPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ clientId }),
+        body: JSON.stringify({ clientId: clientToDelete.id }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Erro ao excluir cliente");
+        // Se tiver detalhes (como no caso de erro de FK), mostra junto
+        const errorMessage = data.details 
+          ? `${data.error}\n\n${data.details}` 
+          : (data.error || "Erro ao excluir cliente");
+        throw new Error(errorMessage);
       }
 
       success("Cliente removido com sucesso!");
+      setIsDeleteModalOpen(false);
+      setClientToDelete(null);
       await fetchClients();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Erro ao excluir cliente";
       error(message);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -764,7 +784,7 @@ export default function ClientsPage() {
                         <Edit2 size={16} />
                       </button>
                       <button
-                        onClick={(e) => handleDelete(client.id, client.name, e)}
+                        onClick={(e) => handleDeleteClick(client, e)}
                         className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-colors"
                         title="Excluir cliente"
                       >
@@ -878,71 +898,149 @@ export default function ClientsPage() {
             </p>
           </div>
 
-          {formData.clientType === "package" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input
-                type="text"
-                name="responsibleName"
-                placeholder="Responsavel pelo contrato"
-                value={formData.responsibleName}
-                onChange={handleChange}
-                required={formData.clientType === "package"}
-                className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none"
-              />
-              <input
-                type="text"
-                name="referenceContact"
-                placeholder="Contato de referencia (email ou telefone principal)"
-                value={formData.referenceContact}
-                onChange={handleChange}
-                required={formData.clientType === "package"}
-                className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none"
-              />
-            </div>
-          )}
+          <div>
+            <label className="block text-xs uppercase text-gray-400 mb-2">
+              Documento (CPF/CNPJ)
+            </label>
+            <input
+              type="text"
+              name="cpfCnpj"
+              placeholder="Digite apenas numeros"
+              value={formData.cpfCnpj}
+              onChange={handleChange}
+              className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none"
+            />
+          </div>
 
-          {formData.clientType === "package" ? null : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs uppercase text-gray-400 mb-2">
+                Telefone / WhatsApp
+              </label>
               <input
-                type="tel"
+                type="text"
                 name="phone"
-                placeholder="(11) 99999-9999"
+                placeholder="(XX) XXXXX-XXXX"
                 value={formData.phone}
                 onChange={handleChange}
                 className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none"
               />
-
+            </div>
+            <div>
+              <label className="block text-xs uppercase text-gray-400 mb-2">
+                Email
+              </label>
               <input
-                type="date"
-                name="birthDate"
-                placeholder="Data de nascimento"
-                value={formData.birthDate}
+                type="email"
+                name="email"
+                placeholder="email@exemplo.com"
+                value={formData.email}
                 onChange={handleChange}
                 className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none"
               />
             </div>
+          </div>
+
+          {/* Campos especificos para Cliente Comum */}
+          {formData.clientType === "common" && (
+            <div>
+              <label className="block text-xs uppercase text-gray-400 mb-2">
+                Data de Nascimento
+              </label>
+              <input
+                type="date"
+                name="birthDate"
+                value={formData.birthDate}
+                onChange={handleChange}
+                className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-white focus:border-white focus:outline-none"
+              />
+            </div>
           )}
 
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={handleChange}
-            className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none"
-          />
-
-          <input
-            type="text"
-            name="cpfCnpj"
-            placeholder="CPF ou CNPJ"
-            value={formData.cpfCnpj}
-            onChange={handleChange}
-            className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none"
-          />
+          {/* Campos especificos para Cliente de Pacote */}
+          {formData.clientType === "package" && (
+            <>
+              <div>
+                <label className="block text-xs uppercase text-gray-400 mb-2">
+                  Nome do Responsavel <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="responsibleName"
+                  placeholder="Nome de quem responde pela empresa"
+                  value={formData.responsibleName}
+                  onChange={handleChange}
+                  required
+                  className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs uppercase text-gray-400 mb-2">
+                  Contato de Referencia <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="referenceContact"
+                  placeholder="(XX) XXXXX-XXXX ou outro"
+                  value={formData.referenceContact}
+                  onChange={handleChange}
+                  required
+                  className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none"
+                />
+              </div>
+            </>
+          )}
         </form>
       </Modal>
 
+      {/* Modal de Exclusao */}
+      <Modal
+        open={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Excluir Cliente"
+        footer={
+          <div className="flex items-center justify-end gap-3">
+             <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="rounded-xl px-5"
+              onClick={() => setIsDeleteModalOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              className="rounded-xl px-6 bg-red-500/80 hover:bg-red-500 text-white border border-red-500/50"
+              onClick={confirmDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Excluindo..." : "Excluir Definitivamente"}
+            </Button>
+          </div>
+        }
+      >
+        <div className="flex flex-col items-center justify-center p-4 text-center space-y-4">
+          <div className="p-4 rounded-full bg-red-500/10 border border-red-500/20 text-red-400">
+            <AlertTriangle size={32} />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-lg font-medium text-white">
+              Tem certeza que deseja excluir?
+            </h3>
+            <p className="text-gray-400 text-sm">
+              Você está prestes a excluir o cliente <span className="font-semibold text-white">"{clientToDelete?.name}"</span>. 
+              <br />
+              Essa ação não pode ser desfeita.
+            </p>
+            <p className="text-xs text-gray-500 bg-black/20 p-3 rounded-lg border border-white/5">
+              ⚠️ Nota: Se o cliente tiver vendas ou pacotes vinculados, a exclusão será bloqueada para manter a integridade dos dados históricos.
+            </p>
+          </div>
+        </div>
+      </Modal>
       <Modal
         open={Boolean(viewingClient)}
         onClose={() => setViewingClient(null)}

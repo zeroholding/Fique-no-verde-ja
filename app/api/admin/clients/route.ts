@@ -612,8 +612,20 @@ export async function DELETE(request: NextRequest) {
       { success: true, message: "Cliente removido com sucesso" },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro ao excluir cliente:", error);
+    
+    // Tratamento especifico para erro de chave estrangeira (FK Constraint)
+    if (error?.code === '23503') {
+      return NextResponse.json(
+        { 
+          error: "Nao e possivel excluir este cliente pois ele possui registros vinculados (Vendas, Pacotes, ou Historico).",
+          details: "Para excluir este cliente, e necessario primeiro remover todos os registros associados a ele."
+        },
+        { status: 409 } // Conflict
+      );
+    }
+
     const message = error instanceof Error ? error.message : "Erro ao excluir cliente";
     const status = message.includes("autenticacao") ? 401 : 400;
     return NextResponse.json({ error: message }, { status });
