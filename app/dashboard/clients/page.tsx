@@ -8,6 +8,7 @@ import {
   ChangeEvent,
   FormEvent,
 } from "react";
+import { Edit2, Trash2 } from "lucide-react";
 import { Modal } from "@/components/Modal";
 import { Button } from "@/components/Button";
 import { useToast } from "@/components/Toast";
@@ -50,6 +51,7 @@ type SortField = "createdAt" | "birthDate" | null;
 type SortDirection = "asc" | "desc";
 
 const initialForm = {
+  id: "", // [NEW] Para identificar edicao
   name: "",
   phone: "",
   birthDate: "",
@@ -378,8 +380,13 @@ export default function ClientsPage() {
         referenceContact: formData.referenceContact.trim(),
       };
 
-      const response = await fetch("/api/admin/clients", {
-        method: "POST",
+      // [UPDATE] Logica para decidir entre POST (criar) e PUT (atualizar)
+      const isEditing = !!formData.id;
+      const url = "/api/admin/clients";
+      const method = isEditing ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -390,20 +397,72 @@ export default function ClientsPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Nao foi possivel criar o cliente");
+        throw new Error(data.error || "Nao foi possivel salvar o cliente");
       }
 
-      success("Cliente criado com sucesso!");
+      success(isEditing ? "Cliente atualizado com sucesso!" : "Cliente criado com sucesso!");
       closeModal();
       await fetchClients();
     } catch (err) {
       const message =
         err instanceof Error
           ? err.message
-          : "Nao foi possivel criar o cliente";
+          : "Nao foi possivel salvar o cliente";
       error(message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  // [NEW] Funcao para abrir modal de edicao
+  const handleEdit = (client: Client, e: React.MouseEvent) => {
+    e.stopPropagation(); // Evitar abrir detalhes ao clicar no botao
+    setFormData({
+      id: client.id,
+      name: client.name,
+      phone: client.phone || "",
+      birthDate: client.birthDate ? new Date(client.birthDate).toISOString().split('T')[0] : "",
+      email: client.email || "",
+      cpfCnpj: client.cpfCnpj || "",
+      clientType: client.clientType,
+      responsibleName: client.responsibleName || "",
+      referenceContact: client.referenceContact || "",
+    });
+    setIsModalOpen(true);
+  };
+
+  // [NEW] Funcao para excluir cliente
+  const handleDelete = async (clientId: string, clientName: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Evitar abrir detalhes
+    
+    if (!window.confirm(`Tem certeza que deseja excluir o cliente "${clientName}"?`)) {
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const response = await fetch("/api/admin/clients", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ clientId }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Erro ao excluir cliente");
+      }
+
+      success("Cliente removido com sucesso!");
+      await fetchClients();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erro ao excluir cliente";
+      error(message);
     }
   };
 
@@ -683,18 +742,36 @@ export default function ClientsPage() {
                   )}
                 </div>
 
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
-                  <div className="flex flex-wrap gap-2 text-xs">
-                    {client.originName && (
-                      <span className="px-3 py-1 rounded-full border border-purple-300/40 text-purple-200">
-                        {client.originName}
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      {client.originName && (
+                        <span className="px-3 py-1 rounded-full border border-purple-300/40 text-purple-200">
+                          {client.originName}
+                        </span>
+                      )}
+                      <span className="px-3 py-1 rounded-full border border-white/20 text-gray-200">
+                        {new Date(client.createdAt).toLocaleDateString("pt-BR")} {new Date(client.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                       </span>
-                    )}
-                    <span className="px-3 py-1 rounded-full border border-white/20 text-gray-200">
-                      {new Date(client.createdAt).toLocaleDateString("pt-BR")} {new Date(client.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                    </span>
+                    </div>
+
+                    {/* [NEW] Botoes de Acao */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => handleEdit(client, e)}
+                        className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-colors"
+                        title="Editar cliente"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button
+                        onClick={(e) => handleDelete(client.id, client.name, e)}
+                        className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-colors"
+                        title="Excluir cliente"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
-                </div>
               </div>
             ))}
           </div>
@@ -744,7 +821,9 @@ export default function ClientsPage() {
       <Modal
         open={isModalOpen}
         onClose={closeModal}
-        title="Cadastrar cliente"
+        onClose={closeModal}
+        title={formData.id ? "Editar cliente" : "Cadastrar cliente"}
+        footer={
         footer={
           <div className="flex items-center justify-end gap-3">
             <Button
@@ -763,7 +842,7 @@ export default function ClientsPage() {
               form="client-create-form"
               disabled={saving}
             >
-              {saving ? "Salvando..." : "Salvar cliente"}
+              {saving ? "Salvando..." : (formData.id ? "Salvar alterações" : "Salvar cliente")}
             </Button>
           </div>
         }
