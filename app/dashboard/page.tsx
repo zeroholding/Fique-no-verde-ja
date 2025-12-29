@@ -1017,7 +1017,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-xl font-semibold text-white">
-                  Meu Desempenho
+                  Desempenho
                 </h2>
                 <p className="text-xs text-gray-400">
                   {attendantName} · Últimos {analysisPeriodDays} dias
