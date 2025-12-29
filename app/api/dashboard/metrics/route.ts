@@ -484,6 +484,22 @@ export async function GET(request: NextRequest) {
       ORDER BY total_value DESC
     `;
 
+    const attendantTotalsQuery = `
+      SELECT
+        COALESCE(
+          SUM(CASE WHEN si.sale_type = '03' THEN si.subtotal ELSE si.total END),
+          0
+        )::numeric AS total_value,
+        COALESCE(SUM(si.quantity), 0)::int AS total_quantity,
+        COUNT(DISTINCT s.id) AS sales_count
+      FROM sales s
+      LEFT JOIN sale_items si ON si.sale_id = s.id
+      LEFT JOIN services serv ON si.product_id = serv.id
+      WHERE s.status != 'cancelada'
+        AND s.attendant_id = $1
+        ${attendantPerformanceFilters.clause}
+    `;
+
     const [
       periodTotalsResult,
       pendingResult,
@@ -494,6 +510,7 @@ export async function GET(request: NextRequest) {
       clientSpendingResult,
       clientFrequencyResult,
       attendantPerformanceResult,
+      attendantTotalsResult, // [NEW] Resultado dos totais gerais
     ] = await Promise.all([
       query(periodTotalsQuery, itemLevelFilters.params),
       query(pendingQuery, pendingFilters.params),
@@ -504,6 +521,7 @@ export async function GET(request: NextRequest) {
       query(clientSpendingQuery, itemLevelFilters.params),
       query(clientFrequencyQuery, itemLevelFilters.params),
       query(attendantPerformanceQuery, attendantPerformanceFilters.params),
+      query(attendantTotalsQuery, attendantPerformanceFilters.params), // [NEW] Executando query corrigida
     ]);
 
     const pendingSales = Number(pendingResult.rows[0]?.count ?? 0);
@@ -537,15 +555,13 @@ export async function GET(request: NextRequest) {
       totalSales: Number(row.sale_count ?? 0),
     }));
 
-    const attendantTotals = attendantServices.reduce(
-      (acc: any, item: any) => {
-        acc.totalValue += item.totalValue;
-        acc.totalQuantity += item.totalQuantity;
-        acc.totalSales += item.totalSales;
-        return acc;
-      },
-      { totalValue: 0, totalQuantity: 0, totalSales: 0 },
-    );
+    // [FIX] Usar os totais da query dedicada em vez do reduce incorreto
+    const attendantTotalsRow = attendantTotalsResult.rows[0];
+    const attendantTotals = {
+      totalValue: Number(attendantTotalsRow?.total_value ?? 0),
+      totalQuantity: Number(attendantTotalsRow?.total_quantity ?? 0),
+      totalSales: Number(attendantTotalsRow?.sales_count ?? 0),
+    };
 
     const clientSpending = clientSpendingResult.rows.map((row: any) => ({
       clientName: row.client_name,
