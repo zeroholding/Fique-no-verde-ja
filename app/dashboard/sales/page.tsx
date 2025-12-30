@@ -1572,19 +1572,46 @@ export default function SalesPage() {
                 Anterior
               </button>
               <div className="flex gap-1">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
-                      currentPage === page
-                        ? "bg-orange-500/20 text-orange-200 border border-orange-500/40"
-                        : "border border-white/20 text-white hover:bg-white/10"
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ))}
+                {(() => {
+                  const getVisiblePages = (current: number, total: number) => {
+                    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+
+                    if (current <= 4) return [1, 2, 3, 4, 5, "...", total];
+
+                    if (current >= total - 3)
+                      return [1, "...", total - 4, total - 3, total - 2, total - 1, total];
+
+                    return [1, "...", current - 1, current, current + 1, "...", total];
+                  };
+
+                  return getVisiblePages(currentPage, totalPages).map((page, idx) => {
+                    if (page === "...") {
+                      return (
+                        <span
+                          key={`ellipsis-${idx}`}
+                          className="px-2 py-1.5 text-sm text-gray-500"
+                        >
+                          ...
+                        </span>
+                      );
+                    }
+                    
+                    const pageNum = Number(page);
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+                          currentPage === pageNum
+                            ? "bg-orange-500/20 text-orange-200 border border-orange-500/40"
+                            : "border border-white/20 text-white hover:bg-white/10"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  });
+                })()}
               </div>
               <button
                 onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
