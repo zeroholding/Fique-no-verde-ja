@@ -220,93 +220,98 @@ export async function GET(request: NextRequest) {
     }
 
 
-    // Buscar os itens de cada venda
+    // Buscar os itens de cada venda (BATCHED OPTIMIZATION)
+    const saleIds = sales.rows.map((s: any) => s.id);
+    let allItems: any[] = [];
+    let allRefunds: any[] = [];
 
-    const formattedSales = await Promise.all(
-
-      sales.rows.map(async (sale: any) => {
-
-        const items = await query(
-          `SELECT
+    if (saleIds.length > 0) {
+      // 1. Batch Fetch Items
+      const itemsResult = await query(
+        `SELECT
             id,
+            sale_id,
             product_id,
             product_name,
             quantity,
             unit_price,
-
             discount_type,
-
             discount_value,
-
             subtotal,
-
             discount_amount,
-
             total,
             sale_type
-
            FROM sale_items
-
-           WHERE sale_id = $1
-
+           WHERE sale_id = ANY($1)
            ORDER BY created_at`,
-          [sale.id]
-        );
+        [saleIds]
+      );
+      allItems = itemsResult.rows;
 
-        let refunds: any[] = [];
-        if (hasRefundSupport) {
-          try {
-            const refundsResult = await query(
-              `SELECT
+      // 2. Batch Fetch Refunds (if supported)
+      if (hasRefundSupport) {
+        try {
+          const refundsResult = await query(
+            `SELECT
                 id,
+                sale_id,
                 amount,
                 reason,
                 created_by,
                 created_at
                FROM sale_refunds
-               WHERE sale_id = $1
+               WHERE sale_id = ANY($1)
                ORDER BY created_at DESC`,
-              [sale.id]
-            );
-            refunds = refundsResult.rows;
-          } catch (err: any) {
-            const msg = err?.message || "";
-            if (msg.includes("sale_refunds")) {
-              hasRefundSupport = false;
-              refunds = [];
-            } else {
-              throw err;
-            }
+            [saleIds]
+          );
+          allRefunds = refundsResult.rows;
+        } catch (err: any) {
+          const msg = err?.message || "";
+          if (msg.includes("sale_refunds")) {
+            hasRefundSupport = false;
+            allRefunds = [];
+          } else {
+            throw err;
           }
         }
+      }
+    }
 
-        return {
+    // Grouping Helpers
+    const itemsBySaleId = allItems.reduce((acc: any, item: any) => {
+      if (!acc[item.sale_id]) acc[item.sale_id] = [];
+      acc[item.sale_id].push(item);
+      return acc;
+    }, {});
+
+    const refundsBySaleId = allRefunds.reduce((acc: any, ref: any) => {
+      if (!acc[ref.sale_id]) acc[ref.sale_id] = [];
+      acc[ref.sale_id].push(ref);
+      return acc;
+    }, {});
+
+    const formattedSales = sales.rows.map((sale: any) => {
+      const items = itemsBySaleId[sale.id] || [];
+      const refunds = refundsBySaleId[sale.id] || [];
+
+      return {
           id: sale.id,
           clientId: sale.client_id,
           clientName: sale.client_name,
           clientType: sale.client_type,
           attendantId: sale.attendant_id,
-
           attendantName: sale.attendant_name,
-
           saleDate: sale.sale_date,
-
           observations: sale.observations,
-
           status: sale.status,
           
-          saleType: items.rows.length > 0 ? items.rows[0].sale_type : "01",
+          saleType: items.length > 0 ? items[0].sale_type : "01",
 
           paymentMethod: sale.payment_method,
-
           generalDiscountType: sale.general_discount_type,
-
           generalDiscountValue: sale.general_discount_value,
-
           subtotal: parseFloat(sale.subtotal),
-
           totalDiscount: parseFloat(sale.total_discount),
-
           total: parseFloat(sale.total),
           refundTotal: hasRefundSupport ? parseFloat(sale.refund_total || 0) : 0,
           commissionAmount: parseFloat(sale.commission_amount || 0),
@@ -314,7 +319,7 @@ export async function GET(request: NextRequest) {
           cancelledAt: sale.cancelled_at,
           createdAt: sale.created_at,
           updatedAt: sale.updated_at,
-          items: items.rows.map((item: any) => ({
+          items: items.map((item: any) => ({
 
             id: item.id,
 
@@ -344,8 +349,7 @@ export async function GET(request: NextRequest) {
               }))
             : [],
         };
-      })
-    );
+    });
 
 
     return NextResponse.json({ sales: formattedSales }, { status: 200 });
