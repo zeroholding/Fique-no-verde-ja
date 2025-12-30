@@ -17,13 +17,14 @@ const supabaseServiceKey = parseEnv('SUPABASE_SERVICE_ROLE_KEY');
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function check() {
-  const query = `
-    SELECT trigger_name, event_manipulation, event_object_table, action_statement
-    FROM information_schema.triggers
-    WHERE event_object_table = 'sales'
-  `;
-  const { data, error } = await supabase.rpc('exec_sql', { query });
-  if (error) console.error(error);
-  else console.log(data);
+  const { count: salesCount } = await supabase.from('sales').select('*', { count: 'exact', head: true });
+  const { count: itemsCount } = await supabase.from('sale_items').select('*', { count: 'exact', head: true });
+  
+  console.log('Total Sales in DB:', salesCount);
+  console.log('Total Sale Items in DB:', itemsCount);
+
+  // Check one recent sale
+  const { data: recent } = await supabase.from('sales').select('*, sale_items(*)').limit(1).order('created_at', { ascending: false });
+  console.log('Recent Sale Sample:', JSON.stringify(recent, null, 2));
 }
 check();

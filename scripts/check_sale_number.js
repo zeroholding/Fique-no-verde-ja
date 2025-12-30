@@ -17,13 +17,10 @@ const supabaseServiceKey = parseEnv('SUPABASE_SERVICE_ROLE_KEY');
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function check() {
-  const query = `
-    SELECT trigger_name, event_manipulation, event_object_table, action_statement
-    FROM information_schema.triggers
-    WHERE event_object_table = 'sales'
-  `;
-  const { data, error } = await supabase.rpc('exec_sql', { query });
-  if (error) console.error(error);
-  else console.log(data);
+  const { data: cols } = await supabase.rpc('exec_sql', { query: "SELECT column_name, column_default, is_nullable FROM information_schema.columns WHERE table_name = 'sales' AND column_name = 'sale_number'" });
+  console.log('Column Def:', cols);
+
+  const { data: max } = await supabase.from('sales').select('sale_number').order('sale_number', { ascending: false }).limit(1);
+  console.log('Max Sale Number:', max);
 }
 check();

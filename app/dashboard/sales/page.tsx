@@ -341,6 +341,9 @@ export default function SalesPage() {
         },
       });
 
+      console.log("[DEBUG] Fetch Clients Response:", response);
+      if (!response) throw new Error("Fetch returned null/undefined");
+
       const data = await response.json();
 
       if (response.ok) {

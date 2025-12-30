@@ -18,9 +18,9 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function check() {
   const query = `
-    SELECT trigger_name, event_manipulation, event_object_table, action_statement
-    FROM information_schema.triggers
-    WHERE event_object_table = 'sales'
+    SELECT conname, pg_get_constraintdef(oid)
+    FROM pg_constraint
+    WHERE conrelid = 'sales'::regclass
   `;
   const { data, error } = await supabase.rpc('exec_sql', { query });
   if (error) console.error(error);

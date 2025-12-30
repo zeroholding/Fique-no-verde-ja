@@ -27,7 +27,14 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
-  const response = NextResponse.next();
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('ngrok-skip-browser-warning', 'true');
+  
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
 
   // Adicionar header para pular tela de aviso do ngrok
   response.headers.set('ngrok-skip-browser-warning', 'true');

@@ -17,13 +17,9 @@ const supabaseServiceKey = parseEnv('SUPABASE_SERVICE_ROLE_KEY');
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function check() {
-  const query = `
-    SELECT trigger_name, event_manipulation, event_object_table, action_statement
-    FROM information_schema.triggers
-    WHERE event_object_table = 'sales'
-  `;
-  const { data, error } = await supabase.rpc('exec_sql', { query });
-  if (error) console.error(error);
-  else console.log(data);
+  const { count } = await supabase.from('sales').select('*', { count: 'exact', head: true });
+  console.log('Sales Count:', count);
+  const { count: items } = await supabase.from('sale_items').select('*', { count: 'exact', head: true });
+  console.log('Sale Items Count:', items);
 }
 check();

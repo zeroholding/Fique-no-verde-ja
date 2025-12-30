@@ -17,13 +17,8 @@ const supabaseServiceKey = parseEnv('SUPABASE_SERVICE_ROLE_KEY');
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function check() {
-  const query = `
-    SELECT trigger_name, event_manipulation, event_object_table, action_statement
-    FROM information_schema.triggers
-    WHERE event_object_table = 'sales'
-  `;
-  const { data, error } = await supabase.rpc('exec_sql', { query });
+  const { data, error } = await supabase.rpc('exec_sql', { query: "SELECT column_name FROM information_schema.columns WHERE table_name = 'sales'" });
   if (error) console.error(error);
-  else console.log(data);
+  else console.log(data.map(c => c.column_name));
 }
 check();

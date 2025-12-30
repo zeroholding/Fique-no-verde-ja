@@ -2,6 +2,7 @@ const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
 const fs = require('fs');
 
+// Manually load env vars
 const envPath = path.resolve(__dirname, '../.env.local');
 const envContent = fs.readFileSync(envPath, 'utf8');
 
@@ -17,13 +18,14 @@ const supabaseServiceKey = parseEnv('SUPABASE_SERVICE_ROLE_KEY');
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function check() {
-  const query = `
-    SELECT trigger_name, event_manipulation, event_object_table, action_statement
-    FROM information_schema.triggers
-    WHERE event_object_table = 'sales'
-  `;
-  const { data, error } = await supabase.rpc('exec_sql', { query });
-  if (error) console.error(error);
-  else console.log(data);
+  const { data, error } = await supabase.rpc('exec_sql', { 
+    query: "SELECT table_name FROM information_schema.tables WHERE table_name LIKE '%log%' OR table_name LIKE '%audit%'" 
+  });
+  if (error) {
+    console.error("Error:", error);
+  } else {
+    console.log("Audit/Log Tables found:");
+    console.table(data);
+  }
 }
 check();

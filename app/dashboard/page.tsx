@@ -460,8 +460,8 @@ export default function Dashboard() {
     }));
 
     return (
-      <div className="h-72 w-full mt-4">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="h-72 w-full mt-4 min-w-0">
+        <ResponsiveContainer width="99%" height="100%">
           <ComposedChart data={data} margin={{ top: 20, right: 20, bottom: 20, left: 10 }}>
             <defs>
               <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
@@ -530,8 +530,8 @@ export default function Dashboard() {
     }));
 
     return (
-      <div className="h-72 w-full mt-4">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="h-72 w-full mt-4 min-w-0">
+        <ResponsiveContainer width="99%" height="100%">
           <BarChart data={data} margin={{ top: 20, right: 20, bottom: 20, left: 10 }}>
             <defs>
               <linearGradient id="freqGradient" x1="0" y1="0" x2="0" y2="1">

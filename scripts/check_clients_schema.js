@@ -2,6 +2,7 @@ const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
 const fs = require('fs');
 
+// Manually load env vars
 const envPath = path.resolve(__dirname, '../.env.local');
 const envContent = fs.readFileSync(envPath, 'utf8');
 
@@ -16,14 +17,18 @@ const supabaseServiceKey = parseEnv('SUPABASE_SERVICE_ROLE_KEY');
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-async function check() {
+async function checkSchema() {
   const query = `
-    SELECT trigger_name, event_manipulation, event_object_table, action_statement
-    FROM information_schema.triggers
-    WHERE event_object_table = 'sales'
+    SELECT column_name, data_type, is_nullable 
+    FROM information_schema.columns 
+    WHERE table_name = 'clients'
   `;
   const { data, error } = await supabase.rpc('exec_sql', { query });
-  if (error) console.error(error);
-  else console.log(data);
+  
+  if (error) {
+    console.error("Error:", error);
+  } else {
+    console.log(JSON.stringify(data, null, 2));
+  }
 }
-check();
+checkSchema();

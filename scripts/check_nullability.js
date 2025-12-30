@@ -17,11 +17,7 @@ const supabaseServiceKey = parseEnv('SUPABASE_SERVICE_ROLE_KEY');
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function check() {
-  const query = `
-    SELECT trigger_name, event_manipulation, event_object_table, action_statement
-    FROM information_schema.triggers
-    WHERE event_object_table = 'sales'
-  `;
+  const query = "SELECT column_name, is_nullable FROM information_schema.columns WHERE table_name = 'sale_items' AND (column_name LIKE '%service%' OR column_name LIKE '%product%')";
   const { data, error } = await supabase.rpc('exec_sql', { query });
   if (error) console.error(error);
   else console.log(data);
