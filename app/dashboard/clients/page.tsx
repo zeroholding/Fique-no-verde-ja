@@ -802,42 +802,78 @@ export default function ClientsPage() {
         )}
 
         {/* Paginação */}
+        {/* Paginação */}
         {!loading && filteredClients.length > ITEMS_PER_PAGE && (
-          <div className="px-6 py-4 border-t border-white/10 flex flex-col sm:flex-row gap-4 items-center justify-between">
-            <p className="text-sm text-gray-400">
-              Página {currentPage} de {totalPages} • Mostrando {paginatedClients.length} de {filteredClients.length} clientes
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-1.5 rounded-lg border border-white/20 text-sm text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                Anterior
-              </button>
-              <div className="flex gap-1">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+          <div className="flex flex-col gap-4 border-t border-white/10 pt-4">
+             <div className="px-6 text-sm text-gray-400 text-center sm:text-left">
+               Página {currentPage} de {totalPages} • Mostrando {paginatedClients.length} de {filteredClients.length} clientes
+             </div>
+
+             {totalPages > 1 && (
+              <div className="flex justify-center pb-6">
+                <div className="flex gap-1 overflow-x-auto max-w-full pb-2 md:pb-0 px-4">
+                  {/* Previous Button */}
                   <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
-                      currentPage === page
-                        ? "bg-orange-500/20 text-orange-200 border border-orange-500/40"
-                        : "border border-white/20 text-white hover:bg-white/10"
-                    }`}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 rounded bg-white/5 disabled:opacity-30 hover:bg-white/10 text-white"
                   >
-                    {page}
+                    &lt;
                   </button>
-                ))}
+
+                  {/* Smart Pagination Logic */}
+                  {(() => {
+                    const pages = [];
+                    
+                    if (totalPages <= 7) {
+                        for (let i = 1; i <= totalPages; i++) {
+                            pages.push(i);
+                        }
+                    } else {
+                        pages.push(1);
+                        if (currentPage > 3) pages.push('...');
+                        
+                        const start = Math.max(2, currentPage - 1);
+                        const end = Math.min(totalPages - 1, currentPage + 1);
+                        
+                        for (let i = start; i <= end; i++) {
+                            pages.push(i);
+                        }
+                        
+                        if (currentPage < totalPages - 2) pages.push('...');
+                        pages.push(totalPages);
+                    }
+
+                    return pages.map((page, idx) => (
+                        typeof page === 'number' ? (
+                            <button
+                                key={page}
+                                onClick={() => setCurrentPage(page)}
+                                className={`px-3 py-1 rounded transition-colors ${
+                                currentPage === page
+                                    ? "bg-blue-600 text-white"
+                                    : "bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white"
+                                }`}
+                            >
+                                {page}
+                            </button>
+                        ) : (
+                            <span key={`ellipsis-${idx}`} className="px-2 py-1 text-gray-500">...</span>
+                        )
+                    ));
+                  })()}
+
+                  {/* Next Button */}
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1 rounded bg-white/5 disabled:opacity-30 hover:bg-white/10 text-white"
+                  >
+                    &gt;
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1.5 rounded-lg border border-white/20 text-sm text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                Próxima
-              </button>
-            </div>
+             )}
           </div>
         )}
       </div>
