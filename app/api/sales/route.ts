@@ -242,7 +242,7 @@ export async function GET(request: NextRequest) {
             total,
             sale_type
            FROM sale_items
-           WHERE sale_id = ANY($1)
+           WHERE sale_id = ANY($1::uuid[])
            ORDER BY created_at`,
         [saleIds]
       );
@@ -260,7 +260,7 @@ export async function GET(request: NextRequest) {
                 created_by,
                 created_at
                FROM sale_refunds
-               WHERE sale_id = ANY($1)
+               WHERE sale_id = ANY($1::uuid[])
                ORDER BY created_at DESC`,
             [saleIds]
           );
