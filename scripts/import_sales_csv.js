@@ -49,22 +49,35 @@ async function importSales() {
       });
   }
 
-  // Pre-fetch all clients to build a map (assuming ~2000 clients fits in memory easily)
+  // Pre-fetch all clients to build a map (recursive pagination)
   console.log("Fetching Clients...");
-  const { data: clientsData, error: clientErr } = await supabase.from('clients').select('id, name');
-  if (clientErr) {
-      console.error("Error fetching clients:", clientErr);
-      return;
+  let allClients = [];
+  let from = 0;
+  const PAGE_SIZE = 1000;
+  
+  while (true) {
+      const { data, error } = await supabase.from('clients').select('id, name').range(from, from + PAGE_SIZE - 1);
+      if (error) {
+          console.error("Error fetching clients page:", error);
+          break;
+      }
+      if (!data || data.length === 0) break;
+      
+      allClients = allClients.concat(data);
+      console.log(`Fetched ${data.length} clients (Total: ${allClients.length})...`);
+      
+      if (data.length < PAGE_SIZE) break;
+      from += PAGE_SIZE;
   }
   
   const clientMap = new Map();
-  clientsData.forEach(c => {
+  allClients.forEach(c => {
       clientMap.set(normalize(c.name), c.id);
   });
   console.log(`Loaded ${clientMap.size} clients for lookup.`);
 
   // 2. Read CSV (Handle Multiline)
-  const filePath = path.join(__dirname, '../BDVENDAS.csv');
+  const filePath = path.join(__dirname, 'BD VENDAS FNVJ - 20251203(Vendas 202501 - 202511).csv');
   console.log(`Reading file: ${filePath}`);
   const fileContent = fs.readFileSync(filePath, { encoding: 'latin1' }); 
   
@@ -103,7 +116,7 @@ async function importSales() {
   
   const getIdx = (name) => headers.findIndex(h => h === normalize(name));
   
-  const idxData = getIdx('data');
+  const idxData = [getIdx('data'), getIdx('DATA DA VENDA'), getIdx('Data Ajustada'), getIdx('Created')].find(i => i !== -1);
   const idxTotal = getIdx('TOTAL DA VENDA');
   const idxSubtotal = getIdx('SUBTOTAL');
   const idxDiscountVal = getIdx('DESCONTO TOTAL [$]');
@@ -163,24 +176,59 @@ async function importSales() {
       if (!serviceId) missingProduct++;
       
       let productName = productStr;
-      
-      // If service not found, check products table fallback OR just use text name
-      // We will use serviceId if found (for better linking), else null.
 
-      // 3. Resolve Attendant
-      const attendantId = userMap.get(normalize(attendantStr)) || null;
+      // 3. Resolve Attendant via Email Map
+      const emailMap = {
+          "ANA SANTOS": "ana@gmail.com",
+          "EVELLYN PRADO": "evellyn@gmail.com",
+          "OUTROS .": "outros@gmail.com", // Check if exists, otherwise fallback
+          "BRUNA CASTRO": "bcastro.bc14@outlook.com",
+          "MARIA VITORIA": "viviistatkevicius@gmail.com", // Normalized key
+          "MARIA VITÓRIA": "viviistatkevicius@gmail.com",
+          "BEATRIZ": "bia37807@outlook.com",
+          "LAIS": "laismrd93@gmail.com",
+          "LAÍS": "laismrd93@gmail.com"
+      };
+
+      const attendantKey = attendantStr ? attendantStr.toUpperCase().trim() : "";
+      let attendantEmail = emailMap[attendantKey];
+      
+      // Fallback: try raw name match in userMap
+      let attendantId = null;
+      
+      if (attendantEmail) {
+          // Find user by email (we didn't load emails into map efficiently, let's fix userMap or just find in array)
+          // Ideally userMap should map email -> id too
+          // Quick fix: loop usersData
+          const user = usersData.find(u => u.email === attendantEmail);
+          if (user) attendantId = user.id;
+      }
+      
+      if (!attendantId) {
+          attendantId = userMap.get(normalize(attendantStr)) || null;
+      }
 
       // 4. Parse Values
       const parseFloatSafe = (str) => {
           if (!str) return 0;
-          str = str.replace(/[^\d.,-]/g, ''); // Remove currency symbols
-          // If 1.000,00 format -> 1000.00
-          // If 1000.00 format -> 1000.00
-          // Heuristic: if comma is last separator, it's decimal.
-          if (str.includes(',') && str.lastIndexOf(',') > str.lastIndexOf('.')) {
-             str = str.replace(/\./g, '').replace(',', '.');
+          // Clean currency and spaces
+          let clean = str.replace(/[R$\s]/g, '');
+          
+          // Check format
+          // If 1,500.00 (US) -> . is last, , is present
+          // If 1.500,00 (BR) -> , is last, . is present
+          const lastDot = clean.lastIndexOf('.');
+          const lastComma = clean.lastIndexOf(',');
+
+          if (lastComma > lastDot) {
+              // BR Format: 1.500,00 -> remove dots, replace comma with dot
+              clean = clean.replace(/\./g, '').replace(',', '.');
+          } else {
+              // US Format or plain: 1,500.00 -> remove commas
+              clean = clean.replace(/,/g, '');
           }
-          return parseFloat(str) || 0;
+          
+          return parseFloat(clean) || 0;
       };
 
       const total = parseFloatSafe(totalStr);
@@ -190,43 +238,58 @@ async function importSales() {
 
       let unitPrice = quantity > 0 ? (subtotal / quantity) : subtotal;
 
-      // 5. Parse Date
+      // 5. Parse Date (DD/MM/YYYY)
       let createdAt = new Date();
+      let saleDate = new Date();
       if (dateStr) {
-          const parts = dateStr.split(' ')[0].split('/');
+          // Remove time if present "1/6/2025 6:05" -> "1/6/2025"
+          const datePart = dateStr.split(' ')[0];
+          const parts = datePart.split('/');
           if (parts.length === 3) {
-             // MM/DD/YYYY to YYYY-MM-DD
-             createdAt = new Date(`${parts[2]}-${parts[0]}-${parts[1]}`);
+             // Assume DD/MM/YYYY
+             const day = parseInt(parts[0], 10);
+             const month = parseInt(parts[1], 10) - 1; // JS Month is 0-indexed
+             const year = parseInt(parts[2], 10);
+             
+             // Create date object (Local time to avoid timezone shifts if possible, or UTC)
+             // Using UTC strings for DB is safer
+             saleDate = new Date(year, month, day, 12, 0, 0); // Noon to avoid boundary issues
+             createdAt = saleDate;
           }
       }
+      
       const saleNumber = parseInt(getVal(0), 10);
-      if (isNaN(saleNumber)) {
-          // console.log(`[DEBUG] Skipping line ${i}: Invalid Sale Number (ID): '${getVal(0)}'`);
-          // Actually, we process anyway because we don't use saleNumber for insert anymore.
-          // continue;
-      }
       
       // Fallback for attendant
       let finalAttendantId = attendantId;
       if (!finalAttendantId) {
-           // Default to first user in map
-           finalAttendantId = userMap.values().next().value;
+           // Default to first user in map or specific default?
+           // Use the first user found as fallback
+           finalAttendantId = usersData[0]?.id;
       }
 
       const saleId = uuidv4();
       
       salesToInsert.push({
           id: saleId,
-          // sale_number: saleNumber, // Omitted to use sequence
+          // sale_number: saleNumber, // sequence
           client_id: clientId,
           attendant_id: finalAttendantId,
           total: total,
           total_discount: discount,
-          payment_method: paymentStr || 'outros',
-          created_at: createdAt.toISOString(),
-          status: 'confirmada'
+          subtotal: subtotal, // Save subtotal too if column exists in DB? Yes.
+          general_discount_value: discount, // Assuming general discount
+          general_discount_type: 'fixed',
+          payment_method: paymentStr ? paymentStr.toLowerCase().replace(/ /g, '_') : 'outros', // normalize payment method?
+          sale_date: saleDate.toISOString(), // Save the actual sale date
+          created_at: new Date().toISOString(), // Created now, but sale_date is retro
+          status: 'confirmada',
+          observations: getVal(getIdx('Observação'))
       });
 
+      // Item total logic
+      // Unit Price: calculated
+      // Total: Subtotal (since discount is already applied at sale level or 0 item discount)
       const itemSubtotal = subtotal || (unitPrice * quantity);
       
       itemsToInsert.push({
@@ -236,11 +299,8 @@ async function importSales() {
           quantity: quantity,
           unit_price: unitPrice,
           subtotal: itemSubtotal,
-          total: itemSubtotal, // Assuming total for item is subtotal (discount is at sale level generally, or item level?) 
-          // If CSV has item discount, we should use it. 
-          // CSV has "DESCONTO TOTAL [$]" at SALE level.
-          // So item total = subtotal.
-          sale_type: '01' // Common sale (belongs to item?)
+          total: itemSubtotal,
+          sale_type: '01'
       });
   }
 

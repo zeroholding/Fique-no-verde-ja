@@ -14,8 +14,7 @@ async function checkColumnType() {
       data_type, 
       udt_name
     FROM information_schema.columns 
-    WHERE table_name = 'commissions' 
-    AND (column_name = 'reference_date' OR column_name = 'created_at');
+    WHERE table_name = 'commissions';
   `;
 
   const { data, error } = await supabase.rpc('exec_sql', { query: sql });

@@ -224,6 +224,7 @@ export async function GET(request: NextRequest) {
     const saleIds = sales.rows.map((s: any) => s.id);
     let allItems: any[] = [];
     let allRefunds: any[] = [];
+    let allCommissions: any[] = [];
 
     if (saleIds.length > 0) {
       // 1. Batch Fetch Items
@@ -275,6 +276,20 @@ export async function GET(request: NextRequest) {
           }
         }
       }
+      
+      // 3. Batch Fetch Commissions
+      try {
+        const commissionResult = await query(
+          `SELECT sale_id, commission_amount 
+           FROM commissions 
+           WHERE sale_id = ANY($1::uuid[])`,
+          [saleIds]
+        );
+        allCommissions = commissionResult.rows;
+      } catch (e) {
+          console.error("Error fetching commissions:", e);
+          allCommissions = [];
+      }
     }
 
     // Grouping Helpers
@@ -289,10 +304,18 @@ export async function GET(request: NextRequest) {
       acc[ref.sale_id].push(ref);
       return acc;
     }, {});
+    
+    // Group Commissions
+    const commissionsBySaleId = allCommissions.reduce((acc: any, comm: any) => {
+        if (!acc[comm.sale_id]) acc[comm.sale_id] = 0;
+        acc[comm.sale_id] += parseFloat(comm.commission_amount || 0);
+        return acc;
+    }, {});
 
     const formattedSales = sales.rows.map((sale: any) => {
       const items = itemsBySaleId[sale.id] || [];
       const refunds = refundsBySaleId[sale.id] || [];
+      const commissionVal = commissionsBySaleId[sale.id] || 0;
 
       return {
           id: sale.id,
@@ -314,7 +337,7 @@ export async function GET(request: NextRequest) {
           totalDiscount: parseFloat(sale.total_discount),
           total: parseFloat(sale.total),
           refundTotal: hasRefundSupport ? parseFloat(sale.refund_total || 0) : 0,
-          commissionAmount: parseFloat(sale.commission_amount || 0),
+          commissionAmount: commissionVal,
           confirmedAt: sale.confirmed_at,
           cancelledAt: sale.cancelled_at,
           createdAt: sale.created_at,
