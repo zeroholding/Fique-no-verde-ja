@@ -238,7 +238,7 @@ async function importSales() {
 
       let unitPrice = quantity > 0 ? (subtotal / quantity) : subtotal;
 
-      // 5. Parse Date (DD/MM/YYYY)
+      // 5. Parse Date (M/D/YYYY - American format from Google Sheets)
       let createdAt = new Date();
       let saleDate = new Date();
       if (dateStr) {
@@ -246,13 +246,12 @@ async function importSales() {
           const datePart = dateStr.split(' ')[0];
           const parts = datePart.split('/');
           if (parts.length === 3) {
-             // Assume DD/MM/YYYY
-             const day = parseInt(parts[0], 10);
-             const month = parseInt(parts[1], 10) - 1; // JS Month is 0-indexed
+             // Format is M/D/YYYY (American)
+             const month = parseInt(parts[0], 10) - 1; // JS Month is 0-indexed
+             const day = parseInt(parts[1], 10);
              const year = parseInt(parts[2], 10);
              
-             // Create date object (Local time to avoid timezone shifts if possible, or UTC)
-             // Using UTC strings for DB is safer
+             // Create date object
              saleDate = new Date(year, month, day, 12, 0, 0); // Noon to avoid boundary issues
              createdAt = saleDate;
           }

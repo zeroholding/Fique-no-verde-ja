@@ -54,7 +54,7 @@ async function run() {
         if (item.sale_type === '03') {
             val = 0.25 * (item.quantity || 1);
         } else {
-            val = (item.total || 0) * (isSpecial ? 0.10 : 0.035);
+            val = (item.total || 0) * (isSpecial ? 0.10 : 0.025);
         }
         
         if (val > 0) {
@@ -65,7 +65,7 @@ async function run() {
                 commission_amount: parseFloat(val.toFixed(2)),
                 base_amount: item.total || 0,
                 commission_type: item.sale_type === '03' ? 'fixed_unit' : 'percent',
-                commission_rate: item.sale_type === '03' ? 0.25 : (isSpecial ? 10 : 3.5), 
+                commission_rate: item.sale_type === '03' ? 0.25 : (isSpecial ? 10 : 2.5), 
                 status: 'pending',
                 reference_date: sale.sale_date,
                 created_at: new Date().toISOString()
