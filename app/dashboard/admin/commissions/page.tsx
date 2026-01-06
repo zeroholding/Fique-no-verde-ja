@@ -141,8 +141,8 @@ function CommissionsPolicies() {
                     {p.consider_business_days ? " (considera dias uteis)" : ""}
                   </td>
                   <td className="px-4 py-3 text-gray-200">
-                    {new Date(p.valid_from).toLocaleDateString("pt-BR")}{" "}
-                    {p.valid_until ? `- ${new Date(p.valid_until).toLocaleDateString("pt-BR")}` : "• aberto"}
+                    {new Date(p.valid_from).toLocaleDateString("pt-BR", { timeZone: "UTC" })}{" "}
+                    {p.valid_until ? `- ${new Date(p.valid_until).toLocaleDateString("pt-BR", { timeZone: "UTC" })}` : "• aberto"}
                   </td>
                   <td className="px-4 py-3">
                     <span
@@ -262,16 +262,16 @@ function CommissionsStatement() {
 
   const filteredCommissions = useMemo(() => {
     const toStart = (value: string) => {
-      const d = new Date(value);
-      if (isNaN(d.getTime())) return null;
-      d.setHours(0, 0, 0, 0);
-      return d.getTime();
+      if (!value) return null;
+      const [y, m, d] = value.split("-").map(Number);
+      // Cria data LOCAL 00:00:00
+      return new Date(y, m - 1, d, 0, 0, 0, 0).getTime();
     };
     const toEnd = (value: string) => {
-      const d = new Date(value);
-      if (isNaN(d.getTime())) return null;
-      d.setHours(23, 59, 59, 999);
-      return d.getTime();
+      if (!value) return null;
+      const [y, m, d] = value.split("-").map(Number);
+      // Cria data LOCAL 23:59:59
+      return new Date(y, m - 1, d, 23, 59, 59, 999).getTime();
     };
 
     const start = startDate ? toStart(startDate) : null;
