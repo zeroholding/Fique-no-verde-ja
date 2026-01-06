@@ -165,13 +165,13 @@ export async function GET(request: NextRequest) {
 
       if (includePeriod) {
         if (useCustomRange && startDate && endDate) {
-          clauses.push(`${saleAlias}.sale_date::date >= $${getNextIdx()}::date`);
+          clauses.push(`(${saleAlias}.sale_date AT TIME ZONE 'America/Sao_Paulo')::date >= $${getNextIdx()}::date`);
           params.push(startDate);
-          clauses.push(`${saleAlias}.sale_date::date <= $${getNextIdx()}::date`);
+          clauses.push(`(${saleAlias}.sale_date AT TIME ZONE 'America/Sao_Paulo')::date <= $${getNextIdx()}::date`);
           params.push(endDate);
         } else {
           clauses.push(
-            `${saleAlias}.sale_date >= CURRENT_DATE - $${getNextIdx()} * INTERVAL '1 day'`,
+            `(${saleAlias}.sale_date AT TIME ZONE 'America/Sao_Paulo')::date >= (CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')::date - $${getNextIdx()} * INTERVAL '1 day'`,
           );
           params.push(periodDays);
         }
@@ -196,9 +196,9 @@ export async function GET(request: NextRequest) {
 
       if (includeDayType && dayType) {
         if (dayType === "weekday") {
-          clauses.push(`EXTRACT(DOW FROM ${saleAlias}.sale_date) BETWEEN 1 AND 5`);
+          clauses.push(`EXTRACT(DOW FROM ${saleAlias}.sale_date AT TIME ZONE 'America/Sao_Paulo') BETWEEN 1 AND 5`);
         } else if (dayType === "non_working") {
-          clauses.push(`EXTRACT(DOW FROM ${saleAlias}.sale_date) IN (0, 6)`);
+          clauses.push(`EXTRACT(DOW FROM ${saleAlias}.sale_date AT TIME ZONE 'America/Sao_Paulo') IN (0, 6)`);
         }
       }
 
@@ -351,7 +351,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN sale_items si ON si.sale_id = sp.id
       WHERE cp.is_active = true
         AND cp.available_quantity > 0
-        AND (cp.expires_at IS NULL OR cp.expires_at >= CURRENT_DATE)
+        AND (cp.expires_at IS NULL OR (cp.expires_at AT TIME ZONE 'America/Sao_Paulo')::date >= (CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')::date)
         ${packagesFilters.clause}
     `;
 

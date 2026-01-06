@@ -629,8 +629,11 @@ export default function Dashboard() {
                 <button
                   onClick={() => {
                     const today = new Date();
-                    const start = today.toISOString().slice(0, 10);
-                    const end = today.toISOString().slice(0, 10);
+                    const y = today.getFullYear();
+                    const m = String(today.getMonth() + 1).padStart(2, "0");
+                    const d = String(today.getDate()).padStart(2, "0");
+                    const start = `${y}-${m}-${d}`;
+                    const end = `${y}-${m}-${d}`;
                     setCustomRangeDraft({ start, end });
                     setAppliedCustomRange({ start, end });
                     setAnalysisPeriod("custom");
@@ -638,7 +641,14 @@ export default function Dashboard() {
                   className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
                     appliedCustomRange &&
                     appliedCustomRange.start === appliedCustomRange.end &&
-                    appliedCustomRange.start === new Date().toISOString().slice(0, 10)
+                    appliedCustomRange.start ===
+                      (() => {
+                        const t = new Date();
+                        const y = t.getFullYear();
+                        const m = String(t.getMonth() + 1).padStart(2, "0");
+                        const d = String(t.getDate()).padStart(2, "0");
+                        return `${y}-${m}-${d}`;
+                      })()
                       ? "bg-white/20 text-white border border-white/30"
                       : "bg-white/5 text-gray-200 border border-white/10 hover:bg-white/10"
                   }`}
@@ -650,8 +660,11 @@ export default function Dashboard() {
                     const today = new Date();
                     const yesterday = new Date(today);
                     yesterday.setDate(today.getDate() - 1);
-                    const start = yesterday.toISOString().slice(0, 10);
-                    const end = yesterday.toISOString().slice(0, 10);
+                    const y = yesterday.getFullYear();
+                    const m = String(yesterday.getMonth() + 1).padStart(2, "0");
+                    const d = String(yesterday.getDate()).padStart(2, "0");
+                    const start = `${y}-${m}-${d}`;
+                    const end = `${y}-${m}-${d}`;
                     setCustomRangeDraft({ start, end });
                     setAppliedCustomRange({ start, end });
                     setAnalysisPeriod("custom");
@@ -660,9 +673,14 @@ export default function Dashboard() {
                     appliedCustomRange &&
                     appliedCustomRange.start === appliedCustomRange.end &&
                     appliedCustomRange.start ===
-                      new Date(Date.now() - 24 * 60 * 60 * 1000)
-                        .toISOString()
-                        .slice(0, 10)
+                      (() => {
+                        const t = new Date();
+                        t.setDate(t.getDate() - 1);
+                        const y = t.getFullYear();
+                        const m = String(t.getMonth() + 1).padStart(2, "0");
+                        const d = String(t.getDate()).padStart(2, "0");
+                        return `${y}-${m}-${d}`;
+                      })()
                       ? "bg-white/20 text-white border border-white/30"
                       : "bg-white/5 text-gray-200 border border-white/10 hover:bg-white/10"
                   }`}
