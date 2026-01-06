@@ -30,16 +30,28 @@ const formatPolicyValue = (type: string, value: number) =>
   type === "percentage" ? `${value}%` : `R$ ${value.toFixed(2)}`;
 
 function CommissionsPolicies() {
-  const { error } = useToast();
+  const { error, success } = useToast();
   const [policies, setPolicies] = useState<CommissionPolicy[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingPolicy, setEditingPolicy] = useState<CommissionPolicy | null>(null);
+
+  // Form State
+  const [formData, setFormData] = useState({
+    name: "",
+    value: "",
+    type: "percentage",
+    applies_to: "all",
+    valid_from: "",
+    valid_until: "",
+    description: "",
+  });
+
   const fetchPolicies = async () => {
     const token = localStorage.getItem("token");
-    if (!token) {
-      error("Sessao expirada. Faca login novamente.");
-      return;
-    }
+    if (!token) return;
 
     setLoading(true);
     try {
@@ -47,13 +59,10 @@ function CommissionsPolicies() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Erro ao carregar politicas de comissao");
-      }
+      if (!res.ok) throw new Error(data.error);
       setPolicies(data.policies || []);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Erro ao carregar politicas de comissao";
-      error(msg);
+    } catch (err: any) {
+      error(err.message);
     } finally {
       setLoading(false);
     }
@@ -63,108 +72,323 @@ function CommissionsPolicies() {
     fetchPolicies();
   }, []);
 
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-        <p className="text-sm text-gray-300">
-          {policies.length} {policies.length === 1 ? "politica" : "politicas"} encontradas
-        </p>
-        <Button
-          size="sm"
-          variant="secondary"
-          className="rounded-xl"
-          onClick={fetchPolicies}
-          disabled={loading}
-        >
-          {loading ? "Atualizando..." : "Atualizar"}
-        </Button>
-      </div>
+  // Handlers
+  const handleOpenCreate = () => {
+    setEditingPolicy(null);
+    setFormData({
+      name: "",
+      value: "",
+      type: "percentage",
+      applies_to: "all",
+      valid_from: new Date().toISOString().split("T")[0],
+      valid_until: "",
+      description: "",
+    });
+    setIsModalOpen(true);
+  };
 
-      {loading ? (
-        <div className="px-6 py-10 text-center text-gray-300">Carregando politicas...</div>
-      ) : policies.length === 0 ? (
-        <div className="px-6 py-10 text-center text-gray-400">Nenhuma politica cadastrada.</div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-white/10 text-sm">
-            <thead className="bg-white/5">
-              <tr className="text-left text-gray-300">
-                <th className="px-4 py-3">Nome</th>
-                <th className="px-4 py-3">Tipo/Valor</th>
-                <th className="px-4 py-3">Escopo</th>
-                <th className="px-4 py-3">Tipo venda</th>
-                <th className="px-4 py-3">Aplica em</th>
-                <th className="px-4 py-3">Vigencia</th>
-                <th className="px-4 py-3">Ativa</th>
-                <th className="px-4 py-3">Criada em</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/10">
-              {policies.map((p) => (
-                <tr key={p.id} className="hover:bg-white/5 transition-colors">
-                  <td className="px-4 py-3">
-                    <p className="font-semibold text-white">{p.name}</p>
-                    {p.description && (
-                      <p className="text-xs text-gray-400 mt-1 line-clamp-2">{p.description}</p>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-gray-200">
-                    {p.type === "percentage" ? "Percentual" : "Fixo por unidade"} —{" "}
-                    {formatPolicyValue(p.type, p.value)}
-                  </td>
-                  <td className="px-4 py-3 text-gray-200">
-                    {p.scope === "general"
-                      ? "Geral"
-                      : p.scope === "product"
-                        ? "Produto"
-                        : p.scope === "user"
-                          ? "Usuario"
-                          : "Usuario + Produto"}
-                  </td>
-                  <td className="px-4 py-3 text-gray-200">
-                    {p.sale_type === "all"
-                      ? "Todos"
-                      : p.sale_type === "01"
-                        ? "Venda comum (01)"
-                        : p.sale_type === "02"
-                          ? "Venda de pacote (02)"
-                          : p.sale_type === "03"
-                            ? "Consumo de pacote (03)"
-                            : p.sale_type}
-                  </td>
-                  <td className="px-4 py-3 text-gray-200">
-                    {p.applies_to === "all"
-                      ? "Todos os dias"
-                      : p.applies_to === "weekdays"
+  const handleOpenEdit = (policy: CommissionPolicy) => {
+    setEditingPolicy(policy);
+    setFormData({
+      name: policy.name,
+      value: policy.value.toString(),
+      type: policy.type,
+      applies_to: policy.applies_to,
+      valid_from: policy.valid_from.split("T")[0],
+      valid_until: policy.valid_until ? policy.valid_until.split("T")[0] : "",
+      description: policy.description || "",
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Tem certeza que deseja excluir esta politica?")) return;
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`/api/admin/commission-policies?id=${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Erro ao excluir");
+      success("Politica excluida com sucesso!");
+      fetchPolicies();
+    } catch (err: any) {
+      error(err.message);
+    }
+  };
+
+  const handleToggleStatus = async (policy: CommissionPolicy) => {
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch("/api/admin/commission-policies", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ id: policy.id, is_active: !policy.is_active }),
+      });
+      if (!res.ok) throw new Error("Erro ao atualizar status");
+      success(`Politica ${!policy.is_active ? "ativada" : "pausada"}!`);
+      fetchPolicies();
+    } catch (err: any) {
+      error(err.message);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const token = localStorage.getItem("token");
+    
+    const payload = {
+      ...formData,
+      value: parseFloat(formData.value),
+      valid_until: formData.valid_until || null,
+    };
+
+    try {
+      let res;
+      if (editingPolicy) {
+        res = await fetch("/api/admin/commission-policies", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ id: editingPolicy.id, ...payload }),
+        });
+      } else {
+        res = await fetch("/api/admin/commission-policies", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+      }
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Erro ao salvar");
+      }
+
+      success("Politica salva com sucesso!");
+      setIsModalOpen(false);
+      fetchPolicies();
+    } catch (err: any) {
+      error(err.message);
+    }
+  };
+
+  return (
+    <>
+      <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+          <p className="text-sm text-gray-300">
+            {policies.length} {policies.length === 1 ? "politica" : "politicas"} encontradas
+          </p>
+          <div className="flex gap-2">
+             <Button
+              size="sm"
+              variant="primary" // Assuming primary looks better for Create
+              className="rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold shadow-lg shadow-blue-500/20"
+              onClick={handleOpenCreate}
+            >
+              + Nova Politica
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="rounded-xl"
+              onClick={fetchPolicies}
+              disabled={loading}
+            >
+              {loading ? "Atualizando..." : "Atualizar"}
+            </Button>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="px-6 py-10 text-center text-gray-300">Carregando politicas...</div>
+        ) : policies.length === 0 ? (
+          <div className="px-6 py-10 text-center text-gray-400">Nenhuma politica cadastrada.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-white/10 text-sm">
+              <thead className="bg-white/5">
+                <tr className="text-left text-gray-300">
+                  <th className="px-4 py-3">Nome</th>
+                  <th className="px-4 py-3">Tipo/Valor</th>
+                  <th className="px-4 py-3">Aplica em</th>
+                  <th className="px-4 py-3">Vigencia</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3 text-right">Acoes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/10">
+                {policies.map((p) => (
+                  <tr key={p.id} className="hover:bg-white/5 transition-colors">
+                    <td className="px-4 py-3">
+                      <p className="font-semibold text-white">{p.name}</p>
+                       {p.description && (
+                         <p className="text-xs text-gray-400 mt-1 line-clamp-1">{p.description}</p>
+                       )}
+                    </td>
+                    <td className="px-4 py-3 text-gray-200">
+                      {p.type === "percentage" ? "Percentual" : "Fixo"} —{" "}
+                      {formatPolicyValue(p.type, p.value)}
+                    </td>
+                    <td className="px-4 py-3 text-gray-200">
+                      {p.applies_to === "all"
+                        ? "Todos"
+                        : p.applies_to === "weekdays"
                         ? "Somente uteis"
                         : "Finais/feriados"}
-                    {p.consider_business_days ? " (considera dias uteis)" : ""}
-                  </td>
-                  <td className="px-4 py-3 text-gray-200">
-                    {new Date(p.valid_from).toLocaleDateString("pt-BR", { timeZone: "UTC" })}{" "}
-                    {p.valid_until ? `- ${new Date(p.valid_until).toLocaleDateString("pt-BR", { timeZone: "UTC" })}` : "• aberto"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`px-3 py-1 rounded-full border text-xs ${
-                        p.is_active
-                          ? "border-green-400 text-green-200 bg-green-400/10"
-                          : "border-red-400 text-red-200 bg-red-400/10"
-                      }`}
-                    >
-                      {p.is_active ? "Ativa" : "Inativa"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-400 text-xs">
-                    {formatDateTime(p.created_at)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </td>
+                    <td className="px-4 py-3 text-gray-200">
+                      {new Date(p.valid_from).toLocaleDateString("pt-BR", { timeZone: "UTC" })}{" "}
+                      {p.valid_until ? `- ${new Date(p.valid_until).toLocaleDateString("pt-BR", { timeZone: "UTC" })}` : "• aberto"}
+                    </td>
+                    <td className="px-4 py-3">
+                       <button
+                        onClick={() => handleToggleStatus(p)}
+                        className={`px-3 py-1 rounded-full border text-xs transition-all hover:scale-105 ${
+                          p.is_active
+                            ? "border-green-400 text-green-200 bg-green-400/10 hover:bg-green-400/20"
+                            : "border-red-400 text-red-200 bg-red-400/10 hover:bg-red-400/20"
+                        }`}
+                      >
+                        {p.is_active ? "Ativa" : "Inativa"}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3 text-right flex items-center justify-end gap-2">
+                       <button 
+                         onClick={() => handleOpenEdit(p)}
+                         className="p-1.5 rounded-lg text-blue-400 hover:bg-blue-400/10 transition-colors"
+                         title="Editar"
+                       >
+                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                       </button>
+                       <button 
+                         onClick={() => handleDelete(p.id)}
+                         className="p-1.5 rounded-lg text-red-400 hover:bg-red-400/10 transition-colors"
+                         title="Excluir"
+                       >
+                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                       </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#121214] p-6 shadow-2xl">
+            <h2 className="text-xl font-bold text-white mb-4">
+              {editingPolicy ? "Editar Politica" : "Nova Politica"}
+            </h2>
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                 <div className="col-span-2">
+                   <label className="text-xs uppercase text-gray-400">Nome</label>
+                   <input
+                     required
+                     className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-white focus:border-blue-500 outline-none"
+                     value={formData.name}
+                     onChange={e => setFormData({...formData, name: e.target.value})}
+                     placeholder="Ex: Bonus de Natal"
+                   />
+                 </div>
+
+                 <div>
+                   <label className="text-xs uppercase text-gray-400">Tipo Valor</label>
+                   <Select
+                     options={[{value: 'percentage', label: 'Percentual (%)'}, {value: 'fixed', label: 'Fixo (R$)'}, {value: 'fixed_unit', label: 'Fixo Unidade'}]}
+                     value={formData.type}
+                     onChange={(e: any) => setFormData({...formData, type: e.target.value})}
+                     className="py-2"
+                   />
+                 </div>
+
+                 <div>
+                    <label className="text-xs uppercase text-gray-400">Valor</label>
+                    <input
+                      required
+                      type="number"
+                      step="0.01"
+                      className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-white focus:border-blue-500 outline-none"
+                      value={formData.value}
+                      onChange={e => setFormData({...formData, value: e.target.value})}
+                      placeholder="Ex: 5.0"
+                    />
+                 </div>
+
+                 <div>
+                   <label className="text-xs uppercase text-gray-400">Aplica em</label>
+                   <Select
+                     options={[
+                       {value: 'all', label: 'Todos os dias'},
+                       {value: 'weekdays', label: 'Dias Uteis'}, 
+                       {value: 'weekends_holidays', label: 'Fins de semana/Feriados'}
+                     ]}
+                     value={formData.applies_to}
+                     onChange={(e: any) => setFormData({...formData, applies_to: e.target.value})}
+                     className="py-2"
+                   />
+                 </div>
+
+                 <div>
+                    <label className="text-xs uppercase text-gray-400">Vigencia Inicio</label>
+                    <input
+                      required
+                      type="date"
+                      className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-white focus:border-blue-500 outline-none"
+                      value={formData.valid_from}
+                      onChange={e => setFormData({...formData, valid_from: e.target.value})}
+                    />
+                 </div>
+                 
+                 <div>
+                    <label className="text-xs uppercase text-gray-400">Vigencia Fim</label>
+                    <input
+                      type="date"
+                      className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-white focus:border-blue-500 outline-none"
+                      value={formData.valid_until}
+                      onChange={e => setFormData({...formData, valid_until: e.target.value})}
+                    />
+                 </div>
+
+                 <div className="col-span-2">
+                    <label className="text-xs uppercase text-gray-400">Descricao (Opcional)</label>
+                    <textarea
+                      rows={2}
+                      className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-white focus:border-blue-500 outline-none resize-none"
+                      value={formData.description}
+                      onChange={e => setFormData({...formData, description: e.target.value})}
+                    />
+                 </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <Button variant="ghost" type="button" onClick={() => setIsModalOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button variant="primary" type="submit" className="bg-blue-600 hover:bg-blue-500">
+                  Salvar
+                </Button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 

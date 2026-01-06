@@ -48,26 +48,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabaseAdmin
       .from("commission_policies")
-      .select(
-        `
-          id,
-          name,
-          description,
-          type,
-          value,
-          scope,
-          product_id,
-          user_id,
-          sale_type,
-          applies_to,
-          consider_business_days,
-          valid_from,
-          valid_until,
-          is_active,
-          created_at,
-          updated_at
-        `
-      )
+      .select("*")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -80,5 +61,108 @@ export async function GET(request: NextRequest) {
       error instanceof Error ? error.message : "Erro ao listar politicas de comissao";
     const status = message.includes("administradores") ? 403 : 400;
     return NextResponse.json({ error: message }, { status });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const admin = await authenticateAdmin(request);
+    const body = await request.json();
+
+    const {
+      name,
+      value,
+      type = "percentage",
+      scope = "general",
+      applies_to = "all",
+      valid_from = new Date().toISOString(),
+      valid_until = null,
+      description,
+      sale_type = "all",
+      consider_business_days = false
+    } = body;
+
+    // Basic Validation
+    if (!name) throw new Error("Nome e obrigatorio");
+    if (value === undefined || value === null) throw new Error("Valor e obrigatorio");
+
+    const { data, error } = await supabaseAdmin
+      .from("commission_policies")
+      .insert({
+        name,
+        value,
+        type,
+        scope,
+        applies_to,
+        valid_from,
+        valid_until,
+        description,
+        sale_type,
+        consider_business_days,
+        is_active: true,
+        created_by_user_id: admin.id
+      })
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+
+    return NextResponse.json({ success: true, policy: data }, { status: 201 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Erro ao criar politica";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    await authenticateAdmin(request);
+    const body = await request.json();
+    const { id, ...updates } = body;
+
+    if (!id) throw new Error("ID da politica e obrigatorio");
+
+    // Remove protected fields
+    delete (updates as any).created_at;
+    delete (updates as any).created_by_user_id;
+
+    const { data, error } = await supabaseAdmin
+      .from("commission_policies")
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+
+    return NextResponse.json({ success: true, policy: data }, { status: 200 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Erro ao atualizar politica";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    await authenticateAdmin(request);
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+
+    if (!id) throw new Error("ID nao informado");
+
+    const { error } = await supabaseAdmin
+      .from("commission_policies")
+      .delete()
+      .eq("id", id);
+
+    if (error) throw new Error(error.message);
+
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Erro ao excluir politica";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }
