@@ -893,29 +893,6 @@ export default function Dashboard() {
             </div>
           </Card>
 
-          {/* COMISSÕES */}
-          <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400 mb-1">Comissão gerada</p>
-                <p className="text-3xl font-bold text-white">
-                  {formatCurrency(periodTotals?.totalCommission ?? 0)}
-                </p>
-                <p className="text-sm text-purple-300 mt-1">{periodDescription}</p>
-              </div>
-              <div className="w-14 h-14 rounded-full bg-purple-500/20 flex items-center justify-center">
-                <svg
-                  className="w-8 h-8 text-purple-300"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-            </div>
-          </Card>
-
           {/* VENDAS */}
           <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
             <div className="flex items-center justify-between">
@@ -969,6 +946,29 @@ export default function Dashboard() {
                   viewBox="0 0 24 24"
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+            </div>
+          </Card>
+
+          {/* COMISSÕES */}
+          <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400 mb-1">Comissão gerada</p>
+                <p className="text-3xl font-bold text-white">
+                  {formatCurrency(periodTotals?.totalCommission ?? 0)}
+                </p>
+                <p className="text-sm text-purple-300 mt-1">{periodDescription}</p>
+              </div>
+              <div className="w-14 h-14 rounded-full bg-purple-500/20 flex items-center justify-center">
+                <svg
+                  className="w-8 h-8 text-purple-300"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
             </div>
