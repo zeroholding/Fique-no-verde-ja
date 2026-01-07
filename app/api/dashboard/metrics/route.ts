@@ -279,7 +279,7 @@ export async function GET(request: NextRequest) {
       SELECT
         ${saleIds.length} AS sales_count,
         (
-          SELECT COALESCE(SUM(CASE WHEN si.sale_type = '03' THEN si.subtotal ELSE si.total END), 0)
+          SELECT COALESCE(SUM(si.subtotal), 0)
           FROM sale_items si
           JOIN sales s ON si.sale_id = s.id
           LEFT JOIN services serv ON si.product_id = serv.id
@@ -363,7 +363,7 @@ export async function GET(request: NextRequest) {
           'Nao informado'
         ) AS name,
         COUNT(DISTINCT s.id) AS sale_count,
-        COALESCE(SUM(CASE WHEN si.sale_type = '03' THEN si.subtotal ELSE si.total END), 0)::numeric AS total_revenue
+        COALESCE(SUM(si.subtotal), 0)::numeric AS total_revenue
       FROM sales s
       LEFT JOIN sale_items si ON si.sale_id = s.id
       LEFT JOIN services serv ON si.product_id = serv.id
@@ -398,7 +398,7 @@ export async function GET(request: NextRequest) {
           'Nao informado'
         ) AS service_name,
         COALESCE(
-          SUM(CASE WHEN si.sale_type = '03' THEN si.subtotal ELSE si.total END),
+          SUM(si.subtotal),
           0
         )::numeric AS total_value,
         COALESCE(SUM(si.quantity), 0)::int AS total_quantity,
@@ -417,7 +417,7 @@ export async function GET(request: NextRequest) {
       SELECT
         COALESCE(c.name, 'Cliente sem nome') AS client_name,
         COALESCE(SUM(si.quantity), 0)::int AS total_quantity,
-        COALESCE(SUM(CASE WHEN si.sale_type = '03' THEN si.subtotal ELSE si.total END), 0)::numeric AS total_value
+        COALESCE(SUM(si.subtotal), 0)::numeric AS total_value
       FROM sales s
       LEFT JOIN sale_items si ON si.sale_id = s.id
       JOIN clients c ON s.client_id = c.id
@@ -469,7 +469,7 @@ export async function GET(request: NextRequest) {
           'Nao informado'
         ) AS service_name,
         COALESCE(
-          SUM(CASE WHEN si.sale_type = '03' THEN si.subtotal ELSE si.total END),
+          SUM(si.subtotal),
           0
         )::numeric AS total_value,
         COALESCE(SUM(si.quantity), 0)::int AS total_quantity,
@@ -487,7 +487,7 @@ export async function GET(request: NextRequest) {
     const attendantTotalsQuery = `
       SELECT
         COALESCE(
-          SUM(CASE WHEN si.sale_type = '03' THEN si.subtotal ELSE si.total END),
+          SUM(si.subtotal),
           0
         )::numeric AS total_value,
         COALESCE(SUM(si.quantity), 0)::int AS total_quantity,
