@@ -24,7 +24,11 @@ type PeriodTotals = {
   totalValue: number;
   totalUnits: number;
   reclamacoesUnits: number;
+  reclamacoesVendas: number;
+  reclamacoesConsumos: number;
   atrasosUnits: number;
+  atrasosVendas: number;
+  atrasosConsumos: number;
   totalCommission: number;
   totalDiscount: number;
   refundTotal: number;
@@ -927,13 +931,19 @@ export default function Dashboard() {
                       {periodTotals?.reclamacoesUnits ?? 0}
                     </p>
                     <p className="text-xs text-gray-400">Reclamações</p>
+                    <p className="text-[10px] text-gray-500">
+                      {periodTotals?.reclamacoesVendas ?? 0} vend. + {periodTotals?.reclamacoesConsumos ?? 0} cons.
+                    </p>
                   </div>
-                  <div className="h-10 w-px bg-white/20"></div>
+                  <div className="h-14 w-px bg-white/20"></div>
                   <div>
                     <p className="text-2xl font-bold text-amber-300">
                       {periodTotals?.atrasosUnits ?? 0}
                     </p>
                     <p className="text-xs text-gray-400">Atrasos</p>
+                    <p className="text-[10px] text-gray-500">
+                      {periodTotals?.atrasosVendas ?? 0} vend. + {periodTotals?.atrasosConsumos ?? 0} cons.
+                    </p>
                   </div>
                 </div>
                 <p className="text-sm text-orange-300 mt-2">{periodDescription}</p>

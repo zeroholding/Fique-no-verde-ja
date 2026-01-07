@@ -303,7 +303,6 @@ export async function GET(request: NextRequest) {
           JOIN sales s ON si.sale_id = s.id
           LEFT JOIN services serv ON si.product_id = serv.id
           WHERE s.id IN ${saleIdsClause}
-            AND si.sale_type = '03'
             AND (${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%reclam%')
             ${itemLevelFilters.clause}
         )::int AS reclamacoes_units,
@@ -313,10 +312,49 @@ export async function GET(request: NextRequest) {
           JOIN sales s ON si.sale_id = s.id
           LEFT JOIN services serv ON si.product_id = serv.id
           WHERE s.id IN ${saleIdsClause}
+            AND si.sale_type = '01'
+            AND (${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%reclam%')
+            ${itemLevelFilters.clause}
+        )::int AS reclamacoes_vendas,
+        (
+          SELECT COALESCE(SUM(si.quantity), 0)
+          FROM sale_items si
+          JOIN sales s ON si.sale_id = s.id
+          LEFT JOIN services serv ON si.product_id = serv.id
+          WHERE s.id IN ${saleIdsClause}
+            AND si.sale_type = '03'
+            AND (${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%reclam%')
+            ${itemLevelFilters.clause}
+        )::int AS reclamacoes_consumos,
+        (
+          SELECT COALESCE(SUM(si.quantity), 0)
+          FROM sale_items si
+          JOIN sales s ON si.sale_id = s.id
+          LEFT JOIN services serv ON si.product_id = serv.id
+          WHERE s.id IN ${saleIdsClause}
+            AND (${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%atras%')
+            ${itemLevelFilters.clause}
+        )::int AS atrasos_units,
+        (
+          SELECT COALESCE(SUM(si.quantity), 0)
+          FROM sale_items si
+          JOIN sales s ON si.sale_id = s.id
+          LEFT JOIN services serv ON si.product_id = serv.id
+          WHERE s.id IN ${saleIdsClause}
+            AND si.sale_type = '01'
+            AND (${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%atras%')
+            ${itemLevelFilters.clause}
+        )::int AS atrasos_vendas,
+        (
+          SELECT COALESCE(SUM(si.quantity), 0)
+          FROM sale_items si
+          JOIN sales s ON si.sale_id = s.id
+          LEFT JOIN services serv ON si.product_id = serv.id
+          WHERE s.id IN ${saleIdsClause}
             AND si.sale_type = '03'
             AND (${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%atras%')
             ${itemLevelFilters.clause}
-        )::int AS atrasos_units
+        )::int AS atrasos_consumos
     `;
 
     const pendingFilters = buildFilters({
@@ -600,7 +638,11 @@ export async function GET(request: NextRequest) {
         refundTotal: Number(periodTotalsRow.total_refund ?? 0),
         totalUnits: Number(periodTotalsRow.total_units ?? 0),
         reclamacoesUnits: Number(periodTotalsRow.reclamacoes_units ?? 0),
+        reclamacoesVendas: Number(periodTotalsRow.reclamacoes_vendas ?? 0),
+        reclamacoesConsumos: Number(periodTotalsRow.reclamacoes_consumos ?? 0),
         atrasosUnits: Number(periodTotalsRow.atrasos_units ?? 0),
+        atrasosVendas: Number(periodTotalsRow.atrasos_vendas ?? 0),
+        atrasosConsumos: Number(periodTotalsRow.atrasos_consumos ?? 0),
         totalCommission: Number(periodTotalsRow.total_commission ?? 0),
         totalDiscount: Number(periodTotalsRow.total_discount ?? 0),
       },
