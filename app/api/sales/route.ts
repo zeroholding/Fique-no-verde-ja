@@ -791,15 +791,15 @@ export async function POST(request: NextRequest) {
 
       // RECUPERAR ITENS PARA GERAR COMISSÃO DETALHADA E GRAVAR NO EXTRATO
       // Wrap em try/catch para garantir que ERRO DE COMISSAO nao trave a VENDA
-      // RECUPERAR ITENS PARA GERAR COMISSÃO DETALHADA E GRAVAR NO EXTRATO
-      // Wrap em try/catch para garantir que ERRO DE COMISSAO nao trave a VENDA
-      try {
-          // [FIX] Incluir subtotal na query para usar como base em Consumo de Pacote (03)
-          const savedItemsResult = await query(
-            `SELECT id, total, subtotal, quantity, sale_type, product_id FROM sale_items WHERE sale_id = $1`,
-            [saleId]
-          );
+      
+      // [CRITICAL FIX] Fetch saved items BEFORE commission try/catch to ensure
+      // defensive total calculation (lines 887+) ALWAYS has access to item data.
+      const savedItemsResult = await query(
+        `SELECT id, total, subtotal, quantity, sale_type, product_id, discount_amount FROM sale_items WHERE sale_id = $1`,
+        [saleId]
+      );
 
+      try {
           for (const item of savedItemsResult.rows) {
             const itemSaleType = item.sale_type || "01";
             // [FIX] Para Tipo 03 (Consumo), usar o subtotal (valor teórico) como base.
@@ -883,7 +883,24 @@ export async function POST(request: NextRequest) {
         commissionAmount,
       });
 
-      // Atualizar totais da venda (incluindo comissÃƒÆ’Ã‚Â£o e desconto)
+      // [DEFENSIVE FIX] Recalcular totais para garantir consistencia com items inseridos
+      totalSubtotal = 0;
+      let calculatedTotalDiscount = 0;
+      let calculatedTotal = 0;
+
+      if (savedItemsResult && savedItemsResult.rows) {
+          savedItemsResult.rows.forEach((item: any) => {
+              totalSubtotal += parseFloat(item.subtotal || "0");
+              calculatedTotalDiscount += parseFloat(item.discount_amount || "0");
+              calculatedTotal += parseFloat(item.total || "0");
+          });
+      }
+
+      // Adicionar desconto geral se houver
+      const FinalDiscountGiven = calculatedTotalDiscount + generalDiscountAmount;
+      const FinalTotalSales = calculatedTotal - generalDiscountAmount;
+
+      // Atualizar totais da venda (incluindo comissao e desconto)
       await query(
         `UPDATE sales
          SET subtotal = $1,
@@ -894,9 +911,9 @@ export async function POST(request: NextRequest) {
          WHERE id = $6`,
         [
           totalSubtotal,
-          totalDiscountGiven,
-          finalTotal,
-          totalDiscountGiven,
+          FinalDiscountGiven,
+          FinalTotalSales,
+          FinalDiscountGiven,
           commissionAmount,
           saleId
         ]
