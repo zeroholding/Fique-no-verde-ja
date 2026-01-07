@@ -303,6 +303,7 @@ export async function GET(request: NextRequest) {
           JOIN sales s ON si.sale_id = s.id
           LEFT JOIN services serv ON si.product_id = serv.id
           WHERE s.id IN ${saleIdsClause}
+            AND si.sale_type = '03'
             AND (${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%reclam%')
             ${itemLevelFilters.clause}
         )::int AS reclamacoes_units,
@@ -312,6 +313,7 @@ export async function GET(request: NextRequest) {
           JOIN sales s ON si.sale_id = s.id
           LEFT JOIN services serv ON si.product_id = serv.id
           WHERE s.id IN ${saleIdsClause}
+            AND si.sale_type = '03'
             AND (${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%atras%')
             ${itemLevelFilters.clause}
         )::int AS atrasos_units
