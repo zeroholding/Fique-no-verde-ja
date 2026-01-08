@@ -36,10 +36,19 @@ const authenticateAdmin = async (request: NextRequest) => {
 export async function GET(request: NextRequest) {
   try {
     await authenticateAdmin(request);
-    const { data, error } = await supabaseAdmin
+    const { searchParams } = new URL(request.url);
+    const activeOnly = searchParams.get("active") === "true";
+
+    let query = supabaseAdmin
       .from("users")
       .select("id, first_name, last_name, email, phone, is_active, is_admin, created_by_admin, created_at, admin_generated_password")
       .order("first_name", { ascending: true });
+
+    if (activeOnly) {
+      query = query.eq("is_active", true);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       throw new Error(error.message || "Erro ao listar usuarios");
@@ -141,6 +150,47 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error("Erro ao remover usuário:", error);
     const message = error instanceof Error ? error.message : "Erro ao remover usuário";
+    const status = message.includes("administradores") ? 403 : 400;
+    return NextResponse.json({ error: message }, { status });
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const adminUser = await authenticateAdmin(request);
+    const body = await request.json();
+    const { userId, isActive } = body;
+
+    if (!userId) {
+      return NextResponse.json({ error: "ID do usuário obrigatório" }, { status: 400 });
+    }
+
+    if (adminUser.id === userId && isActive === false) {
+      return NextResponse.json({ error: "Não é possível desativar sua própria conta" }, { status: 400 });
+    }
+
+    const updateData: any = {};
+    if (typeof isActive === "boolean") {
+      updateData.is_active = isActive;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ error: "Nenhum dado para atualizar" }, { status: 400 });
+    }
+
+    const { error } = await supabaseAdmin
+      .from("users")
+      .update(updateData)
+      .eq("id", userId);
+
+    if (error) {
+      throw new Error(error.message || "Erro ao atualizar usuário");
+    }
+
+    return NextResponse.json({ message: "Usuário atualizado com sucesso" }, { status: 200 });
+  } catch (error) {
+    console.error("Erro ao atualizar usuário:", error);
+    const message = error instanceof Error ? error.message : "Erro ao atualizar usuário";
     const status = message.includes("administradores") ? 403 : 400;
     return NextResponse.json({ error: message }, { status });
   }

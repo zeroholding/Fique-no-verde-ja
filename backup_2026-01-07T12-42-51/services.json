@@ -1,0 +1,32 @@
+[
+  {
+    "id": "7618e745-490d-4264-b349-7827ef07e3ae",
+    "name": "Reclamação",
+    "description": "Serviço de remoção de reclamações",
+    "base_price": 40,
+    "sla": "Até 72 horas",
+    "highlights": [
+      "Cálculo progressivo de preço",
+      "Primeiras 10 unidades com valor especial",
+      "Desconto a partir da 11ª unidade"
+    ],
+    "is_active": true,
+    "created_at": "2025-11-26T18:51:00.714063+00:00",
+    "updated_at": "2025-11-26T18:51:00.714063+00:00"
+  },
+  {
+    "id": "42b1d178-1f56-46ef-8048-ecfbdfc02582",
+    "name": "Atrasos",
+    "description": "Serviço de remoção de atrasos",
+    "base_price": 30,
+    "sla": "Até 72 horas",
+    "highlights": [
+      "Preço escalonado por quantidade",
+      "Desconto progressivo em grandes volumes",
+      "Processamento rápido"
+    ],
+    "is_active": true,
+    "created_at": "2025-11-26T18:51:00.714063+00:00",
+    "updated_at": "2025-11-26T18:51:00.714063+00:00"
+  }
+]

@@ -1,0 +1,61 @@
+{
+  "timestamp": "2026-01-07T12:42:58.213Z",
+  "tables": [
+    {
+      "table": "users",
+      "status": "OK",
+      "rows": 15
+    },
+    {
+      "table": "clients",
+      "status": "OK",
+      "rows": 2055
+    },
+    {
+      "table": "services",
+      "status": "OK",
+      "rows": 2
+    },
+    {
+      "table": "sales",
+      "status": "OK",
+      "rows": 3424
+    },
+    {
+      "table": "sale_items",
+      "status": "OK",
+      "rows": 3416
+    },
+    {
+      "table": "sale_refunds",
+      "status": "OK",
+      "rows": 0
+    },
+    {
+      "table": "commissions",
+      "status": "OK",
+      "rows": 3416
+    },
+    {
+      "table": "commission_policies",
+      "status": "OK",
+      "rows": 6
+    },
+    {
+      "table": "client_packages",
+      "status": "OK",
+      "rows": 8
+    },
+    {
+      "table": "package_consumptions",
+      "status": "OK",
+      "rows": 130
+    },
+    {
+      "table": "products",
+      "status": "OK",
+      "rows": 1
+    }
+  ],
+  "totalRows": 12473
+}

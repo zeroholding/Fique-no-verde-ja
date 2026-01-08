@@ -1,0 +1,11 @@
+[
+  {
+    "id": "7ee908cd-8c03-4c8e-9b7b-b1508040a913",
+    "name": "Vendas com Reclamações",
+    "description": "Serviço de tratamento de reclamações com preço escalonado",
+    "sku": "SVC-COMPLAINTS",
+    "is_active": true,
+    "created_at": "2025-11-27T13:05:54.815213",
+    "updated_at": "2025-11-27T13:05:54.815213"
+  }
+]

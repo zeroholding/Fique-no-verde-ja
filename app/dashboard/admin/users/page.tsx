@@ -290,6 +290,47 @@ export default function AdminUsersPage() {
                     <Button
                       size="sm"
                       variant="ghost"
+                      className={`rounded-full px-4 py-1 w-full md:w-auto border ${
+                        user.isActive
+                          ? "border-yellow-500/30 text-yellow-200 hover:bg-yellow-500/10"
+                          : "border-green-500/30 text-green-200 hover:bg-green-500/10"
+                      }`}
+                      onClick={async () => {
+                        const token = localStorage.getItem("token");
+                        if (!token) return;
+                        try {
+                          const res = await fetch("/api/admin/users", {
+                            method: "PUT",
+                            headers: {
+                              "Content-Type": "application/json",
+                              Authorization: `Bearer ${token}`,
+                            },
+                            body: JSON.stringify({
+                              userId: user.id,
+                              isActive: !user.isActive,
+                            }),
+                          });
+                          if (!res.ok) {
+                            const data = await res.json();
+                            throw new Error(data.error || "Erro ao atualizar status");
+                          }
+                          success(
+                            `Usuario ${
+                              user.isActive ? "desativado" : "ativado"
+                            } com sucesso!`
+                          );
+                          fetchUsers();
+                        } catch (err) {
+                          const msg = err instanceof Error ? err.message : "Erro ao atualizar";
+                          error(msg);
+                        }
+                      }}
+                    >
+                      {user.isActive ? "Desativar" : "Ativar"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
                       className="rounded-full px-4 py-1 w-full md:w-auto border border-red-500/30 text-red-300 hover:bg-red-500/10"
                       onClick={() => setDeleteTarget(user)}
                     >
