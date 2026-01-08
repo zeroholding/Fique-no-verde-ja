@@ -59,6 +59,8 @@ function PackagesStatementContent() {
   const [endDate, setEndDate] = useState("");
   const [attendantId, setAttendantId] = useState("");
   const [attendants, setAttendants] = useState<Array<{ value: string; label: string }>>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const clientsOptions = useMemo(() => {
     const unique = new Map<string, string>();
@@ -126,6 +128,7 @@ function PackagesStatementContent() {
 
   // Auto-fetch quando filtros chave mudam
   useEffect(() => {
+    setCurrentPage(1);
     fetchStatement();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId, typeFilter]); // Removemos attendantId para evitar fetch excessivo, mas poderiamos incluir
@@ -277,48 +280,100 @@ function PackagesStatementContent() {
           ) : filteredOperations.length === 0 ? (
             <div className="px-6 py-10 text-center text-gray-400">Nenhum lancamento encontrado.</div>
           ) : (
-            <table className="w-full divide-y divide-white/10 text-xs sm:text-sm">
-              <thead className="bg-white/5">
-                <tr className="text-left text-gray-300">
-                  <th className="px-2 py-3 text-left">Data</th>
-                  <th className="px-2 py-3 text-left">Tipo</th>
-                  <th className="px-2 py-3 text-left max-w-[120px]">Cliente</th>
-                  <th className="px-2 py-3 text-left">Serviço</th>
-                  <th className="px-2 py-3 text-center">Qtde</th>
-                  <th className="px-2 py-3 text-center">Saldo</th>
-                  <th className="px-2 py-3 text-left">Atendente</th>
-                  <th className="px-2 py-3 text-right">Venda</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/10">
-                {filteredOperations.map((op) => (
-                  <tr key={op.id} className="hover:bg-white/5 transition-colors">
-                    <td className="px-2 py-3 text-gray-200 whitespace-nowrap">{formatDateTime(op.date)}</td>
-                    <td className="px-2 py-3">
-                      <span
-                        className={`px-2 py-0.5 rounded-full border text-[10px] uppercase font-medium ${
-                          op.operationType === "compra"
-                            ? "border-emerald-400 text-emerald-200 bg-emerald-400/10"
-                            : "border-orange-400 text-orange-200 bg-orange-400/10"
-                        }`}
-                      >
-                        {op.operationType === "compra" ? "Compra" : "Consumo"}
-                      </span>
-                    </td>
-                    <td className="px-2 py-3 text-gray-200 truncate max-w-[120px]" title={op.clientName}>
-                      {op.clientName}
-                    </td>
-                    <td className="px-2 py-3 text-gray-200">{op.serviceName || "-"}</td>
-                    <td className="px-2 py-3 text-white text-center font-medium">{op.quantity ?? 0}</td>
-                    <td className="px-2 py-3 text-emerald-200 text-center font-medium">{op.balanceQuantityAfter ?? 0}</td>
-                    <td className="px-2 py-3 text-gray-200 text-xs">{op.attendantName}</td>
-                    <td className="px-2 py-3 text-blue-300 text-right">
-                      {op.saleId ? <a href={`/dashboard/sales?saleId=${op.saleId}`} className="hover:underline">Ver</a> : "-"}
-                    </td>
+            <>
+              <table className="w-full divide-y divide-white/10 text-xs sm:text-sm">
+                <thead className="bg-white/5">
+                  <tr className="text-left text-gray-300">
+                    <th className="px-2 py-3 text-left">Data</th>
+                    <th className="px-2 py-3 text-left">Tipo</th>
+                    <th className="px-2 py-3 text-left max-w-[120px]">Cliente</th>
+                    <th className="px-2 py-3 text-left">Serviço</th>
+                    <th className="px-2 py-3 text-center">Qtde</th>
+                    <th className="px-2 py-3 text-center">Saldo</th>
+                    <th className="px-2 py-3 text-left">Atendente</th>
+                    <th className="px-2 py-3 text-right">Venda</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-white/10">
+                  {filteredOperations
+                    .slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+                    .map((op) => (
+                    <tr key={op.id} className="hover:bg-white/5 transition-colors">
+                      <td className="px-2 py-3 text-gray-200 whitespace-nowrap">{formatDateTime(op.date)}</td>
+                      <td className="px-2 py-3">
+                        <span
+                          className={`px-2 py-0.5 rounded-full border text-[10px] uppercase font-medium ${
+                            op.operationType === "compra"
+                              ? "border-emerald-400 text-emerald-200 bg-emerald-400/10"
+                              : "border-orange-400 text-orange-200 bg-orange-400/10"
+                          }`}
+                        >
+                          {op.operationType === "compra" ? "Compra" : "Consumo"}
+                        </span>
+                      </td>
+                      <td className="px-2 py-3 text-gray-200 truncate max-w-[120px]" title={op.clientName}>
+                        {op.clientName}
+                      </td>
+                      <td className="px-2 py-3 text-gray-200">{op.serviceName || "-"}</td>
+                      <td className="px-2 py-3 text-white text-center font-medium">{op.quantity ?? 0}</td>
+                      <td className="px-2 py-3 text-emerald-200 text-center font-medium">{op.balanceQuantityAfter ?? 0}</td>
+                      <td className="px-2 py-3 text-gray-200 text-xs">{op.attendantName}</td>
+                      <td className="px-2 py-3 text-blue-300 text-right">
+                        {op.saleId ? <a href={`/dashboard/sales?saleId=${op.saleId}`} className="hover:underline">Ver</a> : "-"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Pagination Controls */}
+              {filteredOperations.length > ITEMS_PER_PAGE && (
+                <div className="flex items-center justify-between px-4 py-3 border-t border-white/10">
+                  <div className="text-xs text-gray-400">
+                    Mostrando {(currentPage - 1) * ITEMS_PER_PAGE + 1} a{" "}
+                    {Math.min(currentPage * ITEMS_PER_PAGE, filteredOperations.length)} de{" "}
+                    {filteredOperations.length} resultados
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    >
+                      Anterior
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.ceil(filteredOperations.length / ITEMS_PER_PAGE) }, (_, i) => i + 1)
+                        .filter(p => p === 1 || p === Math.ceil(filteredOperations.length / ITEMS_PER_PAGE) || Math.abs(p - currentPage) <= 1)
+                        .map((p, i, arr) => (
+                          <div key={p} className="flex items-center">
+                            {i > 0 && arr[i - 1] !== p - 1 && <span className="text-gray-500 px-1">...</span>}
+                            <button
+                              onClick={() => setCurrentPage(p)}
+                              className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors ${
+                                currentPage === p
+                                  ? "bg-emerald-500 text-white"
+                                  : "text-gray-400 hover:bg-white/5 hover:text-white"
+                              }`}
+                            >
+                              {p}
+                            </button>
+                          </div>
+                        ))}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={currentPage * ITEMS_PER_PAGE >= filteredOperations.length}
+                      onClick={() => setCurrentPage((p) => p + 1)}
+                    >
+                      Próximo
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
