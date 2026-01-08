@@ -100,11 +100,13 @@ export async function GET(request: NextRequest) {
           -pc.total_value AS value,
           pc.quantity AS quantity,
           pc.unit_price AS unit_price,
-          serv.name AS service_name
+          serv.name AS service_name,
+          ec.name AS end_client_name
         FROM package_consumptions pc
         JOIN client_packages cp ON pc.package_id = cp.id
         JOIN clients c ON cp.client_id = c.id
         JOIN sales s ON pc.sale_id = s.id
+        JOIN clients ec ON s.client_id = ec.id
         JOIN users u ON s.attendant_id = u.id
         LEFT JOIN services serv ON cp.service_id = serv.id
       `,
@@ -139,6 +141,7 @@ export async function GET(request: NextRequest) {
         id: op.id,
         clientId: op.client_id,
         clientName: op.client_name,
+        endClientName: op.end_client_name || null, // [NEW] Nome do cliente final (atendido)
         serviceName: op.service_name,
         saleId: op.sale_id,
         attendantId: op.attendant_id, // Importante para o filtro

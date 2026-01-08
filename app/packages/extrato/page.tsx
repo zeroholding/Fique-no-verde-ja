@@ -20,6 +20,7 @@ type Operation = {
   balanceAfter: number;
   balanceQuantityAfter: number;
   observations: string | null;
+  endClientName?: string | null;
 };
 
 type Summary = {
@@ -282,6 +283,7 @@ function PackagesStatementContent() {
                         <th className="px-2 py-3 text-left">Data</th>
                         <th className="px-2 py-3 text-left">Tipo</th>
                         <th className="px-2 py-3 text-left max-w-[120px]">Cliente</th>
+                        <th className="px-2 py-3 text-left max-w-[120px]">Cliente Atendido</th>
                         <th className="px-2 py-3 text-left">Serviço</th>
                         <th className="px-2 py-3 text-center">Qtde</th>
                         <th className="px-2 py-3 text-center">Saldo</th>
@@ -308,7 +310,10 @@ function PackagesStatementContent() {
                           <td className="px-2 py-3 text-gray-200 truncate max-w-[120px]" title={op.clientName}>
                             {op.clientName}
                           </td>
-                          <td className="px-2 py-3 text-gray-200">{op.serviceName || "-"}</td>
+                          <td className="px-2 py-3 text-gray-200 truncate max-w-[120px]" title={op.endClientName || ""}>
+                            {op.operationType === "consumo" ? (op.endClientName || "-") : "-"}
+                          </td>
+                          <td className="px-2 py-3 text-gray-200 truncate max-w-[150px]" title={op.serviceName || ""}>{op.serviceName || "-"}</td>
                           <td className="px-2 py-3 text-white text-center font-medium">{op.quantity ?? 0}</td>
                           <td className={`px-2 py-3 text-center font-medium ${op.balanceQuantityAfter < 0 ? "text-red-400" : "text-emerald-200"}`}>
                             {op.balanceQuantityAfter ?? 0}
