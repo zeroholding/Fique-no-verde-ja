@@ -291,7 +291,7 @@ function PackagesStatementContent() {
                     <th className="px-2 py-3 text-center">Qtde</th>
                     <th className="px-2 py-3 text-center">Saldo</th>
                     <th className="px-2 py-3 text-left">Atendente</th>
-                    <th className="px-2 py-3 text-right">Venda</th>
+                    <th className="px-4 py-3 text-center w-24">Venda</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/10">
@@ -318,7 +318,7 @@ function PackagesStatementContent() {
                       <td className="px-2 py-3 text-white text-center font-medium">{op.quantity ?? 0}</td>
                       <td className="px-2 py-3 text-emerald-200 text-center font-medium">{op.balanceQuantityAfter ?? 0}</td>
                       <td className="px-2 py-3 text-gray-200 text-xs">{op.attendantName}</td>
-                      <td className="px-2 py-3 text-blue-300 text-right">
+                      <td className="px-4 py-3 text-blue-300 text-center">
                         {op.saleId ? <a href={`/dashboard/sales?saleId=${op.saleId}`} className="hover:underline">Ver</a> : "-"}
                       </td>
                     </tr>
