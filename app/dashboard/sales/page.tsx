@@ -753,7 +753,10 @@ export default function SalesPage() {
       if (formData.saleType === "03") {
         calculatedUnitPrice = selectedPackage!.unitPrice;
         calculatedSubtotal = selectedPackage!.unitPrice * formData.quantity;
-        productName = selectedPackage!.serviceName;
+        // [FIX] Enforce correct product name for Package Consumption
+        // User Business Rule: Package Consumption (Type 03) is exclusively for "Atrasos".
+        // Never allow "Reclamação" or others to leak here.
+        productName = "Atrasos"; 
       } else {
         const quantity = formData.quantity;
         const saleType = formData.saleType;
