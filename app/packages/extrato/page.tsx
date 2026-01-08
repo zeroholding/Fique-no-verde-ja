@@ -276,26 +276,27 @@ function PackagesStatementContent() {
                     Nenhum lancamento encontrado para esta transportadora com estes filtros.
                   </div>
                 ) : (
-                  <table className="min-w-full divide-y divide-white/10 text-sm">
+                  <table className="w-full divide-y divide-white/10 text-xs sm:text-sm">
                     <thead className="bg-white/5">
                       <tr className="text-left text-gray-300">
-                        <th className="px-4 py-3">Data</th>
-                        <th className="px-4 py-3">Tipo</th>
-                        <th className="px-4 py-3">Servico</th>
-                        <th className="px-4 py-3">Quantidade</th>
-                        <th className="px-4 py-3">Saldo (qtde)</th>
-                        <th className="px-4 py-3">Saldo (R$)</th>
-                        <th className="px-4 py-3">Atendente</th>
-                        <th className="px-4 py-3 text-right">Obs</th>
+                        <th className="px-2 py-3 text-left">Data</th>
+                        <th className="px-2 py-3 text-left">Tipo</th>
+                        <th className="px-2 py-3 text-left max-w-[120px]">Cliente</th>
+                        <th className="px-2 py-3 text-left">Serviço</th>
+                        <th className="px-2 py-3 text-center">Qtde</th>
+                        <th className="px-2 py-3 text-center">Saldo</th>
+                        <th className="px-2 py-3 text-right">R$ Saldo</th>
+                        <th className="px-2 py-3 text-left">Atendente</th>
+                        <th className="px-2 py-3 text-right">Obs</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/10">
                       {operations.map((op) => (
                         <tr key={op.id} className="hover:bg-white/5 transition-colors">
-                          <td className="px-4 py-3 text-gray-200">{formatDateTime(op.date)}</td>
-                          <td className="px-4 py-3">
+                          <td className="px-2 py-3 text-gray-200 whitespace-nowrap">{formatDateTime(op.date)}</td>
+                          <td className="px-2 py-3">
                             <span
-                              className={`px-3 py-1 rounded-full border text-xs ${
+                              className={`px-2 py-0.5 rounded-full border text-[10px] uppercase font-medium ${
                                 op.operationType === "compra"
                                   ? "border-emerald-400 text-emerald-200 bg-emerald-400/10"
                                   : "border-orange-400 text-orange-200 bg-orange-400/10"
@@ -304,28 +305,31 @@ function PackagesStatementContent() {
                               {op.operationType === "compra" ? "Compra" : "Consumo"}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-gray-200">{op.serviceName || "-"}</td>
-                          <td className="px-4 py-3 text-white">{op.quantity ?? 0}</td>
-                          <td className={`px-4 py-3 ${op.balanceQuantityAfter < 0 ? "text-red-400" : "text-emerald-200"}`}>
+                          <td className="px-2 py-3 text-gray-200 truncate max-w-[120px]" title={op.clientName}>
+                            {op.clientName}
+                          </td>
+                          <td className="px-2 py-3 text-gray-200">{op.serviceName || "-"}</td>
+                          <td className="px-2 py-3 text-white text-center font-medium">{op.quantity ?? 0}</td>
+                          <td className={`px-2 py-3 text-center font-medium ${op.balanceQuantityAfter < 0 ? "text-red-400" : "text-emerald-200"}`}>
                             {op.balanceQuantityAfter ?? 0}
                           </td>
-                          <td className={`px-4 py-3 ${op.balanceQuantityAfter < 0 ? "text-red-400/80" : "text-gray-200"}`}>
+                          <td className={`px-2 py-3 text-right ${op.balanceQuantityAfter < 0 ? "text-red-400/80" : "text-gray-200"}`}>
                             {formatCurrency(op.balanceAfter ?? 0)}
                           </td>
-                          <td className="px-4 py-3 text-gray-200">{op.attendantName}</td>
-                          <td className="px-4 py-3 text-right">
+                          <td className="px-2 py-3 text-gray-200 text-xs">{op.attendantName}</td>
+                          <td className="px-2 py-3 text-right">
                             {op.operationType === "consumo" ? (
                               hasObservation(op.observations) ? (
                                 <Button
                                   size="sm"
                                   variant="secondary"
-                                  className="rounded-lg px-3"
+                                  className="rounded-lg px-2 h-7 text-xs"
                                   onClick={() => setSelectedOperation(op)}
                                 >
-                                  Ver obs
+                                  Obs
                                 </Button>
                               ) : (
-                                <span className="text-xs text-gray-500">Sem obs</span>
+                                <span className="text-xs text-gray-500">-</span>
                               )
                             ) : (
                               <span className="text-xs text-gray-500">-</span>
