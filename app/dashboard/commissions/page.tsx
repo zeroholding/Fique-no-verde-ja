@@ -74,7 +74,7 @@ export default function CommissionsPage() {
       const token = localStorage.getItem("token");
       if (!token) return;
       try {
-        const res = await fetch("/api/admin/users", {
+        const res = await fetch("/api/admin/users?active=true", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
