@@ -1,25 +1,40 @@
 const { createClient } = require('@supabase/supabase-js');
-const path = require('path');
-const fs = require('fs');
+require('dotenv').config({ path: '.env.local' });
 
-const envPath = path.resolve(__dirname, '../.env.local');
-const envContent = fs.readFileSync(envPath, 'utf8');
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-const parseEnv = (key) => {
-  const regex = new RegExp(`${key}=["']?([^"'\n]+)["']?`);
-  const match = envContent.match(regex);
-  return match ? match[1] : null;
-};
+async function checkNullability() {
+  // Check count of items with NULL sale_type
+  const { count: nullCount, error: nullErr } = await supabase
+    .from('sale_items')
+    .select('*', { count: 'exact', head: true })
+    .is('sale_type', null);
 
-const supabaseUrl = parseEnv('NEXT_PUBLIC_SUPABASE_URL');
-const supabaseServiceKey = parseEnv('SUPABASE_SERVICE_ROLE_KEY');
+  // Check count of items with sale_type = '01'
+  const { count: type01Count, error: type01Err } = await supabase
+    .from('sale_items')
+    .select('*', { count: 'exact', head: true })
+    .eq('sale_type', '01');
+    
+  // Check count of items with sale_type = '02'
+  const { count: type02Count, error: type02Err } = await supabase
+    .from('sale_items')
+    .select('*', { count: 'exact', head: true })
+    .eq('sale_type', '02');
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-async function check() {
-  const query = "SELECT column_name, is_nullable FROM information_schema.columns WHERE table_name = 'sale_items' AND (column_name LIKE '%service%' OR column_name LIKE '%product%')";
-  const { data, error } = await supabase.rpc('exec_sql', { query });
-  if (error) console.error(error);
-  else console.log(data);
+  console.log("Stats:");
+  console.log("NULL sale_type:", nullCount);
+  console.log("'01' sale_type:", type01Count);
+  console.log("'02' sale_type:", type02Count);
+  
+  // Sample a few NULLs to see what they are
+  const { data: sampleNulls } = await supabase
+    .from('sale_items')
+    .select('id, product_name, sales(sale_date)')
+    .is('sale_type', null)
+    .limit(3);
+    
+  console.log("Sample NULLs:", sampleNulls);
 }
-check();
+
+checkNullability();
