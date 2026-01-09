@@ -240,7 +240,7 @@ export async function GET(request: NextRequest) {
         LEFT JOIN services serv ON si.product_id = serv.id
         WHERE s.status != 'cancelada'
           ${baseFilters.clause}
-          AND si.sale_type IS DISTINCT FROM '02' -- [FIX] Global Exclusion of Type 02 (Safely handles NULLs)
+          -- Reverted Global Filter to fix Zero Dashboard
       `;
 
     // Executamos a busca de IDs base primeiro para evitar colisão de parâmetros em subqueries complexas
