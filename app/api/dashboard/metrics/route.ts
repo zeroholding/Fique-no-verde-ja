@@ -187,7 +187,7 @@ export async function GET(request: NextRequest) {
 
       if (includeSaleType && saleType) {
         if (saleType === "common") {
-          clauses.push(`${saleItemAlias}.sale_type = '01'`); // [FIX] Strict definition of Common Sales
+          clauses.push(`${saleItemAlias}.sale_type != '03'`);
         } else {
           clauses.push(`${saleItemAlias}.sale_type = $${getNextIdx()}`);
           params.push(saleType);
