@@ -198,8 +198,8 @@ export default function SalesPage() {
       return dow === 0 || dow === 6 ? "non_working" : "weekday";
     };
 
-    // Global Filter: Ocultar Vendas de Pacote (02) conforme solicitado - REMOVED (User now wants to see it)
-    // result = result.filter(sale => sale.saleType !== "02");
+    // Global Filter: Ocultar Vendas de Pacote (02) conforme solicitado
+    result = result.filter(sale => sale.saleType !== "02");
 
     if (startDate) {
       const start = new Date(`${startDate}T00:00:00`);
@@ -1291,7 +1291,7 @@ export default function SalesPage() {
               >
                 <option value="">Todos os tipos</option>
                 <option value="common">Vendas Comuns</option>
-                <option value="purchase">Vendas de Pacote (Recarga)</option>
+                {/* <option value="purchase">Vendas de Pacote (Recarga)</option> - HIDDEN */}
                 <option value="package">Consumos de Pacote</option>
               </select>
             </div>
