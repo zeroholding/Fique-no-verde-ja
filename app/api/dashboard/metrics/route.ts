@@ -243,7 +243,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN sale_items si ON si.sale_id = s.id
       LEFT JOIN services serv ON si.product_id = serv.id
       WHERE s.status != 'cancelada'
-        AND (si.sale_type IS NULL OR si.sale_type != '02') -- Exclude Package Sales (Type 02)
+        AND (si.sale_type IS NULL OR si.sale_type != '02')
         ${baseFilters.clause}
     `;
 
@@ -262,7 +262,7 @@ export async function GET(request: NextRequest) {
       JOIN sale_items si ON si.sale_id = s.id
       LEFT JOIN services serv ON si.product_id = serv.id
       WHERE s.status != 'cancelada'
-        AND si.sale_type != '02' -- Exclude Package Sales (Type 02)
+        AND (si.sale_type IS NULL OR si.sale_type != '02')
         ${baseFilters.clause}
     `;
 
@@ -276,7 +276,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN sale_items si ON si.sale_id = s.id
       LEFT JOIN services serv ON si.product_id = serv.id
       WHERE s.status != 'cancelada'
-        AND (si.sale_type IS NULL OR si.sale_type != '02') -- Exclude Package Sales (Type 02)
+        AND (si.sale_type IS NULL OR si.sale_type != '02')
         ${baseFilters.clause}
     `;
 
@@ -331,7 +331,7 @@ export async function GET(request: NextRequest) {
       JOIN sale_items si ON si.sale_id = s.id
       LEFT JOIN services serv ON si.product_id = serv.id
       WHERE s.status != 'cancelada'
-        AND si.sale_type != '02' -- Exclude Package Sales (Type 02)
+        AND si.sale_type != '02'
         ${baseFilters.clause}
       GROUP BY serv.id, si.product_name
       ORDER BY sale_count DESC, total_revenue DESC
@@ -350,7 +350,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN sale_items si ON si.sale_id = s.id
       LEFT JOIN services serv ON si.product_id = serv.id
       WHERE s.status != 'cancelada'
-        AND (si.sale_type IS NULL OR si.sale_type != '02') -- Exclude Package Sales (Type 02)
+        AND (si.sale_type IS NULL OR si.sale_type != '02')
         ${baseFilters.clause}
       GROUP BY s.id, c.name
       ORDER BY s.sale_date DESC, s.created_at DESC
@@ -371,7 +371,7 @@ export async function GET(request: NextRequest) {
       JOIN sales s ON si.sale_id = s.id
       LEFT JOIN services serv ON si.product_id = serv.id
       WHERE s.status != 'cancelada'
-        AND si.sale_type != '02' -- Exclude Package Sales (Type 02)
+        AND si.sale_type != '02'
         ${baseFilters.clause}
       GROUP BY serv.id, si.product_name
       ORDER BY total_value DESC
@@ -388,7 +388,7 @@ export async function GET(request: NextRequest) {
       JOIN clients c ON s.client_id = c.id
       LEFT JOIN services serv ON si.product_id = serv.id
       WHERE s.status != 'cancelada'
-        AND si.sale_type != '02' -- Exclude Package Sales (Type 02)
+        AND si.sale_type != '02'
         ${baseFilters.clause}
       GROUP BY c.id
       ORDER BY total_value DESC
@@ -404,7 +404,7 @@ export async function GET(request: NextRequest) {
       JOIN clients c ON s.client_id = c.id
       LEFT JOIN services serv ON si.product_id = serv.id
       WHERE s.status != 'cancelada'
-        AND si.sale_type != '02' -- Exclude Package Sales (Type 02)
+        AND si.sale_type != '02'
         ${baseFilters.clause}
         AND NOT EXISTS (
           SELECT 1 FROM client_packages cp WHERE cp.sale_id = s.id
@@ -443,7 +443,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN services serv ON si.product_id = serv.id
       WHERE s.status != 'cancelada'
         AND s.attendant_id = $1
-        AND si.sale_type != '02' -- Exclude Package Sales (Type 02)
+        AND si.sale_type != '02'
         ${attendantPerformanceFilters.clause}
       GROUP BY serv.id, si.product_name
       ORDER BY total_value DESC
@@ -459,7 +459,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN services serv ON si.product_id = serv.id
       WHERE s.status != 'cancelada'
         AND s.attendant_id = $1
-        AND si.sale_type != '02' -- Exclude Package Sales (Type 02)
+        AND si.sale_type != '02'
         ${attendantPerformanceFilters.clause}
     `;
 
