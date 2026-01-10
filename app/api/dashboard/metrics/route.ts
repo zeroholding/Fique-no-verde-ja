@@ -243,7 +243,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN sale_items si ON si.sale_id = s.id
       LEFT JOIN services serv ON si.product_id = serv.id
       WHERE s.status != 'cancelada'
-        AND si.sale_type != '02' -- Exclude Package Sales (Type 02)
+        AND (si.sale_type IS NULL OR si.sale_type != '02') -- Exclude Package Sales (Type 02)
         ${baseFilters.clause}
     `;
 
