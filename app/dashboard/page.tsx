@@ -156,16 +156,28 @@ export default function Dashboard() {
   const [dayTypeFilter, setDayTypeFilter] = useState("");
   const [saleTypeFilter, setSaleTypeFilter] = useState("");
 
+
+  const getLocalDateString = () => {
+    const date = new Date();
+    const split = date.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }).split('/');
+    if (split.length === 3) {
+      // pt-BR is DD/MM/YYYY, we want YYYY-MM-DD
+      return `${split[2]}-${split[1]}-${split[0]}`;
+    }
+    // Fallback if something fails, though unlikely
+    return date.toISOString().slice(0, 10);
+  };
+
   const [customRangeDraft, setCustomRangeDraft] = useState({
-    start: new Date().toISOString().slice(0, 10),
-    end: new Date().toISOString().slice(0, 10),
+    start: getLocalDateString(),
+    end: getLocalDateString(),
   });
   const [appliedCustomRange, setAppliedCustomRange] = useState<{
     start: string;
     end: string;
   } | null>({
-    start: new Date().toISOString().slice(0, 10),
-    end: new Date().toISOString().slice(0, 10),
+    start: getLocalDateString(),
+    end: getLocalDateString(),
   });
   const [showFilters, setShowFilters] = useState(false);
   const periodOptions = [
