@@ -320,11 +320,11 @@ export async function GET(request: NextRequest) {
 
     const topServicesQuery = `
       SELECT
-        COALESCE(
+        MAX(COALESCE(
           NULLIF(TRIM(serv.name), ''),
           NULLIF(TRIM(si.product_name), ''),
           'Nao informado'
-        ) AS name,
+        )) AS name,
         COUNT(DISTINCT s.id) AS sale_count,
         COALESCE(SUM(si.subtotal), 0)::numeric AS total_revenue
       FROM sales s
@@ -333,7 +333,7 @@ export async function GET(request: NextRequest) {
       WHERE s.status != 'cancelada'
         AND si.sale_type != '02' -- Exclude Package Sales (Type 02)
         ${baseFilters.clause}
-      GROUP BY COALESCE(NULLIF(TRIM(serv.name), ''), NULLIF(TRIM(si.product_name), ''), 'Nao informado')
+      GROUP BY serv.id, si.product_name
       ORDER BY sale_count DESC, total_revenue DESC
       LIMIT 5
     `;
@@ -359,11 +359,11 @@ export async function GET(request: NextRequest) {
 
     const servicePerformanceQuery = `
       SELECT
-        COALESCE(
+        MAX(COALESCE(
           NULLIF(TRIM(serv.name), ''),
           NULLIF(TRIM(si.product_name), ''),
           'Nao informado'
-        ) AS service_name,
+        )) AS service_name,
         COALESCE(SUM(si.subtotal), 0)::numeric AS total_value,
         COALESCE(SUM(si.quantity), 0)::int AS total_quantity,
         COUNT(DISTINCT s.id) AS sale_count
@@ -373,7 +373,7 @@ export async function GET(request: NextRequest) {
       WHERE s.status != 'cancelada'
         AND si.sale_type != '02' -- Exclude Package Sales (Type 02)
         ${baseFilters.clause}
-      GROUP BY COALESCE(NULLIF(TRIM(serv.name), ''), NULLIF(TRIM(si.product_name), ''), 'Nao informado')
+      GROUP BY serv.id, si.product_name
       ORDER BY total_value DESC
       LIMIT 6
     `;
@@ -430,11 +430,11 @@ export async function GET(request: NextRequest) {
 
     const attendantPerformanceQuery = `
       SELECT
-        COALESCE(
+        MAX(COALESCE(
           NULLIF(TRIM(serv.name), ''),
           NULLIF(TRIM(si.product_name), ''),
           'Nao informado'
-        ) AS service_name,
+        )) AS service_name,
         COALESCE(SUM(si.subtotal), 0)::numeric AS total_value,
         COALESCE(SUM(si.quantity), 0)::int AS total_quantity,
         COUNT(DISTINCT s.id) AS sale_count
@@ -445,7 +445,7 @@ export async function GET(request: NextRequest) {
         AND s.attendant_id = $1
         AND si.sale_type != '02' -- Exclude Package Sales (Type 02)
         ${attendantPerformanceFilters.clause}
-      GROUP BY COALESCE(NULLIF(TRIM(serv.name), ''), NULLIF(TRIM(si.product_name), ''), 'Nao informado')
+      GROUP BY serv.id, si.product_name
       ORDER BY total_value DESC
     `;
 
