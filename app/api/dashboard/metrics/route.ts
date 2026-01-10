@@ -380,7 +380,7 @@ export async function GET(request: NextRequest) {
 
     const clientSpendingQuery = `
       SELECT
-        COALESCE(c.name, 'Cliente sem nome') AS client_name,
+        MAX(COALESCE(c.name, 'Cliente sem nome')) AS client_name,
         COALESCE(SUM(si.quantity), 0)::int AS total_quantity,
         COALESCE(SUM(si.subtotal), 0)::numeric AS total_value
       FROM sales s
@@ -390,14 +390,14 @@ export async function GET(request: NextRequest) {
       WHERE s.status != 'cancelada'
         AND si.sale_type != '02' -- Exclude Package Sales (Type 02)
         ${baseFilters.clause}
-      GROUP BY c.id, c.name
+      GROUP BY c.id
       ORDER BY total_value DESC
       LIMIT 6
     `;
 
     const clientFrequencyQuery = `
       SELECT
-        COALESCE(c.name, 'Cliente sem nome') AS client_name,
+        MAX(COALESCE(c.name, 'Cliente sem nome')) AS client_name,
         COUNT(DISTINCT s.id)::int AS sales_count
       FROM sales s
       JOIN sale_items si ON si.sale_id = s.id
@@ -409,7 +409,7 @@ export async function GET(request: NextRequest) {
         AND NOT EXISTS (
           SELECT 1 FROM client_packages cp WHERE cp.sale_id = s.id
         )
-      GROUP BY c.id, c.name
+      GROUP BY c.id
       ORDER BY sales_count DESC
       LIMIT 6
     `;
