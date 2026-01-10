@@ -333,7 +333,7 @@ export async function GET(request: NextRequest) {
       WHERE s.status != 'cancelada'
         AND si.sale_type != '02' -- Exclude Package Sales (Type 02)
         ${baseFilters.clause}
-      GROUP BY 1
+      GROUP BY COALESCE(NULLIF(TRIM(serv.name), ''), NULLIF(TRIM(si.product_name), ''), 'Nao informado')
       ORDER BY sale_count DESC, total_revenue DESC
       LIMIT 5
     `;
@@ -373,7 +373,7 @@ export async function GET(request: NextRequest) {
       WHERE s.status != 'cancelada'
         AND si.sale_type != '02' -- Exclude Package Sales (Type 02)
         ${baseFilters.clause}
-      GROUP BY 1
+      GROUP BY COALESCE(NULLIF(TRIM(serv.name), ''), NULLIF(TRIM(si.product_name), ''), 'Nao informado')
       ORDER BY total_value DESC
       LIMIT 6
     `;
@@ -445,7 +445,7 @@ export async function GET(request: NextRequest) {
         AND s.attendant_id = $1
         AND si.sale_type != '02' -- Exclude Package Sales (Type 02)
         ${attendantPerformanceFilters.clause}
-      GROUP BY 1
+      GROUP BY COALESCE(NULLIF(TRIM(serv.name), ''), NULLIF(TRIM(si.product_name), ''), 'Nao informado')
       ORDER BY total_value DESC
     `;
 
