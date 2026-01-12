@@ -478,6 +478,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (normalizedSaleType === "02" && !serviceId) {
+      return NextResponse.json(
+        { error: "Service ID (Produto/Serviço) obrigatorio para venda de pacote" },
+        { status: 400 }
+      );
+    }
+
     const saleClientId =
       normalizedSaleType === "02"
         ? carrierId
