@@ -66,24 +66,23 @@ export async function GET(request: NextRequest) {
     const purchasesResult = await query(
       `
         SELECT
-          s.id,
-          s.client_id,
+          cp.id,
+          cp.client_id,
           c.name AS client_name,
-          s.id AS sale_id,
+          cp.sale_id,
           s.attendant_id,
           u.first_name || ' ' || u.last_name AS attendant_name,
-          s.sale_date AS op_date,
-          s.total AS value,
-          si.quantity AS quantity,
-          (s.total / NULLIF(si.quantity::numeric, 0)) AS unit_price,
+          COALESCE(s.sale_date, cp.created_at) AS op_date,
+          cp.total_paid AS value,
+          cp.initial_quantity AS quantity,
+          cp.unit_price AS unit_price,
           serv.name AS service_name
-        FROM sales s
-        JOIN clients c ON s.client_id = c.id
-        JOIN sale_items si ON si.sale_id = s.id
+        FROM client_packages cp
+        JOIN clients c ON cp.client_id = c.id
+        JOIN sales s ON cp.sale_id = s.id
         JOIN users u ON s.attendant_id = u.id
-        LEFT JOIN services serv ON si.product_id = serv.id
+        LEFT JOIN services serv ON cp.service_id = serv.id
         WHERE s.status != 'cancelada'
-          AND si.sale_type = '02'
       `,
       []
     );
