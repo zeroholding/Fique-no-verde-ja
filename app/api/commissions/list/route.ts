@@ -191,7 +191,7 @@ export async function GET(request: NextRequest) {
 
     // Filtrar por dayType se especificado (não é possível filtrar diretamente no SQL)
     const filteredCommissions = dayType
-      ? commissions.filter(c => c.dayType === dayType)
+      ? commissions.filter((c: any) => c.dayType === dayType)
       : commissions;
 
     console.log("[COMMISSIONS LIST] Returning commissions:", filteredCommissions.length);
