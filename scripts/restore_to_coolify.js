@@ -8,7 +8,7 @@ async function restoreDatabase() {
   console.log('=== RESTAURANDO BACKUP NO COOLIFY ===\n');
   
   // Load backup
-  const backupFile = 'backup_supabase_2026-01-15.json';
+  const backupFile = 'backup_supabase_2026-01-20.json';
   if (!fs.existsSync(backupFile)) {
     console.error(`Arquivo ${backupFile} não encontrado!`);
     return;
@@ -44,6 +44,19 @@ async function restoreDatabase() {
       'package_consumptions',
       'commissions'
     ];
+
+    // Limpar tabelas existentes para evitar duplicidade
+    console.log('Limpando tabelas existentes...');
+    for (const tableName of [...tableOrder].reverse()) {
+      try {
+        await client.query(`TRUNCATE TABLE "${tableName}" CASCADE`);
+      } catch (e) {
+        // Ignora erro se tabela não existir
+      }
+    }
+    console.log('Tabelas limpas!\n');
+
+
 
     for (const tableName of tableOrder) {
       const tableData = backup.tables[tableName];
