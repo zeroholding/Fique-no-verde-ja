@@ -52,6 +52,19 @@ export async function query<T = any>(text: string, params?: any[]) {
     };
   } catch (error) {
     console.error("[DB] Erro:", { sql: text.substring(0, 100), error });
+    
+    // Se estiver em transação, faz rollback automático para evitar erro 25P02
+    if (transactionClient) {
+      try {
+        await transactionClient.query('ROLLBACK');
+        transactionClient.release();
+        transactionClient = null;
+        console.log("[DB] Auto-rollback executado após erro em transação");
+      } catch (rollbackError) {
+        console.error("[DB] Erro no rollback:", rollbackError);
+      }
+    }
+    
     throw error;
   }
 }

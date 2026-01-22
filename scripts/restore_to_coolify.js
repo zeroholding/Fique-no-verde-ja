@@ -8,7 +8,7 @@ async function restoreDatabase() {
   console.log('=== RESTAURANDO BACKUP NO COOLIFY ===\n');
   
   // Load backup
-  const backupFile = 'backup_supabase_2026-01-20.json';
+  const backupFile = 'backup_supabase_2026-01-22.json';
   if (!fs.existsSync(backupFile)) {
     console.error(`Arquivo ${backupFile} não encontrado!`);
     return;
