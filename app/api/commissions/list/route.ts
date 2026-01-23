@@ -77,78 +77,84 @@ export async function GET(request: NextRequest) {
     });
 
     // Usar Supabase para buscar comissões com relacionamentos
-    let queryBuilder = supabaseAdmin
-      .from("commissions")
-      .select(`
-        id,
-        reference_date,
-        commission_amount,
-        status,
-        created_at,
-        user_id,
-        sale_id,
-        sale_item_id,
-        users!inner (
-          id,
-          first_name,
-          last_name
-        ),
-        sales!inner (
-          id,
-          sale_number,
-          subtotal,
-          total_discount,
-          total,
-          refund_total,
-          client_id,
-          clients!inner (
-            name
-          )
-        ),
-        sale_items!inner (
-          product_name,
-          quantity,
-          sale_type
-        )
-      `)
-      .order("reference_date", { ascending: false })
-      .order("created_at", { ascending: false });
+    // Implementação com SQL raw para substituir o Supabase query builder que não suporta JOINs no mock
+    let whereClauses: string[] = ["1=1"];
+    let params: any[] = [];
+    let paramIndex = 1;
 
+    let sql = `
+      SELECT 
+        c.id,
+        c.reference_date,
+        c.commission_amount,
+        c.status,
+        c.created_at,
+        c.user_id,
+        c.sale_id,
+        c.sale_item_id,
+        json_build_object(
+          'id', u.id, 
+          'first_name', u.first_name, 
+          'last_name', u.last_name
+        ) as users,
+        json_build_object(
+          'id', s.id,
+          'sale_number', s.sale_number,
+          'subtotal', s.subtotal,
+          'total_discount', s.total_discount,
+          'total', s.total,
+          'refund_total', s.refund_total,
+          'client_id', s.client_id,
+          'clients', json_build_object('name', cl.name)
+        ) as sales,
+        json_build_object(
+          'product_name', si.product_name,
+          'quantity', si.quantity,
+          'sale_type', si.sale_type
+        ) as sale_items
+      FROM commissions c
+      INNER JOIN users u ON c.user_id = u.id
+      INNER JOIN sales s ON c.sale_id = s.id
+      INNER JOIN clients cl ON s.client_id = cl.id
+      INNER JOIN sale_items si ON c.sale_item_id = si.id
+    `;
 
     // GARANTIA: Nunca mostrar tipo 02 (Pacote)
-    // Se um tipo específico foi solicitado, verifique se é permitido
     if (saleType && ["01", "03"].includes(saleType)) {
-      queryBuilder = queryBuilder.eq("sale_items.sale_type", saleType);
+      whereClauses.push(`si.sale_type = $${paramIndex++}`);
+      params.push(saleType);
     } else {
-      // Se não tem filtro ou é inválido, traz padrão (01 e 03)
-      queryBuilder = queryBuilder.in("sale_items.sale_type", ["01", "03"]);
+      whereClauses.push(`si.sale_type IN ('01', '03')`);
     }
 
-    // Aplicar filtros
     if (!user.is_admin) {
-      queryBuilder = queryBuilder.eq("user_id", user.id);
+      whereClauses.push(`c.user_id = $${paramIndex++}`);
+      params.push(user.id);
     } else if (attendantFilter) {
-      queryBuilder = queryBuilder.eq("user_id", attendantFilter);
+      whereClauses.push(`c.user_id = $${paramIndex++}`);
+      params.push(attendantFilter);
     }
 
     if (startDate) {
-      queryBuilder = queryBuilder.gte("reference_date", startDate);
+      whereClauses.push(`c.reference_date >= $${paramIndex++}`);
+      params.push(startDate);
     }
 
     if (endDate) {
-      queryBuilder = queryBuilder.lte("reference_date", endDate);
+      whereClauses.push(`c.reference_date <= $${paramIndex++}`);
+      params.push(endDate);
     }
 
     if (statusFilter) {
-      queryBuilder = queryBuilder.eq("status", statusFilter);
+      whereClauses.push(`c.status = $${paramIndex++}`);
+      params.push(statusFilter);
     }
 
-    const { data: commissionsData, error: commissionsError } = await queryBuilder;
+    sql += ` WHERE ${whereClauses.join(' AND ')}`;
+    sql += ` ORDER BY c.reference_date DESC, c.created_at DESC`;
 
-    if (commissionsError) {
-      console.error("[COMMISSIONS LIST] Supabase error:", commissionsError);
-      throw new Error("Erro ao buscar comissoes: " + commissionsError.message);
-    }
+    const { rows: commissionsData } = await query(sql, params);
+    // Erro de comissao removido pois query() lança erro se falhar
 
     console.log("[COMMISSIONS LIST] Commissions fetched:", commissionsData?.length || 0);
 
