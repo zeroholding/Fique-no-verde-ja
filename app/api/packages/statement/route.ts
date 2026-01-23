@@ -92,10 +92,6 @@ export async function GET(request: NextRequest) {
           u.first_name || ' ' || u.last_name AS attendant_name,
           COALESCE(s.sale_date, cp.created_at) AS op_date,
           
-          -- Ajuste de Valor e Quantidade: Deduzir o que será mostrado como venda separada
-          -- Nota: O valor financeiro também deve ser ajustado proporcionalmente ou mantido? 
-          -- Se cp.total_paid é o acumulado, devemos subtrair o valor das reloads também.
-          -- Assumindo que queremos reconstruir a história, vamos mostrar o saldo "Base".
           
           (cp.total_paid - COALESCE(
               (SELECT SUM(s2.total) 
