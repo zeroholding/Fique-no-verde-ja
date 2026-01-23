@@ -65,10 +65,36 @@ export async function GET(request: NextRequest) {
     // Buscar todas as compras
     // Buscar todas as compras (Tipo 02 - Venda de Pacote/Recarga)
     // Alterado para buscar da tabela SALES para incluir recargas (que não criam novos pacotes, apenas atualizam)
+    // Estratégia Híbrida:
+    // 1. Buscar a criação original do pacote via client_packages (GARANTE SALDO BASE LEGADO)
+    // 2. Buscar recargas avulsas via sales (Tipo 02) que NÃO são a criação do pacote
     const purchasesResult = await query(
       `
+        -- 1. Criação do Pacote (Legado e Atual)
         SELECT
-          s.id, -- Usamos ID da venda, ja que nao estamos mais limitados ao pacote
+          cp.sale_id::text AS id, -- Usamos sale_id como ID único
+          cp.client_id,
+          c.name AS client_name,
+          cp.sale_id,
+          s.attendant_id,
+          u.first_name || ' ' || u.last_name AS attendant_name,
+          COALESCE(s.sale_date, cp.created_at) AS op_date,
+          cp.total_paid AS value,
+          cp.initial_quantity AS quantity,
+          cp.unit_price AS unit_price,
+          serv.name AS service_name
+        FROM client_packages cp
+        JOIN clients c ON cp.client_id = c.id
+        JOIN sales s ON cp.sale_id = s.id
+        JOIN users u ON s.attendant_id = u.id
+        LEFT JOIN services serv ON cp.service_id = serv.id
+        WHERE s.status != 'cancelada'
+
+        UNION ALL
+
+        -- 2. Recargas (Vendas Tipo 02 que NÃO criaram pacote, apenas atualizaram)
+        SELECT
+          s.id::text AS id,
           s.client_id,
           c.name AS client_name,
           s.id AS sale_id,
@@ -85,6 +111,7 @@ export async function GET(request: NextRequest) {
         JOIN users u ON s.attendant_id = u.id
         WHERE s.status != 'cancelada'
         AND si.sale_type = '02'
+        AND s.id NOT IN (SELECT sale_id FROM client_packages)
       `,
       []
     );
