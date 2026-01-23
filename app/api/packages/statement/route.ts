@@ -71,8 +71,6 @@ export async function GET(request: NextRequest) {
     const purchasesResult = await query(
       `
       `
-        -- 1. Criação do Pacote (Legado e Atual) - Ajustado para não duplicar reloads invisíveis
-        -- Subtraímos do initial_quantity a soma das vendas Tipo 02 que serão adicionadas via UNION abaixo
         WITH invisible_reloads_sum AS (
             SELECT 
                 s.client_id, 
@@ -85,7 +83,8 @@ export async function GET(request: NextRequest) {
             GROUP BY s.client_id
         )
         SELECT
-          cp.sale_id::text AS id, -- Usamos sale_id como ID único
+          
+          cp.sale_id::text AS id,
           cp.client_id,
           c.name AS client_name,
           cp.sale_id,

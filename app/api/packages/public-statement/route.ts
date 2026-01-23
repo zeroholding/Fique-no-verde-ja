@@ -72,7 +72,6 @@ export async function GET(request: NextRequest) {
 
         UNION ALL
 
-        -- 2. Recargas (Tipo 02 invisíveis no client_packages)
         SELECT
           s.id::text AS id,
           s.client_id,
