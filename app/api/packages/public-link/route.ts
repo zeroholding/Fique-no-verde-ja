@@ -92,7 +92,8 @@ export async function POST(request: NextRequest) {
     const expiresIn = "30d";
     const token = jwt.sign({ clientId, scope: "package-statement" }, JWT_SECRET, { expiresIn });
 
-    const shareUrl = new URL("/packages/extrato", request.nextUrl.origin);
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+    const shareUrl = new URL("/packages/extrato", baseUrl);
     shareUrl.searchParams.set("token", token);
 
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
