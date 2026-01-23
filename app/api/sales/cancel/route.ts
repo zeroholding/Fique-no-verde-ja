@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     try {
       // Verificar se a venda existe
       const saleCheck = await query(
-        `SELECT id, attendant_id, status FROM sales WHERE id = $1`,
+        `SELECT id, client_id, attendant_id, status FROM sales WHERE id = $1`,
         [saleId]
       );
 
@@ -121,13 +121,51 @@ export async function POST(request: NextRequest) {
         [saleId]
       );
 
-      // Estornar consumos de pacote se houver
-      try {
-        await query("SELECT refund_package_consumption($1)", [saleId]);
-        console.log(`Consumos de pacote estornados para venda ${saleId}`);
-      } catch (refundError) {
-        console.log("Nenhum consumo de pacote para estornar ou erro:", refundError);
-        // Não falhar se não houver consumo de pacote (pode ser venda comum)
+      // --- LOGICA DE ESTORNO ---
+      
+      // 1. Verificar Consumos (Type 03)
+      const consumptionResult = await query(
+          `SELECT package_id, quantity FROM package_consumptions WHERE sale_id = $1`,
+          [saleId]
+      );
+      
+      if (consumptionResult.rowCount > 0) {
+          console.log(`[CANCEL] Reverting Consumption (Type 03) for Sale ${saleId}`);
+          for (const cons of consumptionResult.rows) {
+              await query(
+                  `UPDATE client_packages
+                   SET available_quantity = available_quantity + $1,
+                       consumed_quantity = consumed_quantity - $1,
+                       updated_at = NOW()
+                   WHERE id = $2`,
+                  [cons.quantity, cons.package_id]
+              );
+          }
+      }
+
+      // 2. Verificar Criação de Pacote (Type 02 - Recarga)
+      const genesisResult = await query(
+          "SELECT id, initial_quantity FROM client_packages WHERE sale_id = $1", 
+          [saleId]
+      );
+
+      if (genesisResult.rowCount > 0) {
+          console.log(`[CANCEL] Reverting Package Purchase (Type 02) for Sale ${saleId}`);
+          // Se a venda criou pacotes, o cancelamento deve anular esses pacotes.
+          for (const pkg of genesisResult.rows) {
+              // Reduzimos o available pelo que foi inicializado e marcamos como inativo
+              // Se já foi consumido, o saldo ficará negativo, o que é permitido/esperado
+              // para indicar que deve ser pago novamente.
+              await query(
+                  `UPDATE client_packages 
+                   SET available_quantity = available_quantity - initial_quantity,
+                       initial_quantity = 0,
+                       is_active = false,
+                       updated_at = NOW()
+                   WHERE id = $1`,
+                  [pkg.id]
+              );
+          }
       }
 
       await query("COMMIT");
