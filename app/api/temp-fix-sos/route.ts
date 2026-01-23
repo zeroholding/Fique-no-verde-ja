@@ -99,7 +99,7 @@ export async function GET() {
         details: { legacy, reloads, consumed }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json({ error: error.message, stack: error.stack }, { status: 500 });
   }
 }

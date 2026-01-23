@@ -70,7 +70,20 @@ export async function GET(request: NextRequest) {
     // 2. Buscar recargas avulsas via sales (Tipo 02) que NÃO são a criação do pacote
     const purchasesResult = await query(
       `
-        -- 1. Criação do Pacote (Legado e Atual)
+      `
+        -- 1. Criação do Pacote (Legado e Atual) - Ajustado para não duplicar reloads invisíveis
+        -- Subtraímos do initial_quantity a soma das vendas Tipo 02 que serão adicionadas via UNION abaixo
+        WITH invisible_reloads_sum AS (
+            SELECT 
+                s.client_id, 
+                SUM(si.quantity) as total_qty
+            FROM sales s
+            JOIN sale_items si ON s.id = si.sale_id
+            WHERE si.sale_type = '02' 
+            AND s.status != 'cancelada'
+            AND s.id NOT IN (SELECT sale_id FROM client_packages WHERE sale_id IS NOT NULL)
+            GROUP BY s.client_id
+        )
         SELECT
           cp.sale_id::text AS id, -- Usamos sale_id como ID único
           cp.client_id,
@@ -79,17 +92,35 @@ export async function GET(request: NextRequest) {
           s.attendant_id,
           u.first_name || ' ' || u.last_name AS attendant_name,
           COALESCE(s.sale_date, cp.created_at) AS op_date,
-          cp.total_paid AS value,
-          cp.initial_quantity AS quantity,
+          
+          -- Ajuste de Valor e Quantidade: Deduzir o que será mostrado como venda separada
+          -- Nota: O valor financeiro também deve ser ajustado proporcionalmente ou mantido? 
+          -- Se cp.total_paid é o acumulado, devemos subtrair o valor das reloads também.
+          -- Assumindo que queremos reconstruir a história, vamos mostrar o saldo "Base".
+          
+          (cp.total_paid - COALESCE(
+              (SELECT SUM(s2.total) 
+               FROM sales s2 
+               JOIN sale_items si2 ON s2.id = si2.sale_id
+               WHERE s2.client_id = cp.client_id 
+               AND si2.sale_type = '02'
+               AND s2.status != 'cancelada'
+               AND s2.id NOT IN (SELECT sale_id FROM client_packages)
+              ), 0)
+          ) AS value,
+
+          (cp.initial_quantity - COALESCE(irs.total_qty, 0)) AS quantity,
+          
           cp.unit_price AS unit_price,
           serv.name AS service_name
         FROM client_packages cp
         JOIN clients c ON cp.client_id = c.id
-        JOIN sales s ON cp.sale_id = s.id
-        JOIN users u ON s.attendant_id = u.id
+        LEFT JOIN sales s ON cp.sale_id = s.id
+        LEFT JOIN users u ON s.attendant_id = u.id
         LEFT JOIN services serv ON cp.service_id = serv.id
-        WHERE s.status != 'cancelada'
-
+        LEFT JOIN invisible_reloads_sum irs ON cp.client_id = irs.client_id
+        WHERE cp.initial_quantity > COALESCE(irs.total_qty, 0) -- Apenas se sobrar saldo base
+        
         UNION ALL
 
         -- 2. Recargas (Vendas Tipo 02 que NÃO criaram pacote, apenas atualizaram)
@@ -108,10 +139,10 @@ export async function GET(request: NextRequest) {
         FROM sales s
         JOIN sale_items si ON si.sale_id = s.id
         JOIN clients c ON s.client_id = c.id
-        JOIN users u ON s.attendant_id = u.id
+        LEFT JOIN users u ON s.attendant_id = u.id
         WHERE s.status != 'cancelada'
         AND si.sale_type = '02'
-        AND s.id NOT IN (SELECT sale_id FROM client_packages)
+        AND s.id NOT IN (SELECT sale_id FROM client_packages WHERE sale_id IS NOT NULL)
       `,
       []
     );

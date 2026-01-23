@@ -1,15 +1,15 @@
 
-const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config({ path: '.env.local' });
-const s = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const { Client } = require('pg');
+
+const client = new Client({
+  connectionString: 'postgresql://postgres:AprFcG9XCYwflSyN3mXQld7sPVvuvcHAYZIqfhGdt5ax6Jt2yW8UYKtUk05tdFIA@72.61.62.227:5433/postgres',
+});
 
 async function check() {
-  const { data, error } = await s.rpc('exec_sql', { 
-    query: `SELECT column_name, data_type 
-            FROM information_schema.columns 
-            WHERE table_name = 'sales' AND column_name IN ('sale_date', 'created_at')` 
-  });
-  if (error) console.error(error);
-  console.log(JSON.stringify(data, null, 2));
+  await client.connect();
+  const res = await client.query("SELECT * FROM sales LIMIT 1");
+  console.log("Sales Columns:", Object.keys(res.rows[0]));
+  await client.end();
 }
+
 check();
