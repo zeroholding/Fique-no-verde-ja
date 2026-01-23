@@ -70,7 +70,6 @@ export async function GET(request: NextRequest) {
     // 2. Buscar recargas avulsas via sales (Tipo 02) que NÃO são a criação do pacote
     const purchasesResult = await query(
       `
-      `
         WITH invisible_reloads_sum AS (
             SELECT 
                 s.client_id, 
