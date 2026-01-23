@@ -1,0 +1,5032 @@
+[
+  {
+    "id": "d05e1758-a4ff-450f-9f64-0cbd6b11a8c5",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "cca9e8a8-856c-42c4-86d1-b4a18a908543",
+    "quantity": 11,
+    "unit_price": "7.5",
+    "total_value": "82.5",
+    "consumed_at": "2026-01-05T18:44:55.678Z",
+    "created_at": "2026-01-05T18:44:55.678Z"
+  },
+  {
+    "id": "ac65aad6-7f76-4643-b960-62d92855dcdd",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "c2e8bda7-d9dc-417e-a85a-9bc1aec37f26",
+    "quantity": 6,
+    "unit_price": "7.5",
+    "total_value": "45.0",
+    "consumed_at": "2026-01-05T19:15:20.018Z",
+    "created_at": "2026-01-05T19:15:20.018Z"
+  },
+  {
+    "id": "5384d324-382e-4a7d-b309-18eb25126d71",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "3ec13508-9b9f-46c6-be43-ad96a3d9d54f",
+    "quantity": 4,
+    "unit_price": "7.5",
+    "total_value": "30.0",
+    "consumed_at": "2026-01-05T19:17:43.606Z",
+    "created_at": "2026-01-05T19:17:43.606Z"
+  },
+  {
+    "id": "526fa0c7-2b98-43d9-8281-eb121bd3e528",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "4fcd3fd0-2504-4ee8-ae96-ebfcbc547ad8",
+    "quantity": 2,
+    "unit_price": "7.5",
+    "total_value": "15.0",
+    "consumed_at": "2026-01-05T19:32:33.719Z",
+    "created_at": "2026-01-05T19:32:33.719Z"
+  },
+  {
+    "id": "f5cf7487-fd7d-4d25-b6b3-0f47d275caf3",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "ce9182f8-cfed-4dce-8082-a49a96881723",
+    "quantity": 10,
+    "unit_price": "7.5",
+    "total_value": "75.0",
+    "consumed_at": "2026-01-05T20:30:23.734Z",
+    "created_at": "2026-01-05T20:30:23.734Z"
+  },
+  {
+    "id": "4f43bfc1-a9b0-4954-9463-d91f377b439a",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "b3302bd0-b3ea-436c-9bfa-dbd4f7bb6207",
+    "quantity": 42,
+    "unit_price": "7.5",
+    "total_value": "315.0",
+    "consumed_at": "2026-01-05T20:45:51.500Z",
+    "created_at": "2026-01-05T20:45:51.500Z"
+  },
+  {
+    "id": "79d2f262-dec6-4133-8bc1-d3f226fd40cb",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "e4c614ef-9a01-4f63-965e-a87de1315221",
+    "quantity": 2,
+    "unit_price": "8",
+    "total_value": "16",
+    "consumed_at": "2026-01-05T21:33:47.984Z",
+    "created_at": "2026-01-05T21:33:47.984Z"
+  },
+  {
+    "id": "57910cd6-a65d-46b9-9125-aa008a6831ba",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "f558e6a8-4740-4b3c-b378-16f401064e53",
+    "quantity": 5,
+    "unit_price": "10",
+    "total_value": "50",
+    "consumed_at": "2026-01-05T21:35:00.052Z",
+    "created_at": "2026-01-05T21:35:00.052Z"
+  },
+  {
+    "id": "1503a6de-ca6f-4447-bfae-4a844dd297a2",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "12f9e54e-f3a8-4fe2-a92c-fbf1a7985e7b",
+    "quantity": 6,
+    "unit_price": "10",
+    "total_value": "60",
+    "consumed_at": "2026-01-05T21:35:23.438Z",
+    "created_at": "2026-01-05T21:35:23.438Z"
+  },
+  {
+    "id": "e8f03397-9eb1-491e-a6ed-15216abb6e4a",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "865e0a31-4036-442c-9b8b-93668c3bdaf1",
+    "quantity": 8,
+    "unit_price": "8",
+    "total_value": "64",
+    "consumed_at": "2026-01-05T21:36:15.314Z",
+    "created_at": "2026-01-05T21:36:15.314Z"
+  },
+  {
+    "id": "2ea7ad4a-046e-4c6d-97b5-cdc3252e5c4d",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "035dbfec-9080-4ac1-bd51-ad3d420f2562",
+    "quantity": 9,
+    "unit_price": "8",
+    "total_value": "72",
+    "consumed_at": "2026-01-05T21:36:54.561Z",
+    "created_at": "2026-01-05T21:36:54.561Z"
+  },
+  {
+    "id": "4bb69731-8638-4a6e-a8c3-3d0e861907b5",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "79f0c3f8-ba06-47f0-b092-495e7e08ea19",
+    "quantity": 2,
+    "unit_price": "10",
+    "total_value": "20",
+    "consumed_at": "2026-01-05T21:40:17.717Z",
+    "created_at": "2026-01-05T21:40:17.717Z"
+  },
+  {
+    "id": "1993ca88-b55a-4f7e-a25f-3e1edb3eaa78",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "8def50c4-2c98-4bff-ae34-34fbca9cfb19",
+    "quantity": 2,
+    "unit_price": "10",
+    "total_value": "20",
+    "consumed_at": "2026-01-05T21:40:49.549Z",
+    "created_at": "2026-01-05T21:40:49.549Z"
+  },
+  {
+    "id": "b64dc7c8-2894-49b7-b432-fe97afa34e62",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "62a3aeaa-381a-4836-98b2-e879c7dc7fbf",
+    "quantity": 2,
+    "unit_price": "10",
+    "total_value": "20",
+    "consumed_at": "2026-01-06T01:42:03.575Z",
+    "created_at": "2026-01-06T01:42:03.575Z"
+  },
+  {
+    "id": "8e9f9355-e780-44c1-9340-fb34fb566416",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "949acaf9-6141-43ca-9072-c2bdea3f5523",
+    "quantity": 6,
+    "unit_price": "8",
+    "total_value": "48",
+    "consumed_at": "2026-01-06T01:42:55.562Z",
+    "created_at": "2026-01-06T01:42:55.562Z"
+  },
+  {
+    "id": "242a8dd6-bb88-4830-90a7-e3d8f67c31ad",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "987bddac-ed7c-4207-b8de-2319f91a1809",
+    "quantity": 3,
+    "unit_price": "8",
+    "total_value": "24",
+    "consumed_at": "2026-01-06T01:43:09.890Z",
+    "created_at": "2026-01-06T01:43:09.890Z"
+  },
+  {
+    "id": "2adad686-0b09-4fa7-bf77-09b74fb3b9ad",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "8ddd6285-8c0a-4314-bc36-7a3136b50504",
+    "quantity": 3,
+    "unit_price": "8",
+    "total_value": "24",
+    "consumed_at": "2026-01-06T01:43:49.757Z",
+    "created_at": "2026-01-06T01:43:49.757Z"
+  },
+  {
+    "id": "2eb7f5f4-00d1-45c8-b0d4-fc56b8c5e75b",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "d098a20d-d13f-4598-8294-aed2f05d6c61",
+    "quantity": 3,
+    "unit_price": "8",
+    "total_value": "24",
+    "consumed_at": "2026-01-06T01:44:14.267Z",
+    "created_at": "2026-01-06T01:44:14.267Z"
+  },
+  {
+    "id": "035aaf49-ab1d-4532-8923-ca3ed58a59b3",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "4ba9d7b3-ad79-4334-b66a-96d84962e483",
+    "quantity": 4,
+    "unit_price": "7.5",
+    "total_value": "30.0",
+    "consumed_at": "2026-01-06T01:44:48.271Z",
+    "created_at": "2026-01-06T01:44:48.271Z"
+  },
+  {
+    "id": "a0f099c9-246b-4622-b77f-a1fed07528db",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "5e44d896-45bc-4774-98e3-e3df6e8aacb9",
+    "quantity": 1,
+    "unit_price": "7.5",
+    "total_value": "7.5",
+    "consumed_at": "2026-01-06T01:45:08.702Z",
+    "created_at": "2026-01-06T01:45:08.702Z"
+  },
+  {
+    "id": "12ecb6b9-7714-4b7e-a1fb-4c18822d62ed",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "4907357c-0db5-4be3-906c-8d6b20a392f7",
+    "quantity": 2,
+    "unit_price": "7.5",
+    "total_value": "15.0",
+    "consumed_at": "2026-01-06T01:45:34.307Z",
+    "created_at": "2026-01-06T01:45:34.307Z"
+  },
+  {
+    "id": "b8289746-8688-4eeb-b455-77894714b183",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "2156cec8-db9f-4582-b25b-1e9d4c7e0d5c",
+    "quantity": 1,
+    "unit_price": "7.5",
+    "total_value": "7.5",
+    "consumed_at": "2026-01-06T01:45:46.897Z",
+    "created_at": "2026-01-06T01:45:46.897Z"
+  },
+  {
+    "id": "fb44ed31-d3ea-4660-8a36-50cac2ef4772",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "2979b418-777b-464a-b605-4a8345e902f8",
+    "quantity": 2,
+    "unit_price": "7.5",
+    "total_value": "15.0",
+    "consumed_at": "2026-01-06T01:46:16.231Z",
+    "created_at": "2026-01-06T01:46:16.231Z"
+  },
+  {
+    "id": "c7095c53-4314-4c98-a773-54e6de2f0a20",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "c0d6f133-90e0-46fe-bce4-980654f8cb2b",
+    "quantity": 3,
+    "unit_price": "7.5",
+    "total_value": "22.5",
+    "consumed_at": "2026-01-06T01:46:44.908Z",
+    "created_at": "2026-01-06T01:46:44.908Z"
+  },
+  {
+    "id": "8d844e17-0ba3-4149-ab06-fd88af0bcdd1",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "0576f2f8-626b-4c60-92f1-08fe61c63f7f",
+    "quantity": 1,
+    "unit_price": "7.5",
+    "total_value": "7.5",
+    "consumed_at": "2026-01-06T01:46:55.740Z",
+    "created_at": "2026-01-06T01:46:55.740Z"
+  },
+  {
+    "id": "1d852814-453b-43d8-b5be-d87682b576f6",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "f8af3f25-9d07-4010-8aee-e06a68d28d09",
+    "quantity": 13,
+    "unit_price": "10",
+    "total_value": "130",
+    "consumed_at": "2026-01-06T01:47:23.874Z",
+    "created_at": "2026-01-06T01:47:23.874Z"
+  },
+  {
+    "id": "120d8a34-8601-4dd7-a480-82a4d2d862e2",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "5f60d90a-3ee4-4146-8031-eec9b076811e",
+    "quantity": 12,
+    "unit_price": "7.032967032967033",
+    "total_value": "84.395604395604396",
+    "consumed_at": "2026-01-06T01:47:56.922Z",
+    "created_at": "2026-01-06T01:47:56.922Z"
+  },
+  {
+    "id": "e9be20a6-0f3e-49b9-9bd8-4683e99a1fa4",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "13acea65-43fb-440b-b5b0-3dd0361d87f3",
+    "quantity": 3,
+    "unit_price": "7.032967032967033",
+    "total_value": "21.098901098901099",
+    "consumed_at": "2026-01-06T01:48:13.992Z",
+    "created_at": "2026-01-06T01:48:13.992Z"
+  },
+  {
+    "id": "7d5e1e85-14aa-4157-ac2e-d04c36c031e6",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "fe261aa6-0805-40d5-9e3c-9175c8f3b659",
+    "quantity": 2,
+    "unit_price": "7.032967032967033",
+    "total_value": "14.065934065934066",
+    "consumed_at": "2026-01-06T01:49:03.883Z",
+    "created_at": "2026-01-06T01:49:03.883Z"
+  },
+  {
+    "id": "aad250d1-e670-4e4d-8dc2-f7e509fd076c",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "01542403-dfdd-435a-b721-1fa13491deb9",
+    "quantity": 2,
+    "unit_price": "8",
+    "total_value": "16",
+    "consumed_at": "2026-01-06T01:49:22.317Z",
+    "created_at": "2026-01-06T01:49:22.317Z"
+  },
+  {
+    "id": "b1fc5148-f218-4ffa-bcdb-ff184664d0a9",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "e86fb272-efa0-4444-b730-42d25cc4b73c",
+    "quantity": 1,
+    "unit_price": "8",
+    "total_value": "8",
+    "consumed_at": "2026-01-06T01:49:39.553Z",
+    "created_at": "2026-01-06T01:49:39.553Z"
+  },
+  {
+    "id": "47eba6c9-5949-4ed4-939a-146587546041",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "d1e8c6ec-0100-4f00-a781-3ab9b16d554c",
+    "quantity": 14,
+    "unit_price": "7.5",
+    "total_value": "105.0",
+    "consumed_at": "2026-01-06T01:50:08.150Z",
+    "created_at": "2026-01-06T01:50:08.150Z"
+  },
+  {
+    "id": "4ada1702-5c09-4e00-9376-47a01f39d9f6",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "d8f8c759-b29e-4b9b-a017-7e1af60860aa",
+    "quantity": 3,
+    "unit_price": "7.5",
+    "total_value": "22.5",
+    "consumed_at": "2026-01-06T01:50:29.276Z",
+    "created_at": "2026-01-06T01:50:29.276Z"
+  },
+  {
+    "id": "aa22c671-01f0-44f6-857a-fd55a6353993",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "56fe7ce6-4f00-4a93-8ffd-94d7631c1f42",
+    "quantity": 8,
+    "unit_price": "7.5",
+    "total_value": "60.0",
+    "consumed_at": "2026-01-06T01:50:44.928Z",
+    "created_at": "2026-01-06T01:50:44.928Z"
+  },
+  {
+    "id": "9f173240-aea3-43db-8cf1-157fac049b40",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "502bdd33-4706-4a60-ab86-afca6532afbd",
+    "quantity": 3,
+    "unit_price": "7.5",
+    "total_value": "22.5",
+    "consumed_at": "2026-01-06T01:51:03.501Z",
+    "created_at": "2026-01-06T01:51:03.501Z"
+  },
+  {
+    "id": "98f7a5dc-3b91-4713-a431-6fe2b6b014b1",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "66eb35b4-3be2-47a2-9551-a88e653c38ca",
+    "quantity": 21,
+    "unit_price": "8",
+    "total_value": "168",
+    "consumed_at": "2026-01-06T01:51:33.371Z",
+    "created_at": "2026-01-06T01:51:33.371Z"
+  },
+  {
+    "id": "75d9d5ab-913c-4150-ba61-4e8997658f54",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "2f2ae44c-531f-4bc9-84b8-451e3b7eb5ff",
+    "quantity": 7,
+    "unit_price": "7.5",
+    "total_value": "52.5",
+    "consumed_at": "2026-01-06T01:52:05.263Z",
+    "created_at": "2026-01-06T01:52:05.263Z"
+  },
+  {
+    "id": "3e49d9ce-4f6c-44f1-99a2-cdf0a4283ea9",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "dd6bcbc7-c909-4e9b-adbc-84e8c17259f0",
+    "quantity": 3,
+    "unit_price": "10",
+    "total_value": "30",
+    "consumed_at": "2026-01-06T01:54:38.268Z",
+    "created_at": "2026-01-06T01:54:38.268Z"
+  },
+  {
+    "id": "7c33c27a-f8ea-4c55-9b57-e1747b3f13b5",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "6fd2be57-504d-46e5-a161-2898ce7c0071",
+    "quantity": 1,
+    "unit_price": "8",
+    "total_value": "8",
+    "consumed_at": "2026-01-06T01:54:58.999Z",
+    "created_at": "2026-01-06T01:54:58.999Z"
+  },
+  {
+    "id": "68a6c08a-75e3-46af-98c7-caf9c78be2ce",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "d117eda3-a9c7-4001-ae35-2b1453b8d7d8",
+    "quantity": 4,
+    "unit_price": "7.5",
+    "total_value": "30.0",
+    "consumed_at": "2026-01-06T01:55:25.928Z",
+    "created_at": "2026-01-06T01:55:25.928Z"
+  },
+  {
+    "id": "36047b44-84f2-4ae4-b60e-7d36dde41180",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "86fabd33-93b7-44c0-9e6c-3ee916942e64",
+    "quantity": 2,
+    "unit_price": "7.5",
+    "total_value": "15.0",
+    "consumed_at": "2026-01-06T01:55:35.387Z",
+    "created_at": "2026-01-06T01:55:35.387Z"
+  },
+  {
+    "id": "0b0380e5-1b4b-41e6-920b-96a41478ffd6",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "93aa778d-d907-4adb-92ad-6b2fdcc50c18",
+    "quantity": 4,
+    "unit_price": "8",
+    "total_value": "32",
+    "consumed_at": "2026-01-06T02:00:03.404Z",
+    "created_at": "2026-01-06T02:00:03.404Z"
+  },
+  {
+    "id": "8756c621-9543-4db9-a291-9f424e53a517",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "be665def-83ba-4746-8431-2a94b3bf9e63",
+    "quantity": 6,
+    "unit_price": "7.5",
+    "total_value": "45.0",
+    "consumed_at": "2026-01-06T02:01:13.264Z",
+    "created_at": "2026-01-06T02:01:13.264Z"
+  },
+  {
+    "id": "693c9aea-e3fa-4c5f-91d4-feef3bb9287a",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "d8114fea-45ff-464d-94aa-9997cd24e1be",
+    "quantity": 1,
+    "unit_price": "7.5",
+    "total_value": "7.5",
+    "consumed_at": "2026-01-06T02:01:50.321Z",
+    "created_at": "2026-01-06T02:01:50.321Z"
+  },
+  {
+    "id": "6d9f2c66-098a-4843-bcfd-244529516ddb",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "26d66f3d-04f2-4c48-b5f4-c5dd29f039bd",
+    "quantity": 7,
+    "unit_price": "8",
+    "total_value": "56",
+    "consumed_at": "2026-01-06T02:02:17.171Z",
+    "created_at": "2026-01-06T02:02:17.171Z"
+  },
+  {
+    "id": "cfe00c36-0ab8-42e4-be58-4fff6834ad43",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "60b24c6a-369e-407b-b0ac-7e63073006db",
+    "quantity": 2,
+    "unit_price": "7.5",
+    "total_value": "15.0",
+    "consumed_at": "2026-01-06T02:02:42.297Z",
+    "created_at": "2026-01-06T02:02:42.297Z"
+  },
+  {
+    "id": "a315645e-8b98-4243-a443-fe55a3916ab0",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "d7f3b391-7b15-4426-99cb-439a26454249",
+    "quantity": 1,
+    "unit_price": "10",
+    "total_value": "10",
+    "consumed_at": "2026-01-06T02:03:00.224Z",
+    "created_at": "2026-01-06T02:03:00.224Z"
+  },
+  {
+    "id": "173a59f1-ba03-4d07-874a-b80e2c02f098",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "8858c163-61b1-4a1d-9292-a6c821c08e9e",
+    "quantity": 35,
+    "unit_price": "8",
+    "total_value": "280",
+    "consumed_at": "2026-01-06T02:03:26.693Z",
+    "created_at": "2026-01-06T02:03:26.693Z"
+  },
+  {
+    "id": "100cffe2-6e3f-4eb7-9602-0d17edbfa7b8",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "eb33003b-e185-448e-a631-2363032c3a5c",
+    "quantity": 7,
+    "unit_price": "7.5",
+    "total_value": "52.5",
+    "consumed_at": "2026-01-06T02:03:57.882Z",
+    "created_at": "2026-01-06T02:03:57.882Z"
+  },
+  {
+    "id": "a90a318f-3308-4f00-9568-c8cb71d70ce1",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "b494db21-ddc6-4e38-a22c-7f785a3a0be3",
+    "quantity": 8,
+    "unit_price": "8",
+    "total_value": "64",
+    "consumed_at": "2026-01-06T02:04:28.880Z",
+    "created_at": "2026-01-06T02:04:28.880Z"
+  },
+  {
+    "id": "26b3d574-bb4e-4b4e-9528-3d4ec32e6ec9",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "1241b739-c009-4bce-a399-1b79feb8ed37",
+    "quantity": 4,
+    "unit_price": "8",
+    "total_value": "32",
+    "consumed_at": "2026-01-06T02:04:52.938Z",
+    "created_at": "2026-01-06T02:04:52.938Z"
+  },
+  {
+    "id": "efdbbdf8-3f11-4802-8782-23682caf42a3",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "e8521911-2a3c-4666-af8d-3bf675405ad4",
+    "quantity": 2,
+    "unit_price": "8",
+    "total_value": "16",
+    "consumed_at": "2026-01-06T02:05:36.185Z",
+    "created_at": "2026-01-06T02:05:36.185Z"
+  },
+  {
+    "id": "af8e37db-696c-4209-a06c-fe2df68f40e7",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "fbe89e19-b438-4f53-8601-39b97b3b76c7",
+    "quantity": 3,
+    "unit_price": "7.5",
+    "total_value": "22.5",
+    "consumed_at": "2026-01-06T02:05:57.850Z",
+    "created_at": "2026-01-06T02:05:57.850Z"
+  },
+  {
+    "id": "58e9ddfa-0d5d-47dd-a0b7-d9a0baaff99b",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "89732e9f-859b-4ce6-aa2e-4de56b7eef52",
+    "quantity": 6,
+    "unit_price": "10",
+    "total_value": "60",
+    "consumed_at": "2026-01-06T02:06:16.356Z",
+    "created_at": "2026-01-06T02:06:16.356Z"
+  },
+  {
+    "id": "a8dd59f8-fd12-48c1-a879-2c7756fd539e",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "77ad3f6c-4c0d-44d6-961f-76ba27dd8076",
+    "quantity": 12,
+    "unit_price": "7.5",
+    "total_value": "90.0",
+    "consumed_at": "2026-01-06T02:06:48.144Z",
+    "created_at": "2026-01-06T02:06:48.144Z"
+  },
+  {
+    "id": "d787717a-090f-4430-b39f-747ea66ab4e9",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "5672faa0-7394-4ae7-9964-1409e6cf2649",
+    "quantity": 5,
+    "unit_price": "7.5",
+    "total_value": "37.5",
+    "consumed_at": "2026-01-06T02:07:07.875Z",
+    "created_at": "2026-01-06T02:07:07.875Z"
+  },
+  {
+    "id": "7dae004d-aafe-46bf-a0c5-6e4947bcf0b0",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "2a1d48c0-604c-410d-832d-b6bb636af5e5",
+    "quantity": 23,
+    "unit_price": "8",
+    "total_value": "184",
+    "consumed_at": "2026-01-06T02:07:27.870Z",
+    "created_at": "2026-01-06T02:07:27.870Z"
+  },
+  {
+    "id": "15559e50-b42d-4a22-918f-73f9b932da91",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "4f4af297-a7bb-4e99-80eb-745858099bdf",
+    "quantity": 9,
+    "unit_price": "7.5",
+    "total_value": "67.5",
+    "consumed_at": "2026-01-06T12:43:54.957Z",
+    "created_at": "2026-01-06T12:43:54.957Z"
+  },
+  {
+    "id": "9f91842b-c47f-4ca8-8a5b-b5e9ec051317",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "9c695472-924b-451b-8f8a-07707ce33b08",
+    "quantity": 7,
+    "unit_price": "7.5",
+    "total_value": "52.5",
+    "consumed_at": "2026-01-06T12:57:59.088Z",
+    "created_at": "2026-01-06T12:57:59.088Z"
+  },
+  {
+    "id": "296513ed-6e73-4521-82a2-2d2cc1dc1776",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "1614e815-de65-44a4-9f78-ed332644dacb",
+    "quantity": 1,
+    "unit_price": "7.5",
+    "total_value": "7.5",
+    "consumed_at": "2026-01-06T13:08:16.781Z",
+    "created_at": "2026-01-06T13:08:16.781Z"
+  },
+  {
+    "id": "595de534-1abf-4ed2-a3cd-936f81446470",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "d7adbfc5-f4b4-4e71-b537-7bab30e933ef",
+    "quantity": 8,
+    "unit_price": "8",
+    "total_value": "64",
+    "consumed_at": "2026-01-06T13:10:46.996Z",
+    "created_at": "2026-01-06T13:10:46.996Z"
+  },
+  {
+    "id": "6e25cfab-fd1b-4dfe-b18d-9499b54e3cf3",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "b3005a2d-b713-4aba-9020-f1ba7fac932d",
+    "quantity": 2,
+    "unit_price": "7.5",
+    "total_value": "15.0",
+    "consumed_at": "2026-01-06T13:33:15.006Z",
+    "created_at": "2026-01-06T13:33:15.006Z"
+  },
+  {
+    "id": "ae79ec57-89f8-458b-8f01-88b474cfa057",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "2e3531a3-c270-4435-b0ac-07b2ef8c6da5",
+    "quantity": 32,
+    "unit_price": "7.5",
+    "total_value": "240.0",
+    "consumed_at": "2026-01-06T14:15:32.917Z",
+    "created_at": "2026-01-06T14:15:32.917Z"
+  },
+  {
+    "id": "088b80ea-5004-4368-b2d3-2eb15eda1dd8",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "c3f4b417-c6fe-4cac-a947-d9dca14d5285",
+    "quantity": 1,
+    "unit_price": "8",
+    "total_value": "8",
+    "consumed_at": "2026-01-06T14:23:14.422Z",
+    "created_at": "2026-01-06T14:23:14.422Z"
+  },
+  {
+    "id": "f96148c0-b0ff-4186-80f2-d757784d1cc5",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "0719356f-96b1-4891-8c6c-48ef0463b27a",
+    "quantity": 2,
+    "unit_price": "7.5",
+    "total_value": "15.0",
+    "consumed_at": "2026-01-06T14:33:32.166Z",
+    "created_at": "2026-01-06T14:33:32.166Z"
+  },
+  {
+    "id": "16b03970-141c-4a39-9c55-c0d8cbba0f7d",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "8a3de971-5c08-43e4-b83e-8caaa1e8d5ae",
+    "quantity": 3,
+    "unit_price": "7.5",
+    "total_value": "22.5",
+    "consumed_at": "2026-01-06T14:50:17.261Z",
+    "created_at": "2026-01-06T14:50:17.261Z"
+  },
+  {
+    "id": "d4a39705-342d-493d-9db1-a0a78f8ee160",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "735d71a9-2d9e-4c54-aa4d-a5245623deef",
+    "quantity": 2,
+    "unit_price": "7.5",
+    "total_value": "15.0",
+    "consumed_at": "2026-01-06T14:55:07.696Z",
+    "created_at": "2026-01-06T14:55:07.696Z"
+  },
+  {
+    "id": "bb560627-c5b2-496e-914a-6286fd2da0fb",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "9a890294-a659-4da1-bc3f-9a0739828600",
+    "quantity": 2,
+    "unit_price": "7.5",
+    "total_value": "15.0",
+    "consumed_at": "2026-01-06T15:03:08.238Z",
+    "created_at": "2026-01-06T15:03:08.238Z"
+  },
+  {
+    "id": "fa279dad-735a-4ffc-98d7-c283f1cd4c47",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "14b0c838-9515-4829-ba56-dca8860d0865",
+    "quantity": 7,
+    "unit_price": "8",
+    "total_value": "56",
+    "consumed_at": "2026-01-06T15:14:20.578Z",
+    "created_at": "2026-01-06T15:14:20.578Z"
+  },
+  {
+    "id": "04b38767-d6d0-45ea-a198-bcf63e77df08",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "ab505cbd-cc4c-4dc0-994e-0d981085575c",
+    "quantity": 3,
+    "unit_price": "7.5",
+    "total_value": "22.5",
+    "consumed_at": "2026-01-06T15:22:54.391Z",
+    "created_at": "2026-01-06T15:22:54.391Z"
+  },
+  {
+    "id": "099b8efe-ac78-43b4-90c2-bdd74004b902",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "1f996daf-0693-438a-944c-f8dcdb60ec16",
+    "quantity": 4,
+    "unit_price": "7.5",
+    "total_value": "30.0",
+    "consumed_at": "2026-01-06T15:23:21.356Z",
+    "created_at": "2026-01-06T15:23:21.356Z"
+  },
+  {
+    "id": "d25987a8-71f6-4919-9344-63e54e701542",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "e157f41f-0a4f-40ca-9038-55b13e804119",
+    "quantity": 3,
+    "unit_price": "7.5",
+    "total_value": "22.5",
+    "consumed_at": "2026-01-06T15:44:33.768Z",
+    "created_at": "2026-01-06T15:44:33.768Z"
+  },
+  {
+    "id": "176b7486-ae03-4a27-a353-c87c1e67fcc4",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "6f017e2b-fde2-4ff7-9245-93f81c298cb4",
+    "quantity": 2,
+    "unit_price": "7.5",
+    "total_value": "15.0",
+    "consumed_at": "2026-01-06T16:21:47.901Z",
+    "created_at": "2026-01-06T16:21:47.901Z"
+  },
+  {
+    "id": "ac3344f9-a4e5-44da-ac4d-0607e5b63cac",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "d9210f41-da2f-48be-95f7-f05fddd6086d",
+    "quantity": 8,
+    "unit_price": "10",
+    "total_value": "80",
+    "consumed_at": "2026-01-06T16:24:34.937Z",
+    "created_at": "2026-01-06T16:24:34.937Z"
+  },
+  {
+    "id": "ace9d7db-a6a3-43f0-8e6f-28161169b24a",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "a547f240-5bf7-4e4d-9093-695c31641397",
+    "quantity": 11,
+    "unit_price": "7.5",
+    "total_value": "82.5",
+    "consumed_at": "2026-01-06T16:48:38.239Z",
+    "created_at": "2026-01-06T16:48:38.239Z"
+  },
+  {
+    "id": "cd65a259-faa5-4d03-b9ab-1d78668bb089",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "ecfa0dc5-ccae-460a-af28-5a79e421051a",
+    "quantity": 9,
+    "unit_price": "8",
+    "total_value": "72",
+    "consumed_at": "2026-01-06T16:52:19.475Z",
+    "created_at": "2026-01-06T16:52:19.475Z"
+  },
+  {
+    "id": "bb1c9f98-a9ef-4ecb-991c-730935fe021b",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "760f8214-b914-49f6-aa26-ed9c089b7984",
+    "quantity": 2,
+    "unit_price": "7.5",
+    "total_value": "15.0",
+    "consumed_at": "2026-01-06T17:03:07.066Z",
+    "created_at": "2026-01-06T17:03:07.066Z"
+  },
+  {
+    "id": "f0ff1d59-f5fa-4a5b-b16d-35acbdccd1ec",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "2b843b03-d05c-429c-b660-cc9c97c48640",
+    "quantity": 7,
+    "unit_price": "7.5",
+    "total_value": "52.5",
+    "consumed_at": "2026-01-06T17:04:36.617Z",
+    "created_at": "2026-01-06T17:04:36.617Z"
+  },
+  {
+    "id": "b4d40832-1c5d-4842-8408-b78355ac4f8f",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "66e9e5d4-9a6b-4daa-adba-d5602925604b",
+    "quantity": 7,
+    "unit_price": "8",
+    "total_value": "56",
+    "consumed_at": "2026-01-06T17:14:55.522Z",
+    "created_at": "2026-01-06T17:14:55.522Z"
+  },
+  {
+    "id": "09a1a707-59f1-4269-91d2-4d2b8ae10566",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "19d7b4b7-d19b-4fab-8a2f-8216381493e5",
+    "quantity": 5,
+    "unit_price": "10",
+    "total_value": "50",
+    "consumed_at": "2026-01-06T17:16:17.985Z",
+    "created_at": "2026-01-06T17:16:17.985Z"
+  },
+  {
+    "id": "cb57c30f-6c41-4fbf-b740-05a9879e0312",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "d4ea1c1c-3876-4da6-9f97-5d4ab660d167",
+    "quantity": 9,
+    "unit_price": "10",
+    "total_value": "90",
+    "consumed_at": "2026-01-06T17:16:53.329Z",
+    "created_at": "2026-01-06T17:16:53.329Z"
+  },
+  {
+    "id": "d5cff1ee-927b-48d9-9245-b661348d8d8a",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "02578dbb-da7d-480d-8489-6a2fe707242e",
+    "quantity": 20,
+    "unit_price": "10",
+    "total_value": "200",
+    "consumed_at": "2026-01-06T17:17:38.969Z",
+    "created_at": "2026-01-06T17:17:38.969Z"
+  },
+  {
+    "id": "397ca162-435b-44c6-a7c4-abde63b21bb4",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "5c9f9a6e-347a-4818-862d-1605d6c338b0",
+    "quantity": 1,
+    "unit_price": "7.5",
+    "total_value": "7.5",
+    "consumed_at": "2026-01-06T17:19:37.850Z",
+    "created_at": "2026-01-06T17:19:37.850Z"
+  },
+  {
+    "id": "23d61082-27d0-4559-8027-0b476bbabd28",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "82ac9bfc-8a56-43d6-ae64-5428cc9f18bb",
+    "quantity": 2,
+    "unit_price": "8",
+    "total_value": "16",
+    "consumed_at": "2026-01-06T17:21:16.440Z",
+    "created_at": "2026-01-06T17:21:16.440Z"
+  },
+  {
+    "id": "c5c436c9-90eb-4dfa-8da9-667f9404ff64",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "7a5d33d9-0ee4-4016-847b-85f33175cf8e",
+    "quantity": 16,
+    "unit_price": "8",
+    "total_value": "128",
+    "consumed_at": "2026-01-06T17:27:10.807Z",
+    "created_at": "2026-01-06T17:27:10.807Z"
+  },
+  {
+    "id": "3ba540c5-40bc-4c1b-85b0-92881727222b",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "afb8a107-611e-4c8b-a062-25db0d692d57",
+    "quantity": 9,
+    "unit_price": "8",
+    "total_value": "72",
+    "consumed_at": "2026-01-06T17:27:37.249Z",
+    "created_at": "2026-01-06T17:27:37.249Z"
+  },
+  {
+    "id": "37784550-d838-480d-95c0-b3982675b027",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "4e68a739-5032-4c15-b481-180990406d95",
+    "quantity": 2,
+    "unit_price": "7.5",
+    "total_value": "15.0",
+    "consumed_at": "2026-01-06T17:40:24.080Z",
+    "created_at": "2026-01-06T17:40:24.080Z"
+  },
+  {
+    "id": "78851d17-f8c5-4bb8-90d0-edc52b8939b5",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "635dbcd4-9a80-4860-9773-47acbb7bca7b",
+    "quantity": 5,
+    "unit_price": "8",
+    "total_value": "40",
+    "consumed_at": "2026-01-06T18:08:34.681Z",
+    "created_at": "2026-01-06T18:08:34.681Z"
+  },
+  {
+    "id": "808790af-51e5-4ac3-9d24-ef05b8cae586",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "1f3fcf52-3ed5-4c38-b9f5-080376fa1b9e",
+    "quantity": 10,
+    "unit_price": "8",
+    "total_value": "80",
+    "consumed_at": "2026-01-06T18:23:19.651Z",
+    "created_at": "2026-01-06T18:23:19.651Z"
+  },
+  {
+    "id": "bceeba37-7b3a-4be9-94a5-ee41ce3a6e78",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "14935099-b572-4d50-8e4e-e87d0ad9b164",
+    "quantity": 2,
+    "unit_price": "8",
+    "total_value": "16",
+    "consumed_at": "2026-01-06T18:24:43.224Z",
+    "created_at": "2026-01-06T18:24:43.224Z"
+  },
+  {
+    "id": "ab27cfd8-e7df-4200-ae16-a496ffa156de",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "7d52057a-6db6-40de-ab53-3cab87c7b7a7",
+    "quantity": 5,
+    "unit_price": "8",
+    "total_value": "40",
+    "consumed_at": "2026-01-06T18:25:29.137Z",
+    "created_at": "2026-01-06T18:25:29.137Z"
+  },
+  {
+    "id": "5656cfc5-6295-4af0-81bf-b622643cf34c",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "162c47a8-c233-47b1-960a-d4704c5aa18d",
+    "quantity": 6,
+    "unit_price": "7.5",
+    "total_value": "45.0",
+    "consumed_at": "2026-01-06T18:48:43.868Z",
+    "created_at": "2026-01-06T18:48:43.868Z"
+  },
+  {
+    "id": "fb848e18-1062-413a-b855-a43d8c9a9300",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "0d3ac7a3-6709-4d26-a36f-35b47b230919",
+    "quantity": 5,
+    "unit_price": "8",
+    "total_value": "40",
+    "consumed_at": "2026-01-06T18:50:10.585Z",
+    "created_at": "2026-01-06T18:50:10.585Z"
+  },
+  {
+    "id": "35dcc4e3-19b0-4e83-8ddf-31788b8810ce",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "14de79fb-87d1-4ea1-b434-2ba0eb87f42c",
+    "quantity": 3,
+    "unit_price": "7.5",
+    "total_value": "22.5",
+    "consumed_at": "2026-01-06T18:51:22.468Z",
+    "created_at": "2026-01-06T18:51:22.468Z"
+  },
+  {
+    "id": "e67b423b-efd0-4eb5-a50d-d6135b9935a9",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "8b054cfa-21e8-45a3-bce8-b86bcb693c5c",
+    "quantity": 9,
+    "unit_price": "7.5",
+    "total_value": "67.5",
+    "consumed_at": "2026-01-06T19:04:06.339Z",
+    "created_at": "2026-01-06T19:04:06.339Z"
+  },
+  {
+    "id": "2beb979e-178f-42ae-9382-ae3187ab3a69",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "e4e412a7-34ee-465d-8333-d910bab2ec1f",
+    "quantity": 7,
+    "unit_price": "7.5",
+    "total_value": "52.5",
+    "consumed_at": "2026-01-06T19:20:21.867Z",
+    "created_at": "2026-01-06T19:20:21.867Z"
+  },
+  {
+    "id": "1e61538c-7848-446a-8b9f-1a9d7407efed",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "a6e7eb7d-a601-413b-872f-e2abe7c9562e",
+    "quantity": 7,
+    "unit_price": "8",
+    "total_value": "56",
+    "consumed_at": "2026-01-06T19:33:52.571Z",
+    "created_at": "2026-01-06T19:33:52.571Z"
+  },
+  {
+    "id": "d5c5bc29-2482-4442-8817-9bd21d6261b6",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "79254ca0-a131-4388-873f-53646f09509f",
+    "quantity": 1,
+    "unit_price": "10",
+    "total_value": "10",
+    "consumed_at": "2026-01-06T20:02:19.104Z",
+    "created_at": "2026-01-06T20:02:19.104Z"
+  },
+  {
+    "id": "55c0c998-239d-43dd-a21d-ec1cf55a5501",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "79eb0d40-2826-4e26-93c6-83e16b052dd1",
+    "quantity": 1,
+    "unit_price": "7.5",
+    "total_value": "7.5",
+    "consumed_at": "2026-01-06T20:48:49.178Z",
+    "created_at": "2026-01-06T20:48:49.178Z"
+  },
+  {
+    "id": "22ce819b-883e-489e-811e-61d3f6e8a7df",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "91402112-bbe4-4fae-b858-c9e1b23c3065",
+    "quantity": 3,
+    "unit_price": "7.5",
+    "total_value": "22.5",
+    "consumed_at": "2026-01-06T20:49:18.302Z",
+    "created_at": "2026-01-06T20:49:18.302Z"
+  },
+  {
+    "id": "fd911fde-c3e1-42ec-8004-dbd0a573359a",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "c76e363a-7f78-41f6-9197-434583916e3d",
+    "quantity": 10,
+    "unit_price": "8",
+    "total_value": "80",
+    "consumed_at": "2026-01-06T21:07:14.418Z",
+    "created_at": "2026-01-06T21:07:14.418Z"
+  },
+  {
+    "id": "104bc2ac-2cd3-4934-b107-20d207679d87",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "6603ed0a-9233-4810-97fe-b5d288ec5d4f",
+    "quantity": 4,
+    "unit_price": "7.5",
+    "total_value": "30.0",
+    "consumed_at": "2026-01-06T21:31:49.293Z",
+    "created_at": "2026-01-06T21:31:49.293Z"
+  },
+  {
+    "id": "ce6f9ce9-db43-4855-8df1-ab5759b7023a",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "24d78c38-8bce-4320-9dd0-fc58bcafcd39",
+    "quantity": 2,
+    "unit_price": "8",
+    "total_value": "16",
+    "consumed_at": "2026-01-06T21:42:28.438Z",
+    "created_at": "2026-01-06T21:42:28.438Z"
+  },
+  {
+    "id": "cd5774b9-3c52-4fe9-8c48-ff813c5155d8",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "8360c867-ed7c-46b8-a07f-115e277990aa",
+    "quantity": 4,
+    "unit_price": "8",
+    "total_value": "32",
+    "consumed_at": "2026-01-06T22:13:49.697Z",
+    "created_at": "2026-01-06T22:13:49.697Z"
+  },
+  {
+    "id": "651fdeeb-65f4-4b4f-84dc-1a5bf20fc260",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "7ad24637-0997-4a79-935d-1128293bc983",
+    "quantity": 4,
+    "unit_price": "8",
+    "total_value": "32",
+    "consumed_at": "2026-01-06T22:13:58.910Z",
+    "created_at": "2026-01-06T22:13:58.910Z"
+  },
+  {
+    "id": "545f248c-0502-42b8-9ba1-64fa2562793c",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "e4363d2e-ca20-480a-a795-b915e947b2aa",
+    "quantity": 6,
+    "unit_price": "8",
+    "total_value": "48",
+    "consumed_at": "2026-01-06T22:14:24.342Z",
+    "created_at": "2026-01-06T22:14:24.342Z"
+  },
+  {
+    "id": "0f1d7df1-f460-4bc2-a8d5-dbf860ea59e4",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "cc286102-ec45-4130-be49-a75a6e021785",
+    "quantity": 2,
+    "unit_price": "8",
+    "total_value": "16",
+    "consumed_at": "2026-01-06T22:15:11.311Z",
+    "created_at": "2026-01-06T22:15:11.311Z"
+  },
+  {
+    "id": "6e87f678-cbb5-4bbd-9489-70d8b5013fe7",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "89fcea69-262e-47c4-9be1-92080dfb670d",
+    "quantity": 2,
+    "unit_price": "8",
+    "total_value": "16",
+    "consumed_at": "2026-01-06T22:15:42.845Z",
+    "created_at": "2026-01-06T22:15:42.845Z"
+  },
+  {
+    "id": "fcbd8960-9eb9-4d5e-862e-9a965f57112c",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "4a2a5bc1-ee20-4f01-b997-d717bb2fe70d",
+    "quantity": 5,
+    "unit_price": "8",
+    "total_value": "40",
+    "consumed_at": "2026-01-06T22:16:21.180Z",
+    "created_at": "2026-01-06T22:16:21.180Z"
+  },
+  {
+    "id": "c9b507bb-edd3-4ae4-b7b6-07972022adfe",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "8d095e42-6e69-43e9-972b-cf4dc0054796",
+    "quantity": 4,
+    "unit_price": "8",
+    "total_value": "32",
+    "consumed_at": "2026-01-06T22:16:59.414Z",
+    "created_at": "2026-01-06T22:16:59.414Z"
+  },
+  {
+    "id": "c8cca2b8-e748-4eb9-a771-39809e8bedbb",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "22aef4f8-a5ef-4193-ba46-456db0142eb9",
+    "quantity": 4,
+    "unit_price": "7.5",
+    "total_value": "30.0",
+    "consumed_at": "2026-01-06T22:18:05.941Z",
+    "created_at": "2026-01-06T22:18:05.941Z"
+  },
+  {
+    "id": "9f48c60c-67c5-4ea9-ada8-82c532a84a97",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "76d004ee-b088-41ad-b997-ed23f197ab01",
+    "quantity": 13,
+    "unit_price": "10",
+    "total_value": "130",
+    "consumed_at": "2026-01-06T22:18:56.237Z",
+    "created_at": "2026-01-06T22:18:56.237Z"
+  },
+  {
+    "id": "cfe1c14a-b460-466a-9838-205a2e807bdf",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "eeec23ff-6753-4ebd-a162-333f7a9b8c22",
+    "quantity": 26,
+    "unit_price": "10",
+    "total_value": "260",
+    "consumed_at": "2026-01-06T22:22:01.151Z",
+    "created_at": "2026-01-06T22:22:01.151Z"
+  },
+  {
+    "id": "c4ba75aa-9d5a-443e-afd1-7f3e3f957299",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "15050106-71a4-4253-8bb0-bc2069cff6b2",
+    "quantity": 5,
+    "unit_price": "8",
+    "total_value": "40",
+    "consumed_at": "2026-01-06T22:22:37.255Z",
+    "created_at": "2026-01-06T22:22:37.255Z"
+  },
+  {
+    "id": "2050a457-6951-4d3c-813b-8c744c64a5bd",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "f7334a0a-cc3e-452f-8991-426a9612fbeb",
+    "quantity": 4,
+    "unit_price": "8",
+    "total_value": "32",
+    "consumed_at": "2026-01-06T22:23:25.724Z",
+    "created_at": "2026-01-06T22:23:25.724Z"
+  },
+  {
+    "id": "fd361703-b7f5-4591-a6d5-2856ce300c45",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "1177542c-1902-4814-8246-ae29f5a31f9b",
+    "quantity": 4,
+    "unit_price": "8",
+    "total_value": "32",
+    "consumed_at": "2026-01-06T22:24:02.904Z",
+    "created_at": "2026-01-06T22:24:02.904Z"
+  },
+  {
+    "id": "2d93a444-ab6d-4da5-b709-9a786320a6ad",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "c308a340-fb1b-451c-b6b7-e4dcaf24f18a",
+    "quantity": 3,
+    "unit_price": "7.5",
+    "total_value": "22.5",
+    "consumed_at": "2026-01-06T22:24:40.164Z",
+    "created_at": "2026-01-06T22:24:40.164Z"
+  },
+  {
+    "id": "091dbe00-79e8-4e5f-ba67-a1e0231f50e8",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "3ee5b68f-9473-4fae-ba2f-ba2322413129",
+    "quantity": 64,
+    "unit_price": "7.5",
+    "total_value": "480.0",
+    "consumed_at": "2026-01-06T22:25:29.068Z",
+    "created_at": "2026-01-06T22:25:29.068Z"
+  },
+  {
+    "id": "b8490f45-048a-4a66-8d60-8fac0820f262",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "757ddcf9-bada-45d3-aa71-05acb652a2f5",
+    "quantity": 20,
+    "unit_price": "10",
+    "total_value": "200",
+    "consumed_at": "2026-01-06T22:27:55.052Z",
+    "created_at": "2026-01-06T22:27:55.052Z"
+  },
+  {
+    "id": "efe1fb49-dd7f-4a92-8489-94c5f9fbacdf",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "56248730-fe89-4daf-9572-0891d5c888f3",
+    "quantity": 5,
+    "unit_price": "7.5",
+    "total_value": "37.5",
+    "consumed_at": "2026-01-06T22:28:21.657Z",
+    "created_at": "2026-01-06T22:28:21.657Z"
+  },
+  {
+    "id": "cc3a65da-3250-4cad-a0c9-98211e688d02",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "50e9a0bc-d93c-4528-bfba-8d6ce8663226",
+    "quantity": 2,
+    "unit_price": "7.5",
+    "total_value": "15.0",
+    "consumed_at": "2026-01-06T22:28:54.734Z",
+    "created_at": "2026-01-06T22:28:54.734Z"
+  },
+  {
+    "id": "b1e80329-9c18-47d3-8c3e-5e96b752f4e0",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "83d76dd2-04ec-43ae-baad-7c0e23994d23",
+    "quantity": 12,
+    "unit_price": "7.5",
+    "total_value": "90.0",
+    "consumed_at": "2026-01-06T22:29:29.467Z",
+    "created_at": "2026-01-06T22:29:29.467Z"
+  },
+  {
+    "id": "367ee106-44a6-4e7a-a7a8-f0e06cbfbda5",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "ddccfc66-9fdd-49e2-bc9e-00a67e1c74e2",
+    "quantity": 3,
+    "unit_price": "7.5",
+    "total_value": "22.5",
+    "consumed_at": "2026-01-06T23:44:11.308Z",
+    "created_at": "2026-01-06T23:44:11.308Z"
+  },
+  {
+    "id": "c96e1657-e4a7-4c4f-b827-565c3e663f7b",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "a08094f8-45ef-4158-b53f-e61fe1abbe96",
+    "quantity": 2,
+    "unit_price": "10",
+    "total_value": "20",
+    "consumed_at": "2026-01-06T23:52:39.672Z",
+    "created_at": "2026-01-06T23:52:39.672Z"
+  },
+  {
+    "id": "10cbbaaf-1b1d-41a7-8593-dbb4cf32b325",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "2a467c6a-dd66-4125-a701-91838eb4a7ea",
+    "quantity": 1,
+    "unit_price": "8",
+    "total_value": "8",
+    "consumed_at": "2026-01-06T23:59:57.082Z",
+    "created_at": "2026-01-06T23:59:57.082Z"
+  },
+  {
+    "id": "e60726a9-20f0-41fd-8ff2-594bc536416c",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "a534b7f6-7bb6-4350-8554-806b887fff4a",
+    "quantity": 4,
+    "unit_price": "8",
+    "total_value": "32",
+    "consumed_at": "2026-01-07T00:12:57.135Z",
+    "created_at": "2026-01-07T00:12:57.135Z"
+  },
+  {
+    "id": "6a45c9e6-6b85-4ad9-ba16-a3c20f77f909",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "1abdb3c5-3ad8-4524-9bdb-1e756cb626cc",
+    "quantity": 1,
+    "unit_price": "8",
+    "total_value": "8",
+    "consumed_at": "2026-01-07T00:14:24.848Z",
+    "created_at": "2026-01-07T00:14:24.848Z"
+  },
+  {
+    "id": "138b1f25-8d79-4e3e-99b1-9539ca16aae1",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "910e7de8-edeb-403f-9577-1d18a2ea002e",
+    "quantity": 41,
+    "unit_price": "8",
+    "total_value": "328",
+    "consumed_at": "2026-01-07T00:16:41.156Z",
+    "created_at": "2026-01-07T00:16:41.156Z"
+  },
+  {
+    "id": "c6e4994e-4003-4bbd-bbad-427d031c6250",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "1a4cef35-fe9d-416a-9416-df8c2a0d4221",
+    "quantity": 4,
+    "unit_price": "7.5",
+    "total_value": "30.0",
+    "consumed_at": "2026-01-07T11:44:08.696Z",
+    "created_at": "2026-01-07T11:44:08.696Z"
+  },
+  {
+    "id": "bae60dc9-2872-4b48-87ff-745aa7385fba",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "b463b42f-09d6-4c8c-88c0-8671b3985899",
+    "quantity": 19,
+    "unit_price": "8",
+    "total_value": "152",
+    "consumed_at": "2026-01-07T12:51:35.853Z",
+    "created_at": "2026-01-07T12:51:35.853Z"
+  },
+  {
+    "id": "66656027-5b51-4252-afa6-78290563fa43",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "59af287c-e0e5-46af-b97a-31b539453495",
+    "quantity": 4,
+    "unit_price": "8",
+    "total_value": "32",
+    "consumed_at": "2026-01-07T12:59:52.397Z",
+    "created_at": "2026-01-07T12:59:52.397Z"
+  },
+  {
+    "id": "84b9f446-06c5-4d20-9b1e-eee2b23437ce",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "afd92a42-a64f-4fb5-997a-fae8699c99c7",
+    "quantity": 1,
+    "unit_price": "7.5",
+    "total_value": "7.5",
+    "consumed_at": "2026-01-07T13:06:01.050Z",
+    "created_at": "2026-01-07T13:06:01.050Z"
+  },
+  {
+    "id": "9bafbcd5-7294-41bc-87a1-3eec93d2df48",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "23ba111b-66d4-48f7-98dc-7f34c8385e86",
+    "quantity": 16,
+    "unit_price": "7.032967032967033",
+    "total_value": "112.527472527472528",
+    "consumed_at": "2026-01-07T13:07:44.437Z",
+    "created_at": "2026-01-07T13:07:44.437Z"
+  },
+  {
+    "id": "4bcb012d-cab6-4d15-9814-3957cc7aeeef",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "ef3277f9-28da-4419-a673-b9828c9b172a",
+    "quantity": 1,
+    "unit_price": "8",
+    "total_value": "8",
+    "consumed_at": "2026-01-07T13:25:01.750Z",
+    "created_at": "2026-01-07T13:25:01.750Z"
+  },
+  {
+    "id": "e43d1881-e591-4903-9ee6-fe1251e00b3d",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "776a95db-ef9f-4def-8f0b-d69a118b61c9",
+    "quantity": 25,
+    "unit_price": "8",
+    "total_value": "200",
+    "consumed_at": "2026-01-07T13:34:02.052Z",
+    "created_at": "2026-01-07T13:34:02.052Z"
+  },
+  {
+    "id": "b5a2e45a-c53c-4eb8-8a7c-1d3069df643d",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "cd50d32e-a81b-492b-bbc4-2d1ecd060d18",
+    "quantity": 11,
+    "unit_price": "7.032967032967033",
+    "total_value": "77.362637362637363",
+    "consumed_at": "2026-01-07T13:36:35.787Z",
+    "created_at": "2026-01-07T13:36:35.787Z"
+  },
+  {
+    "id": "2413030d-c43f-4860-b429-e4c80bc4dcc6",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "6494c862-6f86-452a-b707-f2e4a7cf7c51",
+    "quantity": 4,
+    "unit_price": "8",
+    "total_value": "32",
+    "consumed_at": "2026-01-07T14:04:35.674Z",
+    "created_at": "2026-01-07T14:04:35.674Z"
+  },
+  {
+    "id": "5463d94f-33d8-4d2a-8c00-ca88522b3155",
+    "package_id": "ff1dd5de-fdab-4706-9173-d334ee56857d",
+    "sale_id": "c26037ee-cc23-4c1e-8238-553e519c9a36",
+    "quantity": 11,
+    "unit_price": "10",
+    "total_value": "110",
+    "consumed_at": "2026-01-07T14:06:47.684Z",
+    "created_at": "2026-01-07T14:06:47.684Z"
+  },
+  {
+    "id": "2a549a1e-b250-4d18-b9e4-62228fdde43e",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "cd9dedb5-483d-4651-98bc-1a032a424122",
+    "quantity": 15,
+    "unit_price": "8",
+    "total_value": "120",
+    "consumed_at": "2026-01-07T14:18:15.976Z",
+    "created_at": "2026-01-07T14:18:15.976Z"
+  },
+  {
+    "id": "58d5bc05-82b9-4bda-a9f9-29695415d22d",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "e4190a65-68ae-406e-b31b-f436f309710c",
+    "quantity": 1,
+    "unit_price": "10",
+    "total_value": "10",
+    "consumed_at": "2026-01-07T14:34:30.362Z",
+    "created_at": "2026-01-07T14:34:30.362Z"
+  },
+  {
+    "id": "49e146ed-1302-4327-8a75-9c978395ca2b",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "f9027950-5222-4b62-8706-23c00f99fdb8",
+    "quantity": 6,
+    "unit_price": "8",
+    "total_value": "48",
+    "consumed_at": "2026-01-07T14:46:50.113Z",
+    "created_at": "2026-01-07T14:46:50.113Z"
+  },
+  {
+    "id": "c890149e-2b4a-4d07-90d4-9f5357824e73",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "ee07ad40-37d6-4d30-b481-ac1513160e60",
+    "quantity": 23,
+    "unit_price": "7.5",
+    "total_value": "172.5",
+    "consumed_at": "2026-01-07T15:26:35.503Z",
+    "created_at": "2026-01-07T15:26:35.503Z"
+  },
+  {
+    "id": "c43bf706-5cbc-48d3-800f-648a9780e016",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "abe4be95-2193-4434-8abc-27be870e1f85",
+    "quantity": 2,
+    "unit_price": "8",
+    "total_value": "16",
+    "consumed_at": "2026-01-07T16:43:30.067Z",
+    "created_at": "2026-01-07T16:43:30.067Z"
+  },
+  {
+    "id": "274bf4b9-95c9-4258-93d2-9e1c47cb369e",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "1a5a3f4c-d83d-4ced-9551-cf1f24760a05",
+    "quantity": 2,
+    "unit_price": "10",
+    "total_value": "20",
+    "consumed_at": "2026-01-07T16:45:30.122Z",
+    "created_at": "2026-01-07T16:45:30.122Z"
+  },
+  {
+    "id": "4b43295c-42fb-4840-a82c-e9f109c3ee0a",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "48b6e506-a217-4dba-bb5f-24d768891fc2",
+    "quantity": 7,
+    "unit_price": "7.5",
+    "total_value": "52.5",
+    "consumed_at": "2026-01-07T16:46:55.417Z",
+    "created_at": "2026-01-07T16:46:55.417Z"
+  },
+  {
+    "id": "92fb78c0-243d-4443-b31a-b06943931f55",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "c493e6cc-e998-483a-9b87-7ca0dd29c3c7",
+    "quantity": 54,
+    "unit_price": "8",
+    "total_value": "432",
+    "consumed_at": "2026-01-07T16:48:46.167Z",
+    "created_at": "2026-01-07T16:48:46.167Z"
+  },
+  {
+    "id": "49aa503e-f3ca-46a6-aa21-973d0a0f5aa3",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "6b270588-acef-479a-8583-5eacc7305265",
+    "quantity": 10,
+    "unit_price": "8",
+    "total_value": "80",
+    "consumed_at": "2026-01-07T17:28:23.165Z",
+    "created_at": "2026-01-07T17:28:23.165Z"
+  },
+  {
+    "id": "ca84a1c6-3a81-4064-a6ef-5c549522749a",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "d70e96d5-5c6a-4bba-af7b-3a72d2eaf6fc",
+    "quantity": 1,
+    "unit_price": "8",
+    "total_value": "8",
+    "consumed_at": "2026-01-07T17:46:18.852Z",
+    "created_at": "2026-01-07T17:46:18.852Z"
+  },
+  {
+    "id": "e8d49c4e-f71d-49ad-a0b9-193df711a4f9",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "aa30e60b-2570-420c-a680-9b2a8b04d2ab",
+    "quantity": 1,
+    "unit_price": "7.5",
+    "total_value": "7.5",
+    "consumed_at": "2026-01-07T17:46:39.361Z",
+    "created_at": "2026-01-07T17:46:39.361Z"
+  },
+  {
+    "id": "922f30ed-4836-4874-8101-6dba0ce04292",
+    "package_id": "913a89fb-68cb-46a3-bcfd-fd582ecb9727",
+    "sale_id": "a0f633e8-c5cd-4596-90a0-e374936211fb",
+    "quantity": 9,
+    "unit_price": "10",
+    "total_value": "90",
+    "consumed_at": "2026-01-07T17:52:04.656Z",
+    "created_at": "2026-01-07T17:52:04.656Z"
+  },
+  {
+    "id": "1c612e47-ef5e-4294-b547-7ba3d4f4b646",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "2278cd5c-7f0c-47c0-99fb-2838b2df0884",
+    "quantity": 15,
+    "unit_price": "8",
+    "total_value": "120",
+    "consumed_at": "2026-01-07T17:59:47.474Z",
+    "created_at": "2026-01-07T17:59:47.474Z"
+  },
+  {
+    "id": "1aba36ec-36a1-43e6-9892-391987681a21",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "0c3d4b74-52a7-48ed-8cae-d108270858a7",
+    "quantity": 10,
+    "unit_price": "8",
+    "total_value": "80",
+    "consumed_at": "2026-01-07T18:00:50.295Z",
+    "created_at": "2026-01-07T18:00:50.295Z"
+  },
+  {
+    "id": "ba1abf17-b676-44ff-aa40-ef4c02ccc494",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "8e81246b-c513-4831-b07f-b5ff81346c92",
+    "quantity": 7,
+    "unit_price": "7.5",
+    "total_value": "52.5",
+    "consumed_at": "2026-01-07T18:02:32.680Z",
+    "created_at": "2026-01-07T18:02:32.680Z"
+  },
+  {
+    "id": "68c3635e-c7a8-42af-a234-0c0daca50180",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "786542f2-68d6-4d9f-9783-3f51d16ca7da",
+    "quantity": 5,
+    "unit_price": "7.5",
+    "total_value": "37.5",
+    "consumed_at": "2026-01-07T18:03:13.547Z",
+    "created_at": "2026-01-07T18:03:13.547Z"
+  },
+  {
+    "id": "cdb16fbf-f21f-449d-87bd-72ceb82a1619",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "79af011d-ba51-4ddd-9a86-e8abd7a137e8",
+    "quantity": 2,
+    "unit_price": "10",
+    "total_value": "20",
+    "consumed_at": "2026-01-07T18:04:09.233Z",
+    "created_at": "2026-01-07T18:04:09.233Z"
+  },
+  {
+    "id": "e968de48-f633-47f3-afb1-5884f1731267",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "ac861145-92a0-4385-8e4b-47ed75cf01f5",
+    "quantity": 3,
+    "unit_price": "7.5",
+    "total_value": "22.5",
+    "consumed_at": "2026-01-07T18:04:48.783Z",
+    "created_at": "2026-01-07T18:04:48.783Z"
+  },
+  {
+    "id": "40d296f0-7d55-4ef6-8891-064978239e01",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "7b4b3453-6b1a-4260-ba5e-be7e402e4973",
+    "quantity": 3,
+    "unit_price": "7.5",
+    "total_value": "22.5",
+    "consumed_at": "2026-01-07T18:05:41.197Z",
+    "created_at": "2026-01-07T18:05:41.197Z"
+  },
+  {
+    "id": "5964da55-5357-4f69-9a87-008aa1b91322",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "8578a238-d2e0-4946-b420-c726e103f58d",
+    "quantity": 10,
+    "unit_price": "7.5",
+    "total_value": "75.0",
+    "consumed_at": "2026-01-07T18:18:07.204Z",
+    "created_at": "2026-01-07T18:18:07.204Z"
+  },
+  {
+    "id": "0f6fdf09-c7b4-40b6-a9ab-e78d44a97938",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "82a0f913-d060-41d7-b7d3-012d9646ea41",
+    "quantity": 10,
+    "unit_price": "7.5",
+    "total_value": "75.0",
+    "consumed_at": "2026-01-07T18:30:51.934Z",
+    "created_at": "2026-01-07T18:30:51.934Z"
+  },
+  {
+    "id": "2e5e169d-c302-4b11-b921-e9049c969e12",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "f4e40a3d-40b0-48a9-b06b-3dd831856cc0",
+    "quantity": 14,
+    "unit_price": "8",
+    "total_value": "112",
+    "consumed_at": "2026-01-07T18:43:03.162Z",
+    "created_at": "2026-01-07T18:43:03.162Z"
+  },
+  {
+    "id": "e767d49e-fd9f-4d67-a570-1535bfe6c3fb",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "ded32ee9-7ed4-4a21-a1e0-ad6d2e2b901e",
+    "quantity": 3,
+    "unit_price": "7.5",
+    "total_value": "22.5",
+    "consumed_at": "2026-01-07T18:57:54.522Z",
+    "created_at": "2026-01-07T18:57:54.522Z"
+  },
+  {
+    "id": "6b01628e-b9c4-48b8-841b-b8aa31ce45b8",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "a2f64e25-d849-48cc-b33e-4e927d8786a0",
+    "quantity": 4,
+    "unit_price": "8",
+    "total_value": "32",
+    "consumed_at": "2026-01-07T19:07:33.721Z",
+    "created_at": "2026-01-07T19:07:33.721Z"
+  },
+  {
+    "id": "9e84aa75-c564-4ebd-97c5-614b89015fe5",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "55c3c57c-f98c-43e9-a259-e7b0b5efd530",
+    "quantity": 1,
+    "unit_price": "7.5",
+    "total_value": "7.5",
+    "consumed_at": "2026-01-07T19:07:58.992Z",
+    "created_at": "2026-01-07T19:07:58.992Z"
+  },
+  {
+    "id": "39fb1976-076f-48e1-9c73-e55828ef4317",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "350eaf52-b4ca-4420-ac8c-63e55297c615",
+    "quantity": 4,
+    "unit_price": "7.5",
+    "total_value": "30.0",
+    "consumed_at": "2026-01-07T20:00:02.845Z",
+    "created_at": "2026-01-07T20:00:02.845Z"
+  },
+  {
+    "id": "a83e2c1c-cb21-4627-9ff9-f294701a4ad3",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "e2091d34-d65e-47d2-9d0f-3757f0569b51",
+    "quantity": 14,
+    "unit_price": "7.5",
+    "total_value": "105.0",
+    "consumed_at": "2026-01-07T20:15:22.277Z",
+    "created_at": "2026-01-07T20:15:22.277Z"
+  },
+  {
+    "id": "171c51f0-a1ae-49a5-af8b-3bfb5a6eefd8",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "9a00a1f4-0a23-4648-9818-090759a12d6b",
+    "quantity": 13,
+    "unit_price": "7.5",
+    "total_value": "97.5",
+    "consumed_at": "2026-01-07T20:22:49.775Z",
+    "created_at": "2026-01-07T20:22:49.775Z"
+  },
+  {
+    "id": "b850827b-15d5-4b47-9562-39880ec68764",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "9d3b4fcf-925d-4235-8b53-70e783c56e77",
+    "quantity": 2,
+    "unit_price": "8",
+    "total_value": "16",
+    "consumed_at": "2026-01-07T20:24:08.261Z",
+    "created_at": "2026-01-07T20:24:08.261Z"
+  },
+  {
+    "id": "c72c6c72-bd2d-4d9c-ba19-e48abfb6e5f9",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "6a184be0-5466-4ffa-ba03-48483ced09c7",
+    "quantity": 25,
+    "unit_price": "7.5",
+    "total_value": "187.5",
+    "consumed_at": "2026-01-07T20:46:56.613Z",
+    "created_at": "2026-01-07T20:46:56.613Z"
+  },
+  {
+    "id": "d6784482-b9d0-432a-b2e0-c18c200508b6",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "84a282be-3107-4d97-b24a-22048d892641",
+    "quantity": 13,
+    "unit_price": "10",
+    "total_value": "130",
+    "consumed_at": "2026-01-07T21:10:04.497Z",
+    "created_at": "2026-01-07T21:10:04.497Z"
+  },
+  {
+    "id": "68563e18-595b-4df0-8b66-b64b68fac6e2",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "e863a764-8e43-481b-ad64-f8c4e42c5ce3",
+    "quantity": 4,
+    "unit_price": "10",
+    "total_value": "40",
+    "consumed_at": "2026-01-07T21:12:06.985Z",
+    "created_at": "2026-01-07T21:12:06.985Z"
+  },
+  {
+    "id": "2044a72f-629d-4160-be9b-10e83cc9b718",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "4f9ee723-36b3-4293-b674-4ad9f149a474",
+    "quantity": 4,
+    "unit_price": "7.5",
+    "total_value": "30.0",
+    "consumed_at": "2026-01-07T21:13:05.173Z",
+    "created_at": "2026-01-07T21:13:05.173Z"
+  },
+  {
+    "id": "4fba1797-5d7e-4315-a34e-c988dede73e2",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "1e37de8e-1554-4c77-be32-e73a7347fa00",
+    "quantity": 1,
+    "unit_price": "7.5",
+    "total_value": "7.5",
+    "consumed_at": "2026-01-07T21:18:12.612Z",
+    "created_at": "2026-01-07T21:18:12.612Z"
+  },
+  {
+    "id": "04385413-463f-41ae-ac89-3d539d9ddd56",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "1b61b84d-b843-4ec3-b262-f03e9b6f91ee",
+    "quantity": 12,
+    "unit_price": "10",
+    "total_value": "120",
+    "consumed_at": "2026-01-07T21:46:34.570Z",
+    "created_at": "2026-01-07T21:46:34.570Z"
+  },
+  {
+    "id": "02836ee8-29eb-4dad-888e-bab2b1f75c46",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "06c5801a-2061-40c8-a169-5390b5a83dde",
+    "quantity": 5,
+    "unit_price": "8",
+    "total_value": "40",
+    "consumed_at": "2026-01-07T23:00:48.114Z",
+    "created_at": "2026-01-07T23:00:48.114Z"
+  },
+  {
+    "id": "49988cab-1601-403d-b7c6-e0f006b72af2",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "ef791443-62da-4f5d-ab26-fc49bd005476",
+    "quantity": 3,
+    "unit_price": "8",
+    "total_value": "24",
+    "consumed_at": "2026-01-07T23:18:57.698Z",
+    "created_at": "2026-01-07T23:18:57.698Z"
+  },
+  {
+    "id": "eabdb523-e42b-4a33-a5f2-9ebe7dd746bc",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "1b70b84d-8d63-44d4-8eab-91e2e899ceac",
+    "quantity": 17,
+    "unit_price": "7.5",
+    "total_value": "127.5",
+    "consumed_at": "2026-01-07T23:20:14.314Z",
+    "created_at": "2026-01-07T23:20:14.314Z"
+  },
+  {
+    "id": "bda1a1c9-c8a3-4208-bcad-55fc660d4156",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "5faf22c9-e8ef-4844-acac-c76da1e55bb1",
+    "quantity": 2,
+    "unit_price": "10",
+    "total_value": "20",
+    "consumed_at": "2026-01-07T23:21:20.791Z",
+    "created_at": "2026-01-07T23:21:20.791Z"
+  },
+  {
+    "id": "2aa212eb-6518-405e-96c5-42d0a7b3936f",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "37782afa-f721-4541-a922-d06cf7a3cd43",
+    "quantity": 5,
+    "unit_price": "7.5",
+    "total_value": "37.5",
+    "consumed_at": "2026-01-07T23:22:01.641Z",
+    "created_at": "2026-01-07T23:22:01.641Z"
+  },
+  {
+    "id": "9e456244-2ed5-4918-b398-a39e31453c81",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "4257e9e2-9aeb-4e00-8286-f0f598ae44ea",
+    "quantity": 18,
+    "unit_price": "8",
+    "total_value": "144",
+    "consumed_at": "2026-01-07T23:22:50.878Z",
+    "created_at": "2026-01-07T23:22:50.878Z"
+  },
+  {
+    "id": "d99f6f43-1ece-4f94-895b-b8562b2e21f5",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "da43c3b0-0e93-45ed-903e-dac08246a4ca",
+    "quantity": 5,
+    "unit_price": "7.5",
+    "total_value": "37.5",
+    "consumed_at": "2026-01-07T23:23:24.340Z",
+    "created_at": "2026-01-07T23:23:24.340Z"
+  },
+  {
+    "id": "27474865-7b9b-4ba5-a956-7f5fe6097e39",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "12e49a37-31f8-4f04-946a-9e7184b51004",
+    "quantity": 26,
+    "unit_price": "10",
+    "total_value": "260",
+    "consumed_at": "2026-01-07T23:26:46.545Z",
+    "created_at": "2026-01-07T23:26:46.545Z"
+  },
+  {
+    "id": "be0ce08e-72ec-4428-adb2-bc9256882ec7",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "f2b57c0e-9c72-4e4a-a32e-7ebfb12ac1b6",
+    "quantity": 7,
+    "unit_price": "7.5",
+    "total_value": "52.5",
+    "consumed_at": "2026-01-08T11:47:12.294Z",
+    "created_at": "2026-01-08T11:47:12.294Z"
+  },
+  {
+    "id": "5bc2d663-94a5-4c04-8196-6e0318bf993d",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "54abffe8-7022-4ffc-b070-9be4c793d033",
+    "quantity": 2,
+    "unit_price": "8",
+    "total_value": "16",
+    "consumed_at": "2026-01-08T12:44:35.935Z",
+    "created_at": "2026-01-08T12:44:35.935Z"
+  },
+  {
+    "id": "1ab355a2-9f1d-453a-b62d-3bc240e52e0d",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "45f44ea7-7eab-4736-ab1d-e55bd245e0f7",
+    "quantity": 14,
+    "unit_price": "7.5",
+    "total_value": "105.0",
+    "consumed_at": "2026-01-08T12:58:42.437Z",
+    "created_at": "2026-01-08T12:58:42.437Z"
+  },
+  {
+    "id": "aaba5c52-4fcb-4e31-b9cb-47d367b99a01",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "0b69cb4b-192b-4c18-9371-6d528790f932",
+    "quantity": 12,
+    "unit_price": "8",
+    "total_value": "96",
+    "consumed_at": "2026-01-08T13:04:09.393Z",
+    "created_at": "2026-01-08T13:04:09.393Z"
+  },
+  {
+    "id": "a4cd0d10-765f-429c-9c89-699155f40b2d",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "29e433ad-de7b-48b5-b6bf-1fcd8c8f8890",
+    "quantity": 2,
+    "unit_price": "7.5",
+    "total_value": "15.0",
+    "consumed_at": "2026-01-08T13:06:25.444Z",
+    "created_at": "2026-01-08T13:06:25.444Z"
+  },
+  {
+    "id": "613eea0e-fc8c-4bea-8cca-5d99d98cc9d3",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "75cf6148-f93c-4cb9-a1b4-d712dadacf6d",
+    "quantity": 6,
+    "unit_price": "8",
+    "total_value": "48",
+    "consumed_at": "2026-01-08T13:28:47.081Z",
+    "created_at": "2026-01-08T13:28:47.081Z"
+  },
+  {
+    "id": "f4340262-a69c-465d-9be6-e26027db84f0",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "9bab216d-8ddd-4087-a587-795d2a00b9f9",
+    "quantity": 6,
+    "unit_price": "8",
+    "total_value": "48",
+    "consumed_at": "2026-01-08T13:32:06.057Z",
+    "created_at": "2026-01-08T13:32:06.057Z"
+  },
+  {
+    "id": "0fd1df68-5e56-488d-9123-88d725bbce33",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "a30a3071-4c91-4e5a-823f-5c9ca62dc3d9",
+    "quantity": 1,
+    "unit_price": "8",
+    "total_value": "8",
+    "consumed_at": "2026-01-08T13:44:41.016Z",
+    "created_at": "2026-01-08T13:44:41.016Z"
+  },
+  {
+    "id": "ea16549c-eec5-4231-a989-25bfcd3cd0e7",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "4cef956d-1b98-4442-a5d6-77cf8b83ed9a",
+    "quantity": 10,
+    "unit_price": "7.5",
+    "total_value": "75.0",
+    "consumed_at": "2026-01-08T13:46:30.489Z",
+    "created_at": "2026-01-08T13:46:30.489Z"
+  },
+  {
+    "id": "1dd5c55b-0e6a-460c-91a2-dde5a9f08bc8",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "d2a3e2db-36f0-40a9-9876-6dc99dbd185e",
+    "quantity": 171,
+    "unit_price": "7.5",
+    "total_value": "1282.5",
+    "consumed_at": "2026-01-08T14:07:57.949Z",
+    "created_at": "2026-01-08T14:07:57.949Z"
+  },
+  {
+    "id": "030141bd-163b-4e60-8472-69bb54f120f4",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "64a64a09-d047-47c5-ab94-218620547867",
+    "quantity": 5,
+    "unit_price": "7.5",
+    "total_value": "37.5",
+    "consumed_at": "2026-01-08T14:10:06.127Z",
+    "created_at": "2026-01-08T14:10:06.127Z"
+  },
+  {
+    "id": "46a409cb-a5c0-48fc-a32d-d900c0ebf159",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "00fc58fb-f9f1-463c-a9a1-3343ca380864",
+    "quantity": 3,
+    "unit_price": "8",
+    "total_value": "24",
+    "consumed_at": "2026-01-08T14:53:13.961Z",
+    "created_at": "2026-01-08T14:53:13.961Z"
+  },
+  {
+    "id": "33b0e41a-1388-4f46-9c12-087f378fe564",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "6edae51c-6c1b-4fea-b296-fdd9e1854109",
+    "quantity": 4,
+    "unit_price": "8",
+    "total_value": "32",
+    "consumed_at": "2026-01-08T14:58:25.553Z",
+    "created_at": "2026-01-08T14:58:25.553Z"
+  },
+  {
+    "id": "41f1797a-ae38-4754-a987-ab032f8d6e2a",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "a4c8e4f9-a060-4b10-ae89-2249591950b2",
+    "quantity": 30,
+    "unit_price": "7.5",
+    "total_value": "225.0",
+    "consumed_at": "2026-01-08T16:45:29.769Z",
+    "created_at": "2026-01-08T16:45:29.769Z"
+  },
+  {
+    "id": "09143e5b-a543-42de-92cd-2a05a40885a2",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "7e4351eb-8247-4e30-997a-8812ccdc7172",
+    "quantity": 2,
+    "unit_price": "8",
+    "total_value": "16",
+    "consumed_at": "2026-01-08T17:30:03.846Z",
+    "created_at": "2026-01-08T17:30:03.846Z"
+  },
+  {
+    "id": "31b1f290-e62a-45f9-b88a-2ab42f86bd2a",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "c70b820d-dfe3-4881-8554-261a0cebbb0a",
+    "quantity": 9,
+    "unit_price": "8",
+    "total_value": "72",
+    "consumed_at": "2026-01-08T17:52:21.844Z",
+    "created_at": "2026-01-08T17:52:21.844Z"
+  },
+  {
+    "id": "9df0f513-1140-48f6-a0db-b63b3e6f4e10",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "a744ee69-0e19-49ad-997f-113efffb04c5",
+    "quantity": 3,
+    "unit_price": "8",
+    "total_value": "24",
+    "consumed_at": "2026-01-08T18:31:54.254Z",
+    "created_at": "2026-01-08T18:31:54.254Z"
+  },
+  {
+    "id": "14dd0abb-5f2b-4bb9-bc59-77888b68c491",
+    "package_id": "6f2b2d67-a9be-4e11-a869-841c232c7a53",
+    "sale_id": "dc26835b-4dcf-426f-83d6-c032d9342d1f",
+    "quantity": 10,
+    "unit_price": "0",
+    "total_value": "0",
+    "consumed_at": "2026-01-08T20:08:38.427Z",
+    "created_at": "2026-01-08T20:08:38.427Z"
+  },
+  {
+    "id": "9d578550-c938-4e98-ab68-14ec415bfe96",
+    "package_id": "6f2b2d67-a9be-4e11-a869-841c232c7a53",
+    "sale_id": "332aeeb5-4f86-4d7a-acc1-55b73f2dd257",
+    "quantity": 4,
+    "unit_price": "0",
+    "total_value": "0",
+    "consumed_at": "2026-01-08T20:10:38.208Z",
+    "created_at": "2026-01-08T20:10:38.208Z"
+  },
+  {
+    "id": "9def264a-77f6-4d43-8c9e-8cd4336e7e23",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "4b6e8b56-dfb5-4bb0-8b98-b14f7471151e",
+    "quantity": 4,
+    "unit_price": "7.5",
+    "total_value": "30.0",
+    "consumed_at": "2026-01-08T20:13:35.516Z",
+    "created_at": "2026-01-08T20:13:35.516Z"
+  },
+  {
+    "id": "9644b071-e231-4a8a-87ed-d150626f8d6d",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "a72b9147-3daa-4890-ac19-e72ccfd4feb7",
+    "quantity": 15,
+    "unit_price": "8",
+    "total_value": "120",
+    "consumed_at": "2026-01-08T20:20:38.954Z",
+    "created_at": "2026-01-08T20:20:38.954Z"
+  },
+  {
+    "id": "829d7383-5117-41ab-a51f-765ce5b92276",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "778a919c-053f-4c9c-bcd9-b370fd9cc75f",
+    "quantity": 14,
+    "unit_price": "8",
+    "total_value": "112",
+    "consumed_at": "2026-01-08T20:44:18.425Z",
+    "created_at": "2026-01-08T20:44:18.425Z"
+  },
+  {
+    "id": "1efd9681-8959-4163-a8df-8c9380370af1",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "99890229-f595-4f1b-8dbf-c86dd69ccf88",
+    "quantity": 3,
+    "unit_price": "7.5",
+    "total_value": "22.5",
+    "consumed_at": "2026-01-08T21:05:13.045Z",
+    "created_at": "2026-01-08T21:05:13.045Z"
+  },
+  {
+    "id": "a8104771-f5bc-44d0-9066-f22893c468b5",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "5a2077f4-8cb8-43f2-a0c8-e2651d8eccc2",
+    "quantity": 2,
+    "unit_price": "7.5",
+    "total_value": "15.0",
+    "consumed_at": "2026-01-08T21:10:11.750Z",
+    "created_at": "2026-01-08T21:10:11.750Z"
+  },
+  {
+    "id": "f00a6833-bd84-4613-af5c-dacf03d3877e",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "0b2bc0b1-79cf-423c-a503-464072a34870",
+    "quantity": 2,
+    "unit_price": "8",
+    "total_value": "16",
+    "consumed_at": "2026-01-08T21:12:15.689Z",
+    "created_at": "2026-01-08T21:12:15.689Z"
+  },
+  {
+    "id": "89456f54-d357-44bf-98a4-c91c838f047e",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "795c65ee-0f0e-49d3-86ea-191ca760fc0d",
+    "quantity": 2,
+    "unit_price": "8",
+    "total_value": "16",
+    "consumed_at": "2026-01-08T21:13:26.933Z",
+    "created_at": "2026-01-08T21:13:26.933Z"
+  },
+  {
+    "id": "54aafa0a-946a-4732-92b0-85c6a5fa0651",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "5c33aa82-8e39-4c70-b7d6-94ba1ab09439",
+    "quantity": 9,
+    "unit_price": "8",
+    "total_value": "72",
+    "consumed_at": "2026-01-08T21:14:09.576Z",
+    "created_at": "2026-01-08T21:14:09.576Z"
+  },
+  {
+    "id": "fcb85e70-43d6-4d85-a724-1d8435fe6c12",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "3bd58db0-fa59-4b30-8a60-8ff3125d3b7d",
+    "quantity": 2,
+    "unit_price": "8",
+    "total_value": "16",
+    "consumed_at": "2026-01-08T21:15:19.053Z",
+    "created_at": "2026-01-08T21:15:19.053Z"
+  },
+  {
+    "id": "9521515f-0925-49e2-9419-f550b2825321",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "29efb7eb-2cde-4c6d-a5eb-7035b9438daf",
+    "quantity": 1,
+    "unit_price": "8",
+    "total_value": "8",
+    "consumed_at": "2026-01-08T21:16:04.049Z",
+    "created_at": "2026-01-08T21:16:04.049Z"
+  },
+  {
+    "id": "558159cc-9b5a-4f17-8823-7b22fdf18d80",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "49f85d0b-301c-47e4-bd53-6a14f6e95aaa",
+    "quantity": 1,
+    "unit_price": "8",
+    "total_value": "8",
+    "consumed_at": "2026-01-08T21:16:37.560Z",
+    "created_at": "2026-01-08T21:16:37.560Z"
+  },
+  {
+    "id": "4dbb98a5-2304-4ebd-ae35-84b7388d433a",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "425c0d81-a32e-4cea-86c4-32d982ed7b54",
+    "quantity": 2,
+    "unit_price": "8",
+    "total_value": "16",
+    "consumed_at": "2026-01-08T21:17:12.439Z",
+    "created_at": "2026-01-08T21:17:12.439Z"
+  },
+  {
+    "id": "d85b17bd-343b-4e52-ad2f-07dba5f0b1bc",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "6c654413-ef9d-4545-8c9c-3d6bfaaebefa",
+    "quantity": 4,
+    "unit_price": "7.5",
+    "total_value": "30.0",
+    "consumed_at": "2026-01-08T21:21:32.366Z",
+    "created_at": "2026-01-08T21:21:32.366Z"
+  },
+  {
+    "id": "62ee535f-429c-4dd6-b859-95748d8b72c4",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "fc6ad918-6e58-4984-bfb3-6dec2ee87fe0",
+    "quantity": 18,
+    "unit_price": "8",
+    "total_value": "144",
+    "consumed_at": "2026-01-08T21:36:19.990Z",
+    "created_at": "2026-01-08T21:36:19.990Z"
+  },
+  {
+    "id": "47e66917-b4b3-4751-b820-1a3ff05d8fbe",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "c115fc39-47f4-43d7-83bd-165c38202b97",
+    "quantity": 15,
+    "unit_price": "8",
+    "total_value": "120",
+    "consumed_at": "2026-01-09T12:23:31.609Z",
+    "created_at": "2026-01-09T12:23:31.609Z"
+  },
+  {
+    "id": "c632aaf5-f391-4ca9-877a-02564552808d",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "97330eeb-6ee6-412b-a4a0-e59e9cf531cf",
+    "quantity": 2,
+    "unit_price": "8",
+    "total_value": "16",
+    "consumed_at": "2026-01-09T12:24:00.235Z",
+    "created_at": "2026-01-09T12:24:00.235Z"
+  },
+  {
+    "id": "1aabc17f-6892-459c-bef2-6f23da5a9db9",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "ed46f833-632b-4313-904e-723d6c776ca6",
+    "quantity": 4,
+    "unit_price": "8",
+    "total_value": "32",
+    "consumed_at": "2026-01-09T12:24:44.116Z",
+    "created_at": "2026-01-09T12:24:44.116Z"
+  },
+  {
+    "id": "363a0641-96a5-4b26-b54c-7e69423e4a77",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "00f86baf-59f6-405d-a84b-95be3e18aa0d",
+    "quantity": 6,
+    "unit_price": "7.5",
+    "total_value": "45.0",
+    "consumed_at": "2026-01-09T12:25:28.190Z",
+    "created_at": "2026-01-09T12:25:28.190Z"
+  },
+  {
+    "id": "1fbf065c-3c1b-4c36-acb8-301a14d6df5f",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "26648ea9-1523-49f5-b017-44a47dd2c076",
+    "quantity": 10,
+    "unit_price": "8",
+    "total_value": "80",
+    "consumed_at": "2026-01-09T13:11:30.044Z",
+    "created_at": "2026-01-09T13:11:30.044Z"
+  },
+  {
+    "id": "e5833f46-d5ec-4f8d-b596-0af0086b3b2c",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "bf4f9112-ffe6-414f-81dd-f98b1c90b17f",
+    "quantity": 6,
+    "unit_price": "8",
+    "total_value": "48",
+    "consumed_at": "2026-01-09T13:31:22.173Z",
+    "created_at": "2026-01-09T13:31:22.173Z"
+  },
+  {
+    "id": "3b550872-fd5f-4f5a-a3dd-d0a10dd51c7c",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "75a4a5c0-dbfc-4c35-86e8-8e61bcd8a3ca",
+    "quantity": 6,
+    "unit_price": "8",
+    "total_value": "48",
+    "consumed_at": "2026-01-09T13:31:56.243Z",
+    "created_at": "2026-01-09T13:31:56.243Z"
+  },
+  {
+    "id": "51bd90c1-90ba-46cb-a067-019bec451116",
+    "package_id": "8b0a7994-dff0-4c89-94d2-c2d2394c7dd2",
+    "sale_id": "58ebf52c-1d08-41cd-bd87-dcb48f0620d9",
+    "quantity": 2,
+    "unit_price": "10",
+    "total_value": "20",
+    "consumed_at": "2026-01-09T13:33:15.967Z",
+    "created_at": "2026-01-09T13:33:15.967Z"
+  },
+  {
+    "id": "86baa631-8e69-4ca1-9c55-461e84db2011",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "857e3dd7-ed49-4d14-9aea-6c5d4c276df2",
+    "quantity": 6,
+    "unit_price": "8",
+    "total_value": "48",
+    "consumed_at": "2026-01-09T14:27:11.372Z",
+    "created_at": "2026-01-09T14:27:11.372Z"
+  },
+  {
+    "id": "4a9d9fd5-6430-4a5b-b8e2-7679c398ece7",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "517148a7-ddf0-4f11-96c3-1f7537b8b51c",
+    "quantity": 5,
+    "unit_price": "8",
+    "total_value": "40",
+    "consumed_at": "2026-01-09T14:27:39.843Z",
+    "created_at": "2026-01-09T14:27:39.843Z"
+  },
+  {
+    "id": "54e25127-7620-43fe-928f-677e9a57d3cc",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "a9153ba0-67fa-4733-9de5-f8aea3fa4f2c",
+    "quantity": 1,
+    "unit_price": "8",
+    "total_value": "8",
+    "consumed_at": "2026-01-09T14:41:50.912Z",
+    "created_at": "2026-01-09T14:41:50.912Z"
+  },
+  {
+    "id": "0f8b9609-e0db-4315-8b70-c36ebaf642d6",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "b31d65b0-df89-4693-92f8-55ed23a1a4bb",
+    "quantity": 2,
+    "unit_price": "7.5",
+    "total_value": "15.0",
+    "consumed_at": "2026-01-09T14:42:32.409Z",
+    "created_at": "2026-01-09T14:42:32.409Z"
+  },
+  {
+    "id": "d5edab80-164f-413c-a15c-f75d915d32b4",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "cf0d33d8-49c9-4465-941f-4643ff761f09",
+    "quantity": 2,
+    "unit_price": "8",
+    "total_value": "16",
+    "consumed_at": "2026-01-09T14:47:48.892Z",
+    "created_at": "2026-01-09T14:47:48.892Z"
+  },
+  {
+    "id": "c39e6f64-15e9-485a-a29e-528f9752a7a8",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "0c7219d2-6068-45a6-beab-b7e4e258d2f8",
+    "quantity": 1,
+    "unit_price": "8",
+    "total_value": "8",
+    "consumed_at": "2026-01-09T14:48:34.793Z",
+    "created_at": "2026-01-09T14:48:34.793Z"
+  },
+  {
+    "id": "f442c072-f0f5-4cbe-966a-7a50dfc6a604",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "80c71d8e-8334-4b93-93a6-efda8148ab71",
+    "quantity": 6,
+    "unit_price": "8",
+    "total_value": "48",
+    "consumed_at": "2026-01-09T15:48:55.191Z",
+    "created_at": "2026-01-09T15:48:55.191Z"
+  },
+  {
+    "id": "5e4de8cd-26f8-40c9-b2b0-ae05d89f68ed",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "84c44b56-8ea7-4d5c-84fa-aa0ab885b092",
+    "quantity": 1,
+    "unit_price": "8",
+    "total_value": "8",
+    "consumed_at": "2026-01-09T15:54:01.954Z",
+    "created_at": "2026-01-09T15:54:01.954Z"
+  },
+  {
+    "id": "7d73f036-c0c5-4321-9bf1-87a19b3692ad",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "c35c47e2-96d3-4eec-998d-142901807477",
+    "quantity": 11,
+    "unit_price": "8",
+    "total_value": "88",
+    "consumed_at": "2026-01-09T16:05:29.791Z",
+    "created_at": "2026-01-09T16:05:29.791Z"
+  },
+  {
+    "id": "3cddef07-19ed-4d50-8176-3cee891ea7b2",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "75e66877-e74f-4902-9de6-d3290f5ed470",
+    "quantity": 11,
+    "unit_price": "8.194552529182879",
+    "total_value": "90.140077821011669",
+    "consumed_at": "2026-01-09T17:03:02.866Z",
+    "created_at": "2026-01-09T17:03:02.866Z"
+  },
+  {
+    "id": "beb1b91d-b7f6-4b71-84eb-56fed269643c",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "565cac1a-a018-4a46-9072-e204421cd2a5",
+    "quantity": 23,
+    "unit_price": "7.5",
+    "total_value": "172.5",
+    "consumed_at": "2026-01-09T17:09:18.026Z",
+    "created_at": "2026-01-09T17:09:18.026Z"
+  },
+  {
+    "id": "367c677b-183a-4f13-a183-aa9b2ab65025",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "d182ddc5-1ce9-43de-b628-e9e1fd267e86",
+    "quantity": 13,
+    "unit_price": "8.194552529182879",
+    "total_value": "106.529182879377427",
+    "consumed_at": "2026-01-09T17:21:57.399Z",
+    "created_at": "2026-01-09T17:21:57.399Z"
+  },
+  {
+    "id": "f7f135c5-73b3-4a60-803f-6ebd45ed2f22",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "5ab2dfcb-0517-4591-abf1-67e8c0070e73",
+    "quantity": 1,
+    "unit_price": "7.5",
+    "total_value": "7.5",
+    "consumed_at": "2026-01-09T17:28:17.239Z",
+    "created_at": "2026-01-09T17:28:17.239Z"
+  },
+  {
+    "id": "a95623fb-ec94-4e09-baca-8fa671c67319",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "aa064612-09c8-438c-b592-5328b6a70198",
+    "quantity": 3,
+    "unit_price": "7.5",
+    "total_value": "22.5",
+    "consumed_at": "2026-01-09T17:41:42.656Z",
+    "created_at": "2026-01-09T17:41:42.656Z"
+  },
+  {
+    "id": "7d4fb724-9de7-4998-ae37-15c78cb7e674",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "b1f3a8ee-0420-43c2-a2c9-87eba36d9c9c",
+    "quantity": 7,
+    "unit_price": "8.194552529182879",
+    "total_value": "57.361867704280153",
+    "consumed_at": "2026-01-09T17:54:40.468Z",
+    "created_at": "2026-01-09T17:54:40.468Z"
+  },
+  {
+    "id": "642cdfce-e938-452f-8652-264eda9ab8d8",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "ce6c2615-c1b9-4e53-991b-c9bd691334b1",
+    "quantity": 3,
+    "unit_price": "8.194552529182879",
+    "total_value": "24.583657587548637",
+    "consumed_at": "2026-01-09T18:04:37.147Z",
+    "created_at": "2026-01-09T18:04:37.147Z"
+  },
+  {
+    "id": "1cbf4077-c268-4b6d-8977-e48049ef8e93",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "d63274a6-49fd-41bd-94e3-efbc77eab6d3",
+    "quantity": 13,
+    "unit_price": "7.5",
+    "total_value": "97.5",
+    "consumed_at": "2026-01-09T18:34:12.750Z",
+    "created_at": "2026-01-09T18:34:12.750Z"
+  },
+  {
+    "id": "e6a5a006-59e5-4ca4-9016-a51bc45a754b",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "743e34d8-4276-4aa8-a163-07c8cf050cba",
+    "quantity": 28,
+    "unit_price": "7.5",
+    "total_value": "210.0",
+    "consumed_at": "2026-01-09T18:35:51.941Z",
+    "created_at": "2026-01-09T18:35:51.941Z"
+  },
+  {
+    "id": "f7d29122-6ba6-4f68-9311-37ed81741405",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "a3349688-9df9-4158-ade5-835c40178b4b",
+    "quantity": 1,
+    "unit_price": "7.5",
+    "total_value": "7.5",
+    "consumed_at": "2026-01-09T18:55:14.511Z",
+    "created_at": "2026-01-09T18:55:14.511Z"
+  },
+  {
+    "id": "80917102-90c5-4b73-bd70-8024d3f85009",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "ee0bfab4-4be0-484b-aa94-43f03e2e88a7",
+    "quantity": 1,
+    "unit_price": "7.5",
+    "total_value": "7.5",
+    "consumed_at": "2026-01-09T18:55:47.649Z",
+    "created_at": "2026-01-09T18:55:47.649Z"
+  },
+  {
+    "id": "10eff2a0-bec9-4fe1-8ae3-230d3c6421b5",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "213a254b-fa5e-4975-93d4-46c03783f6a1",
+    "quantity": 2,
+    "unit_price": "8.194552529182879",
+    "total_value": "16.389105058365758",
+    "consumed_at": "2026-01-09T19:04:35.605Z",
+    "created_at": "2026-01-09T19:04:35.605Z"
+  },
+  {
+    "id": "e54caabe-0566-4600-9f6f-7e9f66333f05",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "20ac7d9a-b3a7-4145-b8e3-6119d88ed2ec",
+    "quantity": 3,
+    "unit_price": "7.5",
+    "total_value": "22.5",
+    "consumed_at": "2026-01-09T19:15:18.346Z",
+    "created_at": "2026-01-09T19:15:18.346Z"
+  },
+  {
+    "id": "5c2c5ed2-46eb-48db-9672-0d1958e0e09e",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "5911c26b-a8db-4b79-a765-0993a8fe3094",
+    "quantity": 8,
+    "unit_price": "7.5",
+    "total_value": "60.0",
+    "consumed_at": "2026-01-09T19:25:40.290Z",
+    "created_at": "2026-01-09T19:25:40.290Z"
+  },
+  {
+    "id": "f6961fbc-914c-4593-8480-89575dbf2d73",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "939ac9c9-8641-4e37-bbd9-9ef53ab889ce",
+    "quantity": 1,
+    "unit_price": "7.5",
+    "total_value": "7.5",
+    "consumed_at": "2026-01-09T19:44:37.430Z",
+    "created_at": "2026-01-09T19:44:37.430Z"
+  },
+  {
+    "id": "9ae30353-e790-41de-8ad8-2c2bb9e4f1bf",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "f2fa2ee5-a2e3-49f1-b302-e4c3745a21a7",
+    "quantity": 7,
+    "unit_price": "7.5",
+    "total_value": "52.5",
+    "consumed_at": "2026-01-09T19:45:56.552Z",
+    "created_at": "2026-01-09T19:45:56.552Z"
+  },
+  {
+    "id": "be6f9796-cace-421f-90a4-477a74232899",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "d8a566a9-25f6-4c71-b9cd-d752add77fce",
+    "quantity": 1,
+    "unit_price": "7.032967032967033",
+    "total_value": "7.032967032967033",
+    "consumed_at": "2026-01-09T20:47:15.423Z",
+    "created_at": "2026-01-09T20:47:15.423Z"
+  },
+  {
+    "id": "e4154eed-9101-4225-b7a5-613b203bcaa9",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "37930ec8-456a-4746-a93f-8af0d4438431",
+    "quantity": 8,
+    "unit_price": "8.194552529182879",
+    "total_value": "65.556420233463032",
+    "consumed_at": "2026-01-09T20:48:27.240Z",
+    "created_at": "2026-01-09T20:48:27.240Z"
+  },
+  {
+    "id": "ca5a1578-d7c3-4705-81d5-a3f487f8be45",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "94f81c2a-f27b-46e3-8e78-50fe75f3df1e",
+    "quantity": 7,
+    "unit_price": "8.194552529182879",
+    "total_value": "57.361867704280153",
+    "consumed_at": "2026-01-09T20:49:31.207Z",
+    "created_at": "2026-01-09T20:49:31.207Z"
+  },
+  {
+    "id": "6abb68d1-905e-4ef2-beec-ad57c079ffcc",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "6c967523-dc8e-43a3-9c32-f302b1890a0e",
+    "quantity": 9,
+    "unit_price": "7.5",
+    "total_value": "67.5",
+    "consumed_at": "2026-01-09T20:50:37.273Z",
+    "created_at": "2026-01-09T20:50:37.273Z"
+  },
+  {
+    "id": "15fd727b-5cf2-4d76-9a35-b56615358981",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "f8c9bf2b-a2ea-4c0f-9f88-674e881c1a27",
+    "quantity": 1,
+    "unit_price": "7.5",
+    "total_value": "7.5",
+    "consumed_at": "2026-01-09T20:51:27.925Z",
+    "created_at": "2026-01-09T20:51:27.925Z"
+  },
+  {
+    "id": "a290391d-5c4a-4b48-bc31-5f3c59aa0292",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "32698441-65d9-4b55-b4af-d2e6cef0ffbc",
+    "quantity": 4,
+    "unit_price": "8.194552529182879",
+    "total_value": "32.778210116731516",
+    "consumed_at": "2026-01-09T21:01:30.683Z",
+    "created_at": "2026-01-09T21:01:30.683Z"
+  },
+  {
+    "id": "5c8ced61-9c83-49d5-a2fe-41240832d373",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "4a372642-0064-4a7f-b770-e08065fe9470",
+    "quantity": 5,
+    "unit_price": "8.194552529182879",
+    "total_value": "40.972762645914395",
+    "consumed_at": "2026-01-09T21:27:52.925Z",
+    "created_at": "2026-01-09T21:27:52.925Z"
+  },
+  {
+    "id": "ee15c4d6-a764-4412-b5ae-187039d3d41d",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "31597145-ed1c-4aa9-9204-8bfb937aaaf6",
+    "quantity": 109,
+    "unit_price": "8.194552529182879",
+    "total_value": "893.206225680933811",
+    "consumed_at": "2026-01-09T21:43:49.205Z",
+    "created_at": "2026-01-09T21:43:49.205Z"
+  },
+  {
+    "id": "511b5ba5-35a6-40f1-b61b-299472a68ba9",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "7a4f572b-aa55-4d24-85c2-893a29156ebf",
+    "quantity": 13,
+    "unit_price": "7.5",
+    "total_value": "97.5",
+    "consumed_at": "2026-01-09T21:58:55.794Z",
+    "created_at": "2026-01-09T21:58:55.794Z"
+  },
+  {
+    "id": "9fcb4dd4-601a-4d87-a9ce-d472b0e6cd0e",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "bf8a3672-a85f-49c4-9acf-7d4e119b1c6e",
+    "quantity": 2,
+    "unit_price": "8.194552529182879",
+    "total_value": "16.389105058365758",
+    "consumed_at": "2026-01-12T12:13:52.259Z",
+    "created_at": "2026-01-12T12:13:52.259Z"
+  },
+  {
+    "id": "9a702b95-260a-45e4-93b2-a0d33b1d95e6",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "915599d6-f073-4f93-ba27-8a11d3f0c954",
+    "quantity": 3,
+    "unit_price": "7.241735537190083",
+    "total_value": "21.725206611570249",
+    "consumed_at": "2026-01-12T13:13:01.211Z",
+    "created_at": "2026-01-12T13:13:01.211Z"
+  },
+  {
+    "id": "5f0baa3a-16f0-4e02-901b-768aff8e0a17",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "5babbf26-e5f4-4fd5-94d8-402de4c28c74",
+    "quantity": 1,
+    "unit_price": "7.241735537190083",
+    "total_value": "7.241735537190083",
+    "consumed_at": "2026-01-12T15:07:16.141Z",
+    "created_at": "2026-01-12T15:07:16.141Z"
+  },
+  {
+    "id": "69cbbbe1-c006-482d-9f2a-f8d1b1ea0be1",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "34f00de1-91cd-4468-b853-92acc85e5c89",
+    "quantity": 10,
+    "unit_price": "7.241735537190083",
+    "total_value": "72.417355371900830",
+    "consumed_at": "2026-01-12T15:08:55.840Z",
+    "created_at": "2026-01-12T15:08:55.840Z"
+  },
+  {
+    "id": "14305508-abad-48ee-8b64-ea562c071783",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "085ee51b-0c9f-46a8-90c4-f6d042416a5f",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-12T15:59:20.244Z",
+    "created_at": "2026-01-12T15:59:20.244Z"
+  },
+  {
+    "id": "8cbd9f5f-ddd3-4e78-9d3f-e78d28239e73",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "a917a50d-4b2f-465d-a9c1-49373c393fff",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-12T16:00:15.650Z",
+    "created_at": "2026-01-12T16:00:15.650Z"
+  },
+  {
+    "id": "cd947fb3-d097-430a-a2a2-f7e8213bb883",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "7ad739bb-7c2f-4046-89b1-590fb250f885",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-12T16:01:56.059Z",
+    "created_at": "2026-01-12T16:01:56.059Z"
+  },
+  {
+    "id": "602dc165-49c9-4c33-a30b-dab40dfb8adc",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "9d4602cf-8c9a-4b9b-aed1-449fbf017799",
+    "quantity": 4,
+    "unit_price": "7.032967032967033",
+    "total_value": "28.131868131868132",
+    "consumed_at": "2026-01-12T16:02:51.221Z",
+    "created_at": "2026-01-12T16:02:51.221Z"
+  },
+  {
+    "id": "ed790cf7-baaf-439b-9fe4-199a4f8d3cbe",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "499bcf11-fed2-4cb7-aad1-5c475e5e2458",
+    "quantity": 2,
+    "unit_price": "8.194552529182879",
+    "total_value": "16.389105058365758",
+    "consumed_at": "2026-01-12T16:03:49.635Z",
+    "created_at": "2026-01-12T16:03:49.635Z"
+  },
+  {
+    "id": "dfe56aff-570f-41ab-89e1-284fd7da7ec2",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "03899b96-d3c8-4d65-a965-da55cd596bf5",
+    "quantity": 5,
+    "unit_price": "8.194552529182879",
+    "total_value": "40.972762645914395",
+    "consumed_at": "2026-01-12T16:04:52.467Z",
+    "created_at": "2026-01-12T16:04:52.467Z"
+  },
+  {
+    "id": "dd137f5e-eece-43b9-98d2-59545fc5d5ec",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "c89ffb79-c1c5-47b4-8c3b-aefe9e794646",
+    "quantity": 9,
+    "unit_price": "7.241735537190083",
+    "total_value": "65.175619834710747",
+    "consumed_at": "2026-01-12T16:46:01.998Z",
+    "created_at": "2026-01-12T16:46:01.998Z"
+  },
+  {
+    "id": "a6f013dc-0f0a-403e-a7da-3a5e66503442",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "bc82bea6-8cf3-46a9-b439-ecc22cf35703",
+    "quantity": 14,
+    "unit_price": "7.241735537190083",
+    "total_value": "101.384297520661162",
+    "consumed_at": "2026-01-12T16:46:49.209Z",
+    "created_at": "2026-01-12T16:46:49.209Z"
+  },
+  {
+    "id": "9f9cf034-6101-4eb5-a606-a191ac2c97fa",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "09f5310b-7a6a-4b16-9cb4-680eb3be191e",
+    "quantity": 5,
+    "unit_price": "8.194552529182879",
+    "total_value": "40.972762645914395",
+    "consumed_at": "2026-01-12T17:51:11.213Z",
+    "created_at": "2026-01-12T17:51:11.213Z"
+  },
+  {
+    "id": "feb563eb-511a-415d-aad6-c597bb27c31e",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "daeff61d-1eb2-45de-972c-1ca1cd03f30a",
+    "quantity": 4,
+    "unit_price": "7.032967032967033",
+    "total_value": "28.131868131868132",
+    "consumed_at": "2026-01-12T18:16:43.858Z",
+    "created_at": "2026-01-12T18:16:43.858Z"
+  },
+  {
+    "id": "1abae387-1f62-4fc0-893e-1def05104947",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "7da39762-efc1-4c60-8352-b92bcf12350b",
+    "quantity": 10,
+    "unit_price": "8.194552529182879",
+    "total_value": "81.945525291828790",
+    "consumed_at": "2026-01-12T18:43:11.340Z",
+    "created_at": "2026-01-12T18:43:11.340Z"
+  },
+  {
+    "id": "8c67b502-811c-4294-aa65-f7d217c1396d",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "74e0b8a3-332c-41cb-a095-33ad2494831a",
+    "quantity": 4,
+    "unit_price": "7.241735537190083",
+    "total_value": "28.966942148760332",
+    "consumed_at": "2026-01-12T18:53:03.824Z",
+    "created_at": "2026-01-12T18:53:03.824Z"
+  },
+  {
+    "id": "247703de-febb-44c1-bb5c-122b985177a2",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "86ac0676-03cc-4cf9-9a10-944a66e6469c",
+    "quantity": 9,
+    "unit_price": "9.884196185286104",
+    "total_value": "88.957765667574936",
+    "consumed_at": "2026-01-12T20:27:58.471Z",
+    "created_at": "2026-01-12T20:27:58.471Z"
+  },
+  {
+    "id": "627ee825-86fe-4262-ba64-b6d9d23b273b",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "b937b72d-c562-4995-a8a5-7681afad5702",
+    "quantity": 3,
+    "unit_price": "9.884196185286104",
+    "total_value": "29.652588555858312",
+    "consumed_at": "2026-01-12T21:19:49.011Z",
+    "created_at": "2026-01-12T21:19:49.011Z"
+  },
+  {
+    "id": "15dfcea0-a3fb-4b66-87f9-e925b1e5c7ad",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "974c96c6-b0a6-4484-98e5-fe7d3a3e99e2",
+    "quantity": 4,
+    "unit_price": "9.884196185286104",
+    "total_value": "39.536784741144416",
+    "consumed_at": "2026-01-12T21:20:36.800Z",
+    "created_at": "2026-01-12T21:20:36.800Z"
+  },
+  {
+    "id": "fc93752a-4fad-4f41-840c-bb318c9d8eab",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "ed4ee74b-dc4a-4e2a-8154-0fa56272e7bd",
+    "quantity": 10,
+    "unit_price": "9.884196185286104",
+    "total_value": "98.841961852861040",
+    "consumed_at": "2026-01-12T21:21:47.335Z",
+    "created_at": "2026-01-12T21:21:47.335Z"
+  },
+  {
+    "id": "e8762e60-7b48-43a3-82cd-fd1acf3261d9",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "4f2e5754-07b9-4d14-88ad-05bcc6d8506a",
+    "quantity": 5,
+    "unit_price": "8.194552529182879",
+    "total_value": "40.972762645914395",
+    "consumed_at": "2026-01-12T23:08:14.169Z",
+    "created_at": "2026-01-12T23:08:14.169Z"
+  },
+  {
+    "id": "09d1c985-cba5-423a-af13-ab38adbd4c85",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "34180224-1b1d-4407-9665-d99e45623811",
+    "quantity": 2,
+    "unit_price": "7.032967032967033",
+    "total_value": "14.065934065934066",
+    "consumed_at": "2026-01-13T13:01:42.523Z",
+    "created_at": "2026-01-13T13:01:42.523Z"
+  },
+  {
+    "id": "23b40270-a866-4fb2-9918-441a7ec4c7ed",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "62e4a31e-2b96-41a6-909c-40fe8322da40",
+    "quantity": 4,
+    "unit_price": "8.194552529182879",
+    "total_value": "32.778210116731516",
+    "consumed_at": "2026-01-13T13:35:39.653Z",
+    "created_at": "2026-01-13T13:35:39.653Z"
+  },
+  {
+    "id": "9f8ec44b-4d3d-47f6-a228-3d76c58724f9",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "425a51a2-0a3f-41ea-9537-5852c439c756",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-13T14:14:48.459Z",
+    "created_at": "2026-01-13T14:14:48.459Z"
+  },
+  {
+    "id": "71926f92-9897-49a0-9e1d-d6769f05fa7c",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "29d95172-5818-4500-8a54-33ca62c29ffe",
+    "quantity": 1,
+    "unit_price": "9.884196185286104",
+    "total_value": "9.884196185286104",
+    "consumed_at": "2026-01-13T15:14:03.498Z",
+    "created_at": "2026-01-13T15:14:03.498Z"
+  },
+  {
+    "id": "d1dd94aa-9c93-4b53-8de7-9d7a9858d6c8",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "fe64fcfd-cdc0-4093-8961-173388641e56",
+    "quantity": 5,
+    "unit_price": "9.884196185286104",
+    "total_value": "49.420980926430520",
+    "consumed_at": "2026-01-13T17:18:18.698Z",
+    "created_at": "2026-01-13T17:18:18.698Z"
+  },
+  {
+    "id": "3b2cfbe8-4e11-427a-9685-25957b5cd2a3",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "f0deb9c4-559c-4664-befa-dea50562002d",
+    "quantity": 2,
+    "unit_price": "9.884196185286104",
+    "total_value": "19.768392370572208",
+    "consumed_at": "2026-01-13T17:43:30.407Z",
+    "created_at": "2026-01-13T17:43:30.407Z"
+  },
+  {
+    "id": "587a02f2-acb2-425b-ac9b-d9873e74752c",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "88cd6212-1a4c-4adc-902d-21f444efe767",
+    "quantity": 6,
+    "unit_price": "9.884196185286104",
+    "total_value": "59.305177111716624",
+    "consumed_at": "2026-01-13T17:50:58.209Z",
+    "created_at": "2026-01-13T17:50:58.209Z"
+  },
+  {
+    "id": "c782d0c3-8c59-45ca-ac84-ac6df2b111b2",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "83111e09-9036-49b5-845c-adf0c0ec4501",
+    "quantity": 12,
+    "unit_price": "9.884196185286104",
+    "total_value": "118.610354223433248",
+    "consumed_at": "2026-01-13T18:13:32.205Z",
+    "created_at": "2026-01-13T18:13:32.205Z"
+  },
+  {
+    "id": "be81f69c-cc9a-4e81-8e71-acb24115103d",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "abf4cc68-2708-44da-b232-1bc489af5de7",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-13T18:15:24.226Z",
+    "created_at": "2026-01-13T18:15:24.226Z"
+  },
+  {
+    "id": "a731e58c-ff50-49b5-878b-a23c6c0ff74e",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "d5f84192-7295-4293-a56d-30467adf331c",
+    "quantity": 5,
+    "unit_price": "9.884196185286104",
+    "total_value": "49.420980926430520",
+    "consumed_at": "2026-01-13T18:32:47.659Z",
+    "created_at": "2026-01-13T18:32:47.659Z"
+  },
+  {
+    "id": "8f6955b0-c495-46fd-ac78-5cb61e60fa6e",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "d71a6988-ef35-4b0e-a1b5-b830c9850d29",
+    "quantity": 2,
+    "unit_price": "9.884196185286104",
+    "total_value": "19.768392370572208",
+    "consumed_at": "2026-01-13T18:34:22.423Z",
+    "created_at": "2026-01-13T18:34:22.423Z"
+  },
+  {
+    "id": "e058f8fa-f897-4180-8e42-bf1721ed0879",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "c17de00f-f1a9-4006-9d10-ec6872b93eba",
+    "quantity": 9,
+    "unit_price": "9.884196185286104",
+    "total_value": "88.957765667574936",
+    "consumed_at": "2026-01-13T18:35:46.155Z",
+    "created_at": "2026-01-13T18:35:46.155Z"
+  },
+  {
+    "id": "dd713950-0fba-4500-829b-13269d131045",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "8a0b27ed-d6ea-4213-ac63-aa3658dd7332",
+    "quantity": 1,
+    "unit_price": "9.884196185286104",
+    "total_value": "9.884196185286104",
+    "consumed_at": "2026-01-13T18:36:44.092Z",
+    "created_at": "2026-01-13T18:36:44.092Z"
+  },
+  {
+    "id": "ed27a696-4c67-4819-93d2-f2f57abe2e17",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "a269f2d2-4f4b-4f69-8aa0-2961b8e0dd95",
+    "quantity": 3,
+    "unit_price": "8.194552529182879",
+    "total_value": "24.583657587548637",
+    "consumed_at": "2026-01-13T19:01:20.657Z",
+    "created_at": "2026-01-13T19:01:20.657Z"
+  },
+  {
+    "id": "dca54485-dc8c-4f96-8011-1f1ec31cf46a",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "c88a4737-574a-4412-976a-e355323eef03",
+    "quantity": 2,
+    "unit_price": "8.194552529182879",
+    "total_value": "16.389105058365758",
+    "consumed_at": "2026-01-13T19:40:53.531Z",
+    "created_at": "2026-01-13T19:40:53.531Z"
+  },
+  {
+    "id": "aeda6857-734d-4656-9f05-f0dc1ab4729e",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "4d5257bf-e964-44d1-a44f-748c4d20e065",
+    "quantity": 8,
+    "unit_price": "8.194552529182879",
+    "total_value": "65.556420233463032",
+    "consumed_at": "2026-01-13T19:42:53.789Z",
+    "created_at": "2026-01-13T19:42:53.789Z"
+  },
+  {
+    "id": "2a1f0208-9eae-4463-a1c7-981839c32e9d",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "fcf91a09-7e5c-47fa-bf68-4139154f3687",
+    "quantity": 9,
+    "unit_price": "7.032967032967033",
+    "total_value": "63.296703296703297",
+    "consumed_at": "2026-01-13T21:08:10.260Z",
+    "created_at": "2026-01-13T21:08:10.260Z"
+  },
+  {
+    "id": "8d01664a-1e99-42e1-bc80-f2341f143232",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "977c5a04-116b-4917-813d-8d1a8d262754",
+    "quantity": 3,
+    "unit_price": "7.032967032967033",
+    "total_value": "21.098901098901099",
+    "consumed_at": "2026-01-13T21:08:35.120Z",
+    "created_at": "2026-01-13T21:08:35.120Z"
+  },
+  {
+    "id": "ea8ca44e-9f56-475e-a2fa-84aeab7f71fb",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "a0054dfa-218e-4daf-9b58-0df94e36a9eb",
+    "quantity": 10,
+    "unit_price": "9.884196185286104",
+    "total_value": "98.841961852861040",
+    "consumed_at": "2026-01-13T21:09:24.113Z",
+    "created_at": "2026-01-13T21:09:24.113Z"
+  },
+  {
+    "id": "593be9da-6fa4-4bbf-b46a-be0313bf2e91",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "fbaa6b28-05af-47f0-b3c3-1a1317083d1f",
+    "quantity": 3,
+    "unit_price": "8.194552529182879",
+    "total_value": "24.583657587548637",
+    "consumed_at": "2026-01-13T21:10:02.324Z",
+    "created_at": "2026-01-13T21:10:02.324Z"
+  },
+  {
+    "id": "f29ff6c0-15aa-4f25-9d25-2ae0292af445",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "4addc676-9510-43dc-abd1-c304598a5595",
+    "quantity": 2,
+    "unit_price": "7.032967032967033",
+    "total_value": "14.065934065934066",
+    "consumed_at": "2026-01-13T21:10:46.819Z",
+    "created_at": "2026-01-13T21:10:46.819Z"
+  },
+  {
+    "id": "02307f07-9b35-4974-af8e-830c17eb8a05",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "693167f9-3df6-4405-9a11-ed5a527c338f",
+    "quantity": 3,
+    "unit_price": "8.194552529182879",
+    "total_value": "24.583657587548637",
+    "consumed_at": "2026-01-13T21:11:22.618Z",
+    "created_at": "2026-01-13T21:11:22.618Z"
+  },
+  {
+    "id": "42bbfd1a-1597-487a-80c2-845e632040a3",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "70256e94-c654-4d05-a13d-976b75ec61cc",
+    "quantity": 2,
+    "unit_price": "9.884196185286104",
+    "total_value": "19.768392370572208",
+    "consumed_at": "2026-01-13T21:12:13.398Z",
+    "created_at": "2026-01-13T21:12:13.398Z"
+  },
+  {
+    "id": "14b1c6b3-6687-444b-87ac-898795859b76",
+    "package_id": "95060f03-3946-4a81-a7e9-1b76533a22a2",
+    "sale_id": "0b4f6983-4f5a-44e2-b136-5d1db4716e5a",
+    "quantity": 44,
+    "unit_price": "12",
+    "total_value": "528",
+    "consumed_at": "2026-01-14T01:02:11.997Z",
+    "created_at": "2026-01-14T01:02:11.997Z"
+  },
+  {
+    "id": "680a9929-2a99-4287-84b4-d17be3d9a255",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "766d1b68-33f8-49d7-a910-ac8a08cf1ea4",
+    "quantity": 3,
+    "unit_price": "9.884196185286104",
+    "total_value": "29.652588555858312",
+    "consumed_at": "2026-01-14T11:53:51.704Z",
+    "created_at": "2026-01-14T11:53:51.704Z"
+  },
+  {
+    "id": "290d5a18-dea9-4c35-b7c1-0a05ad344092",
+    "package_id": "1b27541f-58e4-4ae2-8113-6bae99a39214",
+    "sale_id": "047d38fa-5f1f-4d00-b3a5-0f9db0d08832",
+    "quantity": 1,
+    "unit_price": "8",
+    "total_value": "8",
+    "consumed_at": "2026-01-14T12:08:18.639Z",
+    "created_at": "2026-01-14T12:08:18.639Z"
+  },
+  {
+    "id": "6dc398f2-3e85-4db3-a98b-431c8a180bac",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "7292664f-13a2-4548-84d9-dabdc6a59d46",
+    "quantity": 14,
+    "unit_price": "9.884196185286104",
+    "total_value": "138.378746594005456",
+    "consumed_at": "2026-01-14T12:09:06.247Z",
+    "created_at": "2026-01-14T12:09:06.247Z"
+  },
+  {
+    "id": "ad60e160-6927-43b2-aa42-a44b5d72f208",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "b9577371-0cea-4eef-b7f2-8406d8ad45cd",
+    "quantity": 3,
+    "unit_price": "9.884196185286104",
+    "total_value": "29.652588555858312",
+    "consumed_at": "2026-01-14T12:09:55.935Z",
+    "created_at": "2026-01-14T12:09:55.935Z"
+  },
+  {
+    "id": "43cd7d43-be82-4277-b1f6-ae84bf6ddd69",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "879b7962-8789-4a22-8376-5aadd912a952",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-14T12:10:34.422Z",
+    "created_at": "2026-01-14T12:10:34.422Z"
+  },
+  {
+    "id": "79dc753c-8096-4740-bd95-7815a25eed11",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "08b247a7-c4a9-4f17-801b-fd6a98e21e75",
+    "quantity": 11,
+    "unit_price": "9.884196185286104",
+    "total_value": "108.726158038147144",
+    "consumed_at": "2026-01-14T12:11:35.876Z",
+    "created_at": "2026-01-14T12:11:35.876Z"
+  },
+  {
+    "id": "784fd2a3-45c3-40e6-bd46-5b707fc84f92",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "ad73cab5-9b6a-4fb3-b6b1-92d37c70e134",
+    "quantity": 2,
+    "unit_price": "9.884196185286104",
+    "total_value": "19.768392370572208",
+    "consumed_at": "2026-01-14T12:12:26.798Z",
+    "created_at": "2026-01-14T12:12:26.798Z"
+  },
+  {
+    "id": "2ee28202-c843-422c-8a89-a49d63d514bc",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "ac51fce9-9ab0-4c33-ab5f-3c16f7094d73",
+    "quantity": 9,
+    "unit_price": "9.884196185286104",
+    "total_value": "88.957765667574936",
+    "consumed_at": "2026-01-14T12:13:12.335Z",
+    "created_at": "2026-01-14T12:13:12.335Z"
+  },
+  {
+    "id": "5742825a-4c52-492f-8220-1f53f7822390",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "933a9bba-e7da-4192-b63f-34b6b39a4c99",
+    "quantity": 3,
+    "unit_price": "8.194552529182879",
+    "total_value": "24.583657587548637",
+    "consumed_at": "2026-01-14T12:15:08.646Z",
+    "created_at": "2026-01-14T12:15:08.646Z"
+  },
+  {
+    "id": "7dfc6df4-b160-498c-b918-0bf3fc3b473e",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "df9bb81f-a853-4655-ba9e-e44d0120c4b3",
+    "quantity": 2,
+    "unit_price": "8.194552529182879",
+    "total_value": "16.389105058365758",
+    "consumed_at": "2026-01-14T13:00:18.450Z",
+    "created_at": "2026-01-14T13:00:18.450Z"
+  },
+  {
+    "id": "4b87e017-5c8a-4c09-94b5-1d903d2c2f53",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "c22451ab-1feb-454f-8d74-402a209b1156",
+    "quantity": 4,
+    "unit_price": "8.194552529182879",
+    "total_value": "32.778210116731516",
+    "consumed_at": "2026-01-14T13:01:08.328Z",
+    "created_at": "2026-01-14T13:01:08.328Z"
+  },
+  {
+    "id": "bfee1a77-ab66-432c-acd8-0c795a0b1c5f",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "63155c19-43db-4ce3-96af-9c42d3ab3486",
+    "quantity": 1,
+    "unit_price": "7.032967032967033",
+    "total_value": "7.032967032967033",
+    "consumed_at": "2026-01-14T13:41:43.297Z",
+    "created_at": "2026-01-14T13:41:43.297Z"
+  },
+  {
+    "id": "0051ef38-4dc7-4164-b6f6-a95621c47adc",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "d95a6a24-fa84-4568-aec0-f3a223b540af",
+    "quantity": 14,
+    "unit_price": "8.194552529182879",
+    "total_value": "114.723735408560306",
+    "consumed_at": "2026-01-14T14:26:26.945Z",
+    "created_at": "2026-01-14T14:26:26.945Z"
+  },
+  {
+    "id": "af3c96f3-74be-4d86-8193-ab34663f70e9",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "a9f33bae-0b5d-4438-bed8-64505e919b4c",
+    "quantity": 7,
+    "unit_price": "8.194552529182879",
+    "total_value": "57.361867704280153",
+    "consumed_at": "2026-01-14T14:40:45.775Z",
+    "created_at": "2026-01-14T14:40:45.775Z"
+  },
+  {
+    "id": "cc728186-15bc-45a9-9dad-fdf1ce9ee066",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "694f4be1-d2a5-4059-a6bc-3295ecccd5d0",
+    "quantity": 5,
+    "unit_price": "8.194552529182879",
+    "total_value": "40.972762645914395",
+    "consumed_at": "2026-01-14T15:17:34.951Z",
+    "created_at": "2026-01-14T15:17:34.951Z"
+  },
+  {
+    "id": "74a524c5-2a90-4330-a449-1a71b04854c4",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "2c608411-b77b-4988-ae59-82e52d567bcc",
+    "quantity": 2,
+    "unit_price": "7.032967032967033",
+    "total_value": "14.065934065934066",
+    "consumed_at": "2026-01-14T16:43:39.195Z",
+    "created_at": "2026-01-14T16:43:39.195Z"
+  },
+  {
+    "id": "fc336d0b-848f-4af2-a2b4-f6c6a65c70d6",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "66a1eae4-59a1-47f0-857f-b2f3b0b626ef",
+    "quantity": 25,
+    "unit_price": "9.884196185286104",
+    "total_value": "247.104904632152600",
+    "consumed_at": "2026-01-14T16:44:58.464Z",
+    "created_at": "2026-01-14T16:44:58.464Z"
+  },
+  {
+    "id": "70a24ddd-ccb2-49bd-aa7e-8d18bd14e524",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "0b0435e4-8778-4016-a229-73a7cfed3bd4",
+    "quantity": 2,
+    "unit_price": "8.194552529182879",
+    "total_value": "16.389105058365758",
+    "consumed_at": "2026-01-14T16:46:36.439Z",
+    "created_at": "2026-01-14T16:46:36.439Z"
+  },
+  {
+    "id": "f13f2dff-8068-4429-974e-63053fa32f41",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "9dcf281c-e083-4055-bf4b-aba8797a0041",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-14T16:47:07.005Z",
+    "created_at": "2026-01-14T16:47:07.005Z"
+  },
+  {
+    "id": "0d5bde2c-e45a-49f7-8487-b9a10f2bd017",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "d939ba7e-87a6-44af-8e85-3bb338ce459a",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-14T16:47:40.944Z",
+    "created_at": "2026-01-14T16:47:40.944Z"
+  },
+  {
+    "id": "672f1638-cc4a-42e9-b7be-66de755f7645",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "b54fb442-1c10-4ca5-9a76-aef825160a3f",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-14T16:53:46.663Z",
+    "created_at": "2026-01-14T16:53:46.663Z"
+  },
+  {
+    "id": "414ae560-f007-42c1-9b28-f6459b80af2f",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "5a7f7646-2d6b-4fae-934a-2b16c647cb39",
+    "quantity": 7,
+    "unit_price": "8.194552529182879",
+    "total_value": "57.361867704280153",
+    "consumed_at": "2026-01-14T17:08:15.957Z",
+    "created_at": "2026-01-14T17:08:15.957Z"
+  },
+  {
+    "id": "a079fcb8-79bd-4f52-9733-ef8218ffcc09",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "6c305ce7-60fd-401f-b9e2-8456b5ea6826",
+    "quantity": 18,
+    "unit_price": "9.884196185286104",
+    "total_value": "177.915531335149872",
+    "consumed_at": "2026-01-14T17:12:16.713Z",
+    "created_at": "2026-01-14T17:12:16.713Z"
+  },
+  {
+    "id": "0d7d3db6-3c65-4588-b6a9-31e526b88839",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "8550fb6b-9373-4539-b144-3d77406ba5f0",
+    "quantity": 1,
+    "unit_price": "9.884196185286104",
+    "total_value": "9.884196185286104",
+    "consumed_at": "2026-01-14T17:46:53.606Z",
+    "created_at": "2026-01-14T17:46:53.606Z"
+  },
+  {
+    "id": "ef6ac89d-eb2b-46df-9199-f499e750c461",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "171dfb06-94b1-40d1-863f-9d7d9a473c1e",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-14T18:19:54.902Z",
+    "created_at": "2026-01-14T18:19:54.902Z"
+  },
+  {
+    "id": "7b59cc1d-1722-4532-855a-9f04e0327719",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "664b49db-ef94-4a29-bde5-b59f20a7451d",
+    "quantity": 14,
+    "unit_price": "7.032967032967033",
+    "total_value": "98.461538461538462",
+    "consumed_at": "2026-01-14T19:01:51.729Z",
+    "created_at": "2026-01-14T19:01:51.729Z"
+  },
+  {
+    "id": "486902a9-424b-449d-a2fc-2845d9230c92",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "cd9c32c9-db90-45f1-8df1-e4fea82e2a1e",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-14T19:53:18.270Z",
+    "created_at": "2026-01-14T19:53:18.270Z"
+  },
+  {
+    "id": "dc2c7c56-3890-41ed-b131-f647d31e7b2a",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "31971424-21c1-46ed-bc64-cd2ac5cad604",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-14T19:57:19.711Z",
+    "created_at": "2026-01-14T19:57:19.711Z"
+  },
+  {
+    "id": "a4014c49-70b9-4901-ad3b-8920104fec32",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "3d9fc8f0-7fe9-4f8f-8eec-3cea49bd4370",
+    "quantity": 4,
+    "unit_price": "7.032967032967033",
+    "total_value": "28.131868131868132",
+    "consumed_at": "2026-01-14T19:58:19.995Z",
+    "created_at": "2026-01-14T19:58:19.995Z"
+  },
+  {
+    "id": "e0348b4f-3b5e-4cfd-a319-3729de72595e",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "eeec3ace-f627-4c8f-b8bb-b33f96dd0101",
+    "quantity": 16,
+    "unit_price": "8.194552529182879",
+    "total_value": "131.112840466926064",
+    "consumed_at": "2026-01-14T20:49:05.642Z",
+    "created_at": "2026-01-14T20:49:05.642Z"
+  },
+  {
+    "id": "a9c1aaf5-d63b-4103-8aa5-66a98ff5d7df",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "68824cba-1f45-4f7c-87ec-9f5fe4b4a5be",
+    "quantity": 2,
+    "unit_price": "8.194552529182879",
+    "total_value": "16.389105058365758",
+    "consumed_at": "2026-01-14T21:10:51.148Z",
+    "created_at": "2026-01-14T21:10:51.148Z"
+  },
+  {
+    "id": "974d0f27-24a2-468c-a99b-e6e52376fcae",
+    "package_id": "95060f03-3946-4a81-a7e9-1b76533a22a2",
+    "sale_id": "53fec62d-ad4f-4c59-b89f-93c98dc6df08",
+    "quantity": 15,
+    "unit_price": "12",
+    "total_value": "180",
+    "consumed_at": "2026-01-14T21:11:37.163Z",
+    "created_at": "2026-01-14T21:11:37.163Z"
+  },
+  {
+    "id": "d50c7299-3912-40e3-ae91-72ce9ab7eedd",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "0a74d48e-4645-4d77-a0d5-416522d2eeeb",
+    "quantity": 2,
+    "unit_price": "8.194552529182879",
+    "total_value": "16.389105058365758",
+    "consumed_at": "2026-01-14T21:11:49.286Z",
+    "created_at": "2026-01-14T21:11:49.286Z"
+  },
+  {
+    "id": "6fec173c-665b-4fa2-b388-e268ee5c1e68",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "13c3aa65-0e4f-4eab-b1ae-f73e11b6ddef",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-14T21:13:02.085Z",
+    "created_at": "2026-01-14T21:13:02.085Z"
+  },
+  {
+    "id": "73ec4440-10c4-4bc0-9d21-1d7e315958cb",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "b015c659-0a64-440c-b42f-60618b3a0410",
+    "quantity": 3,
+    "unit_price": "9.884196185286104",
+    "total_value": "29.652588555858312",
+    "consumed_at": "2026-01-14T21:13:28.639Z",
+    "created_at": "2026-01-14T21:13:28.639Z"
+  },
+  {
+    "id": "54f21de3-5982-4fd5-9ec6-2f5472b35c7a",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "69ee05b6-4e05-4fb7-8467-423c1f31edbe",
+    "quantity": 14,
+    "unit_price": "9.884196185286104",
+    "total_value": "138.378746594005456",
+    "consumed_at": "2026-01-14T21:13:45.012Z",
+    "created_at": "2026-01-14T21:13:45.012Z"
+  },
+  {
+    "id": "f8e571b6-2ebd-4f65-b46f-26ba5ba65007",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "004a332e-a6a0-46c4-a13b-7bd31e3aa228",
+    "quantity": 7,
+    "unit_price": "9.884196185286104",
+    "total_value": "69.189373297002728",
+    "consumed_at": "2026-01-14T21:14:24.993Z",
+    "created_at": "2026-01-14T21:14:24.993Z"
+  },
+  {
+    "id": "0b4b5d8b-7485-4c61-816a-7efd756a05ed",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "6e3a60ab-a981-4640-ad31-05a7521a969a",
+    "quantity": 9,
+    "unit_price": "9.884196185286104",
+    "total_value": "88.957765667574936",
+    "consumed_at": "2026-01-14T21:15:16.097Z",
+    "created_at": "2026-01-14T21:15:16.097Z"
+  },
+  {
+    "id": "77f2392b-38eb-4b20-a1d4-bdb75cfdf186",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "3707fa1a-06da-4280-abb0-a196912e5815",
+    "quantity": 2,
+    "unit_price": "9.884196185286104",
+    "total_value": "19.768392370572208",
+    "consumed_at": "2026-01-14T21:15:49.463Z",
+    "created_at": "2026-01-14T21:15:49.463Z"
+  },
+  {
+    "id": "aa5f7ce5-0d1b-43dc-a67f-66732d2fdb8d",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "d763e364-0f39-4f85-9541-4bf7462dadca",
+    "quantity": 4,
+    "unit_price": "8.194552529182879",
+    "total_value": "32.778210116731516",
+    "consumed_at": "2026-01-14T21:15:54.394Z",
+    "created_at": "2026-01-14T21:15:54.394Z"
+  },
+  {
+    "id": "e676ccf3-2b43-49a1-b8ce-f75f5e08a0ac",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "e4850821-7c00-40eb-b529-79904cbfaaa1",
+    "quantity": 2,
+    "unit_price": "8.194552529182879",
+    "total_value": "16.389105058365758",
+    "consumed_at": "2026-01-14T21:16:56.115Z",
+    "created_at": "2026-01-14T21:16:56.115Z"
+  },
+  {
+    "id": "98bb8308-341d-4909-b467-25befc463fbc",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "3644b6db-e019-48aa-aced-999fb226be96",
+    "quantity": 9,
+    "unit_price": "9.884196185286104",
+    "total_value": "88.957765667574936",
+    "consumed_at": "2026-01-14T21:17:58.980Z",
+    "created_at": "2026-01-14T21:17:58.980Z"
+  },
+  {
+    "id": "71e9ff87-6e8e-4e18-bf45-9b79fc8b01a3",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "b1f8dfe6-795c-4242-8784-eaf09d08b768",
+    "quantity": 3,
+    "unit_price": "9.884196185286104",
+    "total_value": "29.652588555858312",
+    "consumed_at": "2026-01-15T13:05:01.552Z",
+    "created_at": "2026-01-15T13:05:01.552Z"
+  },
+  {
+    "id": "188ce3a5-e2e8-4a7d-8d97-6c41736429a1",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "13176fc2-f0aa-432d-8ea5-6f417b9eb953",
+    "quantity": 6,
+    "unit_price": "9.884196185286104",
+    "total_value": "59.305177111716624",
+    "consumed_at": "2026-01-15T13:05:53.135Z",
+    "created_at": "2026-01-15T13:05:53.135Z"
+  },
+  {
+    "id": "06e263b1-f662-4742-9ed3-541ac351907f",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "6602e6f7-a12d-42f3-aea4-af95f3ac7885",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-15T13:31:27.639Z",
+    "created_at": "2026-01-15T13:31:27.639Z"
+  },
+  {
+    "id": "4b47418e-3651-4833-aa73-79184636d2c5",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "f17eeb50-a8cc-4724-9704-845a58ecf293",
+    "quantity": 6,
+    "unit_price": "9.884196185286104",
+    "total_value": "59.305177111716624",
+    "consumed_at": "2026-01-15T14:00:35.486Z",
+    "created_at": "2026-01-15T14:00:35.486Z"
+  },
+  {
+    "id": "d79be160-55a5-48a2-a203-662b68cc7d83",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "6777a973-027b-4689-9288-f23482ed6b20",
+    "quantity": 3,
+    "unit_price": "8.194552529182879",
+    "total_value": "24.583657587548637",
+    "consumed_at": "2026-01-15T14:52:54.021Z",
+    "created_at": "2026-01-15T14:52:54.021Z"
+  },
+  {
+    "id": "a8bb4c1a-35dc-4fc4-8997-d4aeaf509d9e",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "9e921739-fae3-4318-a37d-d737e76ee7f6",
+    "quantity": 6,
+    "unit_price": "7.032967032967033",
+    "total_value": "42.197802197802198",
+    "consumed_at": "2026-01-15T18:16:10.479Z",
+    "created_at": "2026-01-15T18:16:10.479Z"
+  },
+  {
+    "id": "0927fbe1-a49a-4072-bbb9-63b83c54ad47",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "34350d57-e128-4d5d-8ed3-58085bc06c7e",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-15T18:18:55.930Z",
+    "created_at": "2026-01-15T18:18:55.930Z"
+  },
+  {
+    "id": "27baa9fc-f918-48d3-a28d-8f82f0a3c7c8",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "f389130d-2b06-40aa-bf01-79531a36a713",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-15T18:19:49.181Z",
+    "created_at": "2026-01-15T18:19:49.181Z"
+  },
+  {
+    "id": "db482e2c-6a3c-42e4-851a-610cbc81a08d",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "e55b12a0-bc04-4cbc-b43e-542a6138a9ec",
+    "quantity": 2,
+    "unit_price": "8.194552529182879",
+    "total_value": "16.389105058365758",
+    "consumed_at": "2026-01-15T18:20:53.876Z",
+    "created_at": "2026-01-15T18:20:53.876Z"
+  },
+  {
+    "id": "6795bc4d-02f0-408e-959d-eb08196d5262",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "41b84d24-025b-4c71-98ac-0079354fe40d",
+    "quantity": 10,
+    "unit_price": "9.884196185286104",
+    "total_value": "98.841961852861040",
+    "consumed_at": "2026-01-15T19:02:29.243Z",
+    "created_at": "2026-01-15T19:02:29.243Z"
+  },
+  {
+    "id": "23a84531-203c-464f-8607-bf4881d65cf2",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "e8218b5b-0c42-4067-9e36-bc4e192de137",
+    "quantity": 6,
+    "unit_price": "8.194552529182879",
+    "total_value": "49.167315175097274",
+    "consumed_at": "2026-01-15T19:26:58.390Z",
+    "created_at": "2026-01-15T19:26:58.390Z"
+  },
+  {
+    "id": "313575f8-10bf-4ced-9947-00ffc9d19657",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "a622db86-2024-4bd7-8239-80a062aeab49",
+    "quantity": 10,
+    "unit_price": "9.884196185286104",
+    "total_value": "98.841961852861040",
+    "consumed_at": "2026-01-15T19:29:53.876Z",
+    "created_at": "2026-01-15T19:29:53.876Z"
+  },
+  {
+    "id": "ae2d23b1-7a10-4d10-9a36-e17676f374fe",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "0c9a517c-87ba-4ca8-bde4-3fb72cfd8b5f",
+    "quantity": 6,
+    "unit_price": "9.884196185286104",
+    "total_value": "59.305177111716624",
+    "consumed_at": "2026-01-15T19:31:39.323Z",
+    "created_at": "2026-01-15T19:31:39.323Z"
+  },
+  {
+    "id": "99676ff0-9bae-490c-8d9a-71cedb170a5c",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "9566e132-c499-4e46-ab9c-324619f62e23",
+    "quantity": 6,
+    "unit_price": "9.884196185286104",
+    "total_value": "59.305177111716624",
+    "consumed_at": "2026-01-15T21:17:42.863Z",
+    "created_at": "2026-01-15T21:17:42.863Z"
+  },
+  {
+    "id": "1d28178d-cf2f-4813-831b-144ef10824d4",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "fcf27703-daea-45e3-8ea4-00dacb96053c",
+    "quantity": 1,
+    "unit_price": "9.884196185286104",
+    "total_value": "9.884196185286104",
+    "consumed_at": "2026-01-15T21:18:16.432Z",
+    "created_at": "2026-01-15T21:18:16.432Z"
+  },
+  {
+    "id": "c287cf65-89a5-497c-9dd4-e20087ddd33c",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "f59ccfe9-b1f7-41e1-9f0e-f94acac5a542",
+    "quantity": 9,
+    "unit_price": "8.194552529182879",
+    "total_value": "73.750972762645911",
+    "consumed_at": "2026-01-15T21:18:53.867Z",
+    "created_at": "2026-01-15T21:18:53.867Z"
+  },
+  {
+    "id": "d9e53223-d8b2-469c-8fd2-7a5d927c2089",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "a791f1ca-f16c-4af1-8e88-d2c13f1a7ec6",
+    "quantity": 8,
+    "unit_price": "8.194552529182879",
+    "total_value": "65.556420233463032",
+    "consumed_at": "2026-01-15T21:19:25.041Z",
+    "created_at": "2026-01-15T21:19:25.041Z"
+  },
+  {
+    "id": "f3911d14-0c54-43cd-834b-3d23a3e1685d",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "ca02e7ef-1ea1-449b-a44d-1d278e677a5a",
+    "quantity": 8,
+    "unit_price": "8.194552529182879",
+    "total_value": "65.556420233463032",
+    "consumed_at": "2026-01-15T21:20:14.489Z",
+    "created_at": "2026-01-15T21:20:14.489Z"
+  },
+  {
+    "id": "144bf621-842c-4beb-8865-64b3c1c35c76",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "be14d1bb-05fa-4d22-b34c-b1ee5b53b68b",
+    "quantity": 4,
+    "unit_price": "8.194552529182879",
+    "total_value": "32.778210116731516",
+    "consumed_at": "2026-01-15T23:00:39.379Z",
+    "created_at": "2026-01-15T23:00:39.379Z"
+  },
+  {
+    "id": "3a13306d-76ef-4c82-8b55-e38633b99a92",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "871941bb-692c-4f94-80d4-21d2fe63cad6",
+    "quantity": 3,
+    "unit_price": "9.884196185286104",
+    "total_value": "29.652588555858312",
+    "consumed_at": "2026-01-15T23:01:14.948Z",
+    "created_at": "2026-01-15T23:01:14.948Z"
+  },
+  {
+    "id": "84e0a122-cf85-4d77-84b0-f991f0b503c8",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "ff785591-553d-4263-9f3b-e61638cc34eb",
+    "quantity": 5,
+    "unit_price": "8.194552529182879",
+    "total_value": "40.972762645914395",
+    "consumed_at": "2026-01-16T14:21:47.048Z",
+    "created_at": "2026-01-16T14:21:47.048Z"
+  },
+  {
+    "id": "b6b707df-4e42-4c3c-b0ef-4ac85b44659e",
+    "package_id": "95060f03-3946-4a81-a7e9-1b76533a22a2",
+    "sale_id": "34955928-e4f0-40c4-9424-cd921828a794",
+    "quantity": 3,
+    "unit_price": "12",
+    "total_value": "36",
+    "consumed_at": "2026-01-16T15:02:12.992Z",
+    "created_at": "2026-01-16T15:02:12.992Z"
+  },
+  {
+    "id": "853820ff-8216-4225-a721-0ca27dc85cef",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "381307e6-3e40-4a02-96ef-7259e6bbde4b",
+    "quantity": 5,
+    "unit_price": "9.884196185286104",
+    "total_value": "49.420980926430520",
+    "consumed_at": "2026-01-16T15:02:35.643Z",
+    "created_at": "2026-01-16T15:02:35.643Z"
+  },
+  {
+    "id": "a1d6ba30-9a0b-4c17-8660-4ed0ab838e73",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "cc31c6b2-deb9-4abc-b881-770922ec5837",
+    "quantity": 9,
+    "unit_price": "9.884196185286104",
+    "total_value": "88.957765667574936",
+    "consumed_at": "2026-01-16T15:08:36.221Z",
+    "created_at": "2026-01-16T15:08:36.221Z"
+  },
+  {
+    "id": "2209f704-0a45-427c-bacc-353f14685b9a",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "50588be5-70c4-4d9f-a2dc-82fd7d01617f",
+    "quantity": 3,
+    "unit_price": "9.884196185286104",
+    "total_value": "29.652588555858312",
+    "consumed_at": "2026-01-16T15:24:34.415Z",
+    "created_at": "2026-01-16T15:24:34.415Z"
+  },
+  {
+    "id": "eb9c38c3-13e0-4291-8676-ce2b01f42e0f",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "cbd901e7-584d-48c9-8e78-5bf72a771fc3",
+    "quantity": 2,
+    "unit_price": "8.194552529182879",
+    "total_value": "16.389105058365758",
+    "consumed_at": "2026-01-16T16:52:31.427Z",
+    "created_at": "2026-01-16T16:52:31.427Z"
+  },
+  {
+    "id": "6797f8ba-3283-4c16-a8f2-3a63df7ce9a9",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "f4570314-76c0-40b2-87b7-dafc1f8ed7bb",
+    "quantity": 4,
+    "unit_price": "8.194552529182879",
+    "total_value": "32.778210116731516",
+    "consumed_at": "2026-01-16T17:15:25.710Z",
+    "created_at": "2026-01-16T17:15:25.710Z"
+  },
+  {
+    "id": "72674d27-0e5d-456c-8ed1-37d42f7aa5c5",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "8132c3d4-9ce6-4655-9f67-197688e71e2c",
+    "quantity": 3,
+    "unit_price": "9.884196185286104",
+    "total_value": "29.652588555858312",
+    "consumed_at": "2026-01-16T17:16:09.811Z",
+    "created_at": "2026-01-16T17:16:09.811Z"
+  },
+  {
+    "id": "1fb8a6a9-dfc8-4715-a3c5-a9e588c55a8d",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "262d50b7-a2ce-4c25-8e42-0da38afb35f5",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-16T17:17:02.592Z",
+    "created_at": "2026-01-16T17:17:02.592Z"
+  },
+  {
+    "id": "d700d767-0896-4dfa-9548-5bf5fe68ec99",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "52e3f4f0-0824-4cbd-8b82-fdaf76d9d588",
+    "quantity": 4,
+    "unit_price": "8.194552529182879",
+    "total_value": "32.778210116731516",
+    "consumed_at": "2026-01-16T17:17:54.475Z",
+    "created_at": "2026-01-16T17:17:54.475Z"
+  },
+  {
+    "id": "2d82feaa-0c50-4289-8850-a7076a88f778",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "c808bf39-ed94-4ede-8006-b86a7d80172d",
+    "quantity": 4,
+    "unit_price": "8.194552529182879",
+    "total_value": "32.778210116731516",
+    "consumed_at": "2026-01-16T17:19:04.204Z",
+    "created_at": "2026-01-16T17:19:04.204Z"
+  },
+  {
+    "id": "27bebde8-2692-476f-9fb5-d06c6536201f",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "c0b7b65c-17e0-4b01-bb64-0a5c43f80939",
+    "quantity": 3,
+    "unit_price": "9.884196185286104",
+    "total_value": "29.652588555858312",
+    "consumed_at": "2026-01-16T17:24:02.746Z",
+    "created_at": "2026-01-16T17:24:02.746Z"
+  },
+  {
+    "id": "cf5d523e-fd60-4cf3-90ae-7902d6c6cc9f",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "5fc7e5b8-4da0-40a5-83d8-089498bd5e4e",
+    "quantity": 2,
+    "unit_price": "8.194552529182879",
+    "total_value": "16.389105058365758",
+    "consumed_at": "2026-01-16T18:21:44.922Z",
+    "created_at": "2026-01-16T18:21:44.922Z"
+  },
+  {
+    "id": "014e044e-743e-406c-8d92-52ce5884cd2b",
+    "package_id": "913a89fb-68cb-46a3-bcfd-fd582ecb9727",
+    "sale_id": "17854546-455b-43b0-a0bd-bb0ce0e986e1",
+    "quantity": 2,
+    "unit_price": "10",
+    "total_value": "20",
+    "consumed_at": "2026-01-16T18:24:04.279Z",
+    "created_at": "2026-01-16T18:24:04.279Z"
+  },
+  {
+    "id": "ba4c521a-e905-45bd-96e4-0887030c127b",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "f9685df6-8296-4d20-a798-492015e87a2c",
+    "quantity": 7,
+    "unit_price": "9.884196185286104",
+    "total_value": "69.189373297002728",
+    "consumed_at": "2026-01-16T18:24:52.016Z",
+    "created_at": "2026-01-16T18:24:52.016Z"
+  },
+  {
+    "id": "d547ec80-d0b2-4f37-b2f9-0c80ecb5e01f",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "034f4723-76d7-46c3-8a2a-446ead794ec1",
+    "quantity": 6,
+    "unit_price": "8.194552529182879",
+    "total_value": "49.167315175097274",
+    "consumed_at": "2026-01-16T18:25:58.073Z",
+    "created_at": "2026-01-16T18:25:58.073Z"
+  },
+  {
+    "id": "2e5fd46e-726d-4f03-ab6b-db1c65ae5162",
+    "package_id": "1b27541f-58e4-4ae2-8113-6bae99a39214",
+    "sale_id": "40cb8db1-eb41-47db-be9e-80ba93b90c15",
+    "quantity": 15,
+    "unit_price": "8",
+    "total_value": "120",
+    "consumed_at": "2026-01-16T18:27:05.457Z",
+    "created_at": "2026-01-16T18:27:05.457Z"
+  },
+  {
+    "id": "5fce0829-93b6-4e1d-b161-b8b976a3a312",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "96bc9c62-f47b-4bd6-a77b-e591736a2ce3",
+    "quantity": 3,
+    "unit_price": "8.194552529182879",
+    "total_value": "24.583657587548637",
+    "consumed_at": "2026-01-16T18:28:50.836Z",
+    "created_at": "2026-01-16T18:28:50.836Z"
+  },
+  {
+    "id": "c6066ebb-892d-43e9-894d-6884eadc08f2",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "e4d17441-cb55-4639-b519-2573225d81d1",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-16T18:42:20.345Z",
+    "created_at": "2026-01-16T18:42:20.345Z"
+  },
+  {
+    "id": "85bc4b30-0373-4128-a13b-abdc0be5b6b9",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "64f1bc79-5900-42c7-98eb-50b80c3ad40c",
+    "quantity": 9,
+    "unit_price": "8.194552529182879",
+    "total_value": "73.750972762645911",
+    "consumed_at": "2026-01-16T18:44:49.060Z",
+    "created_at": "2026-01-16T18:44:49.060Z"
+  },
+  {
+    "id": "670904f8-62bb-44ee-90df-627786a3eff3",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "15b55a72-1ef9-49e0-8df9-5074e3387f1a",
+    "quantity": 4,
+    "unit_price": "8.194552529182879",
+    "total_value": "32.778210116731516",
+    "consumed_at": "2026-01-16T20:34:12.155Z",
+    "created_at": "2026-01-16T20:34:12.155Z"
+  },
+  {
+    "id": "1fcc1f58-f67c-4875-ab37-010cf8932fdc",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "3cf81b50-d78e-4bb9-a165-4ca1062c96e4",
+    "quantity": 7,
+    "unit_price": "8.194552529182879",
+    "total_value": "57.361867704280153",
+    "consumed_at": "2026-01-16T20:34:31.246Z",
+    "created_at": "2026-01-16T20:34:31.246Z"
+  },
+  {
+    "id": "21366aeb-3079-4a44-ae07-f39ce54c2932",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "efeb7c4a-4c3c-45b8-be14-4a1bf99b48b3",
+    "quantity": 5,
+    "unit_price": "8.194552529182879",
+    "total_value": "40.972762645914395",
+    "consumed_at": "2026-01-16T20:34:48.449Z",
+    "created_at": "2026-01-16T20:34:48.449Z"
+  },
+  {
+    "id": "1e108029-47b4-47b5-8c73-c2ed2818c397",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "1a5cb52d-c299-4b6e-8413-0af65f0446c8",
+    "quantity": 8,
+    "unit_price": "8.194552529182879",
+    "total_value": "65.556420233463032",
+    "consumed_at": "2026-01-16T20:35:14.888Z",
+    "created_at": "2026-01-16T20:35:14.888Z"
+  },
+  {
+    "id": "18dd0a5f-1bf9-4986-abc3-c7095f632fee",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "928ab535-8f4e-4621-9fa9-35765aa0785f",
+    "quantity": 3,
+    "unit_price": "8.194552529182879",
+    "total_value": "24.583657587548637",
+    "consumed_at": "2026-01-16T20:53:33.167Z",
+    "created_at": "2026-01-16T20:53:33.167Z"
+  },
+  {
+    "id": "547465fe-bce6-4c25-a059-a9ff9a3622e0",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "170670b3-6d96-489b-9a74-5c2cdb3f9603",
+    "quantity": 7,
+    "unit_price": "8.194552529182879",
+    "total_value": "57.361867704280153",
+    "consumed_at": "2026-01-16T21:02:01.202Z",
+    "created_at": "2026-01-16T21:02:01.202Z"
+  },
+  {
+    "id": "1099597b-df69-40e0-9fbe-aae3da84fd3e",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "b3adcffb-20df-4e10-a572-bb653ca5e360",
+    "quantity": 9,
+    "unit_price": "8.194552529182879",
+    "total_value": "73.750972762645911",
+    "consumed_at": "2026-01-16T21:05:16.646Z",
+    "created_at": "2026-01-16T21:05:16.646Z"
+  },
+  {
+    "id": "d969ec9f-a79a-49f0-afb0-96f8b2b3c570",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "bdf3b065-07ab-412b-9864-bc8dca384d25",
+    "quantity": 6,
+    "unit_price": "8.194552529182879",
+    "total_value": "49.167315175097274",
+    "consumed_at": "2026-01-16T21:05:52.800Z",
+    "created_at": "2026-01-16T21:05:52.800Z"
+  },
+  {
+    "id": "5c37a1e2-e95f-4ae4-a0a9-8950aa49f1b3",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "ed1f33bc-4cb3-4cba-afaf-c39a49792beb",
+    "quantity": 8,
+    "unit_price": "9.884196185286104",
+    "total_value": "79.073569482288832",
+    "consumed_at": "2026-01-16T21:07:11.428Z",
+    "created_at": "2026-01-16T21:07:11.428Z"
+  },
+  {
+    "id": "6bba423a-daa8-4779-b38d-0d08f26bda9f",
+    "package_id": "1b27541f-58e4-4ae2-8113-6bae99a39214",
+    "sale_id": "183ef9e1-5dc2-4540-b803-7a655a23acb4",
+    "quantity": 4,
+    "unit_price": "8",
+    "total_value": "32",
+    "consumed_at": "2026-01-16T21:07:46.265Z",
+    "created_at": "2026-01-16T21:07:46.265Z"
+  },
+  {
+    "id": "e30b1df7-b0e4-46dd-bf43-1b467be8b972",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "10e10e0e-ae57-4be3-9def-740680f65958",
+    "quantity": 9,
+    "unit_price": "9.884196185286104",
+    "total_value": "88.957765667574936",
+    "consumed_at": "2026-01-16T21:22:39.426Z",
+    "created_at": "2026-01-16T21:22:39.426Z"
+  },
+  {
+    "id": "2faf8bc6-37d5-4e26-a0ca-da7a7a39f747",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "b5e8eeb8-5c89-4b47-80e2-ee9e4b236f21",
+    "quantity": 5,
+    "unit_price": "8.194552529182879",
+    "total_value": "40.972762645914395",
+    "consumed_at": "2026-01-19T13:06:42.980Z",
+    "created_at": "2026-01-19T13:06:42.980Z"
+  },
+  {
+    "id": "1ef5e491-89b4-41ef-b8c1-5524404fbf90",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "efd83da8-e999-4674-acdc-d632d75f6d5d",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-19T13:29:16.557Z",
+    "created_at": "2026-01-19T13:29:16.557Z"
+  },
+  {
+    "id": "52f26517-a6d4-4482-ab12-c7baf41e008f",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "f2a7bb65-7984-48f3-a2be-500317f19abf",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-19T13:56:13.968Z",
+    "created_at": "2026-01-19T13:56:13.968Z"
+  },
+  {
+    "id": "217e5753-55b6-4ee4-b78f-8157078a1a2e",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "a660599a-c903-47c6-a247-2d5c8bde85e2",
+    "quantity": 4,
+    "unit_price": "8.194552529182879",
+    "total_value": "32.778210116731516",
+    "consumed_at": "2026-01-19T13:57:00.263Z",
+    "created_at": "2026-01-19T13:57:00.263Z"
+  },
+  {
+    "id": "d3462955-7e2a-43a4-bcd0-fcd21ac49fe3",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "74d30afc-ea60-4c98-ba83-b620999e5eb9",
+    "quantity": 8,
+    "unit_price": "9.884196185286104",
+    "total_value": "79.073569482288832",
+    "consumed_at": "2026-01-19T14:28:39.565Z",
+    "created_at": "2026-01-19T14:28:39.565Z"
+  },
+  {
+    "id": "624301e2-7063-4713-8c8b-652fb95d1678",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "bfbfd744-0e9e-4911-97e4-f7b341313a02",
+    "quantity": 2,
+    "unit_price": "8.194552529182879",
+    "total_value": "16.389105058365758",
+    "consumed_at": "2026-01-19T14:31:36.553Z",
+    "created_at": "2026-01-19T14:31:36.553Z"
+  },
+  {
+    "id": "aa9f9823-a2ea-411e-8ec2-a2d844439c78",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "b4ee29c3-e97d-4035-a12c-fd8dfa411988",
+    "quantity": 5,
+    "unit_price": "8.194552529182879",
+    "total_value": "40.972762645914395",
+    "consumed_at": "2026-01-19T16:42:51.303Z",
+    "created_at": "2026-01-19T16:42:51.303Z"
+  },
+  {
+    "id": "1c65485b-f5bd-417f-8cdd-302e24a7044d",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "99794214-e377-4c46-b2a6-eb477d69f165",
+    "quantity": 2,
+    "unit_price": "9.884196185286104",
+    "total_value": "19.768392370572208",
+    "consumed_at": "2026-01-19T17:58:53.821Z",
+    "created_at": "2026-01-19T17:58:53.821Z"
+  },
+  {
+    "id": "e67c2b56-fd2c-46e7-b16c-d35cf1745c40",
+    "package_id": "95060f03-3946-4a81-a7e9-1b76533a22a2",
+    "sale_id": "850bf283-54b7-42af-849f-564e8366653a",
+    "quantity": 2,
+    "unit_price": "12",
+    "total_value": "24",
+    "consumed_at": "2026-01-19T19:20:47.419Z",
+    "created_at": "2026-01-19T19:20:47.419Z"
+  },
+  {
+    "id": "a0bd44dd-c20b-4b7a-895c-b908a2ef4ac3",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "f356adae-06ac-4924-9d43-23c1cf07f906",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-19T19:21:13.659Z",
+    "created_at": "2026-01-19T19:21:13.659Z"
+  },
+  {
+    "id": "b1891c27-4fc8-41ac-93fb-b73fb0a7bde5",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "453c1acf-44b5-4811-ad20-e63293e5c8b7",
+    "quantity": 9,
+    "unit_price": "8.194552529182879",
+    "total_value": "73.750972762645911",
+    "consumed_at": "2026-01-19T19:57:26.310Z",
+    "created_at": "2026-01-19T19:57:26.310Z"
+  },
+  {
+    "id": "beafba15-b35e-4f36-81c2-b600a59152b4",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "373b1bfb-bd89-45e2-baf9-0392b1395c22",
+    "quantity": 3,
+    "unit_price": "9.884196185286104",
+    "total_value": "29.652588555858312",
+    "consumed_at": "2026-01-19T19:58:07.035Z",
+    "created_at": "2026-01-19T19:58:07.035Z"
+  },
+  {
+    "id": "2fef3d14-613e-49b5-ae62-409cabea8e0a",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "2a125435-8dce-458b-a7ed-8110c8939800",
+    "quantity": 10,
+    "unit_price": "9.884196185286104",
+    "total_value": "98.841961852861040",
+    "consumed_at": "2026-01-19T20:04:23.556Z",
+    "created_at": "2026-01-19T20:04:23.556Z"
+  },
+  {
+    "id": "66b669ea-ada3-46fe-828f-dcc61a7a6cf5",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "d3c4400d-8dab-4961-b7bd-cd99b2ff6b1f",
+    "quantity": 4,
+    "unit_price": "7.032967032967033",
+    "total_value": "28.131868131868132",
+    "consumed_at": "2026-01-19T20:45:34.414Z",
+    "created_at": "2026-01-19T20:45:34.414Z"
+  },
+  {
+    "id": "4d544df6-fea3-489c-b34a-99a8c1e32f82",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "e3029934-ae8c-4da9-a0b0-9d0fac8eca3e",
+    "quantity": 15,
+    "unit_price": "9.884196185286104",
+    "total_value": "148.262942779291560",
+    "consumed_at": "2026-01-19T23:02:44.152Z",
+    "created_at": "2026-01-19T23:02:44.152Z"
+  },
+  {
+    "id": "4e9be512-39f4-4150-8601-153c3562ea99",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "3e02e6b8-4243-41da-9562-4ae69db99221",
+    "quantity": 9,
+    "unit_price": "9.884196185286104",
+    "total_value": "88.957765667574936",
+    "consumed_at": "2026-01-19T23:03:30.040Z",
+    "created_at": "2026-01-19T23:03:30.040Z"
+  },
+  {
+    "id": "a44e0bce-edbd-4c7c-933d-60b940ca4714",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "fa2bf060-594f-4470-8dc1-5d7f64e4cc7f",
+    "quantity": 4,
+    "unit_price": "9.884196185286104",
+    "total_value": "39.536784741144416",
+    "consumed_at": "2026-01-20T17:08:26.012Z",
+    "created_at": "2026-01-20T17:08:26.012Z"
+  },
+  {
+    "id": "27b2ee44-c07c-4db1-b54b-15e2e440baa8",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "feb0700b-afaa-4d9c-80ef-17388dd809ae",
+    "quantity": 3,
+    "unit_price": "9.884196185286104",
+    "total_value": "29.652588555858312",
+    "consumed_at": "2026-01-20T17:09:56.505Z",
+    "created_at": "2026-01-20T17:09:56.505Z"
+  },
+  {
+    "id": "135f981e-ff57-4ff2-82f1-bb0853118236",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "0dea0f0c-abbb-4c8e-9561-4aebf7c82c60",
+    "quantity": 20,
+    "unit_price": "7.032967032967033",
+    "total_value": "140.659340659340660",
+    "consumed_at": "2026-01-20T17:11:08.170Z",
+    "created_at": "2026-01-20T17:11:08.170Z"
+  },
+  {
+    "id": "04a42a28-f981-45c1-872e-564fd5215054",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "6e769768-2966-4b06-b48b-1cc1891d4420",
+    "quantity": 11,
+    "unit_price": "8.194552529182879",
+    "total_value": "90.140077821011669",
+    "consumed_at": "2026-01-20T17:12:38.896Z",
+    "created_at": "2026-01-20T17:12:38.896Z"
+  },
+  {
+    "id": "12a33bf1-5dfc-4f19-a66a-d6713162027d",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "8d8a43ba-8b29-4e70-b17d-0a70f637d2f5",
+    "quantity": 13,
+    "unit_price": "8.194552529182879",
+    "total_value": "106.529182879377427",
+    "consumed_at": "2026-01-20T17:13:57.857Z",
+    "created_at": "2026-01-20T17:13:57.857Z"
+  },
+  {
+    "id": "3e39429c-3306-4b79-83a3-c339a45bfab6",
+    "package_id": "2201950f-8325-4380-b249-3f45458f629b",
+    "sale_id": "b8c561ed-04d5-4362-abdb-75cecffb1d19",
+    "quantity": 1,
+    "unit_price": "10",
+    "total_value": "10",
+    "consumed_at": "2026-01-20T17:14:24.281Z",
+    "created_at": "2026-01-20T17:14:24.281Z"
+  },
+  {
+    "id": "2ebf1e5d-8550-4c62-89d4-f0fc4792a1c8",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "241cee36-d1a5-4539-b74b-76a777736b27",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-20T18:13:29.323Z",
+    "created_at": "2026-01-20T18:13:29.323Z"
+  },
+  {
+    "id": "222326b9-8400-44ba-b071-365abca3fb30",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "6b9d190c-f470-4933-88f9-e695a1223987",
+    "quantity": 1,
+    "unit_price": "7.032967032967033",
+    "total_value": "7.032967032967033",
+    "consumed_at": "2026-01-20T18:28:34.923Z",
+    "created_at": "2026-01-20T18:28:34.923Z"
+  },
+  {
+    "id": "c3765a6e-261c-4dc1-9c7a-1930a48c13fb",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "3da8a61c-3b40-47f3-824f-9d06f73c5a79",
+    "quantity": 2,
+    "unit_price": "8.194552529182879",
+    "total_value": "16.389105058365758",
+    "consumed_at": "2026-01-20T18:30:21.615Z",
+    "created_at": "2026-01-20T18:30:21.615Z"
+  },
+  {
+    "id": "76e4563a-6975-464d-a884-4f657c948855",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "336c25da-d231-49a0-9010-33e6c702202d",
+    "quantity": 3,
+    "unit_price": "9.884196185286104",
+    "total_value": "29.652588555858312",
+    "consumed_at": "2026-01-20T18:34:12.786Z",
+    "created_at": "2026-01-20T18:34:12.786Z"
+  },
+  {
+    "id": "b47aa556-eb5d-464f-b3bd-36d6d49b7828",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "449f5e7d-b94d-4be6-811f-a7a0cfa2b993",
+    "quantity": 2,
+    "unit_price": "7.032967032967033",
+    "total_value": "14.065934065934066",
+    "consumed_at": "2026-01-20T18:51:17.791Z",
+    "created_at": "2026-01-20T18:51:17.791Z"
+  },
+  {
+    "id": "a45fac46-822a-4a0d-b730-ed4088185285",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "2a800798-a080-4eeb-9ac2-4609041e1b76",
+    "quantity": 2,
+    "unit_price": "8.194552529182879",
+    "total_value": "16.389105058365758",
+    "consumed_at": "2026-01-20T18:51:56.567Z",
+    "created_at": "2026-01-20T18:51:56.567Z"
+  },
+  {
+    "id": "f7093336-8f2a-4d33-9b39-303fe06e8320",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "2672fc9f-f36c-48cf-a1a5-ac952966d3b9",
+    "quantity": 4,
+    "unit_price": "8.194552529182879",
+    "total_value": "32.778210116731516",
+    "consumed_at": "2026-01-20T18:53:10.290Z",
+    "created_at": "2026-01-20T18:53:10.290Z"
+  },
+  {
+    "id": "85ee026b-fd95-47cc-92eb-8b2d03a85d58",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "11c20bc6-e905-4536-841b-1b83c69bccb3",
+    "quantity": 3,
+    "unit_price": "8.194552529182879",
+    "total_value": "24.583657587548637",
+    "consumed_at": "2026-01-20T18:53:26.732Z",
+    "created_at": "2026-01-20T18:53:26.732Z"
+  },
+  {
+    "id": "2cdac396-b798-4596-a265-7417cb473a31",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "0900f4aa-81c7-4b9d-a27e-6b5b1c4473e0",
+    "quantity": 2,
+    "unit_price": "8.194552529182879",
+    "total_value": "16.389105058365758",
+    "consumed_at": "2026-01-20T19:20:10.941Z",
+    "created_at": "2026-01-20T19:20:10.941Z"
+  },
+  {
+    "id": "919ae2d8-4482-4639-9538-e5c5e560e502",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "d615f38f-d93f-417b-9925-042135b5b1f3",
+    "quantity": 2,
+    "unit_price": "9.884196185286104",
+    "total_value": "19.768392370572208",
+    "consumed_at": "2026-01-20T19:36:50.479Z",
+    "created_at": "2026-01-20T19:36:50.479Z"
+  },
+  {
+    "id": "619f729c-36d9-4e05-8edc-0203cd5b9fc0",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "a93be693-c8da-4af4-8fb6-2d5e02326523",
+    "quantity": 1,
+    "unit_price": "9.884196185286104",
+    "total_value": "9.884196185286104",
+    "consumed_at": "2026-01-20T19:53:56.742Z",
+    "created_at": "2026-01-20T19:53:56.742Z"
+  },
+  {
+    "id": "689bf05a-5b63-42bc-94b6-32da162b8f8e",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "c00612f4-2f14-4a4f-ae7d-5573150caa95",
+    "quantity": 8,
+    "unit_price": "8.194552529182879",
+    "total_value": "65.556420233463032",
+    "consumed_at": "2026-01-20T20:08:28.184Z",
+    "created_at": "2026-01-20T20:08:28.184Z"
+  },
+  {
+    "id": "1432816a-6f62-47eb-af8f-12b1aa7eb2fa",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "948e3941-f204-4a05-aa2f-79373bbb8811",
+    "quantity": 10,
+    "unit_price": "9.884196185286104",
+    "total_value": "98.841961852861040",
+    "consumed_at": "2026-01-20T20:20:11.031Z",
+    "created_at": "2026-01-20T20:20:11.031Z"
+  },
+  {
+    "id": "3a92125a-80b4-4b8b-9e8a-f64d3b668131",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "195e560b-eab8-4673-9dff-2dbb1de0aa58",
+    "quantity": 5,
+    "unit_price": "9.884196185286104",
+    "total_value": "49.420980926430520",
+    "consumed_at": "2026-01-20T20:46:10.512Z",
+    "created_at": "2026-01-20T20:46:10.512Z"
+  },
+  {
+    "id": "351195b5-f4d4-43c7-ac7e-f0959add2701",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "94e8e31a-af0d-4c62-bad9-8910b080f520",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-20T21:11:00.275Z",
+    "created_at": "2026-01-20T21:11:00.275Z"
+  },
+  {
+    "id": "25ea9573-6c67-4874-ac10-7d2d63956c44",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "60f84405-c8d2-4508-b845-8098083f80f9",
+    "quantity": 4,
+    "unit_price": "8.194552529182879",
+    "total_value": "32.778210116731516",
+    "consumed_at": "2026-01-20T22:06:30.849Z",
+    "created_at": "2026-01-20T22:06:30.849Z"
+  },
+  {
+    "id": "3ca6f4cb-d6cf-4d60-8814-ee7d1c74987c",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "d2c92db0-9501-4587-bb94-04b73e852237",
+    "quantity": 3,
+    "unit_price": "9.884196185286104",
+    "total_value": "29.652588555858312",
+    "consumed_at": "2026-01-21T00:16:05.706Z",
+    "created_at": "2026-01-21T00:16:05.706Z"
+  },
+  {
+    "id": "3da31676-9436-4edf-bd90-9fffebcf7e3e",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "001d8ff8-fe0b-4631-8382-b2404f95da6b",
+    "quantity": 2,
+    "unit_price": "8.194552529182879",
+    "total_value": "16.389105058365758",
+    "consumed_at": "2026-01-21T12:57:53.293Z",
+    "created_at": "2026-01-21T12:57:53.293Z"
+  },
+  {
+    "id": "540721e7-367b-4552-878e-5ee831357e20",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "39710b4e-3e5a-4d5f-bc7c-93bc7a7baab0",
+    "quantity": 6,
+    "unit_price": "8.194552529182879",
+    "total_value": "49.167315175097274",
+    "consumed_at": "2026-01-21T13:23:23.547Z",
+    "created_at": "2026-01-21T13:23:23.547Z"
+  },
+  {
+    "id": "627e77a9-4bf8-4a76-bc57-a61745e8f1a6",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "20c2d83b-10f2-4304-a32d-470b27cccf4d",
+    "quantity": 5,
+    "unit_price": "8.194552529182879",
+    "total_value": "40.972762645914395",
+    "consumed_at": "2026-01-21T13:27:10.140Z",
+    "created_at": "2026-01-21T13:27:10.140Z"
+  },
+  {
+    "id": "1c587aea-d2e1-4d88-a432-556766bd8c5a",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "cc9aa92f-f5aa-49b7-9d1f-717ad7753f05",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-21T13:43:10.282Z",
+    "created_at": "2026-01-21T13:43:10.282Z"
+  },
+  {
+    "id": "e6c6e921-1c08-4f85-a79e-0bb3900c99a8",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "553d224b-32fd-4254-819d-f18afcfa43be",
+    "quantity": 14,
+    "unit_price": "8.194552529182879",
+    "total_value": "114.723735408560306",
+    "consumed_at": "2026-01-21T13:46:08.257Z",
+    "created_at": "2026-01-21T13:46:08.257Z"
+  },
+  {
+    "id": "98b5bd30-f431-4c5f-8673-79f6a191d80b",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "c7846f17-6de4-4334-b116-f7dc9f425c69",
+    "quantity": 8,
+    "unit_price": "9.884196185286104",
+    "total_value": "79.073569482288832",
+    "consumed_at": "2026-01-21T14:46:54.917Z",
+    "created_at": "2026-01-21T14:46:54.917Z"
+  },
+  {
+    "id": "f19f1408-7d5f-4fef-b7e7-c5ea95906a8a",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "c81b59d2-892d-4842-b816-11115d4e94b3",
+    "quantity": 3,
+    "unit_price": "8.194552529182879",
+    "total_value": "24.583657587548637",
+    "consumed_at": "2026-01-21T15:19:50.564Z",
+    "created_at": "2026-01-21T15:19:50.564Z"
+  },
+  {
+    "id": "e9d21588-7b8d-4faa-b316-a0662c148df4",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "eeef4003-100d-40de-bd51-990c948024dc",
+    "quantity": 3,
+    "unit_price": "8.194552529182879",
+    "total_value": "24.583657587548637",
+    "consumed_at": "2026-01-21T16:26:45.187Z",
+    "created_at": "2026-01-21T16:26:45.187Z"
+  },
+  {
+    "id": "c5946c8c-3202-4803-b6ae-bb65c13e3520",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "011de7a9-9d25-4ad4-8cf8-2f1a49fe23ab",
+    "quantity": 4,
+    "unit_price": "8.194552529182879",
+    "total_value": "32.778210116731516",
+    "consumed_at": "2026-01-21T16:47:11.882Z",
+    "created_at": "2026-01-21T16:47:11.882Z"
+  },
+  {
+    "id": "784ddac9-da30-477c-9937-953a66d41ed4",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "9c97d98f-310b-4324-8650-74166d48a7b9",
+    "quantity": 5,
+    "unit_price": "7.032967032967033",
+    "total_value": "35.164835164835165",
+    "consumed_at": "2026-01-21T16:47:48.049Z",
+    "created_at": "2026-01-21T16:47:48.049Z"
+  },
+  {
+    "id": "bf1fa208-54c3-4932-a9ae-f15e12de230a",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "d323289e-db4b-4408-b187-de0b03692730",
+    "quantity": 4,
+    "unit_price": "9.884196185286104",
+    "total_value": "39.536784741144416",
+    "consumed_at": "2026-01-21T16:59:16.437Z",
+    "created_at": "2026-01-21T16:59:16.437Z"
+  },
+  {
+    "id": "81f91f6d-c611-4554-b55a-9df1fdd0a513",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "6f2f521a-7b02-4cc8-bb76-dfe68bef0ee2",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-21T17:11:18.292Z",
+    "created_at": "2026-01-21T17:11:18.292Z"
+  },
+  {
+    "id": "2a4f0b7a-539e-4b34-a4bc-217ffdcbe4b2",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "cd32a904-ec40-4b54-9177-d0319b109bf8",
+    "quantity": 1,
+    "unit_price": "8.194552529182879",
+    "total_value": "8.194552529182879",
+    "consumed_at": "2026-01-21T17:14:25.532Z",
+    "created_at": "2026-01-21T17:14:25.532Z"
+  },
+  {
+    "id": "7ac768a2-beba-4e13-9563-5aba650cafb8",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "08224b19-1459-4d6f-95fe-2fda5a23c37a",
+    "quantity": 4,
+    "unit_price": "8.194552529182879",
+    "total_value": "32.778210116731516",
+    "consumed_at": "2026-01-21T18:40:56.803Z",
+    "created_at": "2026-01-21T18:40:56.803Z"
+  },
+  {
+    "id": "de825341-2f3e-4d63-b7ca-6cf913c2aa40",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "80af7560-6e6f-450a-9702-1093e054bfff",
+    "quantity": 3,
+    "unit_price": "8.194552529182879",
+    "total_value": "24.583657587548637",
+    "consumed_at": "2026-01-21T19:08:31.614Z",
+    "created_at": "2026-01-21T19:08:31.614Z"
+  },
+  {
+    "id": "8fdafe16-422d-4c85-bd33-06d6efdf0e16",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "0b4b8a46-9d8d-4bf5-bd0f-72b27d524ce0",
+    "quantity": 5,
+    "unit_price": "8.194552529182879",
+    "total_value": "40.972762645914395",
+    "consumed_at": "2026-01-21T19:12:51.221Z",
+    "created_at": "2026-01-21T19:12:51.221Z"
+  },
+  {
+    "id": "3313e2ff-f787-4c7c-a7ad-c09408d3da1f",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "1408d721-c7e5-409a-8b70-a8cceafbd0d9",
+    "quantity": 3,
+    "unit_price": "8.194552529182879",
+    "total_value": "24.583657587548637",
+    "consumed_at": "2026-01-21T19:20:43.715Z",
+    "created_at": "2026-01-21T19:20:43.715Z"
+  },
+  {
+    "id": "fcb66c72-f91e-4ee5-b506-7fd92c7d78b5",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "f0f78026-e6ec-4acd-8da0-253cf0da85f2",
+    "quantity": 8,
+    "unit_price": "8.194552529182879",
+    "total_value": "65.556420233463032",
+    "consumed_at": "2026-01-21T19:39:28.986Z",
+    "created_at": "2026-01-21T19:39:28.986Z"
+  },
+  {
+    "id": "f6984c56-920b-4e83-90bf-9fba0bed4dbd",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "79090cae-694d-4885-9e8a-45c6d64352dc",
+    "quantity": 8,
+    "unit_price": "8.194552529182879",
+    "total_value": "65.556420233463032",
+    "consumed_at": "2026-01-21T20:10:26.066Z",
+    "created_at": "2026-01-21T20:10:26.066Z"
+  },
+  {
+    "id": "c212fe26-d039-4329-8c09-b625c0e12d71",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "85fae96d-6050-485d-aa3d-3800976fff23",
+    "quantity": 2,
+    "unit_price": "8.194552529182879",
+    "total_value": "16.389105058365758",
+    "consumed_at": "2026-01-21T20:30:44.956Z",
+    "created_at": "2026-01-21T20:30:44.956Z"
+  },
+  {
+    "id": "71972e8c-d071-436f-8b79-327c646a8fa0",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "a391c208-cc6b-441f-ad87-fdb30801cca9",
+    "quantity": 5,
+    "unit_price": "8.194552529182879",
+    "total_value": "40.972762645914395",
+    "consumed_at": "2026-01-21T20:49:08.528Z",
+    "created_at": "2026-01-21T20:49:08.528Z"
+  },
+  {
+    "id": "992e6068-4c70-4630-a2cf-f5d0074ec9e8",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "00010e88-1872-4614-88b3-a5b18b534186",
+    "quantity": 13,
+    "unit_price": "8.194552529182879",
+    "total_value": "106.529182879377427",
+    "consumed_at": "2026-01-21T20:50:20.890Z",
+    "created_at": "2026-01-21T20:50:20.890Z"
+  },
+  {
+    "id": "a02c04fe-d118-4a2e-9fde-480e6c4977f9",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "c204f345-0ba0-4e3a-bb70-2e64e58ac0ea",
+    "quantity": 2,
+    "unit_price": "8.194552529182879",
+    "total_value": "16.389105058365758",
+    "consumed_at": "2026-01-21T20:54:34.906Z",
+    "created_at": "2026-01-21T20:54:34.906Z"
+  },
+  {
+    "id": "c613959b-04f0-4004-9e75-6c7b981e5e43",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "d983b892-1f03-4a59-b48d-14d46fab2574",
+    "quantity": 20,
+    "unit_price": "9.884196185286104",
+    "total_value": "197.683923705722080",
+    "consumed_at": "2026-01-21T21:02:17.239Z",
+    "created_at": "2026-01-21T21:02:17.239Z"
+  },
+  {
+    "id": "c26a2222-d299-4d7b-b29e-bcad7d037ad1",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "f2f772bc-0b3a-4c7c-903c-5cc110d1f0bc",
+    "quantity": 5,
+    "unit_price": "8.194552529182879",
+    "total_value": "40.972762645914395",
+    "consumed_at": "2026-01-21T21:36:06.074Z",
+    "created_at": "2026-01-21T21:36:06.074Z"
+  },
+  {
+    "id": "af4d7f62-86c9-457d-a374-d7da2665c607",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "aabf308d-2417-496d-bc55-11baeb083832",
+    "quantity": 5,
+    "unit_price": "7.032967032967033",
+    "total_value": "35.164835164835165",
+    "consumed_at": "2026-01-21T21:47:25.066Z",
+    "created_at": "2026-01-21T21:47:25.066Z"
+  },
+  {
+    "id": "db55eace-fa21-42a7-8b2f-7f316bbc5b75",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "e18e67f4-0570-4b94-9dd0-ba2ea9221808",
+    "quantity": 1,
+    "unit_price": "9.884196185286104",
+    "total_value": "9.884196185286104",
+    "consumed_at": "2026-01-21T22:02:50.011Z",
+    "created_at": "2026-01-21T22:02:50.011Z"
+  },
+  {
+    "id": "299b1f26-ccf7-4988-999d-45f9b37814b5",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "250fc2c7-4d6d-4db6-af58-4727534bb19c",
+    "quantity": 4,
+    "unit_price": "8.194552529182879",
+    "total_value": "32.778210116731516",
+    "consumed_at": "2026-01-21T22:31:34.276Z",
+    "created_at": "2026-01-21T22:31:34.276Z"
+  },
+  {
+    "id": "21317cd7-cfec-445b-9b01-d4ed79656461",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "f3f103e7-0563-4219-8b8c-dbd6d53ced71",
+    "quantity": 3,
+    "unit_price": "8.280112044817928",
+    "total_value": "24.840336134453784",
+    "consumed_at": "2026-01-22T01:36:10.019Z",
+    "created_at": "2026-01-22T01:36:10.019Z"
+  },
+  {
+    "id": "0ecf533f-2b62-4b2c-97be-417c5fe19eb1",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "7af0abb1-58d3-4674-96c7-6eecb90e53cf",
+    "quantity": 5,
+    "unit_price": "9.884196185286104",
+    "total_value": "49.420980926430520",
+    "consumed_at": "2026-01-22T01:36:43.809Z",
+    "created_at": "2026-01-22T01:36:43.809Z"
+  },
+  {
+    "id": "25bbdd4c-08b1-4347-9a28-c84e11a5ad17",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "ef9b15da-11bb-47e3-b0ca-8b0da329e6ef",
+    "quantity": 4,
+    "unit_price": "8.280112044817928",
+    "total_value": "33.120448179271712",
+    "consumed_at": "2026-01-22T01:37:17.798Z",
+    "created_at": "2026-01-22T01:37:17.798Z"
+  },
+  {
+    "id": "4ce24d07-d1ca-4452-8447-6eda2886dc0c",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "05d02923-2451-43b6-a5c1-e320fcde9b8a",
+    "quantity": 15,
+    "unit_price": "8.280112044817928",
+    "total_value": "124.201680672268920",
+    "consumed_at": "2026-01-22T01:38:12.692Z",
+    "created_at": "2026-01-22T01:38:12.692Z"
+  },
+  {
+    "id": "0f8d0e8a-75f7-4b5e-8c17-f23347d69dfd",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "e54fc197-6f44-4c05-a464-9112023a6593",
+    "quantity": 2,
+    "unit_price": "9.884196185286104",
+    "total_value": "19.768392370572208",
+    "consumed_at": "2026-01-22T01:38:49.033Z",
+    "created_at": "2026-01-22T01:38:49.033Z"
+  },
+  {
+    "id": "57509385-9522-40d9-bbed-e7d38a01847a",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "63c9a032-15d3-4b8f-a94d-a6646247045d",
+    "quantity": 4,
+    "unit_price": "8.280112044817928",
+    "total_value": "33.120448179271712",
+    "consumed_at": "2026-01-22T19:25:38.734Z",
+    "created_at": "2026-01-22T19:25:38.734Z"
+  },
+  {
+    "id": "ecf3fd40-b61f-4068-b7b4-67fc64c52ca3",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "53e6b422-0170-4157-a95a-8fda73933c91",
+    "quantity": 2,
+    "unit_price": "9.884196185286104",
+    "total_value": "19.768392370572208",
+    "consumed_at": "2026-01-22T19:25:56.441Z",
+    "created_at": "2026-01-22T19:25:56.441Z"
+  },
+  {
+    "id": "d8b1a09c-a832-4791-9ca8-5e7b941bcfe1",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "e74b04da-f1d1-4f42-8c5c-0283f5a688b1",
+    "quantity": 7,
+    "unit_price": "8.280112044817928",
+    "total_value": "57.960784313725496",
+    "consumed_at": "2026-01-22T19:28:58.299Z",
+    "created_at": "2026-01-22T19:28:58.299Z"
+  },
+  {
+    "id": "91ed5258-522e-4905-958f-858beaf23c55",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "82c1b924-2ac1-42ad-88ab-cf3e82e556c1",
+    "quantity": 11,
+    "unit_price": "8.280112044817928",
+    "total_value": "91.081232492997208",
+    "consumed_at": "2026-01-22T19:29:28.255Z",
+    "created_at": "2026-01-22T19:29:28.255Z"
+  },
+  {
+    "id": "974eb675-9ea4-4492-9ea0-8dd80fa17d5f",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "7b0db466-7487-4a24-a25b-8b6e8dc5c85c",
+    "quantity": 9,
+    "unit_price": "7.032967032967033",
+    "total_value": "63.296703296703297",
+    "consumed_at": "2026-01-22T19:32:44.324Z",
+    "created_at": "2026-01-22T19:32:44.324Z"
+  },
+  {
+    "id": "44de3fc7-c76f-43fe-822d-8ce266b395dd",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "78805858-1967-4eb5-859d-1ddd78e5b055",
+    "quantity": 2,
+    "unit_price": "8.280112044817928",
+    "total_value": "16.560224089635856",
+    "consumed_at": "2026-01-22T19:34:07.146Z",
+    "created_at": "2026-01-22T19:34:07.146Z"
+  },
+  {
+    "id": "e4ff6940-0504-489e-97bb-f1d3a1c2a763",
+    "package_id": "b2748ca6-8b3f-4186-8fe7-c04a94675103",
+    "sale_id": "b0b5edc0-2c7d-4773-a3fa-22ac96bdcc9f",
+    "quantity": 1,
+    "unit_price": "10",
+    "total_value": "10",
+    "consumed_at": "2026-01-22T19:34:39.810Z",
+    "created_at": "2026-01-22T19:34:39.810Z"
+  },
+  {
+    "id": "40c2e84a-07ee-4bfc-972a-70b78ed6320a",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "157b3dc3-3e4a-48d5-9648-4d5a82541f41",
+    "quantity": 1,
+    "unit_price": "9.884196185286104",
+    "total_value": "9.884196185286104",
+    "consumed_at": "2026-01-22T20:05:20.842Z",
+    "created_at": "2026-01-22T20:05:20.842Z"
+  },
+  {
+    "id": "ddfa82e3-ac4f-401b-b0fd-f9fee39b800d",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "8c48d61c-9c3e-4264-b8e0-92fa5b118f11",
+    "quantity": 8,
+    "unit_price": "8.280112044817928",
+    "total_value": "66.240896358543424",
+    "consumed_at": "2026-01-22T20:11:44.115Z",
+    "created_at": "2026-01-22T20:11:44.115Z"
+  },
+  {
+    "id": "c42946c3-a294-4c3f-840b-797644ed852a",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "4b0df0f1-23dc-4358-86b4-8f9123104c07",
+    "quantity": 4,
+    "unit_price": "9.884196185286104",
+    "total_value": "39.536784741144416",
+    "consumed_at": "2026-01-22T21:29:23.840Z",
+    "created_at": "2026-01-22T21:29:23.840Z"
+  },
+  {
+    "id": "6e6fbc6d-7912-40bf-977c-80c00d1f0313",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "d9fde3aa-1cfa-4473-ba21-a18acbc634e1",
+    "quantity": 6,
+    "unit_price": "8.280112044817928",
+    "total_value": "49.680672268907568",
+    "consumed_at": "2026-01-22T21:29:54.161Z",
+    "created_at": "2026-01-22T21:29:54.161Z"
+  },
+  {
+    "id": "4622031c-0a46-41be-9d86-8ad98c2c98d5",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "ee787a90-4c82-4cc5-a5fe-6f110fb9d86b",
+    "quantity": 15,
+    "unit_price": "8.280112044817928",
+    "total_value": "124.201680672268920",
+    "consumed_at": "2026-01-22T21:34:18.541Z",
+    "created_at": "2026-01-22T21:34:18.541Z"
+  },
+  {
+    "id": "681155e9-ad87-4e68-9e51-ffb1fdcab632",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "1869011d-31a9-42db-8a39-980bec9a8a82",
+    "quantity": 6,
+    "unit_price": "8.280112044817928",
+    "total_value": "49.680672268907568",
+    "consumed_at": "2026-01-22T21:38:42.214Z",
+    "created_at": "2026-01-22T21:38:42.214Z"
+  },
+  {
+    "id": "3d38dede-2134-42ec-bdbf-ffd2a7685f39",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "c22d1ecf-c11a-4ecb-8e95-173623fe7f9c",
+    "quantity": 1,
+    "unit_price": "8.280112044817928",
+    "total_value": "8.280112044817928",
+    "consumed_at": "2026-01-22T21:39:03.225Z",
+    "created_at": "2026-01-22T21:39:03.225Z"
+  },
+  {
+    "id": "5d8f9b30-1432-47b1-8bb5-56a8692cafd1",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "3ada2072-c02a-4513-be32-acdd9284725b",
+    "quantity": 15,
+    "unit_price": "8.280112044817928",
+    "total_value": "124.201680672268920",
+    "consumed_at": "2026-01-22T21:39:34.867Z",
+    "created_at": "2026-01-22T21:39:34.867Z"
+  },
+  {
+    "id": "a6b593ee-255a-48b3-98a7-1c4b5eb51347",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "c9cda64d-fc33-4a0b-964f-2a1583640ed5",
+    "quantity": 2,
+    "unit_price": "8.280112044817928",
+    "total_value": "16.560224089635856",
+    "consumed_at": "2026-01-22T21:40:09.146Z",
+    "created_at": "2026-01-22T21:40:09.146Z"
+  },
+  {
+    "id": "97cbd982-3da6-4ec2-8564-0dcdd3598827",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "6e21ccdd-2f6d-4b1f-bb3b-dcb7761f19bc",
+    "quantity": 15,
+    "unit_price": "8.280112044817928",
+    "total_value": "124.201680672268920",
+    "consumed_at": "2026-01-22T21:40:38.172Z",
+    "created_at": "2026-01-22T21:40:38.172Z"
+  },
+  {
+    "id": "25ea81e4-f011-4b36-8f72-b2cbce113bc4",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "c6e8aac9-a7c6-40ce-80c7-2d298a60284c",
+    "quantity": 11,
+    "unit_price": "8.280112044817928",
+    "total_value": "91.081232492997208",
+    "consumed_at": "2026-01-23T12:35:15.917Z",
+    "created_at": "2026-01-23T12:35:15.917Z"
+  },
+  {
+    "id": "4485c922-a313-4575-9f1f-ba3aaf20c163",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "7ffe0ccb-2369-4811-9ca5-6d1180ec4701",
+    "quantity": 6,
+    "unit_price": "9.884196185286104",
+    "total_value": "59.305177111716624",
+    "consumed_at": "2026-01-23T13:47:31.654Z",
+    "created_at": "2026-01-23T13:47:31.654Z"
+  },
+  {
+    "id": "07b912c9-f0cb-4ed9-8235-c0612afc4b4b",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "1581f331-866d-4a00-8ead-cc6c1e9bcdfd",
+    "quantity": 7,
+    "unit_price": "7.032967032967033",
+    "total_value": "49.230769230769231",
+    "consumed_at": "2026-01-23T13:50:53.706Z",
+    "created_at": "2026-01-23T13:50:53.706Z"
+  },
+  {
+    "id": "33dfa493-bc76-407e-b010-b426029dff06",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "719ee4e5-9adb-4bc5-8e20-1813142ae833",
+    "quantity": 3,
+    "unit_price": "9.884196185286104",
+    "total_value": "29.652588555858312",
+    "consumed_at": "2026-01-23T13:51:26.348Z",
+    "created_at": "2026-01-23T13:51:26.348Z"
+  },
+  {
+    "id": "dccb4aad-b7d0-4563-9557-9e9b92699395",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "2313d1c6-f4f1-4919-b8eb-e08f06758822",
+    "quantity": 7,
+    "unit_price": "8.280112044817928",
+    "total_value": "57.960784313725496",
+    "consumed_at": "2026-01-23T13:51:52.835Z",
+    "created_at": "2026-01-23T13:51:52.835Z"
+  },
+  {
+    "id": "bb6c46f3-5a53-4f1d-8a9c-631d4150bfa3",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "aab7fc84-7efe-450b-b7ca-0288a942609d",
+    "quantity": 10,
+    "unit_price": "8.280112044817928",
+    "total_value": "82.801120448179280",
+    "consumed_at": "2026-01-23T14:00:33.693Z",
+    "created_at": "2026-01-23T14:00:33.693Z"
+  },
+  {
+    "id": "e7111a72-5e0b-46b5-8d2a-3437646c3e4a",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "151eb4be-d2ce-4179-9dcb-6d9c449c9b71",
+    "quantity": 3,
+    "unit_price": "8.280112044817928",
+    "total_value": "24.840336134453784",
+    "consumed_at": "2026-01-23T14:08:33.866Z",
+    "created_at": "2026-01-23T14:08:33.866Z"
+  },
+  {
+    "id": "e9455bda-84f4-4fee-8f5a-c6eb139b51db",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "fe5dcf30-57cf-4f7b-905d-adf098569816",
+    "quantity": 1,
+    "unit_price": "9.884196185286104",
+    "total_value": "9.884196185286104",
+    "consumed_at": "2026-01-23T14:28:22.502Z",
+    "created_at": "2026-01-23T14:28:22.502Z"
+  },
+  {
+    "id": "0d22c8ff-217f-47cf-b747-b9921631a644",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "31ba1c34-8665-46a5-8256-cb7a7e08e777",
+    "quantity": 2,
+    "unit_price": "9.884196185286104",
+    "total_value": "19.768392370572208",
+    "consumed_at": "2026-01-23T14:42:40.828Z",
+    "created_at": "2026-01-23T14:42:40.828Z"
+  },
+  {
+    "id": "4a570c68-c8cd-4cbd-8a2f-7eedb4506bd1",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "67f0fa73-74d5-4867-b11d-3b19dd5edf1a",
+    "quantity": 5,
+    "unit_price": "8.280112044817928",
+    "total_value": "41.400560224089640",
+    "consumed_at": "2026-01-23T14:44:58.324Z",
+    "created_at": "2026-01-23T14:44:58.324Z"
+  },
+  {
+    "id": "197a947a-2204-4373-aad3-b13b99873844",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "dabe2d4e-3864-46f5-b8f0-89f862a34aa4",
+    "quantity": 3,
+    "unit_price": "8.280112044817928",
+    "total_value": "24.840336134453784",
+    "consumed_at": "2026-01-23T14:57:32.493Z",
+    "created_at": "2026-01-23T14:57:32.493Z"
+  },
+  {
+    "id": "90bcdeea-c4d0-4949-b012-f3f3114bb322",
+    "package_id": "749c28d7-b749-4ef7-be8e-17cbdbab152a",
+    "sale_id": "d9374c69-48e3-4900-8b91-93d82e01f6b2",
+    "quantity": 8,
+    "unit_price": "0",
+    "total_value": "0",
+    "consumed_at": "2026-01-23T15:15:47.360Z",
+    "created_at": "2026-01-23T15:15:47.360Z"
+  },
+  {
+    "id": "6c990f9b-92a0-4f38-8a8b-8701c6a63e12",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "cdc70530-9b2e-44d2-9b47-06fb8ae42859",
+    "quantity": 5,
+    "unit_price": "9.884196185286104",
+    "total_value": "49.420980926430520",
+    "consumed_at": "2026-01-23T15:16:32.299Z",
+    "created_at": "2026-01-23T15:16:32.299Z"
+  },
+  {
+    "id": "d0f7db0e-9edc-4bbf-b811-c91e6e8246ec",
+    "package_id": "dbc7a49c-cd31-4be2-a818-3e35966feae8",
+    "sale_id": "382fa044-168e-4099-8080-bf89c2915d7b",
+    "quantity": 8,
+    "unit_price": "7.032967032967033",
+    "total_value": "56.263736263736264",
+    "consumed_at": "2026-01-23T15:29:42.715Z",
+    "created_at": "2026-01-23T15:29:42.715Z"
+  },
+  {
+    "id": "eb99aa0a-c0b4-4811-8fbd-c257f589dc01",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "caf9a962-7dfb-4cc4-adfa-3c9658917f00",
+    "quantity": 2,
+    "unit_price": "8.280112044817928",
+    "total_value": "16.560224089635856",
+    "consumed_at": "2026-01-23T15:42:29.208Z",
+    "created_at": "2026-01-23T15:42:29.208Z"
+  },
+  {
+    "id": "e248ffac-c188-48ee-9cae-93b1c948c2b7",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "ba7f9746-c6f2-4900-b35a-8991bf540aa6",
+    "quantity": 3,
+    "unit_price": "8.280112044817928",
+    "total_value": "24.840336134453784",
+    "consumed_at": "2026-01-23T16:08:41.588Z",
+    "created_at": "2026-01-23T16:08:41.588Z"
+  },
+  {
+    "id": "50d6b9ce-1dac-4de3-ad5a-c12f44d1e3aa",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "5a0e264a-2424-4795-b1de-b01c39c72075",
+    "quantity": 1,
+    "unit_price": "9.884196185286104",
+    "total_value": "9.884196185286104",
+    "consumed_at": "2026-01-23T17:31:57.079Z",
+    "created_at": "2026-01-23T17:31:57.079Z"
+  },
+  {
+    "id": "b86d7a1b-c9e7-4aec-9ed0-099e68bf7d0c",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "a1408cfd-1c92-4552-b8b3-a9663c1b7c1a",
+    "quantity": 5,
+    "unit_price": "9.884196185286104",
+    "total_value": "49.420980926430520",
+    "consumed_at": "2026-01-23T17:32:21.014Z",
+    "created_at": "2026-01-23T17:32:21.014Z"
+  },
+  {
+    "id": "2d925df0-f6c7-4850-8abc-88707ea2abc0",
+    "package_id": "1ae80bb6-3cea-47e3-a5d7-5254ae87c390",
+    "sale_id": "ed9cc087-0ab6-4855-8a04-f9b7ae8b56d6",
+    "quantity": 4,
+    "unit_price": "9.884196185286104",
+    "total_value": "39.536784741144416",
+    "consumed_at": "2026-01-23T17:35:17.732Z",
+    "created_at": "2026-01-23T17:35:17.732Z"
+  },
+  {
+    "id": "9cad1d16-1a0a-4d57-8a55-98fe786c9806",
+    "package_id": "34a09211-0d10-4dcb-9c07-c68d6ec965c1",
+    "sale_id": "7abbe9f1-8400-4e88-bfb7-9d9526567cae",
+    "quantity": 4,
+    "unit_price": "8.280112044817928",
+    "total_value": "33.120448179271712",
+    "consumed_at": "2026-01-23T18:23:59.110Z",
+    "created_at": "2026-01-23T18:23:59.110Z"
+  }
+]
