@@ -63,26 +63,28 @@ export async function GET(request: NextRequest) {
     const hasEnd = !!(endDate && dateRegex.test(endDate));
 
     // Buscar todas as compras
+    // Buscar todas as compras (Tipo 02 - Venda de Pacote/Recarga)
+    // Alterado para buscar da tabela SALES para incluir recargas (que não criam novos pacotes, apenas atualizam)
     const purchasesResult = await query(
       `
         SELECT
-          cp.id,
-          cp.client_id,
+          s.id, -- Usamos ID da venda, ja que nao estamos mais limitados ao pacote
+          s.client_id,
           c.name AS client_name,
-          cp.sale_id,
+          s.id AS sale_id,
           s.attendant_id,
           u.first_name || ' ' || u.last_name AS attendant_name,
-          COALESCE(s.sale_date, cp.created_at) AS op_date,
-          cp.total_paid AS value,
-          cp.initial_quantity AS quantity,
-          cp.unit_price AS unit_price,
-          serv.name AS service_name
-        FROM client_packages cp
-        JOIN clients c ON cp.client_id = c.id
-        JOIN sales s ON cp.sale_id = s.id
+          s.sale_date AS op_date,
+          s.total AS value,
+          si.quantity AS quantity,
+          si.unit_price AS unit_price,
+          si.product_name AS service_name
+        FROM sales s
+        JOIN sale_items si ON si.sale_id = s.id
+        JOIN clients c ON s.client_id = c.id
         JOIN users u ON s.attendant_id = u.id
-        LEFT JOIN services serv ON cp.service_id = serv.id
         WHERE s.status != 'cancelada'
+        AND si.sale_type = '02'
       `,
       []
     );
