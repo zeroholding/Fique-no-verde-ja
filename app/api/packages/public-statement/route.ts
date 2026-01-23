@@ -67,6 +67,7 @@ export async function GET(request: NextRequest) {
         JOIN users u ON s.attendant_id = u.id
         LEFT JOIN services serv ON cp.service_id = serv.id
         WHERE cp.client_id = $1
+        AND s.status != 'cancelada'
       `,
       [clientId]
     );
@@ -94,6 +95,7 @@ export async function GET(request: NextRequest) {
         JOIN users u ON s.attendant_id = u.id
         LEFT JOIN services serv ON cp.service_id = serv.id
         WHERE cp.client_id = $1
+        AND s.status != 'cancelada'
       `,
       [clientId]
     );
