@@ -77,8 +77,14 @@ export async function GET(request: NextRequest) {
 
     // Construir query dinâmica
     // MODIFICADO: Calcula consumed_quantity dinamicamente (ignorando vendas canceladas)
-    // E TAMBÉM ignorando consumos sem Vendedor ou Cliente Final (para bater com o Dashboard)
+    // E TAMBÉM ignorando consumos sem Vendedor ou Cliente Final VÁLIDOS (JOIN behavior)
     // Isso resolve a divergência onde o Dashboard mostra saldo maior (510) que o Banco (-490).
+    const consumptionFilter = `
+        AND s2.status != 'cancelada'
+        AND EXISTS (SELECT 1 FROM users u WHERE u.id = s2.attendant_id) -- Mimic INNER JOIN users
+        AND EXISTS (SELECT 1 FROM clients ec WHERE ec.id = s2.client_id) -- Mimic INNER JOIN clients
+    `;
+
     let sql = `
       SELECT
         cp.id,
@@ -94,9 +100,7 @@ export async function GET(request: NextRequest) {
            FROM package_consumptions pc 
            JOIN sales s2 ON pc.sale_id = s2.id 
            WHERE pc.package_id = cp.id 
-           AND s2.status != 'cancelada'
-           AND s2.attendant_id IS NOT NULL -- Filtro do Dash
-           AND s2.client_id IS NOT NULL    -- Filtro do Dash
+           ${consumptionFilter}
           ), 0
         ) as consumed_quantity,
 
@@ -106,9 +110,7 @@ export async function GET(request: NextRequest) {
            FROM package_consumptions pc 
            JOIN sales s2 ON pc.sale_id = s2.id 
            WHERE pc.package_id = cp.id 
-           AND s2.status != 'cancelada'
-           AND s2.attendant_id IS NOT NULL -- Filtro do Dash
-           AND s2.client_id IS NOT NULL    -- Filtro do Dash
+           ${consumptionFilter}
           ), 0
         )) as available_quantity,
 
