@@ -163,7 +163,7 @@ export default function SalesPage() {
   const [attendants, setAttendants] = useState<AttendantOption[]>([]);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null); // [NEW] Guarda ID do admin
-  const [sortField, setSortField] = useState<"date" | "client" | "total">("date");
+  const [sortField, setSortField] = useState<"date" | "client" | "total" | "created">("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [saleTypeFilter, setSaleTypeFilter] = useState<"" | "common" | "package" | "purchase">("");
   const [searchTerm, setSearchTerm] = useState(""); // [NEW] Search State
@@ -259,6 +259,10 @@ export default function SalesPage() {
           return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * (sortDirection === "asc" ? 1 : -1);
         }
         return dateDiff * (sortDirection === "asc" ? 1 : -1);
+      }
+      if (sortField === "created") {
+        const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        return diff * (sortDirection === "asc" ? 1 : -1);
       }
       if (sortField === "client") {
         return a.clientName.localeCompare(b.clientName) * (sortDirection === "asc" ? 1 : -1);
@@ -1308,6 +1312,17 @@ export default function SalesPage() {
                 }`}
               >
                 Data {sortField === "date" ? `(${sortDirection.toUpperCase()})` : ""}
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleSort("created")}
+                className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
+                  sortField === "created"
+                    ? "border-blue-400/60 bg-blue-500/20 text-blue-100"
+                    : "border-white/20 bg-white/5 text-white hover:bg-white/10"
+                }`}
+              >
+                Últimos Criados {sortField === "created" ? `(${sortDirection === "asc" ? "ANTIGOS" : "NOVOS"})` : ""}
               </button>
               <button
                 type="button"
