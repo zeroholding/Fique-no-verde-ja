@@ -8,18 +8,29 @@ const client = new Client({
 async function run() {
   await client.connect();
   try {
-    // 1. Get Client ID for J3
-    // Assuming name is exactly "J3" or similar
-    const clientRes = await client.query(`SELECT id, name FROM clients WHERE name ILIKE 'J3%'`);
+    // 1. Get Client ID
+    const clientRes = await client.query(`SELECT id FROM clients WHERE name ILIKE '%FLEXBOYS%'`);
     if (clientRes.rows.length === 0) {
-        console.log("Cliente J3 não encontrado.");
+        console.log("Cliente FLEXBOYS não encontrado.");
         return;
     }
     const clientId = clientRes.rows[0].id;
-    const clientName = clientRes.rows[0].name;
-    console.log(`Cliente: ${clientName} (ID: ${clientId})`);
+    console.log(`Cliente: FLEXBOYS (ID: ${clientId})`);
 
-    // 2. Run Dashboard Logic Query
+    // 2. Run Dashboard Logic Query (The one from statement/route.ts)
+    // Logic: 
+    //   Row 1 (Base): Initial - InvisibleSums
+    //   Row 2..N (Reloads): Invisible Items
+    //   Row N+1.. (Consumptions): Negative Values
+    // Sum of all 'value' (Wait, balanceQuantityCurrent sums 'quantity')
+    
+    // Simplified Calculation logic used in statement route summary:
+    // Balance = (Initial - Invis) + Invis - Consumed = Initial - Consumed.
+    // NOTE: This assumes Initial INCLUDES reloads. 
+    // Let's verify if Initial includes reloads. 
+    // Or just run the sum of operations as the dashboard does.
+
+    // A. Operations (Purchases)
     const purchasesRes = await client.query(`
         WITH invisible_reloads_sum AS (
             SELECT 
@@ -69,11 +80,11 @@ async function run() {
     `, [clientId]);
     
     let totalConsumed = 0;
-    consumptionsRes.rows.forEach(r => totalConsumed += Number(r.quantity));
+    consumptionsRes.rows.forEach(r => totalConsumed += Number(r.quantity)); // Negative values
 
-    const finalBalance = totalAcquired + totalConsumed;
+    const finalBalance = totalAcquired + totalConsumed; // (+Acquired) + (-Consumed)
 
-    console.log(`\n--- SALDO CALCULADO (DASHBOARD J3) ---`);
+    console.log(`\n--- SALDO CALCULADO (DASHBOARD) ---`);
     console.log(finalBalance);
 
   } catch (e) {
