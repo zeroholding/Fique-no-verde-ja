@@ -76,7 +76,20 @@ export async function GET(request: NextRequest) {
     const serviceId = searchParams.get("serviceId");
 
     // Construir query dinâmica
+    // MODIFICADO: Inclui soma das recargas invisíveis (Type 02 avulsas) no available_quantity
+    // A lógica é: available_quantity (Tabela) + Invisíveis (Não somadas na tabela)
     let sql = `
+      WITH invisible_reloads_sum AS (
+        SELECT 
+            s.client_id, 
+            SUM(si.quantity) as total_qty
+        FROM sales s
+        JOIN sale_items si ON s.id = si.sale_id
+        WHERE si.sale_type = '02' 
+        AND s.status != 'cancelada'
+        AND s.id NOT IN (SELECT sale_id FROM client_packages WHERE sale_id IS NOT NULL)
+        GROUP BY s.client_id
+      )
       SELECT
         cp.id,
         cp.client_id,
@@ -85,7 +98,8 @@ export async function GET(request: NextRequest) {
         s.name as service_name,
         cp.initial_quantity,
         cp.consumed_quantity,
-        cp.available_quantity,
+        -- LOGIC CHANGE: Add invisible reloads to the available quantity displayed
+        (cp.available_quantity + COALESCE(irs.total_qty, 0)) as available_quantity,
         cp.unit_price,
         cp.total_paid,
         cp.expires_at,
@@ -97,6 +111,7 @@ export async function GET(request: NextRequest) {
       FROM client_packages cp
       JOIN clients c ON cp.client_id = c.id
       JOIN services s ON cp.service_id = s.id
+      LEFT JOIN invisible_reloads_sum irs ON cp.client_id = irs.client_id
       WHERE cp.is_active = true
         AND (cp.expires_at IS NULL OR cp.expires_at >= CURRENT_DATE)
     `;
@@ -138,7 +153,7 @@ export async function GET(request: NextRequest) {
           serviceName: row.service_name,
           initialQuantity: row.initial_quantity,
           consumedQuantity: row.consumed_quantity,
-          availableQuantity: row.available_quantity,
+          availableQuantity: Number(row.available_quantity), // Ensure number
           unitPrice: parseFloat(row.unit_price),
           totalPaid: parseFloat(row.total_paid),
           expiresAt: row.expires_at,
