@@ -526,7 +526,7 @@ export default function SalesPage() {
     }));
   };
 
-  const toggleSort = (field: "date" | "client" | "total") => {
+  const toggleSort = (field: "date" | "client" | "total" | "created") => {
     if (sortField === field) {
       setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
