@@ -76,20 +76,9 @@ export async function GET(request: NextRequest) {
     const serviceId = searchParams.get("serviceId");
 
     // Construir query dinâmica
-    // MODIFICADO: Inclui soma das recargas invisíveis (Type 02 avulsas) no available_quantity
-    // A lógica é: available_quantity (Tabela) + Invisíveis (Não somadas na tabela)
+    // MODIFICADO: Calcula consumed_quantity dinamicamente (ignorando vendas canceladas)
+    // para alinhar o saldo disponível com o Dashboard.
     let sql = `
-      WITH invisible_reloads_sum AS (
-        SELECT 
-            s.client_id, 
-            SUM(si.quantity) as total_qty
-        FROM sales s
-        JOIN sale_items si ON s.id = si.sale_id
-        WHERE si.sale_type = '02' 
-        AND s.status != 'cancelada'
-        AND s.id NOT IN (SELECT sale_id FROM client_packages WHERE sale_id IS NOT NULL)
-        GROUP BY s.client_id
-      )
       SELECT
         cp.id,
         cp.client_id,
@@ -97,9 +86,27 @@ export async function GET(request: NextRequest) {
         cp.service_id,
         s.name as service_name,
         cp.initial_quantity,
-        cp.consumed_quantity,
-        -- LOGIC CHANGE: Add invisible reloads to the available quantity displayed
-        (cp.available_quantity + COALESCE(irs.total_qty, 0)) as available_quantity,
+        
+        -- Consumo Dinâmico (Soma consumos onde a venda NÃO está cancelada)
+        COALESCE(
+          (SELECT SUM(pc.quantity) 
+           FROM package_consumptions pc 
+           JOIN sales s2 ON pc.sale_id = s2.id 
+           WHERE pc.package_id = cp.id 
+           AND s2.status != 'cancelada'
+          ), 0
+        ) as consumed_quantity,
+
+        -- Saldo Disponível Calculado (Inicial - Consumo Real)
+        (cp.initial_quantity - COALESCE(
+          (SELECT SUM(pc.quantity) 
+           FROM package_consumptions pc 
+           JOIN sales s2 ON pc.sale_id = s2.id 
+           WHERE pc.package_id = cp.id 
+           AND s2.status != 'cancelada'
+          ), 0
+        )) as available_quantity,
+
         cp.unit_price,
         cp.total_paid,
         cp.expires_at,
@@ -111,7 +118,6 @@ export async function GET(request: NextRequest) {
       FROM client_packages cp
       JOIN clients c ON cp.client_id = c.id
       JOIN services s ON cp.service_id = s.id
-      LEFT JOIN invisible_reloads_sum irs ON cp.client_id = irs.client_id
       WHERE cp.is_active = true
         AND (cp.expires_at IS NULL OR cp.expires_at >= CURRENT_DATE)
     `;
@@ -152,7 +158,7 @@ export async function GET(request: NextRequest) {
           serviceId: row.service_id,
           serviceName: row.service_name,
           initialQuantity: row.initial_quantity,
-          consumedQuantity: row.consumed_quantity,
+          consumedQuantity: Number(row.consumed_quantity), // Ensure number
           availableQuantity: Number(row.available_quantity), // Ensure number
           unitPrice: parseFloat(row.unit_price),
           totalPaid: parseFloat(row.total_paid),
