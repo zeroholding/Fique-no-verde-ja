@@ -67,6 +67,16 @@ export default function PackagesIndexPage() {
     () => summaries.reduce((acc, s) => acc + (s.balanceQuantityCurrent ?? 0), 0),
     [summaries]
   );
+  
+  const totalSaldoFinanceiro = useMemo(
+     () => summaries.reduce((acc, s) => acc + (s.balanceCurrent ?? 0), 0),
+     [summaries]
+  );
+  
+  const globalAveragePrice = useMemo(() => {
+      if (totalSaldoQtde <= 0) return 0;
+      return totalSaldoFinanceiro / totalSaldoQtde;
+  }, [totalSaldoFinanceiro, totalSaldoQtde]);
 
   const handleGenerateShareLink = async (clientId: string) => {
     const token = localStorage.getItem("token");
@@ -119,10 +129,19 @@ export default function PackagesIndexPage() {
         </p>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-400">Saldo total (qtde) nos parceiros</p>
-          <p className="text-2xl font-bold text-emerald-300">{totalSaldoQtde}</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex gap-8">
+            <div>
+              <p className="text-sm text-gray-400">Saldo total (qtde)</p>
+              <p className="text-2xl font-bold text-emerald-300">{totalSaldoQtde}</p>
+            </div>
+            {/* [NEW] Global Average Price Display */}
+            <div>
+               <p className="text-sm text-gray-400">Média Global / Un</p>
+               <p className="text-2xl font-bold text-blue-300">
+                  {globalAveragePrice > 0 ? formatCurrency(globalAveragePrice) : "-"}
+               </p>
+            </div>
         </div>
         <Button size="sm" variant="secondary" className="rounded-xl" onClick={fetchSummaries} disabled={loading}>
           {loading ? "Atualizando..." : "Atualizar"}
@@ -140,7 +159,6 @@ export default function PackagesIndexPage() {
               key={s.clientId}
               className="rounded-2xl border border-white/10 bg-white/5 p-5 flex flex-col gap-2 hover:border-white/20 transition"
             >
-              <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-400">Cliente parceiro</p>
                   <p className="text-lg font-semibold text-white">{s.clientName}</p>
@@ -149,6 +167,21 @@ export default function PackagesIndexPage() {
                   {s.lastOperation ? formatDateTime(s.lastOperation) : "Sem movimento"}
                 </span>
               </div>
+              
+              {/* [NEW] Average Unit Price for this Carrier */}
+              {(() => {
+                 const balance = s.balanceCurrent ?? 0;
+                 const qty = s.balanceQuantityCurrent ?? 0;
+                 const avg = qty > 0 ? balance / qty : 0;
+                 
+                 return (
+                    <div className="flex items-center gap-2 mb-2 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 w-fit">
+                       <span className="text-xs uppercase text-blue-200 font-bold">Valor Médio Un:</span>
+                       <span className="text-sm font-mono text-white">{avg > 0 ? formatCurrency(avg) : "-"}</span>
+                    </div>
+                 );
+              })()}
+
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className={`rounded-lg border p-3 ${
                   (s.balanceQuantityCurrent ?? 0) < 0 
