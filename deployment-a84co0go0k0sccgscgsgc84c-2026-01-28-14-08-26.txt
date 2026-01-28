@@ -1,0 +1,137 @@
+2026-Jan-28 14:06:05.122676 Starting deployment of zeroholding/Fique-no-verde-ja:coolify-deploy to localhost.
+2026-Jan-28 14:06:06.395096 Preparing container with helper image: ghcr.io/coollabsio/coolify-helper:1.0.12
+2026-Jan-28 14:06:09.650761 Image not found (v8c844s0g404g0g408googo4:a213721c4a86aeda579e9f9f80d2e83d577fc223). Building new image.
+2026-Jan-28 14:06:09.680434 ----------------------------------------
+2026-Jan-28 14:06:09.720772 Importing zeroholding/Fique-no-verde-ja:coolify-deploy (commit sha a213721c4a86aeda579e9f9f80d2e83d577fc223) to /artifacts/a84co0go0k0sccgscgsgc84c.
+2026-Jan-28 14:06:16.215369 Generating nixpacks configuration with: nixpacks plan -f json --env NIXPACKS_NODE_VERSION=22 --env COOLIFY_URL=https://www.fiquenoverdeja.com.br,https://fiquenoverdeja.com.br --env COOLIFY_FQDN=www.fiquenoverdeja.com.br,fiquenoverdeja.com.br --env COOLIFY_BRANCH=coolify-deploy --env COOLIFY_RESOURCE_UUID=v8c844s0g404g0g408googo4 /artifacts/a84co0go0k0sccgscgsgc84c
+2026-Jan-28 14:06:17.106112 Found application type: node.
+2026-Jan-28 14:06:17.126164 If you need further customization, please check the documentation of Nixpacks: https://nixpacks.com/docs/providers/node
+2026-Jan-28 14:06:18.771256 ----------------------------------------
+2026-Jan-28 14:06:18.783407 Building docker image started.
+2026-Jan-28 14:06:18.801326 To check the current progress, click on Show Debug Logs.
+2026-Jan-28 14:07:29.171140 ========================================
+2026-Jan-28 14:07:29.190192 Deployment failed: Command execution failed (exit code 1): docker exec a84co0go0k0sccgscgsgc84c bash -c 'bash /artifacts/build.sh'
+2026-Jan-28 14:07:29.190192 Error: #0 building with "default" instance using docker driver
+2026-Jan-28 14:07:29.190192
+2026-Jan-28 14:07:29.190192 #1 [internal] load build definition from Dockerfile
+2026-Jan-28 14:07:29.190192 #1 transferring dockerfile: 1.77kB 0.0s done
+2026-Jan-28 14:07:29.190192 #1 DONE 0.0s
+2026-Jan-28 14:07:29.190192
+2026-Jan-28 14:07:29.190192 #2 [internal] load metadata for ghcr.io/railwayapp/nixpacks:ubuntu-1745885067
+2026-Jan-28 14:07:29.190192 #2 DONE 0.5s
+2026-Jan-28 14:07:29.190192
+2026-Jan-28 14:07:29.190192 #3 [internal] load .dockerignore
+2026-Jan-28 14:07:29.190192 #3 transferring context: 2B done
+2026-Jan-28 14:07:29.190192 #3 DONE 0.0s
+2026-Jan-28 14:07:29.190192
+2026-Jan-28 14:07:29.190192 #4 [internal] load build context
+2026-Jan-28 14:07:29.190192 #4 ...
+2026-Jan-28 14:07:29.190192
+2026-Jan-28 14:07:29.190192 #5 [stage-0 1/11] FROM ghcr.io/railwayapp/nixpacks:ubuntu-1745885067@sha256:d45c89d80e13d7ad0fd555b5130f22a866d9dd10e861f589932303ef2314c7de
+2026-Jan-28 14:07:29.190192 #5 resolve ghcr.io/railwayapp/nixpacks:ubuntu-1745885067@sha256:d45c89d80e13d7ad0fd555b5130f22a866d9dd10e861f589932303ef2314c7de 0.1s done
+2026-Jan-28 14:07:29.190192 #5 DONE 0.1s
+2026-Jan-28 14:07:29.190192
+2026-Jan-28 14:07:29.190192 #4 [internal] load build context
+2026-Jan-28 14:07:29.190192 #4 transferring context: 80.29MB 3.3s done
+2026-Jan-28 14:07:29.190192 #4 DONE 3.4s
+2026-Jan-28 14:07:29.190192
+2026-Jan-28 14:07:29.190192 #6 [stage-0 2/11] WORKDIR /app/
+2026-Jan-28 14:07:29.190192 #6 CACHED
+2026-Jan-28 14:07:29.190192
+2026-Jan-28 14:07:29.190192 #7 [stage-0 3/11] COPY .nixpacks/nixpkgs-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7.nix .nixpacks/nixpkgs-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7.nix
+2026-Jan-28 14:07:29.190192 #7 CACHED
+2026-Jan-28 14:07:29.190192
+2026-Jan-28 14:07:29.190192 #8 [stage-0 4/11] RUN nix-env -if .nixpacks/nixpkgs-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7.nix && nix-collect-garbage -d
+2026-Jan-28 14:07:29.190192 #8 CACHED
+2026-Jan-28 14:07:29.190192
+2026-Jan-28 14:07:29.190192 #9 [stage-0 5/11] RUN sudo apt-get update && sudo apt-get install -y --no-install-recommends curl wget
+2026-Jan-28 14:07:29.190192 #9 CACHED
+2026-Jan-28 14:07:29.190192
+2026-Jan-28 14:07:29.190192 #10 [stage-0 6/11] COPY . /app/.
+2026-Jan-28 14:07:29.190192 #10 DONE 2.5s
+2026-Jan-28 14:07:29.190192
+2026-Jan-28 14:07:29.190192 #11 [stage-0 7/11] RUN --mount=type=cache,id=v8c844s0g404g0g408googo4-/root/npm,target=/root/.npm npm ci
+2026-Jan-28 14:07:29.190192 #11 0.765 npm warn config production Use `--omit=dev` instead.
+2026-Jan-28 14:07:29.190192 #11 43.96
+2026-Jan-28 14:07:29.190192 #11 43.96 added 473 packages, and audited 474 packages in 43s
+2026-Jan-28 14:07:29.190192 #11 43.96
+2026-Jan-28 14:07:29.190192 #11 44.00 153 packages are looking for funding
+2026-Jan-28 14:07:29.190192 #11 44.00 run `npm fund` for details
+2026-Jan-28 14:07:29.190192 #11 44.25
+2026-Jan-28 14:07:29.190192 #11 44.25 4 vulnerabilities (1 moderate, 3 high)
+2026-Jan-28 14:07:29.190192 #11 44.25
+2026-Jan-28 14:07:29.190192 #11 44.25 To address issues that do not require attention, run:
+2026-Jan-28 14:07:29.190192 #11 44.25 npm audit fix
+2026-Jan-28 14:07:29.190192 #11 44.25
+2026-Jan-28 14:07:29.190192 #11 44.25 Some issues need review, and may require choosing
+2026-Jan-28 14:07:29.190192 #11 44.25 a different dependency.
+2026-Jan-28 14:07:29.190192 #11 44.25
+2026-Jan-28 14:07:29.190192 #11 44.25 Run `npm audit` for details.
+2026-Jan-28 14:07:29.190192 #11 DONE 45.5s
+2026-Jan-28 14:07:29.190192
+2026-Jan-28 14:07:29.190192 #12 [stage-0 8/11] COPY . /app/.
+2026-Jan-28 14:07:29.190192 #12 DONE 1.0s
+2026-Jan-28 14:07:29.190192
+2026-Jan-28 14:07:29.190192 #13 [stage-0 9/11] RUN --mount=type=cache,id=v8c844s0g404g0g408googo4-next/cache,target=/app/.next/cache --mount=type=cache,id=v8c844s0g404g0g408googo4-node_modules/cache,target=/app/node_modules/.cache npm run build
+2026-Jan-28 14:07:29.190192 #13 0.268 npm warn config production Use `--omit=dev` instead.
+2026-Jan-28 14:07:29.190192 #13 0.317
+2026-Jan-28 14:07:29.190192 #13 0.317 > fqnj@0.1.0 build
+2026-Jan-28 14:07:29.190192 #13 0.317 > next build
+2026-Jan-28 14:07:29.190192 #13 0.317
+2026-Jan-28 14:07:29.190192 #13 1.716 ▲ Next.js 16.0.7 (Turbopack)
+2026-Jan-28 14:07:29.190192 #13 1.718 - Experiments (use with caution):
+2026-Jan-28 14:07:29.190192 #13 1.718 · serverActions
+2026-Jan-28 14:07:29.190192 #13 1.718
+2026-Jan-28 14:07:29.190192 #13 1.775 ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+2026-Jan-28 14:07:29.190192 #13 1.883 Creating an optimized production build ...
+2026-Jan-28 14:07:29.190192 #13 13.73
+2026-Jan-28 14:07:29.190192 #13 13.73 > Build error occurred
+2026-Jan-28 14:07:29.190192 #13 13.74 Error: Turbopack build failed with 1 errors:
+2026-Jan-28 14:07:29.190192 #13 13.74 ./app/dashboard/packages/page.tsx:171:15
+2026-Jan-28 14:07:29.190192 #13 13.74 Parsing ecmascript source code failed
+2026-Jan-28 14:07:29.190192 #13 13.74 169 | </div>
+2026-Jan-28 14:07:29.190192 #13 13.74 170 |
+2026-Jan-28 14:07:29.190192 #13 13.74 > 171 | {/* [NEW] Average Unit Price for this Carrier */}
+2026-Jan-28 14:07:29.190192 #13 13.74 | ^
+2026-Jan-28 14:07:29.190192 #13 13.74 172 | {(() => {
+2026-Jan-28 14:07:29.190192 #13 13.74 173 | const balance = s.balanceCurrent ?? 0;
+2026-Jan-28 14:07:29.190192 #13 13.74 174 | const qty = s.balanceQuantityCurrent ?? 0;
+2026-Jan-28 14:07:29.190192 #13 13.74
+2026-Jan-28 14:07:29.190192 #13 13.74 Expected '</', got '{'
+2026-Jan-28 14:07:29.190192 #13 13.74
+2026-Jan-28 14:07:29.190192 #13 13.74
+2026-Jan-28 14:07:29.190192 #13 13.74 at <unknown> (./app/dashboard/packages/page.tsx:171:15)
+2026-Jan-28 14:07:29.190192 #13 ERROR: process "/bin/bash -ol pipefail -c npm run build" did not complete successfully: exit code: 1
+2026-Jan-28 14:07:29.190192 ------
+2026-Jan-28 14:07:29.190192 > [stage-0 9/11] RUN --mount=type=cache,id=v8c844s0g404g0g408googo4-next/cache,target=/app/.next/cache --mount=type=cache,id=v8c844s0g404g0g408googo4-node_modules/cache,target=/app/node_modules/.cache npm run build:
+2026-Jan-28 14:07:29.190192 13.74 > 171 | {/* [NEW] Average Unit Price for this Carrier */}
+2026-Jan-28 14:07:29.190192 13.74 | ^
+2026-Jan-28 14:07:29.190192 13.74 172 | {(() => {
+2026-Jan-28 14:07:29.190192 13.74 173 | const balance = s.balanceCurrent ?? 0;
+2026-Jan-28 14:07:29.190192 13.74 174 | const qty = s.balanceQuantityCurrent ?? 0;
+2026-Jan-28 14:07:29.190192 13.74
+2026-Jan-28 14:07:29.190192 13.74 Expected '</', got '{'
+2026-Jan-28 14:07:29.190192 13.74
+2026-Jan-28 14:07:29.190192 13.74
+2026-Jan-28 14:07:29.190192 13.74 at <unknown> (./app/dashboard/packages/page.tsx:171:15)
+2026-Jan-28 14:07:29.190192 ------
+2026-Jan-28 14:07:29.190192
+2026-Jan-28 14:07:29.190192 5 warnings found (use docker --debug to expand):
+2026-Jan-28 14:07:29.190192 - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "JWT_SECRET") (line 11)
+2026-Jan-28 14:07:29.190192 - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "MERCADO_LIVRE_SECRET_KEY") (line 11)
+2026-Jan-28 14:07:29.190192 - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "JWT_SECRET") (line 12)
+2026-Jan-28 14:07:29.190192 - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "MERCADO_LIVRE_SECRET_KEY") (line 12)
+2026-Jan-28 14:07:29.190192 - UndefinedVar: Usage of undefined variable '$NIXPACKS_PATH' (line 18)
+2026-Jan-28 14:07:29.190192 Dockerfile:24
+2026-Jan-28 14:07:29.190192 --------------------
+2026-Jan-28 14:07:29.190192 22 | # build phase
+2026-Jan-28 14:07:29.190192 23 | COPY . /app/.
+2026-Jan-28 14:07:29.190192 24 | >>> RUN --mount=type=cache,id=v8c844s0g404g0g408googo4-next/cache,target=/app/.next/cache --mount=type=cache,id=v8c844s0g404g0g408googo4-node_modules/cache,target=/app/node_modules/.cache npm run build
+2026-Jan-28 14:07:29.190192 25 |
+2026-Jan-28 14:07:29.190192 26 |
+2026-Jan-28 14:07:29.190192 --------------------
+2026-Jan-28 14:07:29.190192 ERROR: failed to build: failed to solve: process "/bin/bash -ol pipefail -c npm run build" did not complete successfully: exit code: 1
+2026-Jan-28 14:07:29.190192 exit status 1
+2026-Jan-28 14:07:29.427425 ========================================
+2026-Jan-28 14:07:29.460569 Deployment failed. Removing the new version of your application.
+2026-Jan-28 14:07:31.072795 Gracefully shutting down build container: a84co0go0k0sccgscgsgc84c
