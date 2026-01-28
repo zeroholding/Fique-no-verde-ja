@@ -17,9 +17,9 @@ export const metadata: Metadata = {
   title: "FQNJ - Sistema de Gestão",
   description: "Sistema de gestão de vendas e serviços",
   icons: {
-    icon: "/logo.jpg",
-    shortcut: "/logo.jpg",
-    apple: "/logo.jpg",
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
   },
 };
 
