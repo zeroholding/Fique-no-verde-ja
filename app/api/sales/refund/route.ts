@@ -156,7 +156,13 @@ export async function POST(request: NextRequest) {
 
       // Recalcular comissao com base no novo total liquido
       let newCommissionAmount = parseFloat(sale.commission_amount || 0);
-      if (sale.commission_policy_id) {
+
+      // [FIX] Se o novo total for zero (estorno total), a comissao deve ser zerada obrigatoriamente
+      if (newNetTotal <= 0) {
+        newCommissionAmount = 0;
+      } 
+      // Se houver politica, recalcula (caso seja parcial)
+      else if (sale.commission_policy_id) {
         const commissionResult = await query(
           `SELECT calculate_commission($1, $2, $3) as commission`,
           [saleId, newNetTotal, sale.commission_policy_id]
@@ -164,6 +170,8 @@ export async function POST(request: NextRequest) {
         if (commissionResult.rows.length > 0) {
           newCommissionAmount = parseFloat(commissionResult.rows[0].commission || 0);
         }
+      } else {
+        // Sem politica e parcial: mantera o valor original (ou deveria pro-ratar? por enquanto mantemos original para evitar erros)
       }
 
       // [FIX] Atualizar tambem a tabela de comissoes
