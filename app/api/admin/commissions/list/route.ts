@@ -85,13 +85,13 @@ export async function GET(request: NextRequest) {
     if (startDate) {
       paramCount++;
       sql += ` AND c.reference_date >= $${paramCount}`;
-      params.push(startDate);
+      params.push(`${startDate} 00:00:00`);
     }
     if (endDate) {
       paramCount++;
       // Ajuste para incluir o dia todo se for data apenas
       sql += ` AND c.reference_date <= $${paramCount}`;
-      params.push(endDate);
+      params.push(`${endDate} 23:59:59`);
     }
     if (attendantId) {
       paramCount++;
