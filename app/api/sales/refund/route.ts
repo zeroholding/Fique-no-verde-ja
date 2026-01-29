@@ -166,6 +166,16 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // [FIX] Atualizar tambem a tabela de comissoes
+      await query(
+        `UPDATE commissions
+         SET commission_amount = $1,
+             base_amount = $2,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE sale_id = $3`,
+        [newCommissionAmount, newNetTotal, saleId]
+      );
+
       // Atualizar venda com o novo total e estorno acumulado
       await query(
         `UPDATE sales
