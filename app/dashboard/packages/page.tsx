@@ -206,14 +206,6 @@ export default function PackagesIndexPage() {
                   <p className="text-xs text-gray-300">Saldo financeiro</p>
                   <p className="text-lg font-semibold text-white">{formatCurrency(s.balanceCurrent ?? 0)}</p>
                 </div>
-                <div className="rounded-lg bg-white/5 border border-white/10 p-3">
-                  <p className="text-xs text-gray-300">Adquiridos (qtde)</p>
-                  <p className="text-lg font-semibold text-white">{s.totalQuantityAcquired ?? 0}</p>
-                </div>
-                <div className="rounded-lg bg-white/5 border border-white/10 p-3">
-                  <p className="text-xs text-gray-300">Consumidos (qtde)</p>
-                  <p className="text-lg font-semibold text-white">{s.totalQuantityConsumed ?? 0}</p>
-                </div>
               </div>
               <div className="mt-2 space-y-2">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
