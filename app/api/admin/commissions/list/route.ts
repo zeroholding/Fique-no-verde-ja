@@ -84,13 +84,13 @@ export async function GET(request: NextRequest) {
 
     if (startDate) {
       paramCount++;
-      sql += ` AND c.reference_date >= $${paramCount}`;
+      // Conversao explicita para Fuso de Brasilia antes de comparar com a string da data
+      sql += ` AND (c.reference_date AT TIME ZONE 'America/Sao_Paulo') >= $${paramCount}`;
       params.push(`${startDate} 00:00:00`);
     }
     if (endDate) {
       paramCount++;
-      // Ajuste para incluir o dia todo se for data apenas
-      sql += ` AND c.reference_date <= $${paramCount}`;
+      sql += ` AND (c.reference_date AT TIME ZONE 'America/Sao_Paulo') <= $${paramCount}`;
       params.push(`${endDate} 23:59:59`);
     }
     if (attendantId) {
