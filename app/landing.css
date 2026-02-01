@@ -32,12 +32,12 @@
 }
 
 /* Reset & Base */
-/* Removed global reset to avoid conflicting with Tailwind entirely, but keeping key elements */
-/* * {
+/* Restored global reset for strict fidelity to original design */
+* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-} */
+}
 
 html {
   scroll-behavior: smooth;
@@ -46,8 +46,8 @@ html {
 
 body {
   font-family: var(--font-body) !important;
-  background-color: var(--dark-bg);
-  color: var(--text-main);
+  background: var(--dark-bg) !important; /* Force override of global background */
+  color: var(--text-main) !important;
   line-height: 1.6;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
