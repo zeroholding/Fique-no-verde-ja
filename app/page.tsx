@@ -499,9 +499,9 @@ export default function Home() {
                   <img src="/assets/destaque-circulo.webp" className="highlight-img circle-img" alt="" width="150" height="60" />
                 </span>
                 <br />
-                sem
+                sem&nbsp;
                 <span className="highlight-wrapper">
-                  {" "}ruído
+                  ruído
                   <img src="/assets/destaque-plim.webp" className="highlight-img plim-img" alt="" width="45" height="45" />
                 </span>
               </h2>
