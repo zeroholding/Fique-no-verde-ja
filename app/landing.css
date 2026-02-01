@@ -167,6 +167,40 @@ img {
   box-shadow: 0 4px 12px rgba(0, 204, 106, 0.2);
 }
 
+/* Login Button - Premium Style */
+.btn-login-custom {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 8px 20px;
+  border-radius: 50px;
+  color: #fff;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  margin-left: 10px;
+}
+
+.btn-login-custom i {
+  color: #fff;
+  font-size: 1em;
+  transition: all 0.3s ease;
+}
+
+.btn-login-custom:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+}
+
+.btn-login-custom:hover i {
+  color: var(--primary);
+}
+
 .btn-outline {
   background: transparent;
   border: 2px solid var(--primary);

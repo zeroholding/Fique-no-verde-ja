@@ -8,6 +8,30 @@ import "./landing.css";
 export default function Home() {
   const [mobileMenuActive, setMobileMenuActive] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [formName, setFormName] = useState("");
+  const [formWhatsApp, setFormWhatsApp] = useState("");
+
+  // Phone number formatting function
+  const formatPhoneNumber = (value: string): string => {
+    // Remove all non-digits
+    const digits = value.replace(/\D/g, "");
+    
+    // Apply Brazilian phone mask: (XX) XXXXX-XXXX
+    if (digits.length <= 2) {
+      return digits;
+    } else if (digits.length <= 7) {
+      return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    } else if (digits.length <= 11) {
+      return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+    } else {
+      return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+    }
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    setFormWhatsApp(formatted);
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -240,12 +264,14 @@ export default function Home() {
               <li><a href="#estrategia" onClick={(e) => handleSmoothScroll(e, "#estrategia")}>Estratégia</a></li>
               <li><a href="#atuacao" onClick={(e) => handleSmoothScroll(e, "#atuacao")}>Atuação</a></li>
               <li><a href="#resultados" onClick={(e) => handleSmoothScroll(e, "#resultados")}>Resultados</a></li>
-              <li><a href="#faq" onClick={(e) => handleSmoothScroll(e, "#faq")}>FAQ</a></li>
             </ul>
           </nav>
           <div className="nav-actions">
             <a href="#contato" className="btn-billet-custom" onClick={(e) => handleSmoothScroll(e, "#contato")}>
               <i className="fa-solid fa-check-to-slot" aria-hidden="true"></i> Ficar no verde
+            </a>
+            <a href="/login" className="btn-login-custom">
+              <i className="fa-solid fa-right-to-bracket" aria-hidden="true"></i> Login
             </a>
           </div>
           <button className="mobile-toggle" onClick={toggleMenu} aria-label="Abrir menu" aria-expanded={mobileMenuActive}>
@@ -267,7 +293,7 @@ export default function Home() {
             <li><a href="#estrategia" onClick={(e) => handleSmoothScroll(e, "#estrategia")}>Estratégia</a></li>
             <li><a href="#atuacao" onClick={(e) => handleSmoothScroll(e, "#atuacao")}>Atuação</a></li>
             <li><a href="#resultados" onClick={(e) => handleSmoothScroll(e, "#resultados")}>Resultados</a></li>
-            <li><a href="#faq" onClick={(e) => handleSmoothScroll(e, "#faq")}>FAQ</a></li>
+            <li><a href="/login"><i className="fa-solid fa-right-to-bracket"></i> Login</a></li>
           </ul>
           <a href="#contato" className="btn btn-primary btn-full" onClick={(e) => handleSmoothScroll(e, "#contato")}>Quero ficar no verde</a>
         </div>
@@ -629,11 +655,31 @@ export default function Home() {
               <form className="contact-form glass-form" action="#" method="POST" aria-label="Formulário de contato">
                 <div className="form-group">
                   <label htmlFor="name" className="sr-only">Seu Nome</label>
-                  <input type="text" id="name" name="name" placeholder="Seu Nome" required autoComplete="name" />
+                  <input 
+                    type="text" 
+                    id="name" 
+                    name="name" 
+                    placeholder="Seu Nome" 
+                    required 
+                    autoComplete="name"
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                  />
                 </div>
                 <div className="form-group">
                   <label htmlFor="whatsapp" className="sr-only">Seu WhatsApp</label>
-                  <input type="tel" id="whatsapp" name="whatsapp" placeholder="Seu WhatsApp" required autoComplete="tel" />
+                  <input 
+                    type="tel" 
+                    id="whatsapp" 
+                    name="whatsapp" 
+                    placeholder="(11) 98935-2639" 
+                    required 
+                    autoComplete="tel"
+                    value={formWhatsApp}
+                    onChange={handlePhoneChange}
+                    maxLength={16}
+                    inputMode="numeric"
+                  />
                 </div>
                 <button type="submit" className="btn btn-primary btn-block btn-glow">Quero ficar no verde agora</button>
                 <span className="form-note"><i className="fas fa-lock" aria-hidden="true"></i> Seus dados estão seguros. Sem compromisso.</span>
@@ -667,7 +713,7 @@ export default function Home() {
       </footer>
 
       {/* Floating WhatsApp */}
-      <a href="https://wa.me/5511999999999" className="whatsapp-float" target="_blank" rel="noopener noreferrer" aria-label="Entrar em contato pelo WhatsApp">
+      <a href="https://api.whatsapp.com/send/?phone=5511989352639&text&type=phone_number&app_absent=0" className="whatsapp-float" target="_blank" rel="noopener noreferrer" aria-label="Entrar em contato pelo WhatsApp">
         <i className="fab fa-whatsapp" aria-hidden="true"></i>
       </a>
 
