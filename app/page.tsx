@@ -201,7 +201,7 @@ export default function Home() {
     <>
       {/* SEO Meta Tags */}
       <head>
-        <title>Fique no Verde Já | Especialistas em Reputação no Mercado Livre</title>
+        <title>Fique no Verde Já | Reputação</title>
         <meta name="description" content="Recupere sua reputação verde no Mercado Livre. Especialistas em remoção de atrasos indevidos, contestação de reclamações e recuperação de conta. Atuação técnica e dentro das regras. Volte pros filtros que vendem!" />
         <meta name="keywords" content="reputação mercado livre, reputação verde mercado livre, recuperar reputação mercado livre, melhorar reputação mercado livre, conta verde mercado livre, especialista mercado livre, atraso mercado livre, reclamação mercado livre, termômetro mercado livre, MercadoLivre" />
         <meta name="author" content="Fique no Verde Já" />
@@ -212,7 +212,7 @@ export default function Home() {
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://fiquenoverdeja.com.br" />
-        <meta property="og:title" content="Fique no Verde Já | Especialistas em Reputação no Mercado Livre" />
+        <meta property="og:title" content="Fique no Verde Já | Reputação" />
         <meta property="og:description" content="Recupere sua reputação verde no Mercado Livre. Atuação técnica e segura para você voltar aos filtros que mais vendem: Chegará Amanhã e Chegará Hoje." />
         <meta property="og:image" content="https://fiquenoverdeja.com.br/assets/og-image.jpg" />
         <meta property="og:image:width" content="1200" />
@@ -223,7 +223,7 @@ export default function Home() {
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:url" content="https://fiquenoverdeja.com.br" />
-        <meta name="twitter:title" content="Fique no Verde Já | Especialistas em Reputação no Mercado Livre" />
+        <meta name="twitter:title" content="Fique no Verde Já | Reputação" />
         <meta name="twitter:description" content="Recupere sua reputação verde no Mercado Livre. Atuação técnica e segura para você voltar aos filtros que mais vendem." />
         <meta name="twitter:image" content="https://fiquenoverdeja.com.br/assets/og-image.jpg" />
         
@@ -310,11 +310,11 @@ export default function Home() {
                 <i className="fas fa-shield-alt" aria-hidden="true"></i> Atuação estratégica • Dentro das regras
               </div>
               <h1 id="hero-title" className="fade-in-up delay-1">
-                Você é bom em vender. <br />
-                <span className="highlight-text">Então foque nisso.</span>
+                Remoção de impacto para manter sua <span className="highlight-text">reputação no verde.</span>
               </h1>
               <p className="hero-subtitle fade-in-up delay-2">
-                Estratégia de venda, preço e escala. Deixa reputação, atrasos e reclamações indevidas com quem vive isso todos os dias — <strong>sempre dentro das regras do Mercado Livre.</strong>
+                Atuamos diretamente na remoção de impactos que afetam a reputação da sua conta, reduzindo riscos e evitando penalizações desnecessárias.<br/><br/>
+                Um serviço objetivo, técnico e focado em resultado — <strong>sempre dentro das regras do Mercado Livre.</strong>
               </p>
               <div className="hero-cta-wrapper fade-in-up delay-3">
                 <a href="#contato" className="btn btn-primary btn-lg btn-glow" onClick={(e) => handleSmoothScroll(e, "#contato")}>
@@ -706,6 +706,10 @@ export default function Home() {
             </nav>
           </div>
           <div className="footer-disclaimer">
+            <p className="company-info" style={{ marginBottom: '15px', opacity: 0.7, fontSize: '0.85rem' }}>
+              CNPJ: 46.391.045/0001-35<br />
+              R MAXIMILIANO DEMARCHI, 477 - DEMARCHI, SÃO BERNARDO DO CAMPO - SP, 09820-400
+            </p>
             <p><strong>Aviso legal:</strong> Atuação independente, sem vínculo oficial com o Mercado Livre. Todas as ações são realizadas exclusivamente dentro das regras da plataforma.</p>
             <p className="copyright">© 2026 FIQUE NO VERDE JÁ - Todos os direitos reservados</p>
           </div>
