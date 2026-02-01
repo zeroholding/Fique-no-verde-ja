@@ -1581,3 +1581,363 @@ header.scrolled {
     max-height: 35px;
   }
 }
+
+/* ========================================
+   FAQ SECTION - For SEO Rich Snippets
+   ======================================== */
+.section-faq {
+  padding: 80px 0;
+  background: var(--dark-bg);
+}
+
+.section-faq .section-title {
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.faq-grid {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.faq-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.faq-item:hover {
+  border-color: var(--primary);
+  background: rgba(0, 204, 106, 0.03);
+}
+
+.faq-item summary {
+  padding: 20px 24px;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 1.1rem;
+  color: #fff;
+  transition: all 0.3s ease;
+}
+
+.faq-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq-item summary::after {
+  content: "+";
+  font-size: 1.5rem;
+  font-weight: 300;
+  color: var(--primary);
+  transition: transform 0.3s ease;
+}
+
+.faq-item[open] summary::after {
+  transform: rotate(45deg);
+}
+
+.faq-item[open] summary {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.faq-item p {
+  padding: 20px 24px;
+  color: var(--text-muted);
+  line-height: 1.7;
+  font-size: 1rem;
+}
+
+/* ========================================
+   ENHANCED MOBILE UX - Perfect Touch Experience
+   ======================================== */
+
+/* Larger touch targets for mobile */
+@media (max-width: 992px) {
+  /* Increase button sizes for easier tapping */
+  .btn {
+    padding: 14px 32px;
+    font-size: 1rem;
+    min-height: 48px; /* Google's recommended touch target */
+  }
+  
+  .btn-lg {
+    padding: 18px 40px;
+    font-size: 1.1rem;
+  }
+  
+  /* Better mobile menu experience */
+  .mobile-menu-content {
+    width: 85%;
+    max-width: 320px;
+    padding: 30px;
+  }
+  
+  .mobile-nav-links li {
+    margin-bottom: 24px;
+  }
+  
+  .mobile-nav-links a {
+    font-size: 1.4rem;
+    padding: 12px 0;
+    display: block;
+  }
+  
+  .mobile-toggle {
+    padding: 10px;
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Smooth section spacing */
+  section {
+    padding: 60px 0;
+  }
+  
+  .section-filters,
+  .section-connection,
+  .section-outsourcing,
+  .section-method,
+  .section-roi,
+  .section-security,
+  .section-faq,
+  .section-final-cta {
+    padding: 60px 0;
+  }
+  
+  /* Hero adjustments */
+  .hero {
+    min-height: auto;
+    padding: 120px 0 60px;
+  }
+  
+  .hero-visual {
+    margin-top: 40px;
+  }
+  
+  .hero h1 {
+    font-size: 2.8rem;
+    line-height: 1.15;
+  }
+  
+  .hero-subtitle {
+    font-size: 1.05rem;
+    max-width: 100%;
+  }
+  
+  /* Glass card adjustments */
+  .glass-card {
+    padding: 24px;
+  }
+  
+  .floating-badge {
+    display: none; /* Hide on mobile for cleaner look */
+  }
+  
+  /* ROI section */
+  .roi-floating-btn {
+    position: static;
+    transform: none;
+    margin: 30px auto 0;
+    display: flex;
+  }
+  
+  .glass-panel {
+    padding: 30px 24px;
+    border-radius: var(--radius-md);
+  }
+  
+  /* Method section */
+  .method-header-side h2 {
+    font-size: 2.5rem;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Typography scaling */
+  .hero h1 {
+    font-size: 2.2rem;
+  }
+  
+  .section-title {
+    font-size: 1.8rem;
+  }
+  
+  .connection-header h2,
+  .outsourcing-text h2,
+  .method-header-side h2 {
+    font-size: 2rem;
+  }
+  
+  .roi-content h2 {
+    font-size: 2rem;
+  }
+  
+  /* Container breathing room */
+  .container {
+    padding: 0 16px;
+  }
+  
+  /* Steps flow - single column on small screens */
+  .steps-flow {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+  
+  .step-item {
+    padding-left: 20px;
+  }
+  
+  .step-bg-number {
+    font-size: 5rem;
+    top: -20px;
+  }
+  
+  /* Form improvements for mobile */
+  .glass-form {
+    padding: 24px 20px;
+  }
+  
+  .form-group input {
+    padding: 18px 16px;
+    font-size: 16px; /* Prevents iOS zoom */
+  }
+  
+  .btn-block {
+    padding: 18px 24px;
+    font-size: 1.1rem;
+  }
+  
+  /* FAQ touch-friendly */
+  .faq-item summary {
+    padding: 18px 20px;
+    font-size: 1rem;
+  }
+  
+  .faq-item p {
+    padding: 16px 20px;
+    font-size: 0.95rem;
+  }
+  
+  /* Impact cards */
+  .impact-card {
+    padding: 24px;
+    aspect-ratio: auto;
+    min-height: 120px;
+  }
+  
+  /* Focus cards */
+  .focus-card {
+    padding: 24px 16px;
+  }
+  
+  /* WhatsApp button */
+  .whatsapp-float {
+    width: 56px;
+    height: 56px;
+    bottom: 20px;
+    right: 20px;
+    font-size: 1.75rem;
+  }
+  
+  /* Highlight circle */
+  .highlight-circle {
+    width: 200px;
+    height: 200px;
+  }
+  
+  .highlight-circle span {
+    font-size: 0.95rem;
+  }
+  
+  .highlight-circle strong {
+    font-size: 1.2rem;
+  }
+  
+  /* Security section */
+  .security-icon i {
+    font-size: 3.5rem;
+  }
+  
+  .security-text h2 {
+    font-size: 1.8rem;
+  }
+  
+  /* Footer */
+  .main-footer {
+    padding: 50px 0 30px;
+  }
+  
+  .footer-disclaimer {
+    font-size: 0.8rem;
+    padding-top: 24px;
+  }
+}
+
+/* Extra small devices (below 380px) */
+@media (max-width: 380px) {
+  .hero h1 {
+    font-size: 1.9rem;
+  }
+  
+  .section-title {
+    font-size: 1.6rem;
+  }
+  
+  .btn-lg {
+    padding: 16px 24px;
+    font-size: 1rem;
+  }
+  
+  .hero-badge {
+    font-size: 0.75rem;
+    padding: 5px 12px;
+  }
+}
+
+/* Smooth scrolling override for reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Remove hover effects that don't work well on touch */
+  .btn:hover {
+    transform: none;
+  }
+  
+  .btn:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+  
+  .impact-card:hover,
+  .focus-card:hover,
+  .faq-item:hover {
+    transform: none;
+  }
+  
+  .impact-card:active,
+  .focus-card:active {
+    background: rgba(0, 204, 106, 0.08);
+  }
+}
