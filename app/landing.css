@@ -1592,10 +1592,12 @@ header.scrolled {
     font-size: 2.5rem;
   }
   .focus-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
   }
   .cards-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
   }
   .security-flex {
     flex-direction: column;
@@ -1863,16 +1865,38 @@ header.scrolled {
     font-size: 0.95rem;
   }
   
-  /* Impact cards */
+  /* Impact cards - 2 per row on mobile */
   .impact-card {
-    padding: 24px;
+    padding: 16px 12px;
     aspect-ratio: auto;
-    min-height: 120px;
+    min-height: 100px;
   }
   
-  /* Focus cards */
+  .impact-card h3 {
+    font-size: 0.95rem;
+    line-height: 1.3;
+  }
+  
+  .impact-card .impact-icon {
+    margin-bottom: 8px;
+  }
+  
+  .impact-card .impact-icon i {
+    font-size: 1.25rem;
+  }
+  
+  /* Focus cards - 2 per row on mobile */
   .focus-card {
-    padding: 24px 16px;
+    padding: 16px 12px;
+  }
+  
+  .focus-card i {
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+  }
+  
+  .focus-card h3 {
+    font-size: 0.9rem;
   }
   
   /* WhatsApp button */
