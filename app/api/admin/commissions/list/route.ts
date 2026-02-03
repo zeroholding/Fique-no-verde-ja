@@ -84,13 +84,13 @@ export async function GET(request: NextRequest) {
 
     if (startDate) {
       paramCount++;
-      // FORÇA BRUTA: Converte para string YYYY-MM-DD no horário de Brasília para garantir dia exato
-      sql += ` AND TO_CHAR(c.reference_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') >= $${paramCount}`;
+      // [FIX] Single Conversion: UTC Timestamp -> Timestamp in SP. Corrects late night sales.
+      sql += ` AND TO_CHAR(c.reference_date AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') >= $${paramCount}`;
       params.push(startDate);
     }
     if (endDate) {
       paramCount++;
-      sql += ` AND TO_CHAR(c.reference_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') <= $${paramCount}`;
+      sql += ` AND TO_CHAR(c.reference_date AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') <= $${paramCount}`;
       params.push(endDate);
     }
     if (attendantId) {
