@@ -137,12 +137,12 @@ export async function GET(request: NextRequest) {
 
     if (startDate) {
       // Converte reference_date para timezone de Brasília e compara apenas a data
-      whereClauses.push(`(c.reference_date AT TIME ZONE 'America/Sao_Paulo')::date >= $${paramIndex++}::date`);
+      whereClauses.push(`TO_CHAR(c.reference_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') >= $${paramIndex++}`);
       params.push(startDate);
     }
 
     if (endDate) {
-      whereClauses.push(`(c.reference_date AT TIME ZONE 'America/Sao_Paulo')::date <= $${paramIndex++}::date`);
+      whereClauses.push(`TO_CHAR(c.reference_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') <= $${paramIndex++}`);
       params.push(endDate);
     }
 

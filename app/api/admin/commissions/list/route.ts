@@ -84,13 +84,13 @@ export async function GET(request: NextRequest) {
 
     if (startDate) {
       paramCount++;
-      // Converte reference_date para timezone de Brasília e compara apenas a data (sem horário)
-      sql += ` AND (c.reference_date AT TIME ZONE 'America/Sao_Paulo')::date >= $${paramCount}::date`;
+      // FORÇA BRUTA: Converte para string YYYY-MM-DD no horário de Brasília para garantir dia exato
+      sql += ` AND TO_CHAR(c.reference_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') >= $${paramCount}`;
       params.push(startDate);
     }
     if (endDate) {
       paramCount++;
-      sql += ` AND (c.reference_date AT TIME ZONE 'America/Sao_Paulo')::date <= $${paramCount}::date`;
+      sql += ` AND TO_CHAR(c.reference_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') <= $${paramCount}`;
       params.push(endDate);
     }
     if (attendantId) {
