@@ -106,20 +106,22 @@ export default function CommissionsPage() {
       if (isAdmin && attendantId) params.set("attendantId", attendantId);
       if (dayType) params.set("dayType", dayType);
       if (saleType) params.set("saleType", saleType);
+      
+      // [FIX] Passando datas para o backend (que tem a correção de timezone)
+      if (startDate) params.set("startDate", startDate);
+      if (endDate) params.set("endDate", endDate);
+
       const url = `/api/commissions/list?${params.toString()}`;
       console.log("[COMMISSIONS PAGE] Fetching:", url);
-      console.log("[COMMISSIONS PAGE] Filters:", { isAdmin, attendantId, dayType });
 
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      console.log("[COMMISSIONS PAGE] Response:", { ok: res.ok, status: res.status, data });
 
       if (!res.ok) {
         throw new Error(data.error || "Nao foi possivel carregar comissoes");
       }
-      console.log("[COMMISSIONS PAGE] Commissions received:", data.commissions?.length || 0);
       setCommissions(data.commissions || []);
     } catch (err) {
       console.error("[COMMISSIONS PAGE] Error:", err);
@@ -128,7 +130,7 @@ export default function CommissionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [attendantId, dayType, saleType, error, isAdmin]);
+  }, [attendantId, dayType, saleType, error, isAdmin, startDate, endDate]); // [FIX] Added date dependencies
 
   useEffect(() => {
     fetchCommissions();
@@ -163,36 +165,17 @@ export default function CommissionsPage() {
   };
 
   const filteredCommissions = useMemo(() => {
-    // ... logic inside useMemo remains correctly using closure variables, 
-    // but the dependency array needs update below
-    const toStart = (value: string) => {
-      const d = new Date(value);
-      if (isNaN(d.getTime())) return null;
-      d.setHours(0, 0, 0, 0);
-      return d.getTime();
-    };
-    const toEnd = (value: string) => {
-      const d = new Date(value);
-      if (isNaN(d.getTime())) return null;
-      d.setHours(23, 59, 59, 999);
-      return d.getTime();
-    };
-
-    const start = startDate ? toStart(startDate) : null;
-    const end = endDate ? toEnd(endDate) : null;
-
+    // [FIX] Filtro de DATA movido para o Backend. Aqui filtramos apenas o que não for data.
     return commissions.filter((comm) => {
-      const refTs = new Date(comm.referenceDate).getTime();
-      if (isNaN(refTs)) return false;
-      if (start !== null && refTs < start) return false;
-      if (end !== null && refTs > end) return false;
+      // Data filtering removed (handled by server)
+      
       if (statusFilter && comm.status !== statusFilter) return false;
       if (attendantId && comm.attendantId !== attendantId) return false;
       if (!isAdmin && currentUserId && comm.attendantId !== currentUserId) return false;
       if (dayType && comm.dayType !== dayType) return false;
       return true;
     });
-  }, [attendantId, commissions, currentUserId, dayType, endDate, isAdmin, startDate, statusFilter]);
+  }, [attendantId, commissions, currentUserId, dayType, isAdmin, statusFilter]);
 
   const totalAmount = useMemo(() => {
     const sum = filteredCommissions.reduce((acc, curr) => acc + (curr.amount || 0), 0);
