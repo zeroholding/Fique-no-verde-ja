@@ -38,17 +38,38 @@ const formatDateTime = (value: string) => {
   })}`;
 };
 
+// [NEW] Hook simples de debounce
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+  return debouncedValue;
+}
+
 export default function CommissionsPage() {
   const { error, success } = useToast();
   const [commissions, setCommissions] = useState<Commission[]>([]);
-  const [isRegenerating, setIsRegenerating] = useState(false); // [NEW]
+  const [isRegenerating, setIsRegenerating] = useState(false);
   const [attendants, setAttendants] = useState<Array<{ value: string; label: string }>>([]);
   const [attendantId, setAttendantId] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [currentUserId, setCurrentUserId] = useState("");
   const [loading, setLoading] = useState(false);
+  
+  // States para os inputs (mudam instantaneamente)
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  
+  // [FIX] Debounce values to prevent API spam
+  const debouncedStartDate = useDebounce(startDate, 800);
+  const debouncedEndDate = useDebounce(endDate, 800);
+
   const [statusFilter, setStatusFilter] = useState("");
   const [dayType, setDayType] = useState<"" | "weekday" | "non_working">("");
   const [saleType, setSaleType] = useState("");
@@ -107,9 +128,9 @@ export default function CommissionsPage() {
       if (dayType) params.set("dayType", dayType);
       if (saleType) params.set("saleType", saleType);
       
-      // [FIX] Passando datas para o backend (que tem a correção de timezone)
-      if (startDate) params.set("startDate", startDate);
-      if (endDate) params.set("endDate", endDate);
+      // [FIX] Use debounced values for fetching
+      if (debouncedStartDate) params.set("startDate", debouncedStartDate);
+      if (debouncedEndDate) params.set("endDate", debouncedEndDate);
 
       const url = `/api/commissions/list?${params.toString()}`;
       console.log("[COMMISSIONS PAGE] Fetching:", url);
@@ -130,8 +151,9 @@ export default function CommissionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [attendantId, dayType, saleType, error, isAdmin, startDate, endDate]); // [FIX] Added date dependencies
+  }, [attendantId, dayType, saleType, error, isAdmin, debouncedStartDate, debouncedEndDate]); 
 
+  // [FIX] Trigger fetch only when DEBOUNCED values change
   useEffect(() => {
     fetchCommissions();
   }, [fetchCommissions]);
@@ -165,10 +187,8 @@ export default function CommissionsPage() {
   };
 
   const filteredCommissions = useMemo(() => {
-    // [FIX] Filtro de DATA movido para o Backend. Aqui filtramos apenas o que não for data.
     return commissions.filter((comm) => {
-      // Data filtering removed (handled by server)
-      
+      // Data filtering is handled by backend now
       if (statusFilter && comm.status !== statusFilter) return false;
       if (attendantId && comm.attendantId !== attendantId) return false;
       if (!isAdmin && currentUserId && comm.attendantId !== currentUserId) return false;
@@ -183,6 +203,7 @@ export default function CommissionsPage() {
   }, [filteredCommissions]);
 
   const clearFilters = () => {
+    // [FIX] Clear both start/end dates
     setStartDate("");
     setEndDate("");
     setStatusFilter("");
