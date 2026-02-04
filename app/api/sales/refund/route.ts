@@ -171,7 +171,11 @@ export async function POST(request: NextRequest) {
           newCommissionAmount = parseFloat(commissionResult.rows[0].commission || 0);
         }
       } else {
-        // Sem politica e parcial: mantera o valor original (ou deveria pro-ratar? por enquanto mantemos original para evitar erros)
+        // [FIX] Recalcular proporcionalmente (Pro-rata) baseada na taxa efetiva original
+        // Se antes a comissão era 31.38 para um total de 1255.50 (2.5%), agora deve ser 1.51 para 60.50.
+        const currentNetForCalc = currentTotal > 0 ? currentTotal : 1; 
+        const effectiveRate = parseFloat(sale.commission_amount || 0) / currentNetForCalc;
+        newCommissionAmount = newNetTotal * effectiveRate;
       }
 
       // [FIX] Atualizar tambem a tabela de comissoes
