@@ -26,8 +26,10 @@ type CommissionPolicy = {
   updated_at: string;
 };
 
-const formatPolicyValue = (type: string, value: number) =>
-  type === "percentage" ? `${value}%` : `R$ ${value.toFixed(2)}`;
+const formatPolicyValue = (type: string, value: number) => {
+  const numValue = Number(value);
+  return type === "percentage" ? `${numValue}%` : `R$ ${numValue.toFixed(2)}`;
+};
 
 function CommissionsPolicies() {
   const { error, success } = useToast();
