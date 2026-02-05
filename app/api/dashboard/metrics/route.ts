@@ -255,9 +255,14 @@ export async function GET(request: NextRequest) {
         COALESCE(SUM(CASE WHEN ${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%reclam%' THEN si.quantity ELSE 0 END), 0)::int AS reclamacoes_units,
         COALESCE(SUM(CASE WHEN si.sale_type = '01' AND ${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%reclam%' THEN si.quantity ELSE 0 END), 0)::int AS reclamacoes_vendas,
         COALESCE(SUM(CASE WHEN si.sale_type = '03' AND ${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%reclam%' THEN si.quantity ELSE 0 END), 0)::int AS reclamacoes_consumos,
+        COALESCE(SUM(CASE WHEN ${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%reclam%' THEN si.subtotal ELSE 0 END), 0)::numeric AS reclamacoes_revenue,
+        COUNT(DISTINCT CASE WHEN ${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%reclam%' THEN s.id END)::int AS reclamacoes_sales_count,
+
         COALESCE(SUM(CASE WHEN ${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%atras%' THEN si.quantity ELSE 0 END), 0)::int AS atrasos_units,
         COALESCE(SUM(CASE WHEN si.sale_type = '01' AND ${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%atras%' THEN si.quantity ELSE 0 END), 0)::int AS atrasos_vendas,
-        COALESCE(SUM(CASE WHEN si.sale_type = '03' AND ${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%atras%' THEN si.quantity ELSE 0 END), 0)::int AS atrasos_consumos
+        COALESCE(SUM(CASE WHEN si.sale_type = '03' AND ${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%atras%' THEN si.quantity ELSE 0 END), 0)::int AS atrasos_consumos,
+        COALESCE(SUM(CASE WHEN ${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%atras%' THEN si.subtotal ELSE 0 END), 0)::numeric AS atrasos_revenue,
+        COUNT(DISTINCT CASE WHEN ${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%atras%' THEN s.id END)::int AS atrasos_sales_count
       FROM sales s
       JOIN sale_items si ON si.sale_id = s.id
       LEFT JOIN services serv ON si.product_id = serv.id
@@ -561,9 +566,13 @@ export async function GET(request: NextRequest) {
         reclamacoesUnits: Number(periodTotalsRow.reclamacoes_units ?? 0),
         reclamacoesVendas: Number(periodTotalsRow.reclamacoes_vendas ?? 0),
         reclamacoesConsumos: Number(periodTotalsRow.reclamacoes_consumos ?? 0),
+        reclamacoesRevenue: Number(periodTotalsRow.reclamacoes_revenue ?? 0),
+        reclamacoesSalesCount: Number(periodTotalsRow.reclamacoes_sales_count ?? 0),
         atrasosUnits: Number(periodTotalsRow.atrasos_units ?? 0),
         atrasosVendas: Number(periodTotalsRow.atrasos_vendas ?? 0),
         atrasosConsumos: Number(periodTotalsRow.atrasos_consumos ?? 0),
+        atrasosRevenue: Number(periodTotalsRow.atrasos_revenue ?? 0),
+        atrasosSalesCount: Number(periodTotalsRow.atrasos_sales_count ?? 0),
         totalCommission: Number(salesAggRow.total_commission ?? 0),
         totalDiscount: Number(salesAggRow.total_discount ?? 0),
       },

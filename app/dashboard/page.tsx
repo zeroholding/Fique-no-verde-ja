@@ -26,9 +26,13 @@ type PeriodTotals = {
   reclamacoesUnits: number;
   reclamacoesVendas: number;
   reclamacoesConsumos: number;
+  reclamacoesRevenue: number;     // [NEW]
+  reclamacoesSalesCount: number;  // [NEW]
   atrasosUnits: number;
   atrasosVendas: number;
   atrasosConsumos: number;
+  atrasosRevenue: number;         // [NEW]
+  atrasosSalesCount: number;      // [NEW]
   totalCommission: number;
   totalDiscount: number;
   refundTotal: number;
@@ -387,6 +391,23 @@ export default function Dashboard() {
 
   const periodTotals = metrics?.periodTotals;
   const refundTotal = periodTotals?.refundTotal ?? 0;
+
+  // [NEW] Calculate Averages
+  const netRevenue = (periodTotals?.totalValue ?? 0) - (periodTotals?.totalDiscount ?? 0) - refundTotal;
+  const avgTicket = periodTotals?.salesCount ? netRevenue / periodTotals.salesCount : 0;
+
+  const reclamacoesRevenue = periodTotals?.reclamacoesRevenue ?? 0;
+  const reclamacoesUnits = periodTotals?.reclamacoesUnits ?? 0;
+  const reclamacoesSalesCount = periodTotals?.reclamacoesSalesCount ?? 0;
+  const avgComplaintRevenue = reclamacoesSalesCount ? reclamacoesRevenue / reclamacoesSalesCount : 0;
+  const avgComplaintUnits = reclamacoesSalesCount ? reclamacoesUnits / reclamacoesSalesCount : 0;
+
+  const atrasosRevenue = periodTotals?.atrasosRevenue ?? 0;
+  const atrasosUnits = periodTotals?.atrasosUnits ?? 0;
+  const atrasosSalesCount = periodTotals?.atrasosSalesCount ?? 0;
+  const avgDelayRevenue = atrasosSalesCount ? atrasosRevenue / atrasosSalesCount : 0;
+  const avgDelayUnits = atrasosSalesCount ? atrasosUnits / atrasosSalesCount : 0;
+
   const analysisRange = metrics?.analysisRange;
   const analysisPeriodDays =
     metrics?.analysisPeriodDays ??
@@ -892,9 +913,14 @@ export default function Dashboard() {
               <div>
                 <p className="text-sm text-gray-400 mb-1">Receita Líquida Gerada</p>
                 <p className="text-3xl font-bold text-white">
-                  {formatCurrency((periodTotals?.totalValue ?? 0) - (periodTotals?.totalDiscount ?? 0) - refundTotal)}
+                  {formatCurrency(netRevenue)}
                 </p>
-                <p className="text-sm text-green-300 mt-1">{periodDescription}</p>
+                <div className="flex flex-col mt-1">
+                    <p className="text-sm text-green-300">{periodDescription}</p>
+                    <p className="text-xs text-green-200/70 mt-0.5">
+                        Média: {formatCurrency(avgTicket)} / atendimento
+                    </p>
+                </div>
               </div>
               <div className="w-14 h-14 rounded-full bg-green-500/20 flex items-center justify-center">
                 <svg
@@ -943,9 +969,14 @@ export default function Dashboard() {
                       {periodTotals?.reclamacoesUnits ?? 0}
                     </p>
                     <p className="text-xs text-gray-400">Reclamações</p>
-                    <p className="text-[10px] text-gray-500">
-                      {periodTotals?.reclamacoesVendas ?? 0} vend. + {periodTotals?.reclamacoesConsumos ?? 0} cons.
-                    </p>
+                    <div className="flex flex-col gap-0.5">
+                        <p className="text-[10px] text-gray-500">
+                        {periodTotals?.reclamacoesVendas ?? 0} vend. + {periodTotals?.reclamacoesConsumos ?? 0} cons.
+                        </p>
+                        <p className="text-[10px] text-orange-200/80 font-medium">
+                            Média: {formatCurrency(avgComplaintRevenue)} ({avgComplaintUnits.toFixed(1)} un/venda)
+                        </p>
+                    </div>
                   </div>
                   <div className="h-14 w-px bg-white/20"></div>
                   <div>
@@ -953,9 +984,14 @@ export default function Dashboard() {
                       {periodTotals?.atrasosUnits ?? 0}
                     </p>
                     <p className="text-xs text-gray-400">Atrasos</p>
-                    <p className="text-[10px] text-gray-500">
-                      {periodTotals?.atrasosVendas ?? 0} vend. + {periodTotals?.atrasosConsumos ?? 0} cons.
-                    </p>
+                    <div className="flex flex-col gap-0.5">
+                        <p className="text-[10px] text-gray-500">
+                        {periodTotals?.atrasosVendas ?? 0} vend. + {periodTotals?.atrasosConsumos ?? 0} cons.
+                        </p>
+                        <p className="text-[10px] text-amber-200/80 font-medium">
+                           Média: {formatCurrency(avgDelayRevenue)} ({avgDelayUnits.toFixed(1)} un/venda)
+                        </p>
+                    </div>
                   </div>
                 </div>
                 <p className="text-sm text-orange-300 mt-2">{periodDescription}</p>
