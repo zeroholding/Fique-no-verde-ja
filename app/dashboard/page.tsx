@@ -399,14 +399,18 @@ export default function Dashboard() {
   const reclamacoesRevenue = periodTotals?.reclamacoesRevenue ?? 0;
   const reclamacoesUnits = periodTotals?.reclamacoesUnits ?? 0;
   const reclamacoesSalesCount = periodTotals?.reclamacoesSalesCount ?? 0;
-  const avgComplaintRevenue = reclamacoesSalesCount ? reclamacoesRevenue / reclamacoesSalesCount : 0;
+  // Média de qtd por atendimento
   const avgComplaintUnits = reclamacoesSalesCount ? reclamacoesUnits / reclamacoesSalesCount : 0;
+  // Média de valor unitário por item removido
+  const avgComplaintUnitValue = reclamacoesUnits > 0 ? reclamacoesRevenue / reclamacoesUnits : 0;
 
   const atrasosRevenue = periodTotals?.atrasosRevenue ?? 0;
   const atrasosUnits = periodTotals?.atrasosUnits ?? 0;
   const atrasosSalesCount = periodTotals?.atrasosSalesCount ?? 0;
-  const avgDelayRevenue = atrasosSalesCount ? atrasosRevenue / atrasosSalesCount : 0;
+  // Média de qtd por atendimento
   const avgDelayUnits = atrasosSalesCount ? atrasosUnits / atrasosSalesCount : 0;
+  // Média de valor unitário por item removido
+  const avgDelayUnitValue = atrasosUnits > 0 ? atrasosRevenue / atrasosUnits : 0;
 
   const analysisRange = metrics?.analysisRange;
   const analysisPeriodDays =
@@ -935,15 +939,30 @@ export default function Dashboard() {
             </div>
           </Card>
 
-          {/* VENDAS */}
+          {/* ATENDIMENTOS + MÉDIAS DE VALOR UNITÁRIO */}
           <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
             <div className="flex items-center justify-between">
-              <div>
+              <div className="flex-1">
                 <p className="text-sm text-gray-400 mb-1">Atendimentos</p>
                 <p className="text-3xl font-bold text-white">
                   {periodTotals?.salesCount ?? 0}
                 </p>
                 <p className="text-sm text-blue-300 mt-1">{periodDescription}</p>
+                {/* Médias de Valor Unitário por Item Removido */}
+                <div className="mt-3 pt-3 border-t border-white/10 grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-[10px] text-gray-500 uppercase">Valor Unit. Atraso</p>
+                    <p className="text-sm font-semibold text-amber-300">
+                      {formatCurrency(avgDelayUnitValue)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-500 uppercase">Valor Unit. Reclamação</p>
+                    <p className="text-sm font-semibold text-orange-300">
+                      {formatCurrency(avgComplaintUnitValue)}
+                    </p>
+                  </div>
+                </div>
               </div>
               <div className="w-14 h-14 rounded-full bg-blue-500/20 flex items-center justify-center">
                 <svg
@@ -974,7 +993,7 @@ export default function Dashboard() {
                         {periodTotals?.reclamacoesVendas ?? 0} vend. + {periodTotals?.reclamacoesConsumos ?? 0} cons.
                         </p>
                         <p className="text-[10px] text-orange-200/80 font-medium">
-                            Média: {formatCurrency(avgComplaintRevenue)} ({avgComplaintUnits.toFixed(1)} un/venda)
+                            Média: {avgComplaintUnits.toFixed(1)} un/atendimento
                         </p>
                     </div>
                   </div>
@@ -989,7 +1008,7 @@ export default function Dashboard() {
                         {periodTotals?.atrasosVendas ?? 0} vend. + {periodTotals?.atrasosConsumos ?? 0} cons.
                         </p>
                         <p className="text-[10px] text-amber-200/80 font-medium">
-                           Média: {formatCurrency(avgDelayRevenue)} ({avgDelayUnits.toFixed(1)} un/venda)
+                           Média: {avgDelayUnits.toFixed(1)} un/atendimento
                         </p>
                     </div>
                   </div>
