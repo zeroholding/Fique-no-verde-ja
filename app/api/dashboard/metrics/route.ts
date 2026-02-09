@@ -248,6 +248,22 @@ export async function GET(request: NextRequest) {
     `;
 
     // Period totals - aggregations with inline filters
+    const netItemValueSql = `
+      CASE
+        WHEN NULLIF(SUM(si.subtotal) OVER (PARTITION BY s.id), 0) IS NULL THEN 0
+        ELSE
+          si.subtotal
+          - COALESCE(si.discount_amount, 0)
+          - GREATEST(
+              COALESCE(s.total_discount, 0)
+              - COALESCE(SUM(si.discount_amount) OVER (PARTITION BY s.id), 0),
+              0
+            ) * (si.subtotal / NULLIF(SUM(si.subtotal) OVER (PARTITION BY s.id), 0))
+          - COALESCE(s.refund_total, 0)
+            * (si.subtotal / NULLIF(SUM(si.subtotal) OVER (PARTITION BY s.id), 0))
+      END
+    `;
+
     const periodTotalsQuery = `
       SELECT
         COALESCE(SUM(si.subtotal), 0)::numeric AS total_value,
@@ -255,13 +271,13 @@ export async function GET(request: NextRequest) {
         COALESCE(SUM(CASE WHEN ${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%reclam%' THEN si.quantity ELSE 0 END), 0)::int AS reclamacoes_units,
         COALESCE(SUM(CASE WHEN si.sale_type = '01' AND ${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%reclam%' THEN si.quantity ELSE 0 END), 0)::int AS reclamacoes_vendas,
         COALESCE(SUM(CASE WHEN si.sale_type = '03' AND ${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%reclam%' THEN si.quantity ELSE 0 END), 0)::int AS reclamacoes_consumos,
-        COALESCE(SUM(CASE WHEN ${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%reclam%' THEN si.subtotal ELSE 0 END), 0)::numeric AS reclamacoes_revenue,
+        COALESCE(SUM(CASE WHEN ${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%reclam%' THEN (${netItemValueSql}) ELSE 0 END), 0)::numeric AS reclamacoes_revenue,
         COUNT(DISTINCT CASE WHEN ${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%reclam%' THEN s.id END)::int AS reclamacoes_sales_count,
 
         COALESCE(SUM(CASE WHEN ${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%atras%' THEN si.quantity ELSE 0 END), 0)::int AS atrasos_units,
         COALESCE(SUM(CASE WHEN si.sale_type = '01' AND ${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%atras%' THEN si.quantity ELSE 0 END), 0)::int AS atrasos_vendas,
         COALESCE(SUM(CASE WHEN si.sale_type = '03' AND ${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%atras%' THEN si.quantity ELSE 0 END), 0)::int AS atrasos_consumos,
-        COALESCE(SUM(CASE WHEN ${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%atras%' THEN si.subtotal ELSE 0 END), 0)::numeric AS atrasos_revenue,
+        COALESCE(SUM(CASE WHEN ${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%atras%' THEN (${netItemValueSql}) ELSE 0 END), 0)::numeric AS atrasos_revenue,
         COUNT(DISTINCT CASE WHEN ${normalizeServiceSql('COALESCE(serv.name, si.product_name)')} LIKE '%atras%' THEN s.id END)::int AS atrasos_sales_count
       FROM sales s
       JOIN sale_items si ON si.sale_id = s.id
