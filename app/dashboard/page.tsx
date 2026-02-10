@@ -626,7 +626,7 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6 sm:mb-8 space-y-3 sm:space-y-4">
-          <div className="space-y-1">
+          <div className="space-y-1 sm:space-y-1 pl-14 sm:pl-0 -mt-6 sm:mt-0">
             <p className="text-xs sm:text-sm text-gray-400">Bem-vindo(a)</p>
             <h1 className="text-2xl sm:text-3xl font-bold text-white">
               Olá, {currentUser?.firstName}! 👋
@@ -863,15 +863,15 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
           {/* FATURAMENTO BRUTO */}
           <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
+            <div className="flex items-center gap-4 sm:justify-between">
+              <div className="flex-1 text-left">
                 <p className="text-sm text-gray-400 mb-1">Receita Bruta Gerada</p>
                 <p className="text-2xl sm:text-3xl font-bold text-white">
                   {formatCurrency(periodTotals?.totalValue ?? 0)}
                 </p>
                 <p className="text-sm text-emerald-300 mt-1">{periodDescription}</p>
               </div>
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-emerald-500/20 flex items-center justify-center">
+              <div className="order-first sm:order-last w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-emerald-500/20 flex items-center justify-center">
                 <svg
                   className="w-7 h-7 sm:w-8 sm:h-8 text-emerald-300"
                   fill="none"
@@ -886,8 +886,8 @@ export default function Dashboard() {
 
           {/* DESCONTOS + ESTORNOS */}
           <Card className="bg-gradient-to-br from-red-500/10 to-amber-500/10 border-red-500/20">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
+            <div className="flex items-center gap-4 sm:justify-between">
+              <div className="flex-1 text-left">
                 <p className="text-sm text-gray-400 mb-1">Descontos + Estornos</p>
                 <p className="text-2xl sm:text-3xl font-bold text-white">
                   {formatCurrency((periodTotals?.totalDiscount ?? 0) + refundTotal)}
@@ -897,7 +897,7 @@ export default function Dashboard() {
                   Descontos: {formatCurrency(periodTotals?.totalDiscount ?? 0)} • Estornos: {formatCurrency(refundTotal)}
                 </p>
               </div>
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-red-500/20 flex items-center justify-center">
+              <div className="order-first sm:order-last w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-red-500/20 flex items-center justify-center">
                 <svg
                   className="w-7 h-7 sm:w-8 sm:h-8 text-red-300"
                   fill="none"
@@ -913,8 +913,8 @@ export default function Dashboard() {
 
           {/* FATURAMENTO LÍQUIDO */}
           <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
+            <div className="flex items-center gap-4 sm:justify-between">
+              <div className="flex-1 text-left">
                 <p className="text-sm text-gray-400 mb-1">Receita Líquida Gerada</p>
                 <p className="text-2xl sm:text-3xl font-bold text-white">
                   {formatCurrency(netRevenue)}
@@ -926,7 +926,7 @@ export default function Dashboard() {
                     </p>
                 </div>
               </div>
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-green-500/20 flex items-center justify-center">
+              <div className="order-first sm:order-last w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-green-500/20 flex items-center justify-center">
                 <svg
                   className="w-7 h-7 sm:w-8 sm:h-8 text-green-300"
                   fill="none"
@@ -941,8 +941,8 @@ export default function Dashboard() {
 
           {/* ATENDIMENTOS + MÉDIAS DE VALOR UNITÁRIO */}
           <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex-1">
+            <div className="flex items-center gap-4 sm:justify-between">
+              <div className="flex-1 text-left">
                 <p className="text-sm text-gray-400 mb-1">Atendimentos</p>
                 <p className="text-2xl sm:text-3xl font-bold text-white">
                   {periodTotals?.salesCount ?? 0}
@@ -964,7 +964,7 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-blue-500/20 flex items-center justify-center">
+              <div className="order-first sm:order-last w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-blue-500/20 flex items-center justify-center">
                 <svg
                   className="w-7 h-7 sm:w-8 sm:h-8 text-blue-300"
                   fill="none"
@@ -979,8 +979,8 @@ export default function Dashboard() {
 
           {/* RECLAMAÇÕES & ATRASOS - CARD UNIFICADO */}
           <Card className="bg-gradient-to-br from-orange-500/10 to-amber-600/5 border-orange-500/20">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex-1">
+            <div className="flex items-center gap-4 sm:justify-between">
+              <div className="flex-1 text-left">
                 <p className="text-sm text-gray-400 mb-2">Reclamações & Atrasos</p>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                   <div>
@@ -1015,7 +1015,7 @@ export default function Dashboard() {
                 </div>
                 <p className="text-sm text-orange-300 mt-2">{periodDescription}</p>
               </div>
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-orange-500/20 flex items-center justify-center">
+              <div className="order-first sm:order-last w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-orange-500/20 flex items-center justify-center">
                 <svg
                   className="w-7 h-7 sm:w-8 sm:h-8 text-orange-300"
                   fill="none"
@@ -1030,15 +1030,15 @@ export default function Dashboard() {
 
           {/* COMISSÕES */}
           <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
+            <div className="flex items-center gap-4 sm:justify-between">
+              <div className="flex-1 text-left">
                 <p className="text-sm text-gray-400 mb-1">Comissão gerada</p>
                 <p className="text-2xl sm:text-3xl font-bold text-white">
                   {formatCurrency(periodTotals?.totalCommission ?? 0)}
                 </p>
                 <p className="text-sm text-purple-300 mt-1">{periodDescription}</p>
               </div>
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-purple-500/20 flex items-center justify-center">
+              <div className="order-first sm:order-last w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-purple-500/20 flex items-center justify-center">
                 <svg
                   className="w-7 h-7 sm:w-8 sm:h-8 text-purple-300"
                   fill="none"
