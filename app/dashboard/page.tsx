@@ -501,7 +501,7 @@ export default function Dashboard() {
     }));
 
     return (
-      <div className="h-72 w-full mt-4 min-w-0">
+      <div className="h-64 sm:h-72 w-full mt-4 min-w-0">
         <ResponsiveContainer width="99%" height="100%">
           <ComposedChart data={data} margin={{ top: 20, right: 20, bottom: 20, left: 10 }}>
             <defs>
@@ -571,7 +571,7 @@ export default function Dashboard() {
     }));
 
     return (
-      <div className="h-72 w-full mt-4 min-w-0">
+      <div className="h-64 sm:h-72 w-full mt-4 min-w-0">
         <ResponsiveContainer width="99%" height="100%">
           <BarChart data={data} margin={{ top: 20, right: 20, bottom: 20, left: 10 }}>
             <defs>
@@ -622,16 +622,16 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen p-8">
+    <div className="min-h-screen px-4 py-6 sm:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8 space-y-4">
+        <div className="mb-6 sm:mb-8 space-y-3 sm:space-y-4">
           <div className="space-y-1">
-            <p className="text-sm text-gray-400">Bem-vindo(a)</p>
-            <h1 className="text-3xl font-bold text-white">
+            <p className="text-xs sm:text-sm text-gray-400">Bem-vindo(a)</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">
               Olá, {currentUser?.firstName}! 👋
             </h1>
-            <p className="text-sm text-gray-400">
+            <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">
               {analysisRange
                 ? `Período: ${formatDate(analysisRange.startDate)} - ${formatDate(
                   analysisRange.endDate,
@@ -647,7 +647,7 @@ export default function Dashboard() {
           {/* Filtros Compactos */}
           <div className="space-y-3">
             {/* Linha Principal - Sempre Visível */}
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-start gap-2 sm:items-center">
               {/* Períodos Rápidos */}
               {periodOptions.map((option) => (
                 <button
@@ -663,10 +663,10 @@ export default function Dashboard() {
               ))}
 
               {/* Separador */}
-              <div className="h-6 w-px bg-white/20"></div>
+              <div className="hidden sm:block h-6 w-px bg-white/20"></div>
 
               {/* Filtros rápidos: Hoje / Ontem */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => {
                     const today = new Date();
@@ -731,7 +731,7 @@ export default function Dashboard() {
               </div>
 
               {/* Filtro de Serviço */}
-              <div className="min-w-[180px]">
+              <div className="w-full sm:min-w-[180px] sm:w-auto">
                 <Select
                   value={selectedService}
                   onChange={(e: any) => setSelectedService(e.target.value)}
@@ -742,24 +742,24 @@ export default function Dashboard() {
                       label: service.label
                     }))
                   ]}
-                  className="rounded-lg border border-white/20 bg-black/30 px-3 py-1.5 text-xs"
+                  className="w-full rounded-lg border border-white/20 bg-black/30 px-3 py-1.5 text-xs"
                 />
               </div>
 
               {/* Filtro de Atendente (admin) */}
               {currentUser?.isAdmin && attendants.length > 0 && (
-                <div className="min-w-[200px]">
+                <div className="w-full sm:min-w-[200px] sm:w-auto">
                   <Select
                     value={attendantFilter}
                     onChange={(e: any) => setAttendantFilter(e.target.value)}
                     options={[{ value: "", label: "Todos os atendentes" }, ...attendants]}
-                    className="rounded-lg border border-white/20 bg-black/30 px-3 py-1.5 text-xs"
+                    className="w-full rounded-lg border border-white/20 bg-black/30 px-3 py-1.5 text-xs"
                   />
                 </div>
               )}
 
               {/* Filtro de Tipo de Dia */}
-              <div className="min-w-[150px]">
+              <div className="w-full sm:min-w-[150px] sm:w-auto">
                 <Select
                   value={dayTypeFilter}
                   onChange={(e: any) => setDayTypeFilter(e.target.value)}
@@ -768,12 +768,12 @@ export default function Dashboard() {
                     { value: "weekday", label: "Dias Úteis" },
                     { value: "non_working", label: "Finais de Semana" },
                   ]}
-                  className="rounded-lg border border-white/20 bg-black/30 px-3 py-1.5 text-xs"
+                  className="w-full rounded-lg border border-white/20 bg-black/30 px-3 py-1.5 text-xs"
                 />
               </div>
 
               {/* Filtro de Tipo de Venda/Atendimento */}
-              <div className="min-w-[180px]">
+              <div className="w-full sm:min-w-[180px] sm:w-auto">
                 <Select
                   value={saleTypeFilter}
                   onChange={(e: any) => setSaleTypeFilter(e.target.value)}
@@ -782,17 +782,17 @@ export default function Dashboard() {
                     { value: "common", label: "Venda Comum" },
                     { value: "03", label: "Consumo de Pacote" },
                   ]}
-                  className="rounded-lg border border-white/20 bg-black/30 px-3 py-1.5 text-xs"
+                  className="w-full rounded-lg border border-white/20 bg-black/30 px-3 py-1.5 text-xs"
                 />
               </div>
 
               {/* Separador */}
-              <div className="h-6 w-px bg-white/20"></div>
+              <div className="hidden sm:block h-6 w-px bg-white/20"></div>
 
               {/* Toggle Filtros Avançados */}
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-white/20"
+                className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-white/20 sm:w-auto sm:justify-start"
               >
                 <svg
                   className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`}
@@ -808,8 +808,8 @@ export default function Dashboard() {
 
             {/* Filtros Avançados - Expansível */}
             {showFilters && (
-              <div className="flex flex-wrap items-center gap-2 pl-4 border-l-2 border-white/20 animate-in slide-in-from-top-2">
-                <span className="text-xs text-gray-400">Datas personalizadas:</span>
+              <div className="flex flex-wrap items-start gap-2 border-t border-white/10 pt-3 sm:items-center sm:border-t-0 sm:pl-4 sm:pt-0 sm:border-l-2 border-white/20 animate-in slide-in-from-top-2">
+                <span className="w-full text-xs text-gray-400 sm:w-auto">Datas personalizadas:</span>
                 <input
                   type="date"
                   value={customRangeDraft.start}
@@ -820,7 +820,7 @@ export default function Dashboard() {
                     }))
                   }
                   placeholder="Data inicial"
-                  className="rounded-lg border border-white/20 bg-black/30 px-3 py-1.5 text-xs text-white placeholder:text-gray-500 focus:border-white focus:outline-none"
+                  className="w-full rounded-lg border border-white/20 bg-black/30 px-3 py-1.5 text-xs text-white placeholder:text-gray-500 focus:border-white focus:outline-none sm:w-auto"
                 />
                 <span className="text-xs text-gray-500">até</span>
                 <input
@@ -833,12 +833,12 @@ export default function Dashboard() {
                     }))
                   }
                   placeholder="Data final"
-                  className="rounded-lg border border-white/20 bg-black/30 px-3 py-1.5 text-xs text-white placeholder:text-gray-500 focus:border-white focus:outline-none"
+                  className="w-full rounded-lg border border-white/20 bg-black/30 px-3 py-1.5 text-xs text-white placeholder:text-gray-500 focus:border-white focus:outline-none sm:w-auto"
                 />
                 <button
                   onClick={handleApplyCustomRange}
                   disabled={!customRangeDraft.start || !customRangeDraft.end}
-                  className="rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-1.5 text-xs font-medium text-white transition-all hover:from-blue-600 hover:to-purple-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:from-gray-500 disabled:to-gray-600"
+                  className="w-full rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-1.5 text-xs font-medium text-white transition-all hover:from-blue-600 hover:to-purple-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:from-gray-500 disabled:to-gray-600 sm:w-auto"
                 >
                   Aplicar período
                 </button>
@@ -849,7 +849,7 @@ export default function Dashboard() {
                       setCustomRangeDraft({ start: '', end: '' });
                       setAnalysisPeriod('30');
                     }}
-                    className="rounded-lg bg-red-500/20 px-3 py-1.5 text-xs font-medium text-red-300 transition-all hover:bg-red-500/30"
+                    className="w-full rounded-lg bg-red-500/20 px-3 py-1.5 text-xs font-medium text-red-300 transition-all hover:bg-red-500/30 sm:w-auto"
                   >
                     Limpar
                   </button>
@@ -860,20 +860,20 @@ export default function Dashboard() {
         </div>
 
         {/* Cards de Métricas Principais */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
           {/* FATURAMENTO BRUTO */}
           <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-400 mb-1">Receita Bruta Gerada</p>
-                <p className="text-3xl font-bold text-white">
+                <p className="text-2xl sm:text-3xl font-bold text-white">
                   {formatCurrency(periodTotals?.totalValue ?? 0)}
                 </p>
                 <p className="text-sm text-emerald-300 mt-1">{periodDescription}</p>
               </div>
-              <div className="w-14 h-14 rounded-full bg-emerald-500/20 flex items-center justify-center">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-emerald-500/20 flex items-center justify-center">
                 <svg
-                  className="w-8 h-8 text-emerald-300"
+                  className="w-7 h-7 sm:w-8 sm:h-8 text-emerald-300"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -886,10 +886,10 @@ export default function Dashboard() {
 
           {/* DESCONTOS + ESTORNOS */}
           <Card className="bg-gradient-to-br from-red-500/10 to-amber-500/10 border-red-500/20">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-400 mb-1">Descontos + Estornos</p>
-                <p className="text-3xl font-bold text-white">
+                <p className="text-2xl sm:text-3xl font-bold text-white">
                   {formatCurrency((periodTotals?.totalDiscount ?? 0) + refundTotal)}
                 </p>
                 <p className="text-sm text-red-200 mt-1">{periodDescription}</p>
@@ -897,9 +897,9 @@ export default function Dashboard() {
                   Descontos: {formatCurrency(periodTotals?.totalDiscount ?? 0)} • Estornos: {formatCurrency(refundTotal)}
                 </p>
               </div>
-              <div className="w-14 h-14 rounded-full bg-red-500/20 flex items-center justify-center">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-red-500/20 flex items-center justify-center">
                 <svg
-                  className="w-8 h-8 text-red-300"
+                  className="w-7 h-7 sm:w-8 sm:h-8 text-red-300"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -913,10 +913,10 @@ export default function Dashboard() {
 
           {/* FATURAMENTO LÍQUIDO */}
           <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-400 mb-1">Receita Líquida Gerada</p>
-                <p className="text-3xl font-bold text-white">
+                <p className="text-2xl sm:text-3xl font-bold text-white">
                   {formatCurrency(netRevenue)}
                 </p>
                 <div className="flex flex-col mt-1">
@@ -926,9 +926,9 @@ export default function Dashboard() {
                     </p>
                 </div>
               </div>
-              <div className="w-14 h-14 rounded-full bg-green-500/20 flex items-center justify-center">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-green-500/20 flex items-center justify-center">
                 <svg
-                  className="w-8 h-8 text-green-300"
+                  className="w-7 h-7 sm:w-8 sm:h-8 text-green-300"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -941,15 +941,15 @@ export default function Dashboard() {
 
           {/* ATENDIMENTOS + MÉDIAS DE VALOR UNITÁRIO */}
           <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex-1">
                 <p className="text-sm text-gray-400 mb-1">Atendimentos</p>
-                <p className="text-3xl font-bold text-white">
+                <p className="text-2xl sm:text-3xl font-bold text-white">
                   {periodTotals?.salesCount ?? 0}
                 </p>
                 <p className="text-sm text-blue-300 mt-1">{periodDescription}</p>
                 {/* Médias de Valor Unitário por Item Removido */}
-                <div className="mt-3 pt-3 border-t border-white/10 grid grid-cols-2 gap-3">
+                <div className="mt-3 pt-3 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <p className="text-[10px] text-gray-500 uppercase">Valor Unit. Atraso</p>
                     <p className="text-sm font-semibold text-amber-300">
@@ -964,9 +964,9 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
-              <div className="w-14 h-14 rounded-full bg-blue-500/20 flex items-center justify-center">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-blue-500/20 flex items-center justify-center">
                 <svg
-                  className="w-8 h-8 text-blue-300"
+                  className="w-7 h-7 sm:w-8 sm:h-8 text-blue-300"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -979,12 +979,12 @@ export default function Dashboard() {
 
           {/* RECLAMAÇÕES & ATRASOS - CARD UNIFICADO */}
           <Card className="bg-gradient-to-br from-orange-500/10 to-amber-600/5 border-orange-500/20">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex-1">
                 <p className="text-sm text-gray-400 mb-2">Reclamações & Atrasos</p>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                   <div>
-                    <p className="text-2xl font-bold text-orange-300">
+                    <p className="text-xl sm:text-2xl font-bold text-orange-300">
                       {periodTotals?.reclamacoesUnits ?? 0}
                     </p>
                     <p className="text-xs text-gray-400">Reclamações</p>
@@ -997,9 +997,9 @@ export default function Dashboard() {
                         </p>
                     </div>
                   </div>
-                  <div className="h-14 w-px bg-white/20"></div>
+                  <div className="hidden sm:block h-14 w-px bg-white/20"></div>
                   <div>
-                    <p className="text-2xl font-bold text-amber-300">
+                    <p className="text-xl sm:text-2xl font-bold text-amber-300">
                       {periodTotals?.atrasosUnits ?? 0}
                     </p>
                     <p className="text-xs text-gray-400">Atrasos</p>
@@ -1015,9 +1015,9 @@ export default function Dashboard() {
                 </div>
                 <p className="text-sm text-orange-300 mt-2">{periodDescription}</p>
               </div>
-              <div className="w-14 h-14 rounded-full bg-orange-500/20 flex items-center justify-center">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-orange-500/20 flex items-center justify-center">
                 <svg
-                  className="w-8 h-8 text-orange-300"
+                  className="w-7 h-7 sm:w-8 sm:h-8 text-orange-300"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -1030,17 +1030,17 @@ export default function Dashboard() {
 
           {/* COMISSÕES */}
           <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-400 mb-1">Comissão gerada</p>
-                <p className="text-3xl font-bold text-white">
+                <p className="text-2xl sm:text-3xl font-bold text-white">
                   {formatCurrency(periodTotals?.totalCommission ?? 0)}
                 </p>
                 <p className="text-sm text-purple-300 mt-1">{periodDescription}</p>
               </div>
-              <div className="w-14 h-14 rounded-full bg-purple-500/20 flex items-center justify-center">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-purple-500/20 flex items-center justify-center">
                 <svg
-                  className="w-8 h-8 text-purple-300"
+                  className="w-7 h-7 sm:w-8 sm:h-8 text-purple-300"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -1055,7 +1055,7 @@ export default function Dashboard() {
 
 
         {/* Performance Avançada */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <Card>
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -1080,7 +1080,7 @@ export default function Dashboard() {
                       : 0;
                   return (
                     <div key={`${service.displayName}-${index}`} className="space-y-2">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                           <p className="text-white font-medium">{service.displayName}</p>
                           <p className="text-xs text-gray-400">
@@ -1146,7 +1146,7 @@ export default function Dashboard() {
                 {attendantServices.map((service, index) => (
                   <div
                     key={`${service.displayName}-${index}`}
-                    className="flex items-center justify-between text-sm text-gray-300 border-b border-white/5 pb-2 last:border-0 last:pb-0"
+                    className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm text-gray-300 border-b border-white/5 pb-2 last:border-0 last:pb-0"
                   >
                     <div>
                       <p className="text-white font-medium">{service.displayName}</p>
@@ -1168,7 +1168,7 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Top Serviços */}
           <Card>
             <h2 className="text-xl font-semibold text-white mb-4">
@@ -1181,10 +1181,10 @@ export default function Dashboard() {
                   return (
                     <div
                       key={index}
-                      className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10"
+                      className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-3 rounded-lg bg-white/5 border border-white/10"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm">
+                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm">
                           {index + 1}
                         </div>
                         <div>
@@ -1192,7 +1192,7 @@ export default function Dashboard() {
                           <p className="text-xs text-gray-400">{service.count} atendimentos</p>
                         </div>
                       </div>
-                      <p className="text-green-400 font-semibold">
+                      <p className="text-green-400 font-semibold sm:text-right">
                         {formatCurrency(service.total)}
                       </p>
                     </div>
@@ -1216,7 +1216,7 @@ export default function Dashboard() {
                 {metrics.recentSales.map((sale) => (
                   <div
                     key={sale.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10"
+                    className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-3 rounded-lg bg-white/5 border border-white/10"
                   >
                     <div>
                       <p className="text-white font-medium">{sale.clientName}</p>
@@ -1224,7 +1224,7 @@ export default function Dashboard() {
                         {formatDate(sale.saleDate)}
                       </p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-left sm:text-right">
                       <p className="text-white font-semibold">
                         {formatCurrency(sale.total)}
                       </p>
@@ -1248,7 +1248,7 @@ export default function Dashboard() {
               Quantidade x Faturamento · últimos {analysisPeriodDays} dias
             </p>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
             <div>
               <p className="text-sm text-gray-300 font-semibold mb-2">
                 Quantidade (barras) x Valor gasto (linha)
