@@ -626,7 +626,7 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6 sm:mb-8 space-y-3 sm:space-y-4">
-          <div className="space-y-1 sm:space-y-1 pl-14 sm:pl-0 -mt-6 sm:mt-0">
+          <div className="space-y-1 sm:space-y-1 pl-14 sm:pl-0 -mt-12 sm:mt-0">
             <p className="text-xs sm:text-sm text-gray-400">Bem-vindo(a)</p>
             <h1 className="text-2xl sm:text-3xl font-bold text-white">
               Olá, {currentUser?.firstName}! 👋
@@ -735,6 +735,7 @@ export default function Dashboard() {
                 <Select
                   value={selectedService}
                   onChange={(e: any) => setSelectedService(e.target.value)}
+                  nativeOnMobile
                   options={[
                     { value: "", label: "Todos os serviços" },
                     ...services.map((service) => ({
@@ -752,6 +753,7 @@ export default function Dashboard() {
                   <Select
                     value={attendantFilter}
                     onChange={(e: any) => setAttendantFilter(e.target.value)}
+                    nativeOnMobile
                     options={[{ value: "", label: "Todos os atendentes" }, ...attendants]}
                     className="w-full rounded-lg border border-white/20 bg-black/30 px-3 py-1.5 text-xs"
                   />
@@ -763,6 +765,7 @@ export default function Dashboard() {
                 <Select
                   value={dayTypeFilter}
                   onChange={(e: any) => setDayTypeFilter(e.target.value)}
+                  nativeOnMobile
                   options={[
                     { value: "", label: "Tipo de Dia: Todos" },
                     { value: "weekday", label: "Dias Úteis" },
@@ -777,6 +780,7 @@ export default function Dashboard() {
                 <Select
                   value={saleTypeFilter}
                   onChange={(e: any) => setSaleTypeFilter(e.target.value)}
+                  nativeOnMobile
                   options={[
                     { value: "", label: "Tipo de Venda: Todos" },
                     { value: "common", label: "Venda Comum" },

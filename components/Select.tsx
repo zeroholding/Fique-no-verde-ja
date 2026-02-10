@@ -22,6 +22,7 @@ interface SelectProps {
   disabled?: boolean;
   placeholder?: string;
   className?: string;
+  nativeOnMobile?: boolean;
   id?: string;
   [key: string]: any;
 }
@@ -40,12 +41,31 @@ export const Select = ({
   placeholder = "Selecione uma opção",
   disabled,
   required,
+  nativeOnMobile = false,
   ...props
 }: SelectProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState("");
+  const [useNative, setUseNative] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!nativeOnMobile) return;
+    if (typeof window === "undefined") return;
+
+    const media = window.matchMedia("(max-width: 640px), (pointer: coarse)");
+    const update = () => setUseNative(media.matches);
+    update();
+
+    if (typeof media.addEventListener === "function") {
+      media.addEventListener("change", update);
+      return () => media.removeEventListener("change", update);
+    }
+
+    media.addListener(update);
+    return () => media.removeListener(update);
+  }, [nativeOnMobile]);
 
   // Close on click outside
   useEffect(() => {
@@ -98,6 +118,69 @@ export const Select = ({
     const term = filter.toLowerCase();
     return options.filter((opt) => opt.label.toLowerCase().includes(term));
   }, [options, filter]);
+
+  const hasEmptyOption = useMemo(
+    () => options.some((opt) => opt.value === ""),
+    [options]
+  );
+
+  if (nativeOnMobile && useNative) {
+    return (
+      <div
+        className={cn("relative w-full", containerClassName)}
+        ref={containerRef}
+      >
+        {label && (
+          <label className="block text-xs uppercase tracking-wide text-gray-400 mb-2 font-medium">
+            {label}
+            {required && <span className="text-orange-400 ml-1">*</span>}
+          </label>
+        )}
+
+        <select
+          name={name}
+          value={value ?? ""}
+          onChange={onChange}
+          disabled={disabled}
+          required={required}
+          className={cn(
+            "w-full px-4 py-3 rounded-xl transition-all duration-200",
+            "bg-white/5 backdrop-blur-sm border border-white/10 text-white",
+            "focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/50",
+            disabled && "opacity-50 cursor-not-allowed",
+            error &&
+              "border-red-500/50 focus:ring-red-500/40 focus:border-red-500/50",
+            className
+          )}
+          {...props}
+        >
+          {!hasEmptyOption && placeholder && (
+            <option value="" disabled>
+              {placeholder}
+            </option>
+          )}
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+
+        {error && (
+          <p className="mt-1.5 text-sm text-red-400 flex items-center gap-1">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M18 10a8 8 0 11-16 0 9 9 0 0118 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+            {error}
+          </p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div
