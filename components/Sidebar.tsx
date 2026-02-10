@@ -294,7 +294,7 @@ useEffect(() => {
       {/* Sidebar */}
       <div
         className={clsx(
-          "min-h-screen flex flex-col transition-all duration-300 relative bg-black/20 backdrop-blur-xl border-r border-white/10 shadow-2xl overflow-visible",
+          "min-h-screen flex flex-col transition-all duration-300 bg-black/20 backdrop-blur-xl border-r border-white/10 shadow-2xl overflow-visible",
           // Desktop behavior
           "lg:relative lg:z-20",
           isCollapsed ? "lg:w-20" : "lg:w-80",
