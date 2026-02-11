@@ -596,20 +596,20 @@ export default function ClientsPage() {
   };
 
   return (
-    <div className="p-8 space-y-6 text-white">
+    <div className="px-4 py-6 sm:p-8 space-y-6 text-white overflow-x-hidden">
       <div className="flex flex-col gap-2">
-        <p className="text-sm uppercase tracking-widest text-gray-400">
+        <p className="text-xs sm:text-sm uppercase tracking-widest text-gray-400">
           Gestao de clientes
         </p>
-        <h1 className="text-3xl font-semibold">Clientes</h1>
-        <p className="text-gray-300">
+        <h1 className="text-2xl sm:text-3xl font-semibold">Clientes</h1>
+        <p className="text-sm sm:text-base text-gray-300">
           Gerencie o cadastro completo de seus clientes com todos os dados
           importantes.
         </p>
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between px-6 py-4 border-b border-white/10">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between px-4 sm:px-6 py-4 border-b border-white/10">
           <p className="text-sm text-gray-300">{totalClientsCopy}</p>
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end w-full lg:w-auto">
             <input
@@ -641,7 +641,7 @@ export default function ClientsPage() {
           </div>
         </div>
 
-        <div className="px-6 py-4 border-b border-white/10 bg-black/20 space-y-4">
+        <div className="px-4 sm:px-6 py-4 border-b border-white/10 bg-black/20 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="flex flex-col gap-1">
               <p className="text-xs uppercase text-gray-400">Nascimento (de)</p>
@@ -719,11 +719,11 @@ export default function ClientsPage() {
         </div>
 
         {loading ? (
-          <div className="px-6 py-10 text-center text-gray-300">
+          <div className="px-4 sm:px-6 py-10 text-center text-gray-300">
             Carregando clientes...
           </div>
         ) : filteredClients.length === 0 ? (
-          <div className="px-6 py-16 text-center text-gray-400">
+          <div className="px-4 sm:px-6 py-16 text-center text-gray-400">
             {searchTerm
               ? "Nenhum cliente encontrado com os termos de busca."
               : "Ainda nao existem clientes cadastrados."}
@@ -733,12 +733,12 @@ export default function ClientsPage() {
             {paginatedClients.map((client) => (
               <div
                 key={client.id}
-                className="px-6 py-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between hover:bg-white/5 transition-colors cursor-pointer"
+                className="px-4 sm:px-6 py-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between hover:bg-white/5 transition-colors cursor-pointer"
                 onClick={() => setViewingClient(client)}
               >
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold text-lg">{client.name}</p>
+                    <p className="font-semibold text-lg truncate">{client.name}</p>
                     <span
                       className={`px-3 py-1 rounded-full border text-xs ${
                         client.clientType === "package"
@@ -805,7 +805,7 @@ export default function ClientsPage() {
         {/* Paginação */}
         {!loading && filteredClients.length > ITEMS_PER_PAGE && (
           <div className="flex flex-col gap-4 border-t border-white/10 pt-4">
-             <div className="px-6 text-sm text-gray-400 text-center sm:text-left">
+             <div className="px-4 sm:px-6 text-sm text-gray-400 text-center sm:text-left">
                Página {currentPage} de {totalPages} • Mostrando {paginatedClients.length} de {filteredClients.length} clientes
              </div>
 

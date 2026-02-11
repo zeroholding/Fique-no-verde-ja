@@ -4,8 +4,8 @@ import { Button } from "@/components/Button";
 
 export default function Settings() {
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold text-white mb-8">Configurações</h1>
+    <div className="px-4 py-6 sm:p-8 text-white">
+      <h1 className="text-2xl sm:text-3xl font-bold text-white mb-6 sm:mb-8">Configurações</h1>
 
       <div className="space-y-6 max-w-2xl">
         {/* Aparência */}
@@ -117,7 +117,7 @@ export default function Settings() {
             <p className="text-sm text-gray-400">
               Ações relacionadas à sua conta
             </p>
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <Button variant="outline" size="md">
                 Exportar Dados
               </Button>
@@ -131,3 +131,4 @@ export default function Settings() {
     </div>
   );
 }
+

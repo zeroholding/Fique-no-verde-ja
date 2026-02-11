@@ -181,7 +181,7 @@ export default function ReputationPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-8">
+      <div className="min-h-screen flex items-center justify-center px-4 py-6 sm:p-8">
         <div className="flex flex-col items-center gap-4">
            <div className="w-10 h-10 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
            <p className="text-gray-400">Carregando dados do Mercado Livre...</p>
@@ -192,7 +192,7 @@ export default function ReputationPage() {
 
   if (!isConnected) {
     return (
-      <div className="min-h-screen p-8 flex flex-col items-center justify-center text-center">
+      <div className="min-h-screen px-4 py-6 sm:p-8 flex flex-col items-center justify-center text-center">
         <div className="w-20 h-20 bg-gray-800 rounded-2xl flex items-center justify-center mb-6">
           <svg className="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -214,7 +214,7 @@ export default function ReputationPage() {
 
   if (!data) {
     return (
-      <div className="min-h-screen p-8 flex flex-col items-center justify-center text-center">
+      <div className="min-h-screen px-4 py-6 sm:p-8 flex flex-col items-center justify-center text-center">
         <div className="w-20 h-20 bg-red-500/10 rounded-2xl flex items-center justify-center mb-6">
           <svg className="w-10 h-10 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -306,7 +306,7 @@ export default function ReputationPage() {
     : calculateProjectedLevel();
 
   return (
-    <div className="min-h-screen p-8">
+    <div className="min-h-screen px-4 py-6 sm:p-8 overflow-x-hidden">
       <div className="max-w-6xl mx-auto space-y-8">
 
         {/* Filtro de Conta */}
@@ -335,7 +335,7 @@ export default function ReputationPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Reputação - Últimos 60 dias</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Reputação - Últimos 60 dias</h1>
             <div className="flex items-center gap-3">
               {data?.thumbnail && (
                 <img src={data.thumbnail} alt={data.nickname} className="w-10 h-10 rounded-full border border-white/10" />
@@ -390,7 +390,7 @@ export default function ReputationPage() {
         </div>
 
         {/* Termômetro */}
-        <Card className="bg-white/5 border border-white/10 p-8">
+        <Card className="bg-white/5 border border-white/10 p-6 sm:p-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-white">Termômetro de Reputação</h2>
             {!isOfficialReputation ? (
@@ -458,7 +458,7 @@ export default function ReputationPage() {
               <span className="text-4xl font-bold text-white">
                 {claimsValue}
               </span>
-              <span className="text-3xl font-bold text-gray-400">
+              <span className="text-2xl sm:text-3xl font-bold text-gray-400">
                 {formatPercent(claimsRate)}
               </span>
             </div>
@@ -488,7 +488,7 @@ export default function ReputationPage() {
             </div>
             <div className="flex items-baseline gap-3 mb-4">
               <span className="text-4xl font-bold text-white">0</span>
-              <span className="text-3xl font-bold text-gray-400">0.00%</span>
+              <span className="text-2xl sm:text-3xl font-bold text-gray-400">0.00%</span>
             </div>
             <div className="mt-3 w-full bg-gray-700 rounded-full h-1.5">
               <div className="h-1.5 rounded-full bg-green-500" style={{ width: '0%' }}></div>
@@ -517,7 +517,7 @@ export default function ReputationPage() {
               <span className="text-4xl font-bold text-white">
                 {cancellationsValue}
               </span>
-              <span className="text-3xl font-bold text-gray-400">
+              <span className="text-2xl sm:text-3xl font-bold text-gray-400">
                 {formatPercent(cancellationsRate)}
               </span>
             </div>
@@ -553,7 +553,7 @@ export default function ReputationPage() {
               <span className="text-4xl font-bold text-white">
                 {delaysValue}
               </span>
-              <span className="text-3xl font-bold text-gray-400">
+              <span className="text-2xl sm:text-3xl font-bold text-gray-400">
                 {formatPercent(delaysRate)}
               </span>
             </div>
@@ -591,7 +591,7 @@ export default function ReputationPage() {
                                  </div>
                             </div>
                              <div className="text-right">
-                                <p className="text-3xl font-bold text-green-400">{formatPercent(1 - claimsRate)}</p>
+                                <p className="text-2xl sm:text-3xl font-bold text-green-400">{formatPercent(1 - claimsRate)}</p>
                                 <p className="text-xs text-green-300">Excelente</p>
                             </div>
                         </div>
@@ -688,7 +688,7 @@ export default function ReputationPage() {
                         <span className="text-[10px] text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded-full">Últimos 60 dias</span>
                       </div>
                       <p className="text-xs text-purple-300/70 mb-2">Todas as vendas do período (Real)</p>
-                      <p className="text-3xl font-bold text-purple-400">
+                      <p className="text-2xl sm:text-3xl font-bold text-purple-400">
                         {(() => {
                           // Prioridade 1: Usa total_sales_period da API orders/search se disponível
                           if (data?.total_sales_period !== null && data?.total_sales_period !== undefined) {
@@ -722,7 +722,7 @@ export default function ReputationPage() {
                         <span className="text-[10px] text-blue-300 bg-blue-500/20 px-2 py-0.5 rounded-full">Últimos 60 dias</span>
                       </div>
                       <p className="text-xs text-blue-300/70 mb-2">Vendas finalizadas</p>
-                      <p className="text-3xl font-bold text-blue-400">{salesCompleted}</p>
+                      <p className="text-2xl sm:text-3xl font-bold text-blue-400">{salesCompleted}</p>
                     </div>
                     <div className="w-24 h-12">
                       <Sparkline
@@ -743,7 +743,7 @@ export default function ReputationPage() {
                         <span className="text-[10px] text-cyan-300 bg-cyan-500/20 px-2 py-0.5 rounded-full">Últimos 60 dias</span>
                       </div>
                       <p className="text-xs text-cyan-300/70 mb-2">Vendas com envio concluído</p>
-                      <p className="text-3xl font-bold text-cyan-400">
+                      <p className="text-2xl sm:text-3xl font-bold text-cyan-400">
                         {(() => {
                           // Prioridade 1: Tenta usar shipping.completed se disponível
                           if (shippingCompleted !== undefined && shippingCompleted !== null && shippingCompleted > 0) {

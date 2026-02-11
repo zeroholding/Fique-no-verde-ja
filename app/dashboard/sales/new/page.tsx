@@ -639,14 +639,14 @@ export default function NewSalePage() {
   }, [packages, selectedService]);
 
   return (
-    <div className="p-8 space-y-6 text-white [&_input[type=number]]:[-moz-appearance:textfield] [&_input[type=number]::-webkit-outer-spin-button]:appearance-none [&_input[type=number]::-webkit-inner-spin-button]:appearance-none">
-      <div className="flex items-center justify-between">
+    <div className="px-4 py-6 sm:p-8 space-y-6 text-white overflow-x-hidden [&_input[type=number]]:[-moz-appearance:textfield] [&_input[type=number]::-webkit-outer-spin-button]:appearance-none [&_input[type=number]::-webkit-inner-spin-button]:appearance-none">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-2">
-          <p className="text-sm uppercase tracking-widest text-gray-400">
+          <p className="text-xs sm:text-sm uppercase tracking-widest text-gray-400">
             Gestao de vendas
           </p>
-          <h1 className="text-3xl font-semibold">Nova Venda</h1>
-          <p className="text-gray-300">
+          <h1 className="text-2xl sm:text-3xl font-semibold">Nova Venda</h1>
+          <p className="text-sm sm:text-base text-gray-300">
             Informe o servico prestado e os detalhes financeiros.
           </p>
         </div>

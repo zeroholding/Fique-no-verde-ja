@@ -15,10 +15,10 @@ export default function DebugPage() {
   }, []);
 
   return (
-    <div className="p-8 text-white">
-      <h1 className="text-2xl font-bold mb-4">DEBUG: Tabela de Comissões (Raw)</h1>
+    <div className="px-4 py-6 sm:p-8 text-white overflow-x-hidden">
+      <h1 className="text-xl sm:text-2xl font-bold mb-4">DEBUG: Tabela de Comissões (Raw)</h1>
       {loading ? "Carregando..." : (
-        <div className="border border-white/20 rounded">
+        <div className="border border-white/20 rounded overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-white/10 uppercase">
               <tr>
@@ -46,3 +46,4 @@ export default function DebugPage() {
     </div>
   );
 }
+

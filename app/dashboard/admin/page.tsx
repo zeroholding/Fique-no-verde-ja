@@ -10,15 +10,15 @@ export default function AdminOverviewPage() {
   }
 
   return (
-    <div className="p-8 space-y-8 text-white">
+    <div className="px-4 py-6 sm:p-8 space-y-8 text-white overflow-x-hidden">
       <div>
-        <p className="text-sm uppercase tracking-widest text-gray-400">
+        <p className="text-xs sm:text-sm uppercase tracking-widest text-gray-400">
           Central Administrativa
         </p>
-        <h1 className="text-3xl font-semibold mt-2">
+        <h1 className="text-2xl sm:text-3xl font-semibold mt-2">
           Bem-vindo, {user?.firstName}
         </h1>
-        <p className="text-gray-300 mt-2 max-w-2xl">
+        <p className="text-sm sm:text-base text-gray-300 mt-2 max-w-2xl">
           Visualize o resumo geral do sistema antes de aprofundar nos módulos de usuários e relatórios.
         </p>
       </div>
@@ -37,7 +37,7 @@ export default function AdminOverviewPage() {
               {card.label}
             </p>
             <div className="flex items-baseline gap-2 mt-4">
-              <span className="text-3xl font-semibold">{card.value}</span>
+              <span className="text-2xl sm:text-3xl font-semibold">{card.value}</span>
               <span className="text-xs text-emerald-300">{card.trend}</span>
             </div>
           </div>

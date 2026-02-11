@@ -460,20 +460,20 @@ export default function AdminClientsPage() {
   };
 
   return (
-    <div className="p-8 space-y-6 text-white">
+    <div className="px-4 py-6 sm:p-8 space-y-6 text-white overflow-x-hidden">
       <div className="flex flex-col gap-2">
-        <p className="text-sm uppercase tracking-widest text-gray-400">
+        <p className="text-xs sm:text-sm uppercase tracking-widest text-gray-400">
           Gestao de clientes
         </p>
-        <h1 className="text-3xl font-semibold">Clientes</h1>
-        <p className="text-gray-300">
+        <h1 className="text-2xl sm:text-3xl font-semibold">Clientes</h1>
+        <p className="text-sm sm:text-base text-gray-300">
           Gerencie o cadastro completo de seus clientes com todos os dados
           importantes.
         </p>
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-6 py-4 border-b border-white/10">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-4 sm:px-6 py-4 border-b border-white/10">
           <p className="text-sm text-gray-300">{totalClientsCopy}</p>
           <div className="flex gap-2">
             <Button
@@ -491,11 +491,11 @@ export default function AdminClientsPage() {
         </div>
 
         {loading ? (
-          <div className="px-6 py-10 text-center text-gray-300">
+          <div className="px-4 sm:px-6 py-10 text-center text-gray-300">
             Carregando clientes...
           </div>
         ) : clients.length === 0 ? (
-          <div className="px-6 py-16 text-center text-gray-400">
+          <div className="px-4 sm:px-6 py-16 text-center text-gray-400">
             Ainda nao existem clientes cadastrados.
           </div>
         ) : (
@@ -503,10 +503,10 @@ export default function AdminClientsPage() {
             {paginatedClients.map((client) => (
               <div
                 key={client.id}
-                className="px-6 py-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between"
+                className="px-4 sm:px-6 py-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between"
               >
-                <div className="flex-1">
-                  <p className="font-semibold text-lg">{client.name}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-lg truncate">{client.name}</p>
                   <div className="flex flex-wrap gap-3 text-sm text-gray-300 mt-1">
                     {client.phone && <span>Tel: {client.phone}</span>}
                     {client.email && <span>• {client.email}</span>}
@@ -565,7 +565,7 @@ export default function AdminClientsPage() {
 
         {/* Paginação */}
         {!loading && clients.length > ITEMS_PER_PAGE && (
-          <div className="px-6 py-4 border-t border-white/10 flex flex-col sm:flex-row gap-4 items-center justify-between">
+          <div className="px-4 sm:px-6 py-4 border-t border-white/10 flex flex-col sm:flex-row gap-4 items-center justify-between">
             <p className="text-sm text-gray-400">
               Página {currentPage} de {totalPages} • Mostrando {paginatedClients.length} de {clients.length} clientes
             </p>
@@ -577,7 +577,7 @@ export default function AdminClientsPage() {
               >
                 Anterior
               </button>
-              <div className="flex gap-1">
+              <div className="flex flex-wrap gap-1 justify-center">
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                   <button
                     key={page}

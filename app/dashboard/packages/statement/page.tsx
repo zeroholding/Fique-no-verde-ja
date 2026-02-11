@@ -151,17 +151,17 @@ function PackagesStatementContent() {
   const selectedSummary = filteredSummary[0];
 
   return (
-    <div className="p-8 space-y-6 text-white">
+    <div className="px-4 py-6 sm:p-8 space-y-6 text-white overflow-x-hidden">
       <div className="flex flex-col gap-2">
-        <p className="text-sm uppercase tracking-widest text-gray-400">Pacotes</p>
-        <h1 className="text-3xl font-semibold">Extrato de Pacotes</h1>
-        <p className="text-gray-300">
+        <p className="text-xs sm:text-sm uppercase tracking-widest text-gray-400">Pacotes</p>
+        <h1 className="text-2xl sm:text-3xl font-semibold">Extrato de Pacotes</h1>
+        <p className="text-sm sm:text-base text-gray-300">
           Visao consolidada das compras e consumos de pacotes, com saldo e rastreabilidade por cliente parceiro.
         </p>
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur space-y-4">
-        <div className="flex flex-col gap-3 px-6 py-4 border-b border-white/10">
+        <div className="flex flex-col gap-3 px-4 sm:px-6 py-4 border-b border-white/10">
           <div className="flex flex-wrap items-center gap-3">
             <div className="w-56">
               <Select
@@ -277,9 +277,9 @@ function PackagesStatementContent() {
 
         <div className="overflow-x-auto">
           {loading ? (
-            <div className="px-6 py-10 text-center text-gray-300">Carregando extrato...</div>
+            <div className="px-4 sm:px-6 py-10 text-center text-gray-300">Carregando extrato...</div>
           ) : filteredOperations.length === 0 ? (
-            <div className="px-6 py-10 text-center text-gray-400">Nenhum lancamento encontrado.</div>
+            <div className="px-4 sm:px-6 py-10 text-center text-gray-400">Nenhum lancamento encontrado.</div>
           ) : (
             <>
               <table className="w-full divide-y divide-white/10 text-xs sm:text-sm">
@@ -388,7 +388,7 @@ function PackagesStatementContent() {
 
 export default function PackagesStatementPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-white">Carregando...</div>}>
+    <Suspense fallback={<div className="px-4 py-6 sm:p-8 text-white">Carregando...</div>}>
       <PackagesStatementContent />
     </Suspense>
   );

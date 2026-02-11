@@ -201,20 +201,20 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="p-8 space-y-6 text-white">
+    <div className="px-4 py-6 sm:p-8 space-y-6 text-white overflow-x-hidden">
       <div className="flex flex-col gap-2">
-        <p className="text-sm uppercase tracking-widest text-gray-400">
+        <p className="text-xs sm:text-sm uppercase tracking-widest text-gray-400">
           Gestao de usuarios
         </p>
-        <h1 className="text-3xl font-semibold">Usuarios do sistema</h1>
-        <p className="text-gray-300">
+        <h1 className="text-2xl sm:text-3xl font-semibold">Usuarios do sistema</h1>
+        <p className="text-sm sm:text-base text-gray-300">
           Administre contas, gere senhas automaticas e mantenha o controle do
           que foi criado pelo painel.
         </p>
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-6 py-4 border-b border-white/10">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-4 sm:px-6 py-4 border-b border-white/10">
           <p className="text-sm text-gray-300">{totalUsersCopy}</p>
           <Button
             size="sm"
@@ -226,11 +226,11 @@ export default function AdminUsersPage() {
         </div>
 
         {loading ? (
-          <div className="px-6 py-10 text-center text-gray-300">
+          <div className="px-4 sm:px-6 py-10 text-center text-gray-300">
             Carregando usuarios...
           </div>
         ) : users.length === 0 ? (
-          <div className="px-6 py-16 text-center text-gray-400">
+          <div className="px-4 sm:px-6 py-16 text-center text-gray-400">
             Ainda nao existem usuarios cadastrados via painel.
           </div>
         ) : (
@@ -238,7 +238,7 @@ export default function AdminUsersPage() {
             {paginatedUsers.map((user) => (
               <div
                 key={user.id}
-                className="px-6 py-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between"
+                className="px-4 sm:px-6 py-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between"
               >
                 <div>
                   <p className="font-semibold">{user.name}</p>
@@ -345,7 +345,7 @@ export default function AdminUsersPage() {
 
         {/* Paginação */}
         {!loading && users.length > ITEMS_PER_PAGE && (
-          <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between">
+          <div className="px-4 sm:px-6 py-4 border-t border-white/10 flex items-center justify-between">
             <p className="text-sm text-gray-400">
               Página {currentPage} de {totalPages} • Mostrando {paginatedUsers.length} de {users.length} usuarios
             </p>

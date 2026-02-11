@@ -406,18 +406,18 @@ export default function AdminServicesPage() {
   }
 
   return (
-    <div className="p-8 space-y-6 text-white">
+    <div className="px-4 py-6 sm:p-8 space-y-6 text-white overflow-x-hidden">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-sm uppercase tracking-widest text-gray-400">
+          <p className="text-xs sm:text-sm uppercase tracking-widest text-gray-400">
             Gestao de servicos
           </p>
-          <h1 className="text-3xl font-semibold">Servicos cadastrados</h1>
-          <p className="text-gray-300">
+          <h1 className="text-2xl sm:text-3xl font-semibold">Servicos cadastrados</h1>
+          <p className="text-sm sm:text-base text-gray-300">
             Crie, atualize ou desative servicos padrao utilizados nos fluxos.
           </p>
         </div>
-        <Button onClick={() => openModal()} className="rounded-xl px-6">
+        <Button onClick={() => openModal()} className="rounded-xl px-4 sm:px-6 w-full sm:w-auto">
           Novo servico
         </Button>
       </div>

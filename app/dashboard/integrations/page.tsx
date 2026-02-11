@@ -167,14 +167,14 @@ export default function IntegrationsPage() {
 
   if (loading) {
     return (
-      <div className="p-8 text-white">
+      <div className="px-4 py-6 sm:p-8 text-white">
         Carregando status das integrações...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-8 relative">
+    <div className="min-h-screen px-4 py-6 sm:p-8 relative text-white overflow-x-hidden">
       {/* Modal de Convite usando Componente Universal */}
       <Modal
         open={showInviteModal}
@@ -213,7 +213,7 @@ export default function IntegrationsPage() {
 
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white">Integrações</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">Integrações</h1>
           <p className="text-gray-400">Gerencie suas conexões com plataformas externas</p>
         </div>
 

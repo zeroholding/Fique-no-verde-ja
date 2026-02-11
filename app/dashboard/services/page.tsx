@@ -105,13 +105,13 @@ export default function ServicesPage() {
   const visibleServices = services.filter((service) => service.isActive);
 
   return (
-    <div className="p-8 space-y-6 text-white">
+    <div className="px-4 py-6 sm:p-8 space-y-6 text-white overflow-x-hidden">
       <div className="space-y-2">
-        <p className="text-sm uppercase tracking-widest text-gray-400">
+        <p className="text-xs sm:text-sm uppercase tracking-widest text-gray-400">
           Portifolio de servicos
         </p>
-        <h1 className="text-3xl font-semibold">Servicos</h1>
-        <p className="text-gray-300 max-w-2xl">
+        <h1 className="text-2xl sm:text-3xl font-semibold">Servicos</h1>
+        <p className="text-sm sm:text-base text-gray-300 max-w-2xl">
           Consulte os servicos padrao oferecidos pelo time e os respectivos
           detalhes operacionais.
         </p>

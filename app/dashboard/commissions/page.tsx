@@ -215,17 +215,17 @@ export default function CommissionsPage() {
   };
 
   return (
-    <div className="p-8 space-y-6 text-white">
+    <div className="px-4 py-6 sm:p-8 space-y-6 text-white overflow-x-hidden">
       <div className="flex flex-col gap-2">
-        <p className="text-sm uppercase tracking-widest text-gray-400">Comissoes</p>
-        <h1 className="text-3xl font-semibold">Extrato de Comissoes</h1>
-        <p className="text-gray-300">
+        <p className="text-xs sm:text-sm uppercase tracking-widest text-gray-400">Comissoes</p>
+        <h1 className="text-2xl sm:text-3xl font-semibold">Extrato de Comissoes</h1>
+        <p className="text-sm sm:text-base text-gray-300">
           Visualize suas comissoes geradas, filtre por periodo e acompanhe o total consolidado.
         </p>
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur">
-        <div className="flex flex-col gap-3 px-6 py-4 border-b border-white/10">
+        <div className="flex flex-col gap-3 px-4 sm:px-6 py-4 border-b border-white/10">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <p className="text-sm text-gray-300">
               {filteredCommissions.length} {filteredCommissions.length === 1 ? "registro" : "registros"} encontrados
@@ -345,9 +345,9 @@ export default function CommissionsPage() {
         </div>
 
         {loading ? (
-          <div className="px-6 py-10 text-center text-gray-300">Carregando comissoes...</div>
+          <div className="px-4 sm:px-6 py-10 text-center text-gray-300">Carregando comissoes...</div>
         ) : filteredCommissions.length === 0 ? (
-          <div className="px-6 py-10 text-center text-gray-400">Nenhuma comissao encontrada com os filtros atuais.</div>
+          <div className="px-4 sm:px-6 py-10 text-center text-gray-400">Nenhuma comissao encontrada com os filtros atuais.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-white/10 text-sm">

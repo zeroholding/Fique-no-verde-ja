@@ -604,7 +604,7 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-8">
+      <div className="min-h-screen flex items-center justify-center px-4 py-6 sm:p-8">
         <div className="flex flex-col items-center gap-5 text-white">
           <div className="relative h-24 w-24">
             <div className="absolute inset-0 rounded-full bg-gradient-to-br from-indigo-500/30 via-purple-500/20 to-transparent blur-2xl" />

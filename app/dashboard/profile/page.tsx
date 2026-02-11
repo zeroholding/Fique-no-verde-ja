@@ -29,11 +29,11 @@ export default function Profile() {
   }
 
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold text-white mb-8">Meu Perfil</h1>
+    <div className="px-4 py-6 sm:p-8 text-white">
+      <h1 className="text-2xl sm:text-3xl font-bold text-white mb-6 sm:mb-8">Meu Perfil</h1>
 
       <div
-        className="max-w-2xl p-8 rounded-2xl backdrop-blur-3xl bg-white/10 border border-white/20"
+        className="max-w-2xl p-6 sm:p-8 rounded-2xl backdrop-blur-3xl bg-white/10 border border-white/20"
         style={{
           boxShadow:
             "0 0 6px rgba(0,0,0,0.03), 0 2px 6px rgba(0,0,0,0.08), inset 3px 3px 0.5px -3px rgba(255,255,255,0.4), inset -3px -3px 0.5px -3px rgba(255,255,255,0.35), inset 0 0 6px 6px rgba(255,255,255,0.08)",

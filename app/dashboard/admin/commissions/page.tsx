@@ -186,7 +186,7 @@ function CommissionsPolicies() {
   return (
     <>
       <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/10">
           <p className="text-sm text-gray-300">
             {policies.length} {policies.length === 1 ? "politica" : "politicas"} encontradas
           </p>
@@ -212,9 +212,9 @@ function CommissionsPolicies() {
         </div>
 
         {loading ? (
-          <div className="px-6 py-10 text-center text-gray-300">Carregando politicas...</div>
+          <div className="px-4 sm:px-6 py-10 text-center text-gray-300">Carregando politicas...</div>
         ) : policies.length === 0 ? (
-          <div className="px-6 py-10 text-center text-gray-400">Nenhuma politica cadastrada.</div>
+          <div className="px-4 sm:px-6 py-10 text-center text-gray-400">Nenhuma politica cadastrada.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-white/10 text-sm">
@@ -527,7 +527,7 @@ function CommissionsStatement() {
 
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur">
-      <div className="flex flex-col gap-3 px-6 py-4 border-b border-white/10">
+      <div className="flex flex-col gap-3 px-4 sm:px-6 py-4 border-b border-white/10">
         {/* Filtros */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="flex flex-col gap-1">
@@ -605,9 +605,9 @@ function CommissionsStatement() {
       </div>
 
       {loading ? (
-        <div className="px-6 py-10 text-center text-gray-300">Carregando extrato...</div>
+        <div className="px-4 sm:px-6 py-10 text-center text-gray-300">Carregando extrato...</div>
       ) : filteredCommissions.length === 0 ? (
-        <div className="px-6 py-10 text-center text-gray-400">Nenhuma comissao encontrada com os filtros atuais.</div>
+        <div className="px-4 sm:px-6 py-10 text-center text-gray-400">Nenhuma comissao encontrada com os filtros atuais.</div>
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-white/10 text-sm">
@@ -679,19 +679,19 @@ export default function AdminCommissionsPage() {
   const [activeTab, setActiveTab] = useState<"statement" | "policies">("statement");
 
   return (
-    <div className="p-8 space-y-6 text-white">
+    <div className="px-4 py-6 sm:p-8 space-y-6 text-white overflow-x-hidden">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-col gap-2">
-          <p className="text-sm uppercase tracking-widest text-gray-400">Admin</p>
-          <h1 className="text-3xl font-semibold">Gestão de Comissões</h1>
+          <p className="text-xs sm:text-sm uppercase tracking-widest text-gray-400">Admin</p>
+          <h1 className="text-2xl sm:text-3xl font-semibold">Gestão de Comissões</h1>
           <p className="text-gray-300">
             Acompanhe o extrato de comissões geradas ou configure as políticas de pagamento.
           </p>
         </div>
-        <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 self-start md:self-auto">
+        <div className="flex flex-wrap bg-white/5 p-1 rounded-xl border border-white/10 self-start md:self-auto">
           <button
             onClick={() => setActiveTab("statement")}
-            className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`px-4 sm:px-6 py-2 rounded-lg text-sm font-medium transition-all ${
               activeTab === "statement"
                 ? "bg-blue-500 text-white shadow-lg shadow-blue-500/20"
                 : "text-gray-400 hover:text-white hover:bg-white/5"
@@ -701,7 +701,7 @@ export default function AdminCommissionsPage() {
           </button>
           <button
             onClick={() => setActiveTab("policies")}
-            className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`px-4 sm:px-6 py-2 rounded-lg text-sm font-medium transition-all ${
               activeTab === "policies"
                 ? "bg-blue-500 text-white shadow-lg shadow-blue-500/20"
                 : "text-gray-400 hover:text-white hover:bg-white/5"
@@ -716,4 +716,6 @@ export default function AdminCommissionsPage() {
     </div>
   );
 }
+
+
 

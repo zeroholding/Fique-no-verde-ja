@@ -110,17 +110,17 @@ export default function RefundsPage() {
   };
 
   return (
-    <div className="p-8 space-y-6 text-white">
+    <div className="px-4 py-6 sm:p-8 space-y-6 text-white overflow-x-hidden">
       <div className="flex flex-col gap-2">
-        <p className="text-sm uppercase tracking-widest text-gray-400">Estornos</p>
-        <h1 className="text-3xl font-semibold">Relatorio de Estornos</h1>
-        <p className="text-gray-300">
+        <p className="text-xs sm:text-sm uppercase tracking-widest text-gray-400">Estornos</p>
+        <h1 className="text-2xl sm:text-3xl font-semibold">Relatorio de Estornos</h1>
+        <p className="text-sm sm:text-base text-gray-300">
           Visualize todos os estornos lancados, com referencia da venda, datas e usuario que lancou.
         </p>
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur">
-        <div className="flex flex-col gap-3 px-6 py-4 border-b border-white/10">
+        <div className="flex flex-col gap-3 px-4 sm:px-6 py-4 border-b border-white/10">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm text-gray-300">
               {filteredRefunds.length} {filteredRefunds.length === 1 ? "estorno" : "estornos"} encontrados
@@ -189,9 +189,9 @@ export default function RefundsPage() {
         </div>
 
         {loading ? (
-          <div className="px-6 py-10 text-center text-gray-300">Carregando estornos...</div>
+          <div className="px-4 sm:px-6 py-10 text-center text-gray-300">Carregando estornos...</div>
         ) : filteredRefunds.length === 0 ? (
-          <div className="px-6 py-10 text-center text-gray-400">Nenhum estorno registrado.</div>
+          <div className="px-4 sm:px-6 py-10 text-center text-gray-400">Nenhum estorno registrado.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-white/10 text-sm">

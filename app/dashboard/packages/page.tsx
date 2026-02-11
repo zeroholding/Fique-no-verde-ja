@@ -120,17 +120,17 @@ export default function PackagesIndexPage() {
   };
 
   return (
-    <div className="p-8 space-y-6 text-white">
+    <div className="px-4 py-6 sm:p-8 space-y-6 text-white overflow-x-hidden">
       <div className="flex flex-col gap-2">
-        <p className="text-sm uppercase tracking-widest text-gray-400">Pacotes</p>
-        <h1 className="text-3xl font-semibold">Contas de Pacotes</h1>
-        <p className="text-gray-300">
+        <p className="text-xs sm:text-sm uppercase tracking-widest text-gray-400">Pacotes</p>
+        <h1 className="text-2xl sm:text-3xl font-semibold">Contas de Pacotes</h1>
+        <p className="text-sm sm:text-base text-gray-300">
           Visão geral por cliente parceiro: saldo de créditos, adquiridos/consumidos e acesso rápido ao extrato.
         </p>
       </div>
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex gap-8">
+        <div className="flex flex-col sm:flex-row gap-6 sm:gap-8">
             <div>
               <p className="text-sm text-gray-400">Saldo total (qtde)</p>
               <p className="text-2xl font-bold text-emerald-300">{totalSaldoQtde}</p>
@@ -149,9 +149,9 @@ export default function PackagesIndexPage() {
       </div>
 
       {loading ? (
-        <div className="px-6 py-10 text-center text-gray-300">Carregando...</div>
+        <div className="px-4 sm:px-6 py-10 text-center text-gray-300">Carregando...</div>
       ) : summaries.length === 0 ? (
-        <div className="px-6 py-10 text-center text-gray-400">Nenhum cliente parceiro com pacotes.</div>
+        <div className="px-4 sm:px-6 py-10 text-center text-gray-400">Nenhum cliente parceiro com pacotes.</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {summaries.map((s) => (

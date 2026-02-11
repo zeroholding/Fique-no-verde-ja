@@ -1155,26 +1155,26 @@ export default function SalesPage() {
 
 
   return (
-    <div className="p-8 space-y-6 text-white">
+    <div className="px-4 py-6 sm:p-8 space-y-6 text-white overflow-x-hidden">
       <div className="flex flex-col gap-2">
-        <p className="text-sm uppercase tracking-widest text-gray-400">
+        <p className="text-xs sm:text-sm uppercase tracking-widest text-gray-400">
           Gestao de vendas
         </p>
-        <h1 className="text-3xl font-semibold">Registro de Vendas</h1>
-        <p className="text-gray-300">
+        <h1 className="text-2xl sm:text-3xl font-semibold">Registro de Vendas</h1>
+        <p className="text-sm sm:text-base text-gray-300">
           Gerencie suas vendas, adicione produtos, aplique descontos e controle o status.
         </p>
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-6 py-4 border-b border-white/10">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-4 sm:px-6 py-4 border-b border-white/10">
           <p className="text-sm text-gray-300">{totalSalesCopy}</p>
           <Button size="sm" onClick={openModal} className="rounded-xl">
             Nova venda
           </Button>
         </div>
 
-        <div className="px-6 py-4 border-b border-white/10 bg-black/20 space-y-4">
+        <div className="px-4 sm:px-6 py-4 border-b border-white/10 bg-black/20 space-y-4">
           
           {/* [NEW] Search Bar */}
           <div className="w-full">
@@ -1185,7 +1185,7 @@ export default function SalesPage() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && fetchSales()} // Search on Enter
                     placeholder="Buscar por Nome do Cliente ou ID da Venda..."
-                    className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 pl-10 text-white placeholder-gray-500 focus:border-white focus:outline-none"
+                    className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 pl-10 pr-24 text-white placeholder-gray-500 focus:border-white focus:outline-none"
                   />
                   <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1370,11 +1370,11 @@ export default function SalesPage() {
         </div>
 
         {loading ? (
-          <div className="px-6 py-10 text-center text-gray-300">
+          <div className="px-4 sm:px-6 py-10 text-center text-gray-300">
             Carregando vendas...
           </div>
         ) : sortedSales.length === 0 ? (
-          <div className="px-6 py-16 text-center text-gray-400">
+          <div className="px-4 sm:px-6 py-16 text-center text-gray-400">
             {hasFilters ? "Nenhuma venda encontrada com os filtros aplicados." : "Ainda nao existem vendas cadastradas."}
           </div>
         ) : (
@@ -1384,9 +1384,9 @@ export default function SalesPage() {
               return (
                 <div
                   key={sale.id}
-                  className="px-6 py-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between hover:bg-white/5 transition-colors border-l-2 border-l-transparent hover:border-l-blue-500"
+                  className="px-4 sm:px-6 py-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between hover:bg-white/5 transition-colors border-l-2 border-l-transparent hover:border-l-blue-500"
                 >
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     {/* [NEW] Sale ID Badge */}
                     <div className="flex items-center gap-2 mb-1">
                         <span className="text-[10px] font-mono text-gray-500 flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
@@ -1408,9 +1408,9 @@ export default function SalesPage() {
                         </span>
                     </div>
 
-                    <div className="flex items-baseline justify-between md:justify-start gap-4">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-semibold text-lg text-white">{sale.clientName}</p>
+                    <div className="flex flex-wrap items-baseline justify-between md:justify-start gap-4">
+                      <div className="flex items-center gap-2 flex-wrap min-w-0">
+                        <p className="font-semibold text-lg text-white truncate">{sale.clientName}</p>
                         {(() => {
                           const saleTypeInfo = getSaleTypeLabel(sale);
                           const carrierMatch = sale.observations?.match(/\[PCT: (.*?)\]/);
@@ -1445,9 +1445,9 @@ export default function SalesPage() {
 
                     <div className="mt-2 space-y-1">
                       {sale.items.map((item, idx) => (
-                        <div key={idx} className="flex items-center text-sm text-gray-200">
-                          <span className="font-medium">{item.productName}</span>
-                          <span className="mx-2 text-gray-600">|</span>
+                        <div key={idx} className="flex flex-wrap items-center gap-2 text-sm text-gray-200">
+                          <span className="font-medium break-words">{item.productName}</span>
+                          <span className="text-gray-600">|</span>
                           <span className="text-gray-400 text-xs uppercase tracking-wide">Qtd: {item.quantity}</span>
                         </div>
                       ))}
@@ -1476,7 +1476,7 @@ export default function SalesPage() {
                       <p className="text-xs text-gray-500">{formatDateTime(sale.saleDate)}</p>
                     </div>
 
-                    <div className="flex gap-2 md:ml-2">
+                    <div className="flex flex-wrap gap-2 md:ml-2">
                       <Button
                         size="sm"
                         variant="secondary"
@@ -1576,7 +1576,7 @@ export default function SalesPage() {
 
         {/* ... (Pagination) */}
         {!loading && sortedSales.length > ITEMS_PER_PAGE && (
-          <div className="px-6 py-4 border-t border-white/10 flex flex-col sm:flex-row gap-4 items-center justify-between">
+          <div className="px-4 sm:px-6 py-4 border-t border-white/10 flex flex-col sm:flex-row gap-4 items-center justify-between">
             <p className="text-sm text-gray-400">
               Página {currentPage} de {totalPages} • Mostrando {paginatedSales.length} de {sortedSales.length} vendas
             </p>
@@ -1588,7 +1588,7 @@ export default function SalesPage() {
               >
                 Anterior
               </button>
-              <div className="flex gap-1">
+              <div className="flex flex-wrap gap-1 justify-center">
                 {(() => {
                   const getVisiblePages = (current: number, total: number) => {
                     if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
