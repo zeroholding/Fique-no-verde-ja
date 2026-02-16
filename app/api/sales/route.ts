@@ -125,8 +125,12 @@ export async function GET(request: NextRequest) {
     const conditions: string[] = [];
     const queryParams: any[] = [];
 
-    // Exclude canceled sales by default
-    conditions.push("s.status != 'cancelada'");
+    const includeCanceled = searchParams.get("includeCanceled") === "true";
+    
+    // Filter status based on includeCanceled
+    if (!includeCanceled) {
+      conditions.push("s.status != 'cancelada'");
+    }
 
     // Filter by Attendant (Role based)
     if (user.is_admin && attendantId) {

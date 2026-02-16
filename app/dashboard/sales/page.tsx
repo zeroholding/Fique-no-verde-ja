@@ -127,6 +127,11 @@ const formatDateTime = (value: string | Date | undefined) => {
   })}`;
 };
 
+
+
+
+
+
 export default function SalesPage() {
   const { success, error } = useToast();
   const [sales, setSales] = useState<Sale[]>([]);
@@ -167,10 +172,11 @@ export default function SalesPage() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [saleTypeFilter, setSaleTypeFilter] = useState<"" | "common" | "package" | "purchase">("");
   const [searchTerm, setSearchTerm] = useState(""); // [NEW] Search State
+  const [showCanceled, setShowCanceled] = useState(false); // [NEW] Toggle Canceled
 
   const hasFilters = useMemo(
-    () => Boolean(startDate || endDate || serviceFilter || attendantFilter || dayType || saleTypeFilter),
-    [startDate, endDate, serviceFilter, attendantFilter, dayType, saleTypeFilter]
+    () => Boolean(startDate || endDate || serviceFilter || attendantFilter || dayType || saleTypeFilter || showCanceled),
+    [startDate, endDate, serviceFilter, attendantFilter, dayType, saleTypeFilter, showCanceled]
   );
 
   const clientOptions = useMemo(() => {
@@ -247,7 +253,7 @@ export default function SalesPage() {
     }
 
     return result;
-  }, [attendantFilter, dayType, endDate, isAdmin, sales, serviceFilter, services, startDate, saleTypeFilter, clients]);
+  }, [attendantFilter, dayType, endDate, isAdmin, sales, serviceFilter, services, startDate, saleTypeFilter, clients, showCanceled]);
 
   const sortedSales = useMemo(() => {
     const sorted = [...filteredSales];
@@ -307,6 +313,9 @@ export default function SalesPage() {
       if (searchTerm) { // [NEW] Add search param
          params.set("search", searchTerm);
       }
+      if (showCanceled) {
+         params.set("includeCanceled", "true");
+      }
       const response = await fetch(`/api/sales?${params.toString()}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -328,7 +337,7 @@ export default function SalesPage() {
     } finally {
       setLoading(false);
     }
-  }, [attendantFilter, error, isAdmin, searchTerm]);
+  }, [attendantFilter, error, isAdmin, searchTerm, showCanceled]);
 
   const fetchClients = useCallback(async () => {
     const token = localStorage.getItem("token");
@@ -1298,6 +1307,21 @@ export default function SalesPage() {
                 <option value="package">Consumos de Pacote</option>
               </select>
             </div>
+            
+             {/* Toggle Mostrar Canceladas */}
+            <div className="flex flex-col gap-1 justify-end pb-2">
+               <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer select-none">
+                 <input 
+                    type="checkbox" 
+                    checked={showCanceled} 
+                    onChange={(e) => setShowCanceled(e.target.checked)}
+                    className="rounded border-white/20 bg-white/10 text-blue-500 focus:ring-blue-500/50"
+                 />
+                 Mostrar Canceladas
+               </label>
+            </div>
+
+
           </div>
 
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
