@@ -172,11 +172,11 @@ export default function SalesPage() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [saleTypeFilter, setSaleTypeFilter] = useState<"" | "common" | "package" | "purchase">("");
   const [searchTerm, setSearchTerm] = useState(""); // [NEW] Search State
-  const [showCanceled, setShowCanceled] = useState(false); // [NEW] Toggle Canceled
+  const [statusFilter, setStatusFilter] = useState("active"); // [NEW] Status Filter
 
   const hasFilters = useMemo(
-    () => Boolean(startDate || endDate || serviceFilter || attendantFilter || dayType || saleTypeFilter || showCanceled),
-    [startDate, endDate, serviceFilter, attendantFilter, dayType, saleTypeFilter, showCanceled]
+    () => Boolean(startDate || endDate || serviceFilter || attendantFilter || dayType || saleTypeFilter || statusFilter !== "active"),
+    [startDate, endDate, serviceFilter, attendantFilter, dayType, saleTypeFilter, statusFilter]
   );
 
   const clientOptions = useMemo(() => {
@@ -197,6 +197,25 @@ export default function SalesPage() {
 
   const filteredSales = useMemo(() => {
     let result = [...sales];
+
+    // Status Filter
+    switch(statusFilter) {
+        case "active":
+            result = result.filter(s => s.status !== "cancelada");
+            break;
+        case "canceled":
+            result = result.filter(s => s.status === "cancelada");
+            break;
+        case "confirmed":
+            result = result.filter(s => s.status === "confirmada");
+            break;
+        case "open":
+             result = result.filter(s => s.status === "aberta");
+             break;
+        case "all":
+        default:
+            break;
+    }
 
     const getDayType = (dateString: string) => {
       const d = new Date(dateString);
@@ -253,7 +272,7 @@ export default function SalesPage() {
     }
 
     return result;
-  }, [attendantFilter, dayType, endDate, isAdmin, sales, serviceFilter, services, startDate, saleTypeFilter, clients, showCanceled]);
+  }, [attendantFilter, dayType, endDate, isAdmin, sales, serviceFilter, services, startDate, saleTypeFilter, clients, statusFilter]);
 
   const sortedSales = useMemo(() => {
     const sorted = [...filteredSales];
@@ -313,7 +332,7 @@ export default function SalesPage() {
       if (searchTerm) { // [NEW] Add search param
          params.set("search", searchTerm);
       }
-      if (showCanceled) {
+      if (statusFilter === "all" || statusFilter === "canceled") {
          params.set("includeCanceled", "true");
       }
       const response = await fetch(`/api/sales?${params.toString()}`, {
@@ -337,7 +356,7 @@ export default function SalesPage() {
     } finally {
       setLoading(false);
     }
-  }, [attendantFilter, error, isAdmin, searchTerm, showCanceled]);
+  }, [attendantFilter, error, isAdmin, searchTerm, statusFilter]);
 
   const fetchClients = useCallback(async () => {
     const token = localStorage.getItem("token");
@@ -1308,29 +1327,27 @@ export default function SalesPage() {
               </select>
             </div>
             
-             {/* Toggle Mostrar Canceladas */}
-            <div className="flex flex-col gap-1 justify-end pb-[2px]">
-               <button
-                  type="button"
-                  onClick={() => setShowCanceled(!showCanceled)}
-                  className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl border text-sm transition-all duration-200 ${
-                    showCanceled
-                      ? "bg-red-500/20 text-red-300 border-red-500/50 hover:bg-red-500/30"
-                      : "bg-white/5 text-gray-400 border-white/10 hover:bg-white/10 hover:text-gray-300"
-                  }`}
-               >
-                 {showCanceled ? (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M18 6L6 18M6 6l12 12"/>
-                    </svg> 
-                 ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                       <circle cx="12" cy="12" r="10"/>
-                       <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
-                    </svg>
-                 )}
-                 {showCanceled ? "Ocultar Canceladas" : "Exibir Canceladas"}
-               </button>
+            {/* Status Filter */}
+            <div className="flex flex-col gap-1">
+              <p className="text-xs uppercase text-gray-400">Status</p>
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                   setStatusFilter(e.target.value);
+                   setCurrentPage(1);
+                }}
+                className={`rounded-xl border px-3 py-2 text-sm focus:outline-none transition-colors ${
+                    statusFilter === 'canceled' 
+                    ? 'bg-red-500/10 border-red-500/30 text-red-300'
+                    : 'bg-black/30 border-white/20 text-white focus:border-white'
+                }`}
+              >
+                <option value="active">Ativas (Padrão)</option>
+                <option value="all">Todas as Vendas</option>
+                <option value="canceled">Apenas Canceladas</option>
+                <option value="confirmed">Apenas Confirmadas</option>
+                <option value="open">Apenas Abertas</option>
+              </select>
             </div>
 
 
