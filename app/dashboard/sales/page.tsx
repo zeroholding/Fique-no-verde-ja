@@ -1309,16 +1309,28 @@ export default function SalesPage() {
             </div>
             
              {/* Toggle Mostrar Canceladas */}
-            <div className="flex flex-col gap-1 justify-end pb-2">
-               <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer select-none">
-                 <input 
-                    type="checkbox" 
-                    checked={showCanceled} 
-                    onChange={(e) => setShowCanceled(e.target.checked)}
-                    className="rounded border-white/20 bg-white/10 text-blue-500 focus:ring-blue-500/50"
-                 />
-                 Mostrar Canceladas
-               </label>
+            <div className="flex flex-col gap-1 justify-end pb-[2px]">
+               <button
+                  type="button"
+                  onClick={() => setShowCanceled(!showCanceled)}
+                  className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl border text-sm transition-all duration-200 ${
+                    showCanceled
+                      ? "bg-red-500/20 text-red-300 border-red-500/50 hover:bg-red-500/30"
+                      : "bg-white/5 text-gray-400 border-white/10 hover:bg-white/10 hover:text-gray-300"
+                  }`}
+               >
+                 {showCanceled ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg> 
+                 ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                       <circle cx="12" cy="12" r="10"/>
+                       <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                    </svg>
+                 )}
+                 {showCanceled ? "Ocultar Canceladas" : "Exibir Canceladas"}
+               </button>
             </div>
 
 
