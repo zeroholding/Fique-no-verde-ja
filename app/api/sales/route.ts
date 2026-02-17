@@ -971,42 +971,104 @@ export async function POST(request: NextRequest) {
         if (walletResult.rows.length > 0) {
            // UPDATE (Renovation)
            const wallet = walletResult.rows[0];
-           const newInitial = Number(wallet.initial_quantity) + totalQuantity;
-           const newAvailable = Number(wallet.available_quantity) + totalQuantity;
-           const newTotalPaid = Number(wallet.total_paid) + totalPaid;
            
-           // Calculate new weighted average unit price (Lifetime average)
-           const newUnitPrice = newTotalPaid / (newInitial > 0 ? newInitial : 1);
-
-           await query(
-             `UPDATE client_packages SET
-                initial_quantity = $1,
-                available_quantity = $2,
-                total_paid = $3,
-                unit_price = $4,
-                updated_at = NOW()
-              WHERE id = $5`,
-             [newInitial, newAvailable, newTotalPaid, newUnitPrice, wallet.id]
-           );
-           console.log(`Pacote (Carteira) atualizado: +${totalQuantity} creditos.`);
+           // [FIX] Unit Cost Logic for Negative Balance
+           // If balance is negative, we "reset" the weighted average to the NEW price.
+           // Reason: The user wants the debt to be paid off, but the "remaining" positive balance
+           // should be priced at the NEW rate, not an average of (old cheap debt + new expensive credit).
+           
+           let newInitial = Number(wallet.initial_quantity) + totalQuantity;
+           let newTotalPaid = Number(wallet.total_paid) + totalPaid;
+           let newAvailable = Number(wallet.available_quantity) + totalQuantity;
+           
+           // Standard Logic: Accumulate everything.
+           // Logic to fix:
+           if (Number(wallet.available_quantity) < 0) {
+               console.log(`[PACKAGE RENEWAL] Detcted Negative Balance (${wallet.available_quantity}). Resetting average logic.`);
+               
+               // 1. New Available is correct above (-50 + 100 = 50).
+               // 2. We want the Unit Price to be (totalPaid / totalQuantity) -> The price of THIS purchase.
+               // 3. To make the "Lifetime Average" formula work, we simulate a "Fresh Start".
+               //    Formula: UnitPrice = TotalPaid / Initial.
+               //    So: NewTotalPaid / NewInitial = ThisSalePrice.
+               
+               // We set the "History" to generally reflect this new reality.
+               // We treat the "Debt Payment" as if it never existed for the average calculation?
+               // No, we simply set the state such that:
+               // Paid = This Sale Paid
+               // Initial = This Sale Quantity
+               // BUT, we must preserve the 'Consumed' relationship: Available = Initial - Consumed.
+               // If Available = 50. Initial = 100. Then Consumed must be 50.
+               
+               // Wait, if we set Initial = 100 (This Sale) and Paid = 200 (This Sale).
+               // Unit Price = 2.0. Correct.
+               // But Available is 50.
+               // So Consumed = Initial - Available = 100 - 50 = 50.
+               // This means we are effectively saying: "We started with 100 (this pack), and we already consumed 50 (the debt)".
+               // And the cost of that "consumed debt" is now retroactively rated at the new price?
+               // Yes, mathematically that's what happens if we reset.
+               // BUT, the unit price will be 2.0, which is what the user wants for the *future* consumption.
+               
+               newInitial = totalQuantity;
+               newTotalPaid = totalPaid;
+               // consumed_quantity field in DB is not used for the *price* calculation, but is needed for consistency.
+               // We will update it implicitly by setting available and initial?
+               // The UPDATE below updates `initial` and `available`. `consumed` is usually derived or updated explicitly.
+               // The DB schema likely has `consumed_quantity`. Let's check the update query.
+               // It updates `initial`, `available`, `total_paid`, `unit_price`.
+               // It does NOT update `consumed_quantity`.
+               // We MUST update `consumed_quantity` to ensure `initial - consumed = available`.
+               
+               const newConsumed = newInitial - newAvailable;
+               
+               // We need to add `consumed_quantity` to the UPDATE query.
+               
+               await query(
+                 `UPDATE client_packages SET
+                    initial_quantity = $1,
+                    available_quantity = $2,
+                    total_paid = $3,
+                    unit_price = $4,
+                    consumed_quantity = $5,
+                    updated_at = NOW()
+                  WHERE id = $6`,
+                 [newInitial, newAvailable, newTotalPaid, (newTotalPaid / newInitial), newConsumed, wallet.id]
+               );
+               
+           } else {
+               // Standard Logic (Positive Balance -> Weighted Average)
+               const newUnitPrice = newTotalPaid / (newInitial > 0 ? newInitial : 1);
+    
+               await query(
+                 `UPDATE client_packages SET
+                    initial_quantity = $1,
+                    available_quantity = $2,
+                    total_paid = $3,
+                    unit_price = $4,
+                    updated_at = NOW()
+                  WHERE id = $5`,
+                 [newInitial, newAvailable, newTotalPaid, newUnitPrice, wallet.id]
+               );
+           }
+           console.log(`Pacote (Carteira) atualizado: +${totalQuantity} creditos. Saldo era: ${wallet.available_quantity}`);
 
         } else {
-            // INSERT (New Wallet)
-            await query(
-              `INSERT INTO client_packages (
-                client_id,
-                service_id,
-                sale_id,
-                initial_quantity,
-                consumed_quantity,
-                available_quantity,
-                unit_price,
-                total_paid,
-                is_active
-              ) VALUES ($1, $2, $3, $4, 0, $4, $5, $6, true)`,
-              [carrierId, serviceId, saleId, totalQuantity, unitPricePackage, totalPaid]
-            );
-            console.log(`Pacote criado: ${totalQuantity} creditos para cliente ${carrierId}`);
+             // INSERT (New Wallet)
+             await query(
+               `INSERT INTO client_packages (
+                 client_id,
+                 service_id,
+                 sale_id,
+                 initial_quantity,
+                 consumed_quantity,
+                 available_quantity,
+                 unit_price,
+                 total_paid,
+                 is_active
+               ) VALUES ($1, $2, $3, $4, 0, $4, $5, $6, true)`,
+               [carrierId, serviceId, saleId, totalQuantity, unitPricePackage, totalPaid]
+             );
+             console.log(`Pacote criado: ${totalQuantity} creditos para cliente ${carrierId}`);
         }
       } else if (normalizedSaleType === "03" && packageId) {
         // Tipo 03 - CONSUMO DE PACOTE: Consumir do pacote existente
