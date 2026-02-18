@@ -33,11 +33,6 @@ export default function PackagesIndexPage() {
   const [generatingLinkFor, setGeneratingLinkFor] = useState<string | null>(null);
   const [generatedLinks, setGeneratedLinks] = useState<Record<string, string>>({});
 
-  // [NEW] Edit State
-  const [editingPackage, setEditingPackage] = useState<PackageSummary | null>(null);
-  const [editForm, setEditForm] = useState({ balance: "", price: "" });
-  const [savingEdit, setSavingEdit] = useState(false);
-
   const fetchSummaries = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -124,55 +119,6 @@ export default function PackagesIndexPage() {
     }
   };
 
-  const handleEditClick = (pkg: PackageSummary) => {
-      const balance = pkg.balanceCurrent ?? 0;
-      const qty = pkg.balanceQuantityCurrent ?? 0;
-      // Because balanceCurrent is now derived from unit_price * quantity in the API fix,
-      // we can calculate unit_price safely.
-      const avg = qty !== 0 ? balance / qty : 0;
-
-      setEditingPackage(pkg);
-      setEditForm({
-          balance: String(pkg.balanceQuantityCurrent ?? 0),
-          price: avg !== 0 ? Math.abs(avg).toFixed(2) : "0.00"
-      });
-  };
-
-  const handleSaveEdit = async () => {
-      if (!editingPackage) return;
-      
-      setSavingEdit(true);
-      try {
-          const token = localStorage.getItem("token");
-          if (!token) throw new Error("Sessão expirada");
-
-          const res = await fetch("/api/packages/update", {
-              method: "POST",
-              headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${token}`
-              },
-              body: JSON.stringify({
-                  clientId: editingPackage.clientId,
-                  newBalance: Number(editForm.balance),
-                  newUnitPrice: Number(editForm.price)
-              })
-          });
-
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || "Erro ao atualizar pacote");
-
-          success("Pacote atualizado com sucesso!");
-          setEditingPackage(null);
-          // Refresh list to show new values
-          fetchSummaries(); 
-      } catch (err: any) {
-          error(err.message || "Erro ao salvar");
-      } finally {
-          setSavingEdit(false);
-      }
-  };
-
   return (
     <div className="px-4 py-6 sm:p-8 space-y-6 text-white overflow-x-hidden">
       <div className="flex flex-col gap-2">
@@ -218,35 +164,21 @@ export default function PackagesIndexPage() {
                   <p className="text-sm text-gray-400">Cliente parceiro</p>
                   <p className="text-lg font-semibold text-white">{s.clientName}</p>
                 </div>
-                {/* [NEW] Edit Button */}
-                <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-400">
-                      {s.lastOperation ? formatDateTime(s.lastOperation) : "Sem movimento"}
-                    </span>
-                    <button 
-                        onClick={() => handleEditClick(s)}
-                        className="p-1 rounded bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition"
-                        title="Editar Pacote Manualmente"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                        </svg>
-                    </button>
-                </div>
+                <span className="text-xs text-gray-400">
+                  {s.lastOperation ? formatDateTime(s.lastOperation) : "Sem movimento"}
+                </span>
               </div>
               
               {/* [NEW] Average Unit Price for this Carrier */}
               {(() => {
                  const balance = s.balanceCurrent ?? 0;
                  const qty = s.balanceQuantityCurrent ?? 0;
-                 // Use summary values, which are now correctly fetched from DB (via statement/route.ts update)
-                 const avg = qty !== 0 ? balance / qty : 0;
+                 const avg = qty > 0 ? balance / qty : 0;
                  
                  return (
                     <div className="flex items-center gap-2 mb-2 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 w-fit">
-                       <span className="text-xs uppercase text-blue-200 font-bold">Valor Médio Uni:</span>
-                       <span className="text-sm font-mono text-white">{avg !== 0 ? formatCurrency(Math.abs(avg)) : "-"}</span>
+                       <span className="text-xs uppercase text-blue-200 font-bold">Valor Médio Un:</span>
+                       <span className="text-sm font-mono text-white">{avg > 0 ? formatCurrency(avg) : "-"}</span>
                     </div>
                  );
               })()}
@@ -302,71 +234,6 @@ export default function PackagesIndexPage() {
           ))}
         </div>
       )}
-
-      {/* [NEW] Edit Modal */}
-      {editingPackage && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-              <div className="w-full max-w-md bg-[#1c1c1c] border border-white/10 rounded-2xl p-6 shadow-2xl">
-                  <h2 className="text-xl font-bold mb-4">Editar Pacote Manualmente</h2>
-                  <p className="text-sm text-gray-400 mb-6">
-                      Atenção: Esta ação altera diretamente o saldo e preço atual do pacote no banco de dados. 
-                      O histórico passado não será afetado.
-                  </p>
-                  
-                  <div className="space-y-4">
-                      <div>
-                          <label className="text-xs text-gray-300 uppercase block mb-1">Cliente</label>
-                          <input 
-                              type="text" 
-                              value={editingPackage.clientName} 
-                              disabled 
-                              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-gray-400 cursor-not-allowed"
-                          />
-                      </div>
-                      
-                      <div>
-                          <label className="text-xs text-gray-300 uppercase block mb-1">Novo Saldo (Quantidade)</label>
-                          <input 
-                              type="number" 
-                              value={editForm.balance} 
-                              onChange={e => setEditForm(prev => ({ ...prev, balance: e.target.value }))}
-                              className="w-full bg-black/30 border border-white/20 rounded-lg px-3 py-2 text-white focus:border-blue-500 outline-none"
-                          />
-                      </div>
-
-                      <div>
-                          <label className="text-xs text-gray-300 uppercase block mb-1">Novo Preço Unitário (R$)</label>
-                          <input 
-                              type="number" 
-                              step="0.01"
-                              value={editForm.price} 
-                              onChange={e => setEditForm(prev => ({ ...prev, price: e.target.value }))}
-                              className="w-full bg-black/30 border border-white/20 rounded-lg px-3 py-2 text-white focus:border-blue-500 outline-none"
-                          />
-                      </div>
-                  </div>
-
-                  <div className="flex gap-3 mt-8">
-                      <Button 
-                          variant="secondary" 
-                          className="flex-1" 
-                          onClick={() => setEditingPackage(null)}
-                          disabled={savingEdit}
-                      >
-                          Cancelar
-                      </Button>
-                      <Button 
-                          className="flex-1 bg-blue-600 hover:bg-blue-500" 
-                          onClick={handleSaveEdit}
-                          disabled={savingEdit}
-                      >
-                          {savingEdit ? "Salvando..." : "Salvar Alterações"}
-                      </Button>
-                  </div>
-              </div>
-          </div>
-      )}
-
     </div>
   );
 }
