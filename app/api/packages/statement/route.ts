@@ -224,12 +224,29 @@ export async function GET(request: NextRequest) {
     });
 
     // 4. Ordena para exibir (descendente por data)
+    // 4. Ordena para exibir (descendente por data)
     const operations = filteredOps.sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
     // Resumo por cliente (baseado no filtro)
     const summaryMap: Record<string, any> = {};
+
+    // [FIX START] Fetch Live Package Data for Accurate Summary
+    // Instead of relying on the sum of filtered operations (which might be incomplete or historically adrift),
+    // we fetch the ACTUAL current state from client_packages.
+    const livePackagesRes = await query(`
+        SELECT client_id, available_quantity, unit_price, initial_quantity, consumed_quantity, total_paid 
+        FROM client_packages
+    `);
+    
+    // Create a map for quick lookup: clientId -> PackageRow
+    const livePackageMap = new Map();
+    livePackagesRes.rows.forEach(pkg => {
+        livePackageMap.set(pkg.client_id, pkg);
+    });
+    // [FIX END]
+
     for (const op of filteredOps) {
       const s = (summaryMap[op.clientId] ??= {
         clientId: op.clientId,
@@ -243,25 +260,34 @@ export async function GET(request: NextRequest) {
         lastOperation: op.date,
       });
 
-      // Acumula totais do periodo/filtro
+      // Acumula totais do periodo/filtro (Historico visual)
       if (op.operationType === "compra") s.totalAcquired += Number(op.value);
       if (op.operationType === "consumo") s.totalConsumed += Number(-op.value);
       
-      // O "saldo" do resumo aqui vai somar apenas as operacoes visiveis.
-      // Se quisermos o saldo REAL ATUAL do cliente, deveriamos pegar de 'balances[op.clientId]' e 'qtyBalances[op.clientId]'
-      // mas como o resumo eh por loop, vamos manter a logica de somatoria do filtro para 'balanceCurrent'
-      // ou podemos ajustar para mostrar o saldo FINAL da ultima operacao visivel?
-      // O padrao anterior era somar. Vamos manter somar para consistencia do "Extrato do periodo".
-      s.balanceCurrent += Number(op.value);
 
       if (op.operationType === "compra") s.totalQuantityAcquired += Number(op.quantity);
       if (op.operationType === "consumo") s.totalQuantityConsumed += Number(op.quantity);
-      s.balanceQuantityCurrent += op.operationType === "compra" ? Number(op.quantity) : -Number(op.quantity);
-
+      // s.balanceQuantityCurrent e s.balanceCurrent serão sobrescritos pelo valor REAL abaixo
+      
       if (!s.lastOperation || new Date(op.date).getTime() > new Date(s.lastOperation).getTime()) {
         s.lastOperation = op.date;
       }
     }
+    
+    // [FIX START] Override Balance with Live DB Data
+    // Ensure the dashboard shows the Truth, not a calculated guess.
+    Object.values(summaryMap).forEach((s: any) => {
+        const livePkg = livePackageMap.get(s.clientId);
+        if (livePkg) {
+            s.balanceQuantityCurrent = Number(livePkg.available_quantity);
+            // Balance Current (Financeiro) = Quantidade * Preço Unitário
+            s.balanceCurrent = Number(livePkg.available_quantity) * Number(livePkg.unit_price);
+        } else {
+             // Fallback if no package found (shouldn't happen if ops exist, but possible if package deleted)
+             // Keep calculated values or set to 0.
+        }
+    });
+    // [FIX END]
 
     // Ajuste opcional: Se quisermos que o card de saldo mostre o saldo FINAL REAL do cliente, poderiamos injetar aqui.
     // Mas "Saldo de créditos (qtde)" no widget pode ser interpretado como "Saldo resultante deste extrato" ou "Saldo atual da conta".
