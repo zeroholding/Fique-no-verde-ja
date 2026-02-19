@@ -231,16 +231,28 @@ export async function GET(request: NextRequest) {
     // Resumo por cliente (baseado no filtro)
     const summaryMap: Record<string, any> = {};
 
+    // [RESTORED] Fetch Live Package Data for Accurate Summary
+    const livePackagesRes = await query(`
+        SELECT client_id, available_quantity, unit_price, initial_quantity, consumed_quantity, total_paid 
+        FROM client_packages
+    `);
+    
+    // Create a map for quick lookup: clientId -> PackageRow
+    const livePackageMap = new Map();
+    livePackagesRes.rows.forEach(pkg => {
+        livePackageMap.set(pkg.client_id, pkg);
+    });
+
     for (const op of filteredOps) {
       const s = (summaryMap[op.clientId] ??= {
         clientId: op.clientId,
         clientName: op.clientName,
         totalAcquired: 0,
         totalConsumed: 0,
-        balanceCurrent: 0, // Will be sum of historical values
+        balanceCurrent: 0,
         totalQuantityAcquired: 0,
         totalQuantityConsumed: 0,
-        balanceQuantityCurrent: 0, // Will be sum of historical quantities
+        balanceQuantityCurrent: 0,
         lastOperation: op.date,
       });
 
@@ -248,7 +260,7 @@ export async function GET(request: NextRequest) {
       if (op.operationType === "compra") s.totalAcquired += Number(op.value);
       if (op.operationType === "consumo") s.totalConsumed += Number(-op.value);
       
-      // Reverting to historical sum logic
+      // Historical sum (will be overridden)
       s.balanceCurrent += Number(op.value);
 
       if (op.operationType === "compra") s.totalQuantityAcquired += Number(op.quantity);
@@ -260,7 +272,15 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // [REVERTED] Calculated overrides removed. Summary is now pure history sum.
+    // [RESTORED] Override Balance with Live DB Data
+    Object.values(summaryMap).forEach((s: any) => {
+        const livePkg = livePackageMap.get(s.clientId);
+        if (livePkg) {
+            s.balanceQuantityCurrent = Number(livePkg.available_quantity);
+            // Balance Current (Financeiro) = Quantidade * Preço Unitário
+            s.balanceCurrent = Number(livePkg.available_quantity) * Number(livePkg.unit_price);
+        }
+    });
 
     // Ajuste opcional: Se quisermos que o card de saldo mostre o saldo FINAL REAL do cliente, poderiamos injetar aqui.
     // Mas "Saldo de créditos (qtde)" no widget pode ser interpretado como "Saldo resultante deste extrato" ou "Saldo atual da conta".
