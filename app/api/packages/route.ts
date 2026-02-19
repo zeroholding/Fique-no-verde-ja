@@ -79,11 +79,7 @@ export async function GET(request: NextRequest) {
     // MODIFICADO: Calcula consumed_quantity dinamicamente (ignorando vendas canceladas)
     // E TAMBÉM ignorando consumos sem Vendedor ou Cliente Final VÁLIDOS (JOIN behavior)
     // Isso resolve a divergência onde o Dashboard mostra saldo maior (510) que o Banco (-490).
-    const consumptionFilter = `
-        AND s2.status != 'cancelada'
-        AND EXISTS (SELECT 1 FROM users u WHERE u.id = s2.attendant_id) -- Mimic INNER JOIN users
-        AND EXISTS (SELECT 1 FROM clients ec WHERE ec.id = s2.client_id) -- Mimic INNER JOIN clients
-    `;
+
 
     let sql = `
       SELECT
@@ -94,25 +90,11 @@ export async function GET(request: NextRequest) {
         s.name as service_name,
         cp.initial_quantity,
         
-        -- Consumo Dinâmico (Soma consumos onde a venda NÃO está cancelada E tem dados completos)
-        COALESCE(
-          (SELECT SUM(pc.quantity) 
-           FROM package_consumptions pc 
-           JOIN sales s2 ON pc.sale_id = s2.id 
-           WHERE pc.package_id = cp.id 
-           ${consumptionFilter}
-          ), 0
-        ) as consumed_quantity,
+        -- Consumo Real (Do Banco de Dados)
+        cp.consumed_quantity,
 
-        -- Saldo Disponível Calculado (Inicial - Consumo Filtrado)
-        (cp.initial_quantity - COALESCE(
-          (SELECT SUM(pc.quantity) 
-           FROM package_consumptions pc 
-           JOIN sales s2 ON pc.sale_id = s2.id 
-           WHERE pc.package_id = cp.id 
-           ${consumptionFilter}
-          ), 0
-        )) as available_quantity,
+        -- Saldo Disponível Real (Do Banco de Dados)
+        cp.available_quantity,
 
         cp.unit_price,
         cp.total_paid,
