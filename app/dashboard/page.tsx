@@ -390,10 +390,10 @@ export default function Dashboard() {
   }, [currentUser, fetchDashboardMetrics]);
 
   const periodTotals = metrics?.periodTotals;
-  const refundTotal = Math.abs(periodTotals?.refundTotal ?? 0);
-  const totalDiscount = Math.abs(periodTotals?.totalDiscount ?? 0);
+  const refundTotal = periodTotals?.refundTotal ?? 0;
+  const totalDiscount = periodTotals?.totalDiscount ?? 0;
 
-  // [NEW] Calculate Averages
+  // Calculate net revenue (bank data is already correct: discounts are positive)
   const netRevenue = (periodTotals?.totalValue ?? 0) - totalDiscount - refundTotal;
   const avgTicket = periodTotals?.salesCount ? netRevenue / periodTotals.salesCount : 0;
 
