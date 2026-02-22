@@ -38,6 +38,9 @@ export default function PackagesIndexPage() {
   const [editForm, setEditForm] = useState({ balance: "", price: "" });
   const [savingEdit, setSavingEdit] = useState(false);
 
+  // [NEW] Show/hide zero-balance packages (hidden by default)
+  const [showZeroBalance, setShowZeroBalance] = useState(false);
+
   const fetchSummaries = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -82,6 +85,13 @@ export default function PackagesIndexPage() {
       if (totalSaldoQtde <= 0) return 0;
       return totalSaldoFinanceiro / totalSaldoQtde;
   }, [totalSaldoFinanceiro, totalSaldoQtde]);
+
+  // [NEW] Filter out zero-balance packages unless toggled
+  const zeroCount = useMemo(() => summaries.filter(s => (s.balanceQuantityCurrent ?? 0) <= 0).length, [summaries]);
+  const visibleSummaries = useMemo(
+    () => showZeroBalance ? summaries : summaries.filter(s => (s.balanceQuantityCurrent ?? 0) > 0),
+    [summaries, showZeroBalance]
+  );
 
   const handleGenerateShareLink = async (clientId: string) => {
     const token = localStorage.getItem("token");
@@ -197,18 +207,41 @@ export default function PackagesIndexPage() {
                </p>
             </div>
         </div>
-        <Button size="sm" variant="secondary" className="rounded-xl" onClick={fetchSummaries} disabled={loading}>
-          {loading ? "Atualizando..." : "Atualizar"}
-        </Button>
+        <div className="flex gap-2">
+          {zeroCount > 0 && (
+            <button
+              onClick={() => setShowZeroBalance(prev => !prev)}
+              className={`rounded-xl px-4 py-2 text-sm font-medium transition-all border ${
+                showZeroBalance
+                  ? "bg-yellow-500/20 border-yellow-500/40 text-yellow-200 hover:bg-yellow-500/30"
+                  : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              {showZeroBalance ? `Ocultar zerados (${zeroCount})` : `Mostrar zerados (${zeroCount})`}
+            </button>
+          )}
+          <Button size="sm" variant="secondary" className="rounded-xl" onClick={fetchSummaries} disabled={loading}>
+            {loading ? "Atualizando..." : "Atualizar"}
+          </Button>
+        </div>
+
       </div>
 
       {loading ? (
         <div className="px-4 sm:px-6 py-10 text-center text-gray-300">Carregando...</div>
-      ) : summaries.length === 0 ? (
+      ) : visibleSummaries.length === 0 && !showZeroBalance ? (
+        <div className="px-4 sm:px-6 py-10 text-center text-gray-400">
+          Todos os pacotes têm saldo zero.{" "}
+          <button onClick={() => setShowZeroBalance(true)} className="underline text-yellow-300 hover:text-yellow-200 transition">
+            Clique aqui para exibi-los.
+          </button>
+        </div>
+      ) : visibleSummaries.length === 0 ? (
         <div className="px-4 sm:px-6 py-10 text-center text-gray-400">Nenhum cliente parceiro com pacotes.</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {summaries.map((s) => (
+          {visibleSummaries.map((s) => (
+
             <div
               key={s.clientId}
               className="rounded-2xl border border-white/10 bg-white/5 p-5 flex flex-col gap-2 hover:border-white/20 transition"

@@ -1,0 +1,55 @@
+{
+  "timestamp": "2026-02-21T12:56:56.956Z",
+  "database": "supabase",
+  "url": "https://xqkhmtrxcpjmxtwpqacg.supabase.co",
+  "tables": {
+    "sales": {
+      "count": 0,
+      "data": []
+    },
+    "sale_items": {
+      "count": 0,
+      "data": []
+    },
+    "clients": {
+      "count": 0,
+      "data": []
+    },
+    "client_packages": {
+      "count": 0,
+      "data": []
+    },
+    "package_consumptions": {
+      "count": 0,
+      "data": []
+    },
+    "commissions": {
+      "count": 0,
+      "data": []
+    },
+    "users": {
+      "count": 0,
+      "data": []
+    },
+    "services": {
+      "count": 0,
+      "data": []
+    },
+    "products": {
+      "count": 0,
+      "data": []
+    },
+    "commission_policies": {
+      "count": 0,
+      "data": []
+    },
+    "client_origins": {
+      "count": 0,
+      "data": []
+    },
+    "holidays": {
+      "count": 0,
+      "data": []
+    }
+  }
+}

@@ -1,0 +1,144 @@
+ID,Quantidade,Desconto %,Quantidade Efetiva,Created,Forma de Pagamento,Produto,Colaborador,Cliente,Observação,Desconto $,Data Ajustada,DATA DA VENDA,ATENDENTE USUARIO,TIPO_VENDA,SERVIÇO,QTDE,DESCONTO TOTAL [$],FORMA PGTO,SUBTOTAL,TOTAL DA VENDA
+3807,2,0,,12/1/2025 14:25,PIX,Remoção de Reclamações,Beatriz,Gabriel de Freitas Santos,,,,12/1/2025,BEATRIZ,1,Reclamação,2,0.00,PIX,80.00,80.00
+3808,47,10,,12/1/2025 16:59,PIX,Remoção de Atrasos,Bruna Castro,Isabella Dibbern,,,,12/1/2025,BRUNA CASTRO,1,Atrasos,47,-70.50,PIX,705.00,634.50
+3809,3,0,,12/1/2025 17:00,PIX,Remoção de Atrasos,Bruna Castro,Joao Bruno Lopes,,,,12/1/2025,BRUNA CASTRO,1,Atrasos,3,0.00,PIX,90.00,90.00
+3810,4,5,,12/1/2025 17:00,PIX,Remoção de Atrasos,Bruna Castro,Camila pestana Martinho,,,,12/1/2025,BRUNA CASTRO,1,Atrasos,4,-6.00,PIX,120.00,114.00
+3811,3,0,,12/1/2025 17:01,PIX,Remoção de Atrasos,Bruna Castro,Raphael Carneiro,,,,12/1/2025,BRUNA CASTRO,1,Atrasos,3,0.00,PIX,90.00,90.00
+3812,16,0,,12/1/2025 17:01,PIX,Remoção de Atrasos,Bruna Castro,Henrique Silva Vensão,,,,12/1/2025,BRUNA CASTRO,1,Atrasos,16,0.00,PIX,320.00,320.00
+3813,110,10,,12/1/2025 17:03,PIX,Remoção de Atrasos,Bruna Castro,JAZIEL,,85,,12/1/2025,BRUNA CASTRO,1,Atrasos,110,-250.00,PIX,"1,650.00","1,400.00"
+3814,2,0,,12/1/2025 17:04,PIX,Remoção de Atrasos,Bruna Castro,Vinicius Nogueira,,,,12/1/2025,BRUNA CASTRO,1,Atrasos,2,0.00,PIX,60.00,60.00
+3815,7,0,,12/1/2025 17:04,PIX,Remoção de Atrasos,Bruna Castro,Lina acessorios ,,,,12/1/2025,BRUNA CASTRO,1,Atrasos,7,0.00,PIX,210.00,210.00
+3816,2,0,,12/1/2025 17:05,PIX,Remoção de Atrasos,Bruna Castro,Vinicius,,,,12/1/2025,BRUNA CASTRO,1,Atrasos,2,0.00,PIX,60.00,60.00
+3817,1,0,,12/1/2025 17:09,PIX,Remoção de Atrasos,Bruna Castro,Emerson Da Paixão Lima,,,,12/1/2025,BRUNA CASTRO,1,Atrasos,1,0.00,PIX,30.00,30.00
+3818,2,0,,12/2/2025 17:44,PIX,Remoção de Atrasos,Beatriz,Marcos Costa,,,,12/2/2025,BEATRIZ,1,Atrasos,2,0.00,PIX,60.00,60.00
+3819,2,0,,12/3/2025 4:53,PIX,Remoção de Atrasos,Maria Vitória,Guilherme Dalla,,,,12/3/2025,MARIA VITÓRIA,1,Atrasos,2,0.00,PIX,60.00,60.00
+3820,43,5,,12/3/2025 6:37,PIX,Remoção de Atrasos,Maria Vitória,Bruno Marinho ,,,,12/3/2025,MARIA VITÓRIA,1,Atrasos,43,-32.25,PIX,645.00,612.75
+3821,20,0,,12/3/2025 6:40,,Remoção de Atrasos,Maria Vitória,Guilherme Gabriel,,10,,12/3/2025,MARIA VITÓRIA,1,Atrasos,20,-10.00,PIX,400.00,390.00
+3822,35,20,,12/3/2025 6:44,PIX,Remoção de Atrasos,Maria Vitória,Gustavo,,,,12/3/2025,MARIA VITÓRIA,1,Atrasos,35,-105.00,PIX,525.00,420.00
+3823,6,0,,12/3/2025 7:22,PIX,Remoção de Atrasos,Maria Vitória,Matheus Rezende ,,10,,12/3/2025,MARIA VITÓRIA,1,Atrasos,6,-10.00,PIX,180.00,170.00
+3824,15,0,,12/3/2025 9:51,PIX,Remoção de Atrasos,Maria Vitória,Mateus Lemos,,,,12/3/2025,MARIA VITÓRIA,1,Atrasos,15,0.00,PIX,300.00,300.00
+3825,45,0,,12/3/2025 10:21,PIX,Remoção de Atrasos,Maria Vitória,Letícia Vitória Dantas Gameiro,,,,12/3/2025,MARIA VITÓRIA,1,Atrasos,45,0.00,PIX,675.00,675.00
+3826,6,0,,12/3/2025 10:27,PIX,Remoção de Atrasos,Maria Vitória,patricia santos,,,,12/3/2025,MARIA VITÓRIA,1,Atrasos,6,0.00,PIX,180.00,180.00
+3827,7,0,,12/3/2025 13:01,PIX,Remoção de Atrasos,Beatriz,Pedro Luciano,,,,12/3/2025,BEATRIZ,1,Atrasos,7,0.00,PIX,210.00,210.00
+3828,18,0,,12/3/2025 13:02,PIX,Remoção de Atrasos,Beatriz,Juliana Rossi,,20,,12/3/2025,BEATRIZ,1,Atrasos,18,-20.00,PIX,360.00,340.00
+3829,5,0,,12/3/2025 14:24,PIX,Remoção de Atrasos,Bruna Castro,Bruna Ohse,,,,12/3/2025,BRUNA CASTRO,1,Atrasos,5,0.00,PIX,150.00,150.00
+3830,7,0,,12/3/2025 14:25,PIX,Remoção de Atrasos,Bruna Castro,William Lima Sousa ,,,,12/3/2025,BRUNA CASTRO,1,Atrasos,7,0.00,PIX,210.00,210.00
+3831,20,10,,12/3/2025 14:25,PIX,Remoção de Atrasos,Bruna Castro,Giovanna Menetrie,,,,12/3/2025,BRUNA CASTRO,1,Atrasos,20,-40.00,PIX,400.00,360.00
+3832,10,0,,12/3/2025 14:54,PIX,Remoção de Atrasos,Bruna Castro,Natalia Dias,,,,12/3/2025,BRUNA CASTRO,1,Atrasos,10,0.00,PIX,300.00,300.00
+3833,11,0,,12/3/2025 14:55,PIX,Remoção de Atrasos,Bruna Castro,Flavio Navarro,,,,12/3/2025,BRUNA CASTRO,1,Atrasos,11,0.00,PIX,220.00,220.00
+3834,7,0,,12/3/2025 14:55,PIX,Remoção de Atrasos,Bruna Castro,Pedro Luciano,,,,12/3/2025,BRUNA CASTRO,1,Atrasos,7,0.00,PIX,210.00,210.00
+3835,26,0,,12/3/2025 14:56,PIX,Remoção de Atrasos,Bruna Castro,Lucas,,,,12/3/2025,BRUNA CASTRO,1,Atrasos,26,0.00,PIX,390.00,390.00
+3836,3,0,,12/3/2025 14:57,PIX,Remoção de Atrasos,Bruna Castro,Luan Coelho ,,,,12/3/2025,BRUNA CASTRO,1,Atrasos,3,0.00,PIX,90.00,90.00
+3837,35,0,,12/3/2025 14:58,PIX,Remoção de Atrasos,Bruna Castro,THALES FELIPE FERREIRA,,5,,12/3/2025,BRUNA CASTRO,1,Atrasos,35,-5.00,PIX,525.00,520.00
+3838,25,20,,12/4/2025 13:47,PIX,Remoção de Atrasos,Laís,Gabriel Morato,,,,12/4/2025,LAÍS,1,Atrasos,25,-75.00,PIX,375.00,300.00
+3839,3,0,,12/4/2025 13:49,PIX,Remoção de Atrasos,Laís,Higor Silva do Nascimento,,,,12/4/2025,LAÍS,1,Atrasos,3,0.00,PIX,90.00,90.00
+3840,32,7,,12/4/2025 13:50,PIX,Remoção de Atrasos,Laís,GABRIEL ,,,,12/4/2025,LAÍS,1,Atrasos,32,-33.60,PIX,480.00,446.40
+3841,20,0,,12/4/2025 13:51,PIX,Remoção de Atrasos,Laís,marcus vinicius ,,,,12/4/2025,LAÍS,1,Atrasos,20,0.00,PIX,400.00,400.00
+3842,22,0,,12/4/2025 13:52,PIX,Remoção de Atrasos,Laís,Nathan lacerda,,,,12/4/2025,LAÍS,1,Atrasos,22,0.00,PIX,330.00,330.00
+3843,13,0,,12/4/2025 13:54,PIX,Remoção de Atrasos,Laís,Jorge Luis Silva de Oliveira,,,,12/4/2025,LAÍS,1,Atrasos,13,0.00,PIX,260.00,260.00
+3844,2,0,,12/5/2025 13:05,PIX,Remoção de Reclamações,Beatriz,Fernanda Cardoso,,,,12/5/2025,BEATRIZ,1,Reclamação,2,0.00,PIX,80.00,80.00
+3845,1,0,,12/5/2025 13:08,PIX,,Beatriz,MT COMERCIO LTDA,,,,12/5/2025,BEATRIZ,1,Reclamação,1,0.00,PIX,40.00,40.00
+3846,1,0,,12/5/2025 13:08,PIX,Remoção de Atrasos,Beatriz,MT COMERCIO LTDA,,,,12/5/2025,BEATRIZ,1,Atrasos,1,0.00,PIX,30.00,30.00
+3847,10,0,,12/5/2025 13:26,PIX,Remoção de Atrasos,Beatriz,Pablo Ruiz,,,,12/5/2025,BEATRIZ,1,Atrasos,10,0.00,PIX,300.00,300.00
+3848,60,0,,12/5/2025 13:29,PIX,Remoção de Atrasos,Beatriz,Elton Rocha de Oliveira,,10,,12/5/2025,BEATRIZ,1,Atrasos,60,-10.00,PIX,900.00,890.00
+3849,4,0,,12/5/2025 13:50,PIX,Remoção de Atrasos,Beatriz,Daniel Paganin,,,,12/5/2025,BEATRIZ,1,Atrasos,4,0.00,PIX,120.00,120.00
+3850,4,0,,12/5/2025 16:33,PIX,Remoção de Atrasos,Bruna Castro,Diego Brito,,,,12/5/2025,BRUNA CASTRO,1,Atrasos,4,0.00,PIX,120.00,120.00
+3851,21,0,,12/5/2025 16:34,PIX,Remoção de Atrasos,Bruna Castro,Gabriel Branquinho,,,,12/5/2025,BRUNA CASTRO,1,Atrasos,21,0.00,PIX,315.00,315.00
+3852,4,0,,12/5/2025 16:34,PIX,Remoção de Atrasos,Bruna Castro,ANDERSON SANTOS,,,,12/5/2025,BRUNA CASTRO,1,Atrasos,4,0.00,PIX,120.00,120.00
+3853,19,0,,12/5/2025 16:35,PIX,Remoção de Atrasos,Bruna Castro,BBZ COMERCIO E DISTRIBUIDORA,,,,12/5/2025,BRUNA CASTRO,1,Atrasos,19,0.00,PIX,380.00,380.00
+3854,14,0,,12/5/2025 16:36,PIX,Remoção de Atrasos,Bruna Castro,Isabella Dibbern,,,,12/5/2025,BRUNA CASTRO,1,Atrasos,14,0.00,PIX,280.00,280.00
+3855,12,0,,12/5/2025 16:36,PIX,Remoção de Atrasos,Bruna Castro,FACILITA COMERCIO DE MOVEIS E ELETRODOMESTICOS LTDA,,,,12/5/2025,BRUNA CASTRO,1,Atrasos,12,0.00,PIX,240.00,240.00
+3856,1,0,,12/5/2025 16:36,PIX,Remoção de Atrasos,Bruna Castro,Camila pestana Martinho,,,,12/5/2025,BRUNA CASTRO,1,Atrasos,1,0.00,PIX,30.00,30.00
+3857,37,10,,12/5/2025 16:38,PIX,Remoção de Atrasos,Bruna Castro,GABRIEL ,,0.5,,12/5/2025,BRUNA CASTRO,1,Atrasos,37,-56.00,PIX,555.00,499.00
+3858,113,0,,12/5/2025 16:38,LINK,Remoção de Atrasos,Bruna Castro,Gabriel Matos ,,,,12/5/2025,BRUNA CASTRO,1,Atrasos,113,0.00,PIX,"1,695.00","1,695.00"
+3859,2,0,,12/5/2025 16:39,PIX,Remoção de Atrasos,Bruna Castro,Luiz Carlos Merigne Filho,,,,12/5/2025,BRUNA CASTRO,1,Atrasos,2,0.00,PIX,60.00,60.00
+3860,40,10,,12/5/2025 16:39,PIX,Remoção de Atrasos,Bruna Castro,Adenilson,,,,12/5/2025,BRUNA CASTRO,1,Atrasos,40,-60.00,PIX,600.00,540.00
+3861,4,0,,12/5/2025 16:40,PIX,Remoção de Atrasos,Bruna Castro,Luciano Santos,,,,12/5/2025,BRUNA CASTRO,1,Atrasos,4,0.00,PIX,120.00,120.00
+3862,8,0,,12/6/2025 6:13,PIX,Remoção de Atrasos,Maria Vitória,Asafe Marques ,,,,12/6/2025,MARIA VITÓRIA,1,Atrasos,8,0.00,PIX,240.00,240.00
+3863,5,0,,12/6/2025 6:29,PIX,Remoção de Atrasos,Maria Vitória,Thiago Correa,,,,12/6/2025,MARIA VITÓRIA,1,Atrasos,5,0.00,PIX,150.00,150.00
+3864,6,0,,12/6/2025 8:03,PIX,Remoção de Atrasos,Maria Vitória,Bruna Ohse,,,,12/6/2025,MARIA VITÓRIA,1,Atrasos,6,0.00,PIX,180.00,180.00
+3865,1,0,,12/6/2025 10:51,PIX,Remoção de Reclamações,Maria Vitória,sanches,,,,12/6/2025,MARIA VITÓRIA,1,Reclamação,1,0.00,PIX,40.00,40.00
+3866,45,0,,12/8/2025 15:46,PIX,Remoção de Atrasos,Beatriz,Personaliza Móveis,,,,12/8/2025,BEATRIZ,1,Atrasos,45,0.00,PIX,675.00,675.00
+3867,9,0,,12/8/2025 16:08,PIX,Remoção de Atrasos,Bruna Castro,Denise Vanilli Teófilo Fignana,,,,12/8/2025,BRUNA CASTRO,1,Atrasos,9,0.00,PIX,270.00,270.00
+3868,8,0,,12/8/2025 16:08,PIX,Remoção de Atrasos,Bruna Castro,Pedro Luciano,,,,12/8/2025,BRUNA CASTRO,1,Atrasos,8,0.00,PIX,240.00,240.00
+3869,5,0,,12/8/2025 16:09,PIX,Remoção de Atrasos,Bruna Castro,Neliane Jaremtchuk,,,,12/8/2025,BRUNA CASTRO,1,Atrasos,5,0.00,PIX,150.00,150.00
+3870,7,0,,12/8/2025 16:09,PIX,Remoção de Atrasos,Bruna Castro,Nathan Lacerda,,,,12/8/2025,BRUNA CASTRO,1,Atrasos,7,0.00,PIX,210.00,210.00
+3871,52,0,,12/8/2025 16:10,PIX,Remoção de Atrasos,Bruna Castro,Vanderlei Pinheiro,,,,12/8/2025,BRUNA CASTRO,1,Atrasos,52,0.00,PIX,780.00,780.00
+3872,16,0,,12/8/2025 16:10,PIX,Remoção de Atrasos,Bruna Castro,Matheus ,,,,12/8/2025,BRUNA CASTRO,1,Atrasos,16,0.00,PIX,320.00,320.00
+3873,6,0,,12/8/2025 16:11,PIX,Remoção de Atrasos,Bruna Castro,Adriana,,,,12/8/2025,BRUNA CASTRO,1,Atrasos,6,0.00,PIX,180.00,180.00
+3874,21,0,,12/8/2025 16:12,PIX,Remoção de Atrasos,Bruna Castro,Guilherme Assis Reis,,,,12/8/2025,BRUNA CASTRO,1,Atrasos,21,0.00,PIX,315.00,315.00
+3875,3,0,,12/8/2025 16:12,PIX,Remoção de Atrasos,Bruna Castro,Laryssa Barreto,,,,12/8/2025,BRUNA CASTRO,1,Atrasos,3,0.00,PIX,90.00,90.00
+3876,33,0,,12/8/2025 16:13,PIX,Remoção de Atrasos,Bruna Castro,Jorge Fernando,,,,12/8/2025,BRUNA CASTRO,1,Atrasos,33,0.00,PIX,495.00,495.00
+3877,6,0,,12/8/2025 16:13,PIX,Remoção de Atrasos,Bruna Castro,Camila pestana Martinho,,10,,12/8/2025,BRUNA CASTRO,1,Atrasos,6,-10.00,PIX,180.00,170.00
+3878,2,0,,12/8/2025 16:13,PIX,Remoção de Atrasos,Bruna Castro,Felipe de Jesus,,,,12/8/2025,BRUNA CASTRO,1,Atrasos,2,0.00,PIX,60.00,60.00
+3879,14,0,,12/8/2025 16:14,PIX,Remoção de Atrasos,Bruna Castro,B&M GROUP,,,,12/8/2025,BRUNA CASTRO,1,Atrasos,14,0.00,PIX,280.00,280.00
+3880,41,0,,12/9/2025 14:19,PIX,Remoção de Atrasos,Beatriz,Beatriz Farias Morais,,,,12/9/2025,BEATRIZ,1,Atrasos,41,0.00,PIX,615.00,615.00
+3881,41,0,,12/9/2025 16:11,PIX,Remoção de Atrasos,Bruna Castro,Rogério Costa,,,,12/9/2025,BRUNA CASTRO,1,Atrasos,41,0.00,PIX,615.00,615.00
+3882,26,0,,12/9/2025 16:11,PIX,Remoção de Atrasos,Bruna Castro,André Luís Alves,,,,12/9/2025,BRUNA CASTRO,1,Atrasos,26,0.00,PIX,390.00,390.00
+3883,33,0,,12/9/2025 16:12,PIX,Remoção de Atrasos,Bruna Castro,Elielson farias,,,,12/9/2025,BRUNA CASTRO,1,Atrasos,33,0.00,PIX,495.00,495.00
+3884,1,0,,12/11/2025 10:07,PIX,Remoção de Reclamações,Maria Vitória,Lucas Pilar,,,,12/11/2025,MARIA VITÓRIA,1,Reclamação,1,0.00,PIX,40.00,40.00
+3885,2,0,,12/11/2025 18:37,PIX,Remoção de Atrasos,Bruna Castro,Paula Morais,,,,12/11/2025,BRUNA CASTRO,1,Atrasos,2,0.00,PIX,60.00,60.00
+3886,11,0,,12/11/2025 18:37,PIX,Remoção de Atrasos,Bruna Castro,Victor Key,,,,12/11/2025,BRUNA CASTRO,1,Atrasos,11,0.00,PIX,220.00,220.00
+3887,5,0,,12/11/2025 18:37,PIX,Remoção de Atrasos,Bruna Castro,ADAURI ,,,,12/11/2025,BRUNA CASTRO,1,Atrasos,5,0.00,PIX,150.00,150.00
+3888,2,0,,12/11/2025 18:38,PIX,Remoção de Atrasos,Bruna Castro,Bruno Reis gottardi,,,,12/11/2025,BRUNA CASTRO,1,Atrasos,2,0.00,PIX,60.00,60.00
+3889,15,0,,12/11/2025 18:39,PIX,Remoção de Atrasos,Bruna Castro,Rei da Caixa,,,,12/11/2025,BRUNA CASTRO,1,Atrasos,15,0.00,PIX,300.00,300.00
+3890,1,0,,12/11/2025 18:39,PIX,Remoção de Atrasos,Bruna Castro,Ingrid Isabelle,,,,12/11/2025,BRUNA CASTRO,1,Atrasos,1,0.00,PIX,30.00,30.00
+3891,3,5,,12/11/2025 18:40,PIX,Remoção de Atrasos,Bruna Castro,Camila pestana Martinho,,,,12/11/2025,BRUNA CASTRO,1,Atrasos,3,-4.50,PIX,90.00,85.50
+3892,21,0,,12/11/2025 18:40,PIX,Remoção de Atrasos,Bruna Castro,Marina Toledo,,,,12/11/2025,BRUNA CASTRO,1,Atrasos,21,0.00,PIX,315.00,315.00
+3893,17,0,,12/11/2025 18:41,PIX,Remoção de Atrasos,Bruna Castro,Shirley,,,,12/11/2025,BRUNA CASTRO,1,Atrasos,17,0.00,PIX,340.00,340.00
+3894,37,0,,12/11/2025 18:42,PIX,Remoção de Atrasos,Bruna Castro,Dhiego Cavalcante,,,,12/11/2025,BRUNA CASTRO,1,Atrasos,37,0.00,PIX,555.00,555.00
+3895,38,5,,12/11/2025 18:42,PIX,Remoção de Atrasos,,Cliente Padrão,,,,12/11/2025,,1,Atrasos,38,-28.50,PIX,570.00,541.50
+3896,28,5,,12/11/2025 18:43,PIX,Remoção de Atrasos,Bruna Castro,Zordan,,,,12/11/2025,BRUNA CASTRO,1,Atrasos,28,-21.00,PIX,420.00,399.00
+3897,2,0,,12/11/2025 18:44,PIX,Remoção de Atrasos,Bruna Castro,MT COMERCIO LTDA,,,,12/11/2025,BRUNA CASTRO,1,Atrasos,2,0.00,PIX,60.00,60.00
+3898,35,0,,12/12/2025 14:00,PIX,Remoção de Atrasos,Bruna Castro,Isadora dos Santos,,,,12/12/2025,BRUNA CASTRO,1,Atrasos,35,0.00,PIX,525.00,525.00
+3899,4,0,,12/12/2025 14:01,PIX,Remoção de Atrasos,Bruna Castro,Vitor Mazzini,,,,12/12/2025,BRUNA CASTRO,1,Atrasos,4,0.00,PIX,120.00,120.00
+3900,37,0,,12/12/2025 14:02,PIX,Remoção de Atrasos,Bruna Castro,Giovanna Menetrie,,42,,12/12/2025,BRUNA CASTRO,1,Atrasos,37,-42.00,PIX,555.00,513.00
+3901,42,0,,12/12/2025 14:03,PIX,Remoção de Atrasos,Bruna Castro,João Eduardo ,,,,12/12/2025,BRUNA CASTRO,1,Atrasos,42,0.00,PIX,630.00,630.00
+3902,32,0,,12/12/2025 14:03,PIX,Remoção de Atrasos,Bruna Castro,Cristian Lucas ,,,,12/12/2025,BRUNA CASTRO,1,Atrasos,32,0.00,PIX,480.00,480.00
+3903,4,0,,12/12/2025 14:04,PIX,Remoção de Atrasos,Bruna Castro,Camila pestana Martinho,,10,,12/12/2025,BRUNA CASTRO,1,Atrasos,4,-10.00,PIX,120.00,110.00
+3904,117,0,,12/12/2025 17:06,PIX,Remoção de Atrasos,Bruna Castro,Leandro Carvalho ,,5,,12/12/2025,BRUNA CASTRO,1,Atrasos,117,-5.00,PIX,"1,755.00","1,750.00"
+3905,17,0,,12/13/2025 11:11,PIX,Remoção de Atrasos,Beatriz,Jair Cavalini Neto,,,,12/13/2025,BEATRIZ,1,Atrasos,17,0.00,PIX,340.00,340.00
+3906,2,0,,12/13/2025 11:16,PIX,Remoção de Reclamações,Beatriz,Cliente Padrão,,,,12/13/2025,BEATRIZ,1,Reclamação,2,0.00,PIX,80.00,80.00
+3907,17,0,,12/13/2025 11:39,PIX,Remoção de Atrasos,Beatriz,lincoln minighin,,,,12/13/2025,BEATRIZ,1,Atrasos,17,0.00,PIX,340.00,340.00
+3908,7,0,,12/13/2025 11:40,PIX,Remoção de Atrasos,Beatriz,Bruna Mansano,,,,12/13/2025,BEATRIZ,1,Atrasos,7,0.00,PIX,210.00,210.00
+3909,7,7,,12/16/2025 9:00,PIX,Remoção de Atrasos,Maria Vitória,Guilherme Dalla,,,,12/16/2025,MARIA VITÓRIA,1,Atrasos,7,-14.70,PIX,210.00,195.30
+3910,1,0,,12/16/2025 17:46,PIX,Remoção de Atrasos,Bruna Castro,Casa dos rerovisores,,,,12/16/2025,BRUNA CASTRO,1,Atrasos,1,0.00,PIX,30.00,30.00
+3911,2,0,,12/16/2025 17:48,PIX,Remoção de Atrasos,Bruna Castro,Rafael da Silva Ferreira,,,,12/16/2025,BRUNA CASTRO,1,Atrasos,2,0.00,PIX,60.00,60.00
+3912,2,0,,12/16/2025 17:49,PIX,Remoção de Atrasos,Bruna Castro,SHOP GOLD BRASIL LTDA ,,,,12/16/2025,BRUNA CASTRO,1,Atrasos,2,0.00,PIX,60.00,60.00
+3913,21,0,,12/16/2025 17:49,PIX,Remoção de Atrasos,Bruna Castro,B&M GROUP,,,,12/16/2025,BRUNA CASTRO,1,Atrasos,21,0.00,PIX,315.00,315.00
+3914,1,0,,12/16/2025 17:49,PIX,Remoção de Atrasos,Bruna Castro,Casemiro Gomes,,,,12/16/2025,BRUNA CASTRO,1,Atrasos,1,0.00,PIX,30.00,30.00
+3915,54,0,,12/16/2025 17:50,PIX,Remoção de Atrasos,Bruna Castro,Joyce Fernanda,,,,12/16/2025,BRUNA CASTRO,1,Atrasos,54,0.00,PIX,810.00,810.00
+3916,100,0,,12/16/2025 17:51,PIX,Remoção de Atrasos,Bruna Castro,Alan Fernandes,,100,,12/16/2025,BRUNA CASTRO,1,Atrasos,100,-100.00,PIX,"1,500.00","1,400.00"
+3917,10,5,,12/16/2025 17:51,PIX,Remoção de Atrasos,Bruna Castro,Flavia Silva,,,,12/16/2025,BRUNA CASTRO,1,Atrasos,10,-15.00,PIX,300.00,285.00
+3918,100,10,,12/16/2025 17:52,PIX,Remoção de Atrasos,Bruna Castro,David Almeida,,,,12/16/2025,BRUNA CASTRO,1,Atrasos,100,-150.00,PIX,"1,500.00","1,350.00"
+3919,88,0,,12/16/2025 17:52,PIX,Remoção de Atrasos,Bruna Castro,ADONAI DECOR,,,,12/16/2025,BRUNA CASTRO,1,Atrasos,88,0.00,PIX,"1,320.00","1,320.00"
+3920,28,0,,12/16/2025 17:53,PIX,Remoção de Atrasos,Bruna Castro,Leonardo Benedini ,,,,12/16/2025,BRUNA CASTRO,1,Atrasos,28,0.00,PIX,420.00,420.00
+3921,8,0,,12/16/2025 17:53,PIX,Remoção de Atrasos,Bruna Castro,Camila pestana Martinho,,20,,12/16/2025,BRUNA CASTRO,1,Atrasos,8,-20.00,PIX,240.00,220.00
+3922,21,0,,12/16/2025 17:54,PIX,Remoção de Atrasos,Bruna Castro,Alan Lourenço Felix da Costa,,,,12/16/2025,BRUNA CASTRO,1,Atrasos,21,0.00,PIX,315.00,315.00
+3923,4,0,,12/17/2025 4:42,PIX,Remoção de Atrasos,Laís,THALIA VITORINO TEIXEIRA,,,,12/17/2025,LAÍS,1,Atrasos,4,0.00,PIX,120.00,120.00
+3924,19,0,,12/17/2025 15:30,PIX,Remoção de Atrasos,Bruna Castro,GABRIEL ,,30,,12/17/2025,BRUNA CASTRO,1,Atrasos,19,-30.00,PIX,380.00,350.00
+3925,3,0,,12/17/2025 15:32,PIX,Remoção de Atrasos,Bruna Castro,Emanuel,,,,12/17/2025,BRUNA CASTRO,1,Atrasos,3,0.00,PIX,90.00,90.00
+3926,21,0,,12/17/2025 15:32,PIX,Remoção de Atrasos,Bruna Castro,Marina Toledo,,,,12/17/2025,BRUNA CASTRO,1,Atrasos,21,0.00,PIX,315.00,315.00
+3927,11,0,,12/17/2025 15:32,PIX,Remoção de Atrasos,Bruna Castro,Flavio Navarro,,,,12/17/2025,BRUNA CASTRO,1,Atrasos,11,0.00,PIX,220.00,220.00
+3928,8,0,,12/17/2025 15:33,PIX,Remoção de Atrasos,Bruna Castro,Fabio Batista,,,,12/17/2025,BRUNA CASTRO,1,Atrasos,8,0.00,PIX,240.00,240.00
+3929,5,0,,12/17/2025 15:33,PIX,Remoção de Atrasos,Bruna Castro,Adriana,,,,12/17/2025,BRUNA CASTRO,1,Atrasos,5,0.00,PIX,150.00,150.00
+3930,9,0,,12/19/2025 10:03,PIX,Remoção de Reclamações,Maria Vitória,Laurent Brenner,,,,12/19/2025,MARIA VITÓRIA,1,Reclamação,9,0.00,PIX,360.00,360.00
+3931,5,0,,12/19/2025 10:03,PIX,Remoção de Atrasos,Maria Vitória,My Dazzle,,8,,12/19/2025,MARIA VITÓRIA,1,Atrasos,5,-8.00,PIX,150.00,142.00
+3932,21,0,,12/19/2025 13:00,PIX,Remoção de Atrasos,Bruna Castro,vitor,,,,12/19/2025,BRUNA CASTRO,1,Atrasos,21,0.00,PIX,315.00,315.00
+3933,9,0,,12/19/2025 13:00,PIX,Remoção de Atrasos,Bruna Castro,Isabella Dibbern,,,,12/19/2025,BRUNA CASTRO,1,Atrasos,9,0.00,PIX,270.00,270.00
+3934,9,0,,12/19/2025 13:00,PIX,Remoção de Atrasos,Bruna Castro,Neiva,,,,12/19/2025,BRUNA CASTRO,1,Atrasos,9,0.00,PIX,270.00,270.00
+3935,15,0,,12/19/2025 13:01,PIX,Remoção de Atrasos,Bruna Castro,Laryssa Barreto,,,,12/19/2025,BRUNA CASTRO,1,Atrasos,15,0.00,PIX,300.00,300.00
+3936,130,0,,12/19/2025 13:01,PIX,Remoção de Atrasos,Bruna Castro,David Almeida,,50,,12/19/2025,BRUNA CASTRO,1,Atrasos,130,-50.00,PIX,"1,950.00","1,900.00"
+3937,3,0,,12/19/2025 13:02,PIX,Remoção de Atrasos,Bruna Castro,Dani,,,,12/19/2025,BRUNA CASTRO,1,Atrasos,3,0.00,PIX,90.00,90.00
+3938,1,0,,12/19/2025 13:02,PIX,Remoção de Atrasos,Bruna Castro,Roderjan,,,,12/19/2025,BRUNA CASTRO,1,Atrasos,1,0.00,PIX,30.00,30.00
+3939,10,0,,12/19/2025 13:02,PIX,Remoção de Atrasos,Bruna Castro,Joao,,,,12/19/2025,BRUNA CASTRO,1,Atrasos,10,0.00,PIX,300.00,300.00
+3940,19,0,,12/19/2025 13:03,PIX,Remoção de Atrasos,Bruna Castro,Camila Novaes,,,,12/19/2025,BRUNA CASTRO,1,Atrasos,19,0.00,PIX,380.00,380.00
+3941,530,0,,12/19/2025 13:04,PIX,Remoção de Atrasos,Bruna Castro,Matheus Henrique,,,,12/19/2025,BRUNA CASTRO,1,Atrasos,530,0.00,PIX,"7,950.00","7,950.00"
+3942,60,10,,12/19/2025 13:04,PIX,Remoção de Atrasos,Bruna Castro,LODI AUTOPARTS,,,,12/19/2025,BRUNA CASTRO,1,Atrasos,60,-90.00,PIX,900.00,810.00
+3943,22,0,,12/19/2025 13:05,PIX,Remoção de Atrasos,Bruna Castro,Ana laura Cristina Costa Falcucci,,,,12/19/2025,BRUNA CASTRO,1,Atrasos,22,0.00,PIX,330.00,330.00
+3944,8,0,,12/19/2025 13:05,PIX,Remoção de Atrasos,Bruna Castro,Camila pestana Martinho,,,,12/19/2025,BRUNA CASTRO,1,Atrasos,8,0.00,PIX,240.00,240.00
+3945,60,10,,12/19/2025 13:06,PIX,Remoção de Atrasos,Bruna Castro,Raphael Diesel Fort,,20,,12/19/2025,BRUNA CASTRO,1,Atrasos,60,-110.00,PIX,900.00,790.00
+3946,58,0,,12/19/2025 13:07,PIX,Remoção de Atrasos,Bruna Castro,João Vitor da Silva,,,,12/19/2025,BRUNA CASTRO,1,Atrasos,58,0.00,PIX,870.00,870.00
+3947,8,20,,12/22/2025 7:58,PIX,Remoção de Reclamações,Beatriz,ANDREY BELLIENY,,,,12/22/2025,BEATRIZ,1,Reclamação,8,-64.00,PIX,320.00,256.00
+3948,8,0,,12/22/2025 11:04,PIX,Remoção de Atrasos,Bruna Castro,LRB COMERCIAL Lorenzzo,,,,12/22/2025,BRUNA CASTRO,1,Atrasos,8,0.00,PIX,240.00,240.00
+3949,30,0,,12/22/2025 11:05,PIX,Remoção de Atrasos,Bruna Castro,vitor,,,,12/22/2025,BRUNA CASTRO,1,Atrasos,30,0.00,PIX,450.00,450.00

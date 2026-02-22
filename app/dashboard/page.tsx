@@ -390,10 +390,11 @@ export default function Dashboard() {
   }, [currentUser, fetchDashboardMetrics]);
 
   const periodTotals = metrics?.periodTotals;
-  const refundTotal = periodTotals?.refundTotal ?? 0;
+  const refundTotal = Math.abs(periodTotals?.refundTotal ?? 0);
+  const totalDiscount = Math.abs(periodTotals?.totalDiscount ?? 0);
 
   // [NEW] Calculate Averages
-  const netRevenue = (periodTotals?.totalValue ?? 0) - (periodTotals?.totalDiscount ?? 0) - refundTotal;
+  const netRevenue = (periodTotals?.totalValue ?? 0) - totalDiscount - refundTotal;
   const avgTicket = periodTotals?.salesCount ? netRevenue / periodTotals.salesCount : 0;
 
   const reclamacoesRevenue = periodTotals?.reclamacoesRevenue ?? 0;
@@ -894,7 +895,7 @@ export default function Dashboard() {
               <div className="flex-1 text-left">
                 <p className="text-sm text-gray-400 mb-1">Descontos + Estornos</p>
                 <p className="text-2xl sm:text-3xl font-bold text-white">
-                  {formatCurrency((periodTotals?.totalDiscount ?? 0) + refundTotal)}
+                  -{formatCurrency(totalDiscount + refundTotal)}
                 </p>
                 <p className="text-sm text-red-200 mt-1">{periodDescription}</p>
                 <p className="text-xs text-gray-400 mt-1">

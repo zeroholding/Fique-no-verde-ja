@@ -1493,7 +1493,12 @@ export default function SalesPage() {
                           </span>
                         )}
                       </div>
-                      <span className="md:hidden font-bold text-emerald-400">{formatCurrency(sale.total)}</span>
+                      <span className="md:hidden font-bold text-emerald-400">
+                        {(() => {
+                            const saleTypeInfo = getSaleTypeLabel(sale);
+                            return formatCurrency(saleTypeInfo.type === "03" ? sale.subtotal : sale.total);
+                        })()}
+                      </span>
                     </div>
 
                     <div className="mt-2 space-y-1">
@@ -1521,7 +1526,12 @@ export default function SalesPage() {
 
                   <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
                     <div className="hidden md:block text-right mr-4">
-                      <p className="text-2xl font-bold text-emerald-400">{formatCurrency(sale.total)}</p>
+                      <p className="text-2xl font-bold text-emerald-400">
+                        {(() => {
+                            const saleTypeInfo = getSaleTypeLabel(sale);
+                            return formatCurrency(saleTypeInfo.type === "03" ? sale.subtotal : sale.total);
+                        })()}
+                      </p>
                       <p className="text-xs text-gray-500 mt-0.5">{formatDateTime(sale.saleDate)}</p>
                     </div>
 
