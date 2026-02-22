@@ -895,7 +895,7 @@ export default function Dashboard() {
               <div className="flex-1 text-left">
                 <p className="text-sm text-gray-400 mb-1">Descontos + Estornos</p>
                 <p className="text-2xl sm:text-3xl font-bold text-white">
-                  -{formatCurrency(totalDiscount + refundTotal)}
+                  {formatCurrency(totalDiscount + refundTotal)}
                 </p>
                 <p className="text-sm text-red-200 mt-1">{periodDescription}</p>
                 <p className="text-xs text-gray-400 mt-1">
