@@ -208,8 +208,17 @@ export async function GET(request: NextRequest) {
 
       unreadTotal = Number(unreadData?.total ?? 0);
       const unreadResults = Array.isArray(unreadData?.results) ? unreadData.results : [];
+      const unreadEntries = unreadResults
+        .map((entry: any) => ({
+          path: String(entry.resource || ""),
+          packId: parsePackIdFromPath(String(entry.resource || "")),
+          unreadCount: Number(entry.count ?? 0),
+        }))
+        .filter((entry: { path: string; packId: string | null; unreadCount: number }) => !!entry.packId)
+        .sort((a: { unreadCount: number }, b: { unreadCount: number }) => b.unreadCount - a.unreadCount);
+
       const unreadMap = new Map<string, number>(
-        unreadResults.map((entry: any) => [entry.resource, Number(entry.count ?? 0)])
+        unreadEntries.map((entry: { path: string; unreadCount: number }) => [entry.path, entry.unreadCount])
       );
 
       const recentOrdersData = await fetchMlJson(
@@ -217,31 +226,30 @@ export async function GET(request: NextRequest) {
         access_token
       );
 
-      const packIds = new Set<string>();
+      const packCandidates: Array<{ packId: string; path: string }> = [];
+      const seenPaths = new Set<string>();
+      const maxThreads = 12;
 
-      for (const order of recentOrdersData?.results || []) {
-        const packId = order?.pack_id ? String(order.pack_id) : null;
-        if (packId) {
-          packIds.add(packId);
-        }
-        if (packIds.size >= 8) {
-          break;
-        }
+      for (const entry of unreadEntries) {
+        if (!entry.packId) continue;
+        if (seenPaths.has(entry.path)) continue;
+        seenPaths.add(entry.path);
+        packCandidates.push({ packId: entry.packId, path: entry.path });
+        if (packCandidates.length >= maxThreads) break;
       }
 
-      for (const entry of unreadResults) {
-        const packId = parsePackIdFromPath(entry.resource || "");
-        if (packId) {
-          packIds.add(packId);
-        }
-        if (packIds.size >= 8) {
-          break;
-        }
+      for (const order of recentOrdersData?.results || []) {
+        if (packCandidates.length >= maxThreads) break;
+        const packId = order?.pack_id ? String(order.pack_id) : null;
+        if (!packId) continue;
+        const path = `/packs/${packId}/sellers/${ml_user_id}`;
+        if (seenPaths.has(path)) continue;
+        seenPaths.add(path);
+        packCandidates.push({ packId, path });
       }
 
       const threadResults = await Promise.all(
-        Array.from(packIds).slice(0, 8).map(async (packId) => {
-          const path = `/packs/${packId}/sellers/${ml_user_id}`;
+        packCandidates.map(async ({ packId, path }) => {
           try {
             const threadData = await fetchMlJson(
               `https://api.mercadolibre.com/messages${path}?tag=post_sale&limit=20&offset=0`,
@@ -283,7 +291,17 @@ export async function GET(request: NextRequest) {
 
       messageThreads = threadResults
         .filter((thread): thread is MlMessageThread => thread !== null)
+        .filter((thread) => {
+          const isBlockedEmpty =
+            thread.status === "blocked" &&
+            thread.unread_count === 0 &&
+            thread.total_messages === 0;
+          return !isBlockedEmpty;
+        })
         .sort((a, b) => {
+          if (b.unread_count !== a.unread_count) {
+            return b.unread_count - a.unread_count;
+          }
           const aDate = a.last_message_date ? Date.parse(a.last_message_date) : 0;
           const bDate = b.last_message_date ? Date.parse(b.last_message_date) : 0;
           return bDate - aDate;

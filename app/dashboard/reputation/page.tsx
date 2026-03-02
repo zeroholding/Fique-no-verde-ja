@@ -342,8 +342,11 @@ export default function ReputationPage() {
   const delaysValue = metrics?.delayed_handling_time?.value ?? 0;
   const salesCompleted = metrics?.sales?.completed ?? 0;
   const shippingCompleted = metrics?.shipping?.completed;
+  const supportClaimsOpened = data?.support?.claims?.opened ?? [];
   const supportClaimsRecent = data?.support?.claims?.recent ?? [];
   const supportClaimsOpenedCount = data?.support?.claims?.opened_count ?? 0;
+  const supportClaimOpenedIds = new Set(supportClaimsOpened.map((claim) => claim.id));
+  const supportClaimsRecentOnly = supportClaimsRecent.filter((claim) => !supportClaimOpenedIds.has(claim.id));
   const supportThreads = data?.support?.messages?.threads ?? [];
   const supportUnreadTotal = data?.support?.messages?.unread_total ?? 0;
 
@@ -833,11 +836,28 @@ export default function ReputationPage() {
               </span>
             </div>
 
-            {supportClaimsRecent.length === 0 ? (
+            {supportClaimsOpened.length === 0 && supportClaimsRecentOnly.length === 0 ? (
               <p className="text-sm text-gray-400">Nenhuma claim retornada pela API.</p>
             ) : (
               <div className="space-y-3 max-h-[420px] overflow-auto pr-1">
-                {supportClaimsRecent.slice(0, 10).map((claim) => (
+                {supportClaimsOpened.slice(0, 8).map((claim) => (
+                  <div key={claim.id} className="p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/20">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm text-white font-medium">#{claim.id}</p>
+                      <span className="text-[11px] px-2 py-0.5 rounded border bg-yellow-500/10 text-yellow-300 border-yellow-500/30">
+                        opened
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {claim.type} - {claim.stage} - {claim.resource || "-"}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Motivo: {claim.reason_id || "-"} - Atualizado: {formatDateTime(claim.last_updated)}
+                    </p>
+                  </div>
+                ))}
+
+                {supportClaimsRecentOnly.slice(0, 10).map((claim) => (
                   <div key={claim.id} className="p-3 rounded-lg bg-white/5 border border-white/10">
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-sm text-white font-medium">#{claim.id}</p>
@@ -852,10 +872,10 @@ export default function ReputationPage() {
                       </span>
                     </div>
                     <p className="text-xs text-gray-400 mt-1">
-                      {claim.type} • {claim.stage} • {claim.resource || "-"}
+                      {claim.type} - {claim.stage} - {claim.resource || "-"}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      Motivo: {claim.reason_id || "-"} • Atualizado: {formatDateTime(claim.last_updated)}
+                      Motivo: {claim.reason_id || "-"} - Atualizado: {formatDateTime(claim.last_updated)}
                     </p>
                   </div>
                 ))}
@@ -892,7 +912,7 @@ export default function ReputationPage() {
                       {thread.last_message_text || "Sem texto de mensagem."}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      Ultima: {formatDateTime(thread.last_message_date)} • Total: {thread.total_messages}
+                      Ultima: {formatDateTime(thread.last_message_date)} - Total: {thread.total_messages}
                     </p>
                   </div>
                 ))}
