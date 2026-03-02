@@ -45,6 +45,17 @@ type ReputationData = {
   site_id?: string;
   points?: number;
   total_sales_period?: number;
+  support?: {
+    claims?: {
+      opened_count: number;
+      opened: SupportClaim[];
+      recent: SupportClaim[];
+    };
+    messages?: {
+      unread_total: number;
+      threads: SupportMessageThread[];
+    };
+  };
   seller_reputation: {
     level_id: string | null;
     power_seller_status: string | null;
@@ -85,6 +96,33 @@ type ReputationData = {
       };
     };
   };
+};
+
+type SupportClaim = {
+  id: number;
+  status: string;
+  type: string;
+  stage: string;
+  reason_id: string | null;
+  resource: string | null;
+  resource_id: number | string | null;
+  date_created: string;
+  last_updated: string;
+  resolution_reason: string | null;
+  resolution_closed_by: string | null;
+};
+
+type SupportMessageThread = {
+  path: string;
+  pack_id: string | null;
+  unread_count: number;
+  status: string | null;
+  substatus: string | null;
+  claim_ids: number[];
+  total_messages: number;
+  last_message_date: string | null;
+  last_message_from: number | null;
+  last_message_text: string | null;
 };
 
 type MLAccount = {
@@ -288,6 +326,12 @@ export default function ReputationPage() {
   const formatPercent = (value: number) => {
     return (value * 100).toFixed(2) + "%";
   };
+  const formatDateTime = (value?: string | null) => {
+    if (!value) return "-";
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return "-";
+    return parsed.toLocaleString("pt-BR");
+  };
 
   const metrics = data?.seller_reputation?.metrics;
   const claimsRate = metrics?.claims?.rate ?? 0;
@@ -298,6 +342,10 @@ export default function ReputationPage() {
   const delaysValue = metrics?.delayed_handling_time?.value ?? 0;
   const salesCompleted = metrics?.sales?.completed ?? 0;
   const shippingCompleted = metrics?.shipping?.completed;
+  const supportClaimsRecent = data?.support?.claims?.recent ?? [];
+  const supportClaimsOpenedCount = data?.support?.claims?.opened_count ?? 0;
+  const supportThreads = data?.support?.messages?.threads ?? [];
+  const supportUnreadTotal = data?.support?.messages?.unread_total ?? 0;
 
   const isOfficialReputation = !!data?.seller_reputation?.level_id;
 
@@ -774,6 +822,83 @@ export default function ReputationPage() {
 
               </div>
             </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="bg-white/5 border border-white/10">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">Reclamacoes (Claims)</h3>
+              <span className="text-xs px-2 py-1 rounded bg-red-500/10 text-red-300 border border-red-500/20">
+                Abertas: {supportClaimsOpenedCount}
+              </span>
+            </div>
+
+            {supportClaimsRecent.length === 0 ? (
+              <p className="text-sm text-gray-400">Nenhuma claim retornada pela API.</p>
+            ) : (
+              <div className="space-y-3 max-h-[420px] overflow-auto pr-1">
+                {supportClaimsRecent.slice(0, 10).map((claim) => (
+                  <div key={claim.id} className="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm text-white font-medium">#{claim.id}</p>
+                      <span
+                        className={`text-[11px] px-2 py-0.5 rounded border ${
+                          claim.status === "opened"
+                            ? "bg-yellow-500/10 text-yellow-300 border-yellow-500/30"
+                            : "bg-gray-500/10 text-gray-300 border-gray-500/30"
+                        }`}
+                      >
+                        {claim.status}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {claim.type} • {claim.stage} • {claim.resource || "-"}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Motivo: {claim.reason_id || "-"} • Atualizado: {formatDateTime(claim.last_updated)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          <Card className="bg-white/5 border border-white/10">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">Mensagens Pos-venda</h3>
+              <span className="text-xs px-2 py-1 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">
+                Nao lidas: {supportUnreadTotal}
+              </span>
+            </div>
+
+            {supportThreads.length === 0 ? (
+              <p className="text-sm text-gray-400">Nenhuma thread de mensagem retornada.</p>
+            ) : (
+              <div className="space-y-3 max-h-[420px] overflow-auto pr-1">
+                {supportThreads.slice(0, 10).map((thread) => (
+                  <div key={thread.path} className="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm text-white font-medium">
+                        Pack: {thread.pack_id || "-"}
+                      </p>
+                      <span className="text-[11px] px-2 py-0.5 rounded border bg-blue-500/10 text-blue-300 border-blue-500/30">
+                        {thread.unread_count} nao lidas
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Status: {thread.status || "-"} {thread.substatus ? `(${thread.substatus})` : ""}
+                    </p>
+                    <p className="text-xs text-gray-300 mt-1 line-clamp-2">
+                      {thread.last_message_text || "Sem texto de mensagem."}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Ultima: {formatDateTime(thread.last_message_date)} • Total: {thread.total_messages}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
         </div>
       </div>
     </div>
