@@ -135,8 +135,13 @@ type SupportMessage = {
   created_at: string | null;
   received_at: string | null;
   read_at: string | null;
+  available_at: string | null;
+  notified_at: string | null;
   message_type: string | null;
   message_source: string | null;
+  moderation_status: string | null;
+  moderation_reason: string | null;
+  attachments_count: number;
 };
 
 type ClaimDetail = {
@@ -157,10 +162,21 @@ type ClaimDetail = {
   resolution_date: string | null;
   resolution_closed_by: string | null;
   resolution_applied_coverage: boolean | null;
+  resolution_benefited: string[];
+  parent_id: number | null;
+  claim_version: number | null;
+  cancel_detail: string | null;
+  related_entities: Array<{
+    type: string | null;
+    id: number | string | null;
+    role: string | null;
+    status: string | null;
+  }>;
   players: Array<{
     role: string | null;
     type: string | null;
     user_id: number | null;
+    available_actions: string[];
   }>;
 };
 
@@ -184,8 +200,8 @@ export default function ReputationPage() {
   const [selectedThread, setSelectedThread] = useState<SupportMessageThread | null>(null);
   const [threadMessages, setThreadMessages] = useState<SupportMessage[]>([]);
   const [threadLoading, setThreadLoading] = useState(false);
-  const [threadLoadingMore, setThreadLoadingMore] = useState(false);
-  const [threadPaging, setThreadPaging] = useState({ limit: 20, offset: 0, total: 0 });
+  const [threadPaging, setThreadPaging] = useState({ limit: 50, offset: 0, total: 0 });
+  const [threadWasTruncated, setThreadWasTruncated] = useState(false);
   const [threadConversationStatus, setThreadConversationStatus] = useState<{
     status: string | null;
     substatus: string | null;
@@ -197,7 +213,6 @@ export default function ReputationPage() {
   // Detalhes de claims
   const [selectedClaim, setSelectedClaim] = useState<SupportClaim | null>(null);
   const [claimDetail, setClaimDetail] = useState<ClaimDetail | null>(null);
-  const [claimDetailRaw, setClaimDetailRaw] = useState<string>("");
   const [claimLoading, setClaimLoading] = useState(false);
 
   useEffect(() => {
@@ -298,42 +313,72 @@ export default function ReputationPage() {
     return sortMessagesAsc(Array.from(map.values()));
   };
 
-  const loadThreadMessages = async (thread: SupportMessageThread, offset = 0, append = false) => {
+  const fetchThreadPage = async (thread: SupportMessageThread, offset: number, limit: number) => {
+    const response = await fetch(
+      `/api/integrations/mercadolivre/messages?ml_user_id=${selectedAccount}&pack_id=${thread.pack_id}&limit=${limit}&offset=${offset}`
+    );
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || "Erro ao carregar mensagens");
+    }
+
+    return result;
+  };
+
+  const loadThreadMessages = async (thread: SupportMessageThread) => {
     if (!selectedAccount || !thread.pack_id) {
       return;
     }
 
-    const limit = 20;
-    if (append) {
-      setThreadLoadingMore(true);
-    } else {
-      setThreadLoading(true);
-    }
+    const limit = 50;
+    setThreadLoading(true);
+    setThreadWasTruncated(false);
 
     try {
-      const response = await fetch(
-        `/api/integrations/mercadolivre/messages?ml_user_id=${selectedAccount}&pack_id=${thread.pack_id}&limit=${limit}&offset=${offset}`
-      );
-      const result = await response.json();
+      let offset = 0;
+      let total = 0;
+      let pageCounter = 0;
+      let accumulated: SupportMessage[] = [];
+      let currentStatus = null;
 
-      if (!response.ok) {
-        throw new Error(result.error || "Erro ao carregar mensagens");
+      while (true) {
+        pageCounter += 1;
+        const result = await fetchThreadPage(thread, offset, limit);
+        const incomingMessages: SupportMessage[] = Array.isArray(result.messages) ? result.messages : [];
+        accumulated = mergeMessages(accumulated, incomingMessages);
+        currentStatus = result.conversation_status || currentStatus;
+
+        const pageLimit = Number(result?.paging?.limit ?? limit);
+        const pageOffset = Number(result?.paging?.offset ?? offset);
+        total = Number(result?.paging?.total ?? accumulated.length);
+        const nextOffset = pageOffset + pageLimit;
+
+        if (incomingMessages.length === 0 || nextOffset >= total) {
+          break;
+        }
+
+        offset = nextOffset;
+
+        // Protecao para evitar loop infinito caso a API retorne paginacao inconsistente.
+        if (pageCounter >= 80) {
+          setThreadWasTruncated(true);
+          break;
+        }
       }
 
-      const incomingMessages: SupportMessage[] = Array.isArray(result.messages) ? result.messages : [];
-      setThreadMessages((prev) => (append ? mergeMessages(prev, incomingMessages) : sortMessagesAsc(incomingMessages)));
-      setThreadConversationStatus(result.conversation_status || null);
+      setThreadMessages(sortMessagesAsc(accumulated));
+      setThreadConversationStatus(currentStatus);
       setThreadPaging({
-        limit: Number(result?.paging?.limit ?? limit),
-        offset: Number(result?.paging?.offset ?? offset),
-        total: Number(result?.paging?.total ?? incomingMessages.length),
+        limit,
+        offset: 0,
+        total: Math.max(total, accumulated.length),
       });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Erro ao carregar mensagens";
       error(message);
     } finally {
       setThreadLoading(false);
-      setThreadLoadingMore(false);
     }
   };
 
@@ -341,22 +386,17 @@ export default function ReputationPage() {
     setSelectedThread(thread);
     setThreadMessages([]);
     setThreadConversationStatus(null);
-    setThreadPaging({ limit: 20, offset: 0, total: 0 });
-    await loadThreadMessages(thread, 0, false);
-  };
-
-  const handleLoadMoreThreadMessages = async () => {
-    if (!selectedThread) return;
-    if (threadLoadingMore) return;
-    if (threadMessages.length >= threadPaging.total) return;
-    await loadThreadMessages(selectedThread, threadMessages.length, true);
+    setThreadPaging({ limit: 50, offset: 0, total: 0 });
+    setThreadWasTruncated(false);
+    await loadThreadMessages(thread);
   };
 
   const closeThreadModal = () => {
     setSelectedThread(null);
     setThreadMessages([]);
     setThreadConversationStatus(null);
-    setThreadPaging({ limit: 20, offset: 0, total: 0 });
+    setThreadPaging({ limit: 50, offset: 0, total: 0 });
+    setThreadWasTruncated(false);
   };
 
   const handleOpenClaim = async (claim: SupportClaim) => {
@@ -364,7 +404,6 @@ export default function ReputationPage() {
 
     setSelectedClaim(claim);
     setClaimDetail(null);
-    setClaimDetailRaw("");
     setClaimLoading(true);
 
     try {
@@ -378,8 +417,6 @@ export default function ReputationPage() {
       }
 
       setClaimDetail(result.claim || null);
-      const raw = result.raw ?? result.claim ?? {};
-      setClaimDetailRaw(JSON.stringify(raw, null, 2));
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Erro ao carregar claim";
       error(message);
@@ -391,7 +428,6 @@ export default function ReputationPage() {
   const closeClaimModal = () => {
     setSelectedClaim(null);
     setClaimDetail(null);
-    setClaimDetailRaw("");
   };
 
   if (loading) {
@@ -508,6 +544,95 @@ export default function ReputationPage() {
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) return "-";
     return parsed.toLocaleString("pt-BR");
+  };
+  const prettifyCode = (value: string) => value.replace(/_/g, " ").trim();
+  const translate = (
+    value: string | null | undefined,
+    dictionary: Record<string, string>
+  ) => {
+    if (!value) return "-";
+    return dictionary[value] || prettifyCode(value);
+  };
+
+  const claimStatusLabels: Record<string, string> = {
+    opened: "aberta",
+    closed: "fechada",
+    dismissed: "encerrada",
+    pending: "pendente",
+  };
+  const claimTypeLabels: Record<string, string> = {
+    mediations: "mediacao",
+    cancel_purchase: "cancelamento da compra",
+    return: "devolucao",
+    chargeback: "chargeback",
+    claim: "reclamacao",
+    dispute: "disputa",
+  };
+  const claimStageLabels: Record<string, string> = {
+    dispute: "disputa",
+    claim: "reclamacao formal",
+    none: "sem etapa ativa",
+    recontact: "recontato",
+  };
+  const claimResourceLabels: Record<string, string> = {
+    order: "pedido",
+    shipment: "envio",
+    payment: "pagamento",
+  };
+  const resolutionByLabels: Record<string, string> = {
+    mediator: "mediador do Mercado Livre",
+    complainant: "reclamante",
+    respondent: "respondente",
+    system: "sistema",
+  };
+  const playerRoleLabels: Record<string, string> = {
+    complainant: "reclamante",
+    respondent: "respondente",
+    mediator: "mediador",
+  };
+  const playerTypeLabels: Record<string, string> = {
+    buyer: "comprador",
+    seller: "vendedor",
+    receiver: "destinatario",
+    sender: "remetente",
+    internal: "interno",
+  };
+  const threadStatusLabels: Record<string, string> = {
+    active: "ativa",
+    blocked: "bloqueada",
+    closed: "fechada",
+    archived: "arquivada",
+  };
+  const threadSubstatusLabels: Record<string, string> = {
+    blocked_by_conversation_initiated_by_seller_limited:
+      "bloqueada pelo limite de conversa iniciada pelo vendedor",
+    blocked_by_time_window: "bloqueada pela janela de tempo",
+    blocked_by_claim: "bloqueada por reclamacao",
+    blocked_by_buyer: "bloqueada pelo comprador",
+  };
+  const messageStatusLabels: Record<string, string> = {
+    available: "disponivel",
+    sent: "enviada",
+    delivered: "entregue",
+    read: "lida",
+    blocked: "bloqueada",
+    moderated: "moderada",
+  };
+  const messageTypeLabels: Record<string, string> = {
+    text: "texto",
+    image: "imagem",
+    custom: "personalizada",
+    automatic: "automatica",
+  };
+  const messageSourceLabels: Record<string, string> = {
+    post_sale: "pos-venda",
+    zenia: "assistente do Mercado Livre",
+    buyer: "comprador",
+    seller: "vendedor",
+  };
+  const formatYesNo = (value: boolean | null | undefined) => {
+    if (value === null || value === undefined) return "-";
+    return value ? "sim" : "nao";
   };
 
   const metrics = data?.seller_reputation?.metrics;
@@ -1013,17 +1138,17 @@ export default function ReputationPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="bg-white/5 border border-white/10">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">Reclamacoes (Claims)</h3>
+              <h3 className="text-lg font-semibold text-white">Reclamacoes</h3>
               <span className="text-xs px-2 py-1 rounded bg-red-500/10 text-red-300 border border-red-500/20">
                 Abertas: {supportClaimsOpenedCount}
               </span>
             </div>
 
             {supportClaimsOpened.length === 0 && supportClaimsRecentOnly.length === 0 ? (
-              <p className="text-sm text-gray-400">Nenhuma claim retornada pela API.</p>
+              <p className="text-sm text-gray-400">Nenhuma reclamacao retornada pela API.</p>
             ) : (
               <div className="space-y-3 max-h-[420px] overflow-auto pr-1">
-                {supportClaimsOpened.slice(0, 8).map((claim) => (
+                {supportClaimsOpened.map((claim) => (
                   <button
                     type="button"
                     key={claim.id}
@@ -1033,11 +1158,12 @@ export default function ReputationPage() {
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-sm text-white font-medium">#{claim.id}</p>
                       <span className="text-[11px] px-2 py-0.5 rounded border bg-yellow-500/10 text-yellow-300 border-yellow-500/30">
-                        opened
+                        aberta
                       </span>
                     </div>
                     <p className="text-xs text-gray-400 mt-1">
-                      {claim.type} - {claim.stage} - {claim.resource || "-"}
+                      {translate(claim.type, claimTypeLabels)} - {translate(claim.stage, claimStageLabels)} -{" "}
+                      {translate(claim.resource, claimResourceLabels)}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
                       Motivo: {claim.reason_id || "-"} - Atualizado: {formatDateTime(claim.last_updated)}
@@ -1045,7 +1171,7 @@ export default function ReputationPage() {
                   </button>
                 ))}
 
-                {supportClaimsRecentOnly.slice(0, 10).map((claim) => (
+                {supportClaimsRecentOnly.map((claim) => (
                   <button
                     type="button"
                     key={claim.id}
@@ -1061,11 +1187,12 @@ export default function ReputationPage() {
                             : "bg-gray-500/10 text-gray-300 border-gray-500/30"
                         }`}
                       >
-                        {claim.status}
+                        {translate(claim.status, claimStatusLabels)}
                       </span>
                     </div>
                     <p className="text-xs text-gray-400 mt-1">
-                      {claim.type} - {claim.stage} - {claim.resource || "-"}
+                      {translate(claim.type, claimTypeLabels)} - {translate(claim.stage, claimStageLabels)} -{" "}
+                      {translate(claim.resource, claimResourceLabels)}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
                       Motivo: {claim.reason_id || "-"} - Atualizado: {formatDateTime(claim.last_updated)}
@@ -1088,7 +1215,7 @@ export default function ReputationPage() {
               <p className="text-sm text-gray-400">Nenhuma thread de mensagem retornada.</p>
             ) : (
               <div className="space-y-3 max-h-[420px] overflow-auto pr-1">
-                {supportThreads.slice(0, 10).map((thread) => (
+                {supportThreads.map((thread) => (
                   <button
                     type="button"
                     key={thread.path}
@@ -1104,13 +1231,15 @@ export default function ReputationPage() {
                       </span>
                     </div>
                     <p className="text-xs text-gray-400 mt-1">
-                      Status: {thread.status || "-"} {thread.substatus ? `(${thread.substatus})` : ""}
+                      Status: {translate(thread.status, threadStatusLabels)}{" "}
+                      {thread.substatus ? `(${translate(thread.substatus, threadSubstatusLabels)})` : ""}
                     </p>
                     <p className="text-xs text-gray-300 mt-1 line-clamp-2">
                       {thread.last_message_text || "Sem texto de mensagem."}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
                       Ultima: {formatDateTime(thread.last_message_date)} - Total: {thread.total_messages}
+                      {thread.claim_ids.length > 0 ? ` - Reclamacoes: ${thread.claim_ids.join(", ")}` : ""}
                     </p>
                   </button>
                 ))}
@@ -1127,16 +1256,17 @@ export default function ReputationPage() {
           footer={
             <div className="flex items-center justify-between w-full">
               <div className="text-xs text-gray-300">
-                Enviadas: {sentMessagesCount} • Recebidas: {receivedMessagesCount}
+                Enviadas: {sentMessagesCount} | Recebidas: {receivedMessagesCount} | Exibidas:{" "}
+                {threadMessages.length}/{Math.max(threadPaging.total, threadMessages.length)}
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   className="px-3 py-1.5 rounded-lg border border-white/20 text-sm text-white disabled:opacity-40"
-                  disabled={threadLoadingMore || threadMessages.length >= threadPaging.total}
-                  onClick={handleLoadMoreThreadMessages}
+                  disabled={threadLoading}
+                  onClick={() => selectedThread && loadThreadMessages(selectedThread)}
                 >
-                  {threadLoadingMore ? "Carregando..." : "Carregar mais"}
+                  {threadLoading ? "Carregando..." : "Atualizar conversa"}
                 </button>
                 <button
                   type="button"
@@ -1150,15 +1280,28 @@ export default function ReputationPage() {
           }
         >
           {threadLoading ? (
-            <p className="text-sm text-gray-300">Carregando mensagens...</p>
+            <p className="text-sm text-gray-300">Carregando historico completo da conversa...</p>
           ) : threadMessages.length === 0 ? (
             <p className="text-sm text-gray-300">Nenhuma mensagem encontrada para este pack.</p>
           ) : (
             <div className="space-y-3">
               <div className="text-xs text-gray-400">
-                Status da conversa: {threadConversationStatus?.status || "-"}{" "}
-                {threadConversationStatus?.substatus ? `(${threadConversationStatus.substatus})` : ""}
+                Status da conversa: {translate(threadConversationStatus?.status, threadStatusLabels)}{" "}
+                {threadConversationStatus?.substatus
+                  ? `(${translate(threadConversationStatus.substatus, threadSubstatusLabels)})`
+                  : ""}
               </div>
+              <div className="text-xs text-gray-500">
+                Reclamacoes vinculadas:{" "}
+                {threadConversationStatus?.claim_ids?.length
+                  ? threadConversationStatus.claim_ids.join(", ")
+                  : "nenhuma"}
+              </div>
+              {threadWasTruncated && (
+                <div className="text-xs text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-2 py-1">
+                  A conversa e muito longa. Exibimos o maximo permitido na paginacao segura.
+                </div>
+              )}
               <div className="max-h-[55vh] overflow-y-auto pr-1 space-y-2">
                 {threadMessages.map((message) => {
                   const isSentBySeller =
@@ -1176,12 +1319,28 @@ export default function ReputationPage() {
                         }`}
                       >
                         <p className="text-[11px] text-gray-400 mb-1">
-                          {isSentBySeller ? "Enviada" : "Recebida"} •{" "}
+                          {isSentBySeller ? "Enviada" : "Recebida"} -{" "}
                           {formatDateTime(message.created_at || message.received_at)}
                         </p>
                         <p className="text-sm text-white whitespace-pre-wrap">
                           {message.text || "(sem texto)"}
                         </p>
+                        <p className="text-[11px] text-gray-400 mt-2">
+                          Status: {translate(message.status, messageStatusLabels)} | Tipo:{" "}
+                          {translate(message.message_type, messageTypeLabels)} | Origem:{" "}
+                          {translate(message.message_source, messageSourceLabels)}
+                        </p>
+                        <p className="text-[11px] text-gray-500 mt-1">
+                          Lida em: {formatDateTime(message.read_at)} | Anexos: {message.attachments_count}
+                        </p>
+                        {message.moderation_status && (
+                          <p className="text-[11px] text-gray-500 mt-1">
+                            Moderacao: {prettifyCode(message.moderation_status)}
+                            {message.moderation_reason
+                              ? ` (${prettifyCode(message.moderation_reason)})`
+                              : ""}
+                          </p>
+                        )}
                       </div>
                     </div>
                   );
@@ -1194,7 +1353,7 @@ export default function ReputationPage() {
         <Modal
           open={!!selectedClaim}
           onClose={closeClaimModal}
-          title={selectedClaim ? `Claim #${selectedClaim.id}` : "Claim"}
+          title={selectedClaim ? `Reclamacao #${selectedClaim.id}` : "Reclamacao"}
           widthClassName="max-w-4xl"
           footer={
             <div className="flex justify-end w-full">
@@ -1209,18 +1368,19 @@ export default function ReputationPage() {
           }
         >
           {claimLoading ? (
-            <p className="text-sm text-gray-300">Carregando detalhes da claim...</p>
+            <p className="text-sm text-gray-300">Carregando detalhes da reclamacao...</p>
           ) : claimDetail ? (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="p-3 rounded-lg bg-white/5 border border-white/10">
                   <p className="text-xs text-gray-400">Status</p>
-                  <p className="text-sm text-white">{claimDetail.status || "-"}</p>
+                  <p className="text-sm text-white">{translate(claimDetail.status, claimStatusLabels)}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-white/5 border border-white/10">
                   <p className="text-xs text-gray-400">Tipo / Etapa</p>
                   <p className="text-sm text-white">
-                    {claimDetail.type || "-"} - {claimDetail.stage || "-"}
+                    {translate(claimDetail.type, claimTypeLabels)} -{" "}
+                    {translate(claimDetail.stage, claimStageLabels)}
                   </p>
                 </div>
                 <div className="p-3 rounded-lg bg-white/5 border border-white/10">
@@ -1230,16 +1390,92 @@ export default function ReputationPage() {
                 <div className="p-3 rounded-lg bg-white/5 border border-white/10">
                   <p className="text-xs text-gray-400">Recurso</p>
                   <p className="text-sm text-white">
-                    {claimDetail.resource || "-"} / {String(claimDetail.resource_id ?? "-")}
+                    {translate(claimDetail.resource, claimResourceLabels)} /{" "}
+                    {String(claimDetail.resource_id ?? "-")}
                   </p>
+                </div>
+                <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                  <p className="text-xs text-gray-400">Quantidade reclamada</p>
+                  <p className="text-sm text-white">
+                    {claimDetail.claimed_quantity ?? "-"} ({translate(claimDetail.quantity_type, {})})
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                  <p className="text-xs text-gray-400">Atendida</p>
+                  <p className="text-sm text-white">{formatYesNo(claimDetail.fulfilled)}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                  <p className="text-xs text-gray-400">Criada em</p>
+                  <p className="text-sm text-white">{formatDateTime(claimDetail.date_created)}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                  <p className="text-xs text-gray-400">Atualizada em</p>
+                  <p className="text-sm text-white">{formatDateTime(claimDetail.last_updated)}</p>
                 </div>
               </div>
 
+              <div className="p-3 rounded-lg bg-white/5 border border-white/10 space-y-1">
+                <p className="text-xs text-gray-400">Resolucao</p>
+                <p className="text-sm text-white">
+                  Motivo da resolucao:{" "}
+                  {claimDetail.resolution_reason ? prettifyCode(claimDetail.resolution_reason) : "-"}
+                </p>
+                <p className="text-sm text-white">
+                  Fechada por: {translate(claimDetail.resolution_closed_by, resolutionByLabels)}
+                </p>
+                <p className="text-sm text-white">
+                  Cobertura aplicada: {formatYesNo(claimDetail.resolution_applied_coverage)}
+                </p>
+                <p className="text-sm text-white">
+                  Beneficiado(s):{" "}
+                  {claimDetail.resolution_benefited.length > 0
+                    ? claimDetail.resolution_benefited.map((value) => prettifyCode(value)).join(", ")
+                    : "-"}
+                </p>
+                <p className="text-sm text-white">
+                  Data da resolucao: {formatDateTime(claimDetail.resolution_date)}
+                </p>
+              </div>
+
               <div className="p-3 rounded-lg bg-white/5 border border-white/10">
-                <p className="text-xs text-gray-400 mb-2">JSON completo</p>
-                <pre className="text-xs text-gray-200 overflow-auto max-h-[36vh] whitespace-pre-wrap">
-                  {claimDetailRaw}
-                </pre>
+                <p className="text-xs text-gray-400 mb-2">Participantes</p>
+                {claimDetail.players.length === 0 ? (
+                  <p className="text-sm text-gray-300">Nenhum participante retornado pela API.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {claimDetail.players.map((player, index) => (
+                      <div key={`${player.user_id ?? "sem-id"}-${index}`} className="text-sm text-white">
+                        {translate(player.role, playerRoleLabels)} / {translate(player.type, playerTypeLabels)} / ID:{" "}
+                        {player.user_id ?? "-"} / Acoes:{" "}
+                        {player.available_actions.length > 0
+                          ? player.available_actions.map((value) => prettifyCode(value)).join(", ")
+                          : "nenhuma"}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="p-3 rounded-lg bg-white/5 border border-white/10 space-y-1">
+                <p className="text-xs text-gray-400">Campos extras da reclamacao</p>
+                <p className="text-sm text-white">ID pai: {claimDetail.parent_id ?? "-"}</p>
+                <p className="text-sm text-white">Versao: {claimDetail.claim_version ?? "-"}</p>
+                <p className="text-sm text-white">
+                  Cancelamento: {claimDetail.cancel_detail ? prettifyCode(claimDetail.cancel_detail) : "-"}
+                </p>
+                <p className="text-sm text-white">
+                  Entidades relacionadas:{" "}
+                  {claimDetail.related_entities.length > 0
+                    ? claimDetail.related_entities
+                        .map((entity) => {
+                          const entityType = translate(entity.type, {});
+                          const entityRole = translate(entity.role, playerRoleLabels);
+                          const entityStatus = translate(entity.status, claimStatusLabels);
+                          return `${entityType} ${entity.id ?? "-"} (${entityRole}, ${entityStatus})`;
+                        })
+                        .join(" | ")
+                    : "nenhuma"}
+                </p>
               </div>
             </div>
           ) : (

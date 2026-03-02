@@ -26,8 +26,13 @@ type ParsedMessage = {
   created_at: string | null;
   received_at: string | null;
   read_at: string | null;
+  available_at: string | null;
+  notified_at: string | null;
   message_type: string | null;
   message_source: string | null;
+  moderation_status: string | null;
+  moderation_reason: string | null;
+  attachments_count: number;
 };
 
 function getNumber(value: unknown): number | null {
@@ -52,6 +57,8 @@ function parseMessage(raw: unknown): ParsedMessage {
   const from = getObject(obj.from);
   const to = getObject(obj.to);
   const messageDate = getObject(obj.message_date);
+  const moderation = getObject(obj.message_moderation);
+  const attachments = Array.isArray(obj.attachments) ? obj.attachments : [];
 
   return {
     id: getString(obj.id) || "",
@@ -62,8 +69,13 @@ function parseMessage(raw: unknown): ParsedMessage {
     created_at: getString(messageDate.created),
     received_at: getString(messageDate.received),
     read_at: getString(messageDate.read),
+    available_at: getString(messageDate.available),
+    notified_at: getString(messageDate.notified),
     message_type: getString(obj.message_type),
     message_source: getString(obj.message_source),
+    moderation_status: getString(moderation.status),
+    moderation_reason: getString(moderation.reason),
+    attachments_count: attachments.length,
   };
 }
 

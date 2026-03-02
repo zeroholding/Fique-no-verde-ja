@@ -145,6 +145,10 @@ export async function GET(request: NextRequest) {
 
     const resolution = getObject(claim.resolution);
     const players = Array.isArray(claim.players) ? claim.players : [];
+    const relatedEntities = Array.isArray(claim.related_entities) ? claim.related_entities : [];
+    const cancelDetailObj = getObject(claim.cancel_detail);
+    const cancelDetailString =
+      Object.keys(cancelDetailObj).length > 0 ? JSON.stringify(cancelDetailObj) : getString(claim.cancel_detail);
 
     return NextResponse.json({
       claim: {
@@ -158,20 +162,41 @@ export async function GET(request: NextRequest) {
         fulfilled: typeof claim.fulfilled === "boolean" ? claim.fulfilled : null,
         quantity_type: getString(claim.quantity_type),
         claimed_quantity: getNumber(claim.claimed_quantity),
+        parent_id: getNumber(claim.parent_id),
+        claim_version: getNumber(claim.claim_version),
         date_created: getString(claim.date_created),
         last_updated: getString(claim.last_updated),
         site_id: getString(claim.site_id),
+        cancel_detail: cancelDetailString,
         resolution_reason: getString(resolution.reason),
         resolution_date: getString(resolution.date_created),
         resolution_closed_by: getString(resolution.closed_by),
         resolution_applied_coverage:
           typeof resolution.applied_coverage === "boolean" ? resolution.applied_coverage : null,
+        resolution_benefited: Array.isArray(resolution.benefited)
+          ? resolution.benefited
+              .map((value) => getString(value))
+              .filter((value): value is string => value !== null)
+          : [],
         players: players.map((player) => {
           const p = getObject(player);
+          const availableActions = Array.isArray(p.available_actions) ? p.available_actions : [];
           return {
             role: getString(p.role),
             type: getString(p.type),
             user_id: getNumber(p.user_id),
+            available_actions: availableActions
+              .map((value) => getString(value))
+              .filter((value): value is string => value !== null),
+          };
+        }),
+        related_entities: relatedEntities.map((entity) => {
+          const related = getObject(entity);
+          return {
+            type: getString(related.type),
+            id: getNumber(related.id) ?? getString(related.id),
+            role: getString(related.role),
+            status: getString(related.status),
           };
         }),
       },

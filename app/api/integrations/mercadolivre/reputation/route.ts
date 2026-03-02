@@ -38,19 +38,38 @@ function parsePackIdFromPath(path: string): string | null {
   return match?.[1] || null;
 }
 
-function normalizeClaim(claim: any): MlClaim {
+function getObject(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+}
+
+function getString(value: unknown): string | null {
+  return typeof value === "string" ? value : null;
+}
+
+function getNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function normalizeClaim(claim: unknown): MlClaim {
+  const parsedClaim = getObject(claim);
+  const resolution = getObject(parsedClaim.resolution);
   return {
-    id: claim.id,
-    status: claim.status,
-    type: claim.type,
-    stage: claim.stage,
-    reason_id: claim.reason_id || null,
-    resource: claim.resource || null,
-    resource_id: claim.resource_id ?? null,
-    date_created: claim.date_created,
-    last_updated: claim.last_updated,
-    resolution_reason: claim.resolution?.reason || null,
-    resolution_closed_by: claim.resolution?.closed_by || null,
+    id: getNumber(parsedClaim.id) ?? 0,
+    status: getString(parsedClaim.status) ?? "",
+    type: getString(parsedClaim.type) ?? "",
+    stage: getString(parsedClaim.stage) ?? "",
+    reason_id: getString(parsedClaim.reason_id),
+    resource: getString(parsedClaim.resource),
+    resource_id: getNumber(parsedClaim.resource_id) ?? getString(parsedClaim.resource_id),
+    date_created: getString(parsedClaim.date_created) ?? "",
+    last_updated: getString(parsedClaim.last_updated) ?? "",
+    resolution_reason: getString(resolution.reason),
+    resolution_closed_by: getString(resolution.closed_by),
   };
 }
 
@@ -91,6 +110,50 @@ async function refreshAccessToken(refreshToken: string) {
   return response.json();
 }
 
+async function fetchClaimsWithPagination(params: {
+  accessToken: string;
+  mlUserId: string | number;
+  status?: "opened";
+}): Promise<{ claims: MlClaim[]; total: number; truncated: boolean }> {
+  const { accessToken, mlUserId, status } = params;
+  const pageLimit = 50;
+  const maxClaims = 400;
+  const claims: MlClaim[] = [];
+  let offset = 0;
+  let total = 0;
+
+  while (true) {
+    const statusParam = status ? `&status=${status}` : "";
+    const claimsData = await fetchMlJson(
+      `https://api.mercadolibre.com/post-purchase/v1/claims/search?player_role=respondent&player_user_id=${mlUserId}${statusParam}&sort=last_updated:desc&limit=${pageLimit}&offset=${offset}`,
+      accessToken
+    );
+
+    const rows = Array.isArray(claimsData?.data) ? claimsData.data : [];
+    total = Number(claimsData?.paging?.total ?? rows.length);
+    const safeTotal = Number.isFinite(total) ? total : rows.length;
+
+    for (const row of rows) {
+      if (claims.length >= maxClaims) break;
+      claims.push(normalizeClaim(row));
+    }
+
+    const currentLimit = Number(claimsData?.paging?.limit ?? pageLimit);
+    const currentOffset = Number(claimsData?.paging?.offset ?? offset);
+    const nextOffset = currentOffset + currentLimit;
+
+    if (rows.length === 0 || nextOffset >= safeTotal || claims.length >= maxClaims) {
+      return {
+        claims,
+        total: safeTotal,
+        truncated: claims.length < safeTotal,
+      };
+    }
+
+    offset = nextOffset;
+  }
+}
+
 export async function GET(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
 
@@ -121,7 +184,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Conta nao conectada" }, { status: 404 });
     }
 
-    let { access_token, refresh_token, expires_at, ml_user_id } = result.rows[0];
+    let { access_token, refresh_token } = result.rows[0];
+    const { expires_at, ml_user_id } = result.rows[0];
 
     const expirationDate = new Date(expires_at);
     const now = new Date();
@@ -175,24 +239,31 @@ export async function GET(request: NextRequest) {
     let claimsOpenedCount = 0;
     let claimsOpened: MlClaim[] = [];
     let claimsRecent: MlClaim[] = [];
+    let claimsOpenedTruncated = false;
+    let claimsRecentTruncated = false;
+    let claimsRecentCount = 0;
 
     try {
-      const openedClaimsData = await fetchMlJson(
-        `https://api.mercadolibre.com/post-purchase/v1/claims/search?player_role=respondent&player_user_id=${ml_user_id}&status=opened&sort=last_updated:desc&limit=10`,
-        access_token
-      );
-      claimsOpened = (openedClaimsData.data || []).map(normalizeClaim);
-      claimsOpenedCount = Number(openedClaimsData?.paging?.total ?? claimsOpened.length);
+      const openedResult = await fetchClaimsWithPagination({
+        accessToken: access_token,
+        mlUserId: ml_user_id,
+        status: "opened",
+      });
+      claimsOpened = openedResult.claims;
+      claimsOpenedCount = openedResult.total;
+      claimsOpenedTruncated = openedResult.truncated;
     } catch (error) {
       console.warn("Falha ao buscar claims abertas:", error);
     }
 
     try {
-      const recentClaimsData = await fetchMlJson(
-        `https://api.mercadolibre.com/post-purchase/v1/claims/search?player_role=respondent&player_user_id=${ml_user_id}&sort=last_updated:desc&limit=10`,
-        access_token
-      );
-      claimsRecent = (recentClaimsData.data || []).map(normalizeClaim);
+      const recentResult = await fetchClaimsWithPagination({
+        accessToken: access_token,
+        mlUserId: ml_user_id,
+      });
+      claimsRecent = recentResult.claims;
+      claimsRecentCount = recentResult.total;
+      claimsRecentTruncated = recentResult.truncated;
     } catch (error) {
       console.warn("Falha ao buscar claims recentes:", error);
     }
@@ -209,11 +280,14 @@ export async function GET(request: NextRequest) {
       unreadTotal = Number(unreadData?.total ?? 0);
       const unreadResults = Array.isArray(unreadData?.results) ? unreadData.results : [];
       const unreadEntries = unreadResults
-        .map((entry: any) => ({
-          path: String(entry.resource || ""),
-          packId: parsePackIdFromPath(String(entry.resource || "")),
-          unreadCount: Number(entry.count ?? 0),
-        }))
+        .map((entry: unknown) => {
+          const parsedEntry = getObject(entry);
+          return {
+            path: String(parsedEntry.resource || ""),
+            packId: parsePackIdFromPath(String(parsedEntry.resource || "")),
+            unreadCount: Number(parsedEntry.count ?? 0),
+          };
+        })
         .filter((entry: { path: string; packId: string | null; unreadCount: number }) => !!entry.packId)
         .sort((a: { unreadCount: number }, b: { unreadCount: number }) => b.unreadCount - a.unreadCount);
 
@@ -221,73 +295,118 @@ export async function GET(request: NextRequest) {
         unreadEntries.map((entry: { path: string; unreadCount: number }) => [entry.path, entry.unreadCount])
       );
 
-      const recentOrdersData = await fetchMlJson(
-        `https://api.mercadolibre.com/orders/search?seller=${ml_user_id}&sort=date_desc&limit=20`,
-        access_token
-      );
-
       const packCandidates: Array<{ packId: string; path: string }> = [];
       const seenPaths = new Set<string>();
-      const maxThreads = 12;
+      const maxThreads = 80;
 
       for (const entry of unreadEntries) {
+        if (packCandidates.length >= maxThreads) break;
         if (!entry.packId) continue;
         if (seenPaths.has(entry.path)) continue;
         seenPaths.add(entry.path);
         packCandidates.push({ packId: entry.packId, path: entry.path });
-        if (packCandidates.length >= maxThreads) break;
       }
 
-      for (const order of recentOrdersData?.results || []) {
-        if (packCandidates.length >= maxThreads) break;
-        const packId = order?.pack_id ? String(order.pack_id) : null;
-        if (!packId) continue;
-        const path = `/packs/${packId}/sellers/${ml_user_id}`;
-        if (seenPaths.has(path)) continue;
-        seenPaths.add(path);
-        packCandidates.push({ packId, path });
+      const ordersPageLimit = 50;
+      let ordersOffset = 0;
+      let ordersPageSafety = 0;
+
+      while (packCandidates.length < maxThreads) {
+        const recentOrdersData = await fetchMlJson(
+          `https://api.mercadolibre.com/orders/search?seller=${ml_user_id}&sort=date_desc&limit=${ordersPageLimit}&offset=${ordersOffset}`,
+          access_token
+        );
+
+        const orders = Array.isArray(recentOrdersData?.results) ? recentOrdersData.results : [];
+
+        for (const order of orders) {
+          if (packCandidates.length >= maxThreads) break;
+          const packId = order?.pack_id ? String(order.pack_id) : null;
+          if (!packId) continue;
+          const path = `/packs/${packId}/sellers/${ml_user_id}`;
+          if (seenPaths.has(path)) continue;
+          seenPaths.add(path);
+          packCandidates.push({ packId, path });
+        }
+
+        const pagingTotal = Number(recentOrdersData?.paging?.total ?? 0);
+        const pagingLimit = Number(recentOrdersData?.paging?.limit ?? ordersPageLimit);
+        const pagingOffset = Number(recentOrdersData?.paging?.offset ?? ordersOffset);
+        const nextOffset = pagingOffset + pagingLimit;
+
+        if (orders.length === 0 || nextOffset >= pagingTotal) {
+          break;
+        }
+
+        ordersOffset = nextOffset;
+        ordersPageSafety += 1;
+        if (ordersPageSafety >= 20) {
+          break;
+        }
       }
 
-      const threadResults = await Promise.all(
-        packCandidates.map(async ({ packId, path }) => {
-          try {
-            const threadData = await fetchMlJson(
-              `https://api.mercadolibre.com/messages${path}?tag=post_sale&limit=20&offset=0`,
-              access_token
-            );
+      const threadResults: Array<MlMessageThread | null> = [];
+      const threadsBatchSize = 10;
 
-            const messages = Array.isArray(threadData?.messages) ? threadData.messages : [];
-            const sortedMessages = [...messages].sort((a: any, b: any) => {
-              const aDate = Date.parse(a?.message_date?.created || a?.message_date?.received || "");
-              const bDate = Date.parse(b?.message_date?.created || b?.message_date?.received || "");
-              return bDate - aDate;
-            });
-            const lastMessage = sortedMessages[0];
+      for (let i = 0; i < packCandidates.length; i += threadsBatchSize) {
+        const batch = packCandidates.slice(i, i + threadsBatchSize);
+        const batchResults = await Promise.all(
+          batch.map(async ({ packId, path }) => {
+            try {
+              const threadData = await fetchMlJson(
+                `https://api.mercadolibre.com/messages${path}?tag=post_sale&limit=20&offset=0`,
+                access_token
+              );
 
-            return {
-              path,
-              pack_id: packId,
-              unread_count: unreadMap.get(path) ?? 0,
-              status: threadData?.conversation_status?.status ?? null,
-              substatus: threadData?.conversation_status?.substatus ?? null,
-              claim_ids: threadData?.conversation_status?.claim_ids ?? [],
-              total_messages: Number(threadData?.paging?.total ?? messages.length),
-              last_message_date:
-                lastMessage?.message_date?.created ||
-                lastMessage?.message_date?.received ||
-                null,
-              last_message_from: lastMessage?.from?.user_id ?? null,
-              last_message_text:
-                typeof lastMessage?.text === "string"
-                  ? lastMessage.text.slice(0, 160)
-                  : null,
-            } as MlMessageThread;
-          } catch (error) {
-            console.warn(`Falha ao buscar mensagens do pack ${packId}:`, error);
-            return null;
-          }
-        })
-      );
+              const messages = Array.isArray(threadData?.messages) ? threadData.messages : [];
+              const sortedMessages = [...messages].sort((a: unknown, b: unknown) => {
+                const parsedA = getObject(a);
+                const parsedB = getObject(b);
+                const messageDateA = getObject(parsedA.message_date);
+                const messageDateB = getObject(parsedB.message_date);
+                const aDate = Date.parse(
+                  String(messageDateA.created || messageDateA.received || "")
+                );
+                const bDate = Date.parse(
+                  String(messageDateB.created || messageDateB.received || "")
+                );
+                return bDate - aDate;
+              });
+              const lastMessage = getObject(sortedMessages[0]);
+              const lastMessageDate = getObject(lastMessage.message_date);
+              const lastMessageFrom = getObject(lastMessage.from);
+
+              return {
+                path,
+                pack_id: packId,
+                unread_count: unreadMap.get(path) ?? 0,
+                status: threadData?.conversation_status?.status ?? null,
+                substatus: threadData?.conversation_status?.substatus ?? null,
+                claim_ids: Array.isArray(threadData?.conversation_status?.claim_ids)
+                  ? threadData.conversation_status.claim_ids
+                      .map((value: unknown) => Number(value))
+                      .filter((value: number) => Number.isFinite(value))
+                  : [],
+                total_messages: Number(threadData?.paging?.total ?? messages.length),
+                last_message_date:
+                  getString(lastMessageDate.created) ||
+                  getString(lastMessageDate.received) ||
+                  null,
+                last_message_from: getNumber(lastMessageFrom.user_id),
+                last_message_text:
+                  typeof lastMessage.text === "string"
+                    ? lastMessage.text.slice(0, 160)
+                    : null,
+              } as MlMessageThread;
+            } catch (error) {
+              console.warn(`Falha ao buscar mensagens do pack ${packId}:`, error);
+              return null;
+            }
+          })
+        );
+
+        threadResults.push(...batchResults);
+      }
 
       messageThreads = threadResults
         .filter((thread): thread is MlMessageThread => thread !== null)
@@ -324,10 +443,14 @@ export async function GET(request: NextRequest) {
         claims: {
           opened_count: claimsOpenedCount,
           opened: claimsOpened,
+          opened_truncated: claimsOpenedTruncated,
+          recent_count: claimsRecentCount,
           recent: claimsRecent,
+          recent_truncated: claimsRecentTruncated,
         },
         messages: {
           unread_total: unreadTotal,
+          threads_count: messageThreads.length,
           threads: messageThreads,
         },
       },
