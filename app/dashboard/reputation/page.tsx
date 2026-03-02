@@ -5,6 +5,7 @@ import { useToast } from "@/components/Toast";
 import Card from "@/components/Card";
 import Link from "next/link";
 import { Select } from "@/components/Select";
+import { Modal } from "@/components/Modal";
 
 // Componente de mini gráfico de linha (sparkline)
 const Sparkline = ({ data, color = "#22c55e", height = 40 }: { data: number[], color?: string, height?: number }) => {
@@ -125,6 +126,44 @@ type SupportMessageThread = {
   last_message_text: string | null;
 };
 
+type SupportMessage = {
+  id: string;
+  text: string | null;
+  status: string | null;
+  from_user_id: number | null;
+  to_user_id: number | null;
+  created_at: string | null;
+  received_at: string | null;
+  read_at: string | null;
+  message_type: string | null;
+  message_source: string | null;
+};
+
+type ClaimDetail = {
+  id: number | null;
+  status: string | null;
+  type: string | null;
+  stage: string | null;
+  resource: string | null;
+  resource_id: number | string | null;
+  reason_id: string | null;
+  fulfilled: boolean | null;
+  quantity_type: string | null;
+  claimed_quantity: number | null;
+  date_created: string | null;
+  last_updated: string | null;
+  site_id: string | null;
+  resolution_reason: string | null;
+  resolution_date: string | null;
+  resolution_closed_by: string | null;
+  resolution_applied_coverage: boolean | null;
+  players: Array<{
+    role: string | null;
+    type: string | null;
+    user_id: number | null;
+  }>;
+};
+
 type MLAccount = {
   ml_user_id: number;
   nickname: string | null;
@@ -140,6 +179,26 @@ export default function ReputationPage() {
   // Lista de contas e conta selecionada
   const [accounts, setAccounts] = useState<MLAccount[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<number | null>(null);
+
+  // Detalhes de mensagens (chat)
+  const [selectedThread, setSelectedThread] = useState<SupportMessageThread | null>(null);
+  const [threadMessages, setThreadMessages] = useState<SupportMessage[]>([]);
+  const [threadLoading, setThreadLoading] = useState(false);
+  const [threadLoadingMore, setThreadLoadingMore] = useState(false);
+  const [threadPaging, setThreadPaging] = useState({ limit: 20, offset: 0, total: 0 });
+  const [threadConversationStatus, setThreadConversationStatus] = useState<{
+    status: string | null;
+    substatus: string | null;
+    status_date: string | null;
+    status_update_allowed: boolean | null;
+    claim_ids: number[];
+  } | null>(null);
+
+  // Detalhes de claims
+  const [selectedClaim, setSelectedClaim] = useState<SupportClaim | null>(null);
+  const [claimDetail, setClaimDetail] = useState<ClaimDetail | null>(null);
+  const [claimDetailRaw, setClaimDetailRaw] = useState<string>("");
+  const [claimLoading, setClaimLoading] = useState(false);
 
   useEffect(() => {
     // Buscar lista de contas primeiro
@@ -206,8 +265,9 @@ export default function ReputationPage() {
 
         setData(result);
         setIsConnected(true);
-      } catch (err: any) {
-        error(err.message);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Erro ao carregar reputacao";
+        error(message);
       } finally {
         setLoading(false);
       }
@@ -216,6 +276,123 @@ export default function ReputationPage() {
     fetchReputation();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAccount]);
+
+  const sortMessagesAsc = (messages: SupportMessage[]) => {
+    return [...messages].sort((a, b) => {
+      const aDate = Date.parse(a.created_at || a.received_at || "");
+      const bDate = Date.parse(b.created_at || b.received_at || "");
+      const safeADate = Number.isNaN(aDate) ? 0 : aDate;
+      const safeBDate = Number.isNaN(bDate) ? 0 : bDate;
+      return safeADate - safeBDate;
+    });
+  };
+
+  const mergeMessages = (current: SupportMessage[], incoming: SupportMessage[]) => {
+    const map = new Map<string, SupportMessage>();
+    for (const message of current) {
+      map.set(message.id, message);
+    }
+    for (const message of incoming) {
+      map.set(message.id, message);
+    }
+    return sortMessagesAsc(Array.from(map.values()));
+  };
+
+  const loadThreadMessages = async (thread: SupportMessageThread, offset = 0, append = false) => {
+    if (!selectedAccount || !thread.pack_id) {
+      return;
+    }
+
+    const limit = 20;
+    if (append) {
+      setThreadLoadingMore(true);
+    } else {
+      setThreadLoading(true);
+    }
+
+    try {
+      const response = await fetch(
+        `/api/integrations/mercadolivre/messages?ml_user_id=${selectedAccount}&pack_id=${thread.pack_id}&limit=${limit}&offset=${offset}`
+      );
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Erro ao carregar mensagens");
+      }
+
+      const incomingMessages: SupportMessage[] = Array.isArray(result.messages) ? result.messages : [];
+      setThreadMessages((prev) => (append ? mergeMessages(prev, incomingMessages) : sortMessagesAsc(incomingMessages)));
+      setThreadConversationStatus(result.conversation_status || null);
+      setThreadPaging({
+        limit: Number(result?.paging?.limit ?? limit),
+        offset: Number(result?.paging?.offset ?? offset),
+        total: Number(result?.paging?.total ?? incomingMessages.length),
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Erro ao carregar mensagens";
+      error(message);
+    } finally {
+      setThreadLoading(false);
+      setThreadLoadingMore(false);
+    }
+  };
+
+  const handleOpenThread = async (thread: SupportMessageThread) => {
+    setSelectedThread(thread);
+    setThreadMessages([]);
+    setThreadConversationStatus(null);
+    setThreadPaging({ limit: 20, offset: 0, total: 0 });
+    await loadThreadMessages(thread, 0, false);
+  };
+
+  const handleLoadMoreThreadMessages = async () => {
+    if (!selectedThread) return;
+    if (threadLoadingMore) return;
+    if (threadMessages.length >= threadPaging.total) return;
+    await loadThreadMessages(selectedThread, threadMessages.length, true);
+  };
+
+  const closeThreadModal = () => {
+    setSelectedThread(null);
+    setThreadMessages([]);
+    setThreadConversationStatus(null);
+    setThreadPaging({ limit: 20, offset: 0, total: 0 });
+  };
+
+  const handleOpenClaim = async (claim: SupportClaim) => {
+    if (!selectedAccount) return;
+
+    setSelectedClaim(claim);
+    setClaimDetail(null);
+    setClaimDetailRaw("");
+    setClaimLoading(true);
+
+    try {
+      const response = await fetch(
+        `/api/integrations/mercadolivre/claim?ml_user_id=${selectedAccount}&claim_id=${claim.id}`
+      );
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Erro ao carregar claim");
+      }
+
+      setClaimDetail(result.claim || null);
+      const raw = result.raw ?? result.claim ?? {};
+      setClaimDetailRaw(JSON.stringify(raw, null, 2));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Erro ao carregar claim";
+      error(message);
+    } finally {
+      setClaimLoading(false);
+    }
+  };
+
+  const closeClaimModal = () => {
+    setSelectedClaim(null);
+    setClaimDetail(null);
+    setClaimDetailRaw("");
+  };
 
   if (loading) {
     return (
@@ -349,6 +526,12 @@ export default function ReputationPage() {
   const supportClaimsRecentOnly = supportClaimsRecent.filter((claim) => !supportClaimOpenedIds.has(claim.id));
   const supportThreads = data?.support?.messages?.threads ?? [];
   const supportUnreadTotal = data?.support?.messages?.unread_total ?? 0;
+  const sentMessagesCount = selectedAccount
+    ? threadMessages.filter((message) => message.from_user_id === selectedAccount).length
+    : 0;
+  const receivedMessagesCount = selectedAccount
+    ? threadMessages.filter((message) => message.from_user_id !== selectedAccount).length
+    : 0;
 
   const isOfficialReputation = !!data?.seller_reputation?.level_id;
 
@@ -365,7 +548,7 @@ export default function ReputationPage() {
           <div className="flex items-center gap-3">
             <Select
               value={selectedAccount?.toString() || ""}
-              onChange={(e: any) => {
+              onChange={(e: { target: { value: string } }) => {
                 const value = e.target.value;
                 const accountId = parseInt(value);
                 setSelectedAccount(accountId);
@@ -841,7 +1024,12 @@ export default function ReputationPage() {
             ) : (
               <div className="space-y-3 max-h-[420px] overflow-auto pr-1">
                 {supportClaimsOpened.slice(0, 8).map((claim) => (
-                  <div key={claim.id} className="p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/20">
+                  <button
+                    type="button"
+                    key={claim.id}
+                    className="w-full text-left p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/20 hover:bg-yellow-500/10 transition-colors"
+                    onClick={() => handleOpenClaim(claim)}
+                  >
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-sm text-white font-medium">#{claim.id}</p>
                       <span className="text-[11px] px-2 py-0.5 rounded border bg-yellow-500/10 text-yellow-300 border-yellow-500/30">
@@ -854,11 +1042,16 @@ export default function ReputationPage() {
                     <p className="text-xs text-gray-500 mt-1">
                       Motivo: {claim.reason_id || "-"} - Atualizado: {formatDateTime(claim.last_updated)}
                     </p>
-                  </div>
+                  </button>
                 ))}
 
                 {supportClaimsRecentOnly.slice(0, 10).map((claim) => (
-                  <div key={claim.id} className="p-3 rounded-lg bg-white/5 border border-white/10">
+                  <button
+                    type="button"
+                    key={claim.id}
+                    className="w-full text-left p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                    onClick={() => handleOpenClaim(claim)}
+                  >
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-sm text-white font-medium">#{claim.id}</p>
                       <span
@@ -877,7 +1070,7 @@ export default function ReputationPage() {
                     <p className="text-xs text-gray-500 mt-1">
                       Motivo: {claim.reason_id || "-"} - Atualizado: {formatDateTime(claim.last_updated)}
                     </p>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
@@ -896,7 +1089,12 @@ export default function ReputationPage() {
             ) : (
               <div className="space-y-3 max-h-[420px] overflow-auto pr-1">
                 {supportThreads.slice(0, 10).map((thread) => (
-                  <div key={thread.path} className="p-3 rounded-lg bg-white/5 border border-white/10">
+                  <button
+                    type="button"
+                    key={thread.path}
+                    className="w-full text-left p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                    onClick={() => handleOpenThread(thread)}
+                  >
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-sm text-white font-medium">
                         Pack: {thread.pack_id || "-"}
@@ -914,12 +1112,140 @@ export default function ReputationPage() {
                     <p className="text-xs text-gray-500 mt-1">
                       Ultima: {formatDateTime(thread.last_message_date)} - Total: {thread.total_messages}
                     </p>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
           </Card>
         </div>
+
+        <Modal
+          open={!!selectedThread}
+          onClose={closeThreadModal}
+          title={selectedThread ? `Chat do Pack ${selectedThread.pack_id || "-"}` : "Chat"}
+          widthClassName="max-w-4xl"
+          footer={
+            <div className="flex items-center justify-between w-full">
+              <div className="text-xs text-gray-300">
+                Enviadas: {sentMessagesCount} • Recebidas: {receivedMessagesCount}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="px-3 py-1.5 rounded-lg border border-white/20 text-sm text-white disabled:opacity-40"
+                  disabled={threadLoadingMore || threadMessages.length >= threadPaging.total}
+                  onClick={handleLoadMoreThreadMessages}
+                >
+                  {threadLoadingMore ? "Carregando..." : "Carregar mais"}
+                </button>
+                <button
+                  type="button"
+                  className="px-3 py-1.5 rounded-lg border border-white/20 text-sm text-white"
+                  onClick={closeThreadModal}
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+          }
+        >
+          {threadLoading ? (
+            <p className="text-sm text-gray-300">Carregando mensagens...</p>
+          ) : threadMessages.length === 0 ? (
+            <p className="text-sm text-gray-300">Nenhuma mensagem encontrada para este pack.</p>
+          ) : (
+            <div className="space-y-3">
+              <div className="text-xs text-gray-400">
+                Status da conversa: {threadConversationStatus?.status || "-"}{" "}
+                {threadConversationStatus?.substatus ? `(${threadConversationStatus.substatus})` : ""}
+              </div>
+              <div className="max-h-[55vh] overflow-y-auto pr-1 space-y-2">
+                {threadMessages.map((message) => {
+                  const isSentBySeller =
+                    selectedAccount !== null && message.from_user_id === selectedAccount;
+                  return (
+                    <div
+                      key={message.id}
+                      className={`flex ${isSentBySeller ? "justify-end" : "justify-start"}`}
+                    >
+                      <div
+                        className={`max-w-[80%] rounded-xl px-3 py-2 border ${
+                          isSentBySeller
+                            ? "bg-blue-500/20 border-blue-500/30"
+                            : "bg-white/5 border-white/15"
+                        }`}
+                      >
+                        <p className="text-[11px] text-gray-400 mb-1">
+                          {isSentBySeller ? "Enviada" : "Recebida"} •{" "}
+                          {formatDateTime(message.created_at || message.received_at)}
+                        </p>
+                        <p className="text-sm text-white whitespace-pre-wrap">
+                          {message.text || "(sem texto)"}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </Modal>
+
+        <Modal
+          open={!!selectedClaim}
+          onClose={closeClaimModal}
+          title={selectedClaim ? `Claim #${selectedClaim.id}` : "Claim"}
+          widthClassName="max-w-4xl"
+          footer={
+            <div className="flex justify-end w-full">
+              <button
+                type="button"
+                className="px-3 py-1.5 rounded-lg border border-white/20 text-sm text-white"
+                onClick={closeClaimModal}
+              >
+                Fechar
+              </button>
+            </div>
+          }
+        >
+          {claimLoading ? (
+            <p className="text-sm text-gray-300">Carregando detalhes da claim...</p>
+          ) : claimDetail ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                  <p className="text-xs text-gray-400">Status</p>
+                  <p className="text-sm text-white">{claimDetail.status || "-"}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                  <p className="text-xs text-gray-400">Tipo / Etapa</p>
+                  <p className="text-sm text-white">
+                    {claimDetail.type || "-"} - {claimDetail.stage || "-"}
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                  <p className="text-xs text-gray-400">Motivo</p>
+                  <p className="text-sm text-white">{claimDetail.reason_id || "-"}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                  <p className="text-xs text-gray-400">Recurso</p>
+                  <p className="text-sm text-white">
+                    {claimDetail.resource || "-"} / {String(claimDetail.resource_id ?? "-")}
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                <p className="text-xs text-gray-400 mb-2">JSON completo</p>
+                <pre className="text-xs text-gray-200 overflow-auto max-h-[36vh] whitespace-pre-wrap">
+                  {claimDetailRaw}
+                </pre>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-300">Sem detalhes para exibir.</p>
+          )}
+        </Modal>
       </div>
     </div>
   );
