@@ -40,6 +40,18 @@ async function fetchMlJson(url: string, accessToken: string): Promise<unknown> {
   return response.json();
 }
 
+async function fetchMlJsonSafe(url: string, accessToken: string): Promise<Record<string, unknown> | null> {
+  try {
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!response.ok) return null;
+    return (await response.json()) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
 async function refreshAccessToken(refreshToken: string) {
   const response = await fetch("https://api.mercadolibre.com/oauth/token", {
     method: "POST",
@@ -86,7 +98,7 @@ async function getValidCredential(userId: string, mlUserId: string): Promise<Cre
   return { ...credential, access_token: newAccessToken, refresh_token: newRefreshToken, expires_at: newExpiresAt.toISOString() };
 }
 
-type ParsedClaimMessage = {
+type NormalizedMessage = {
   id: string;
   sender_role: string | null;
   receiver_role: string | null;
@@ -96,6 +108,7 @@ type ParsedClaimMessage = {
   date_created: string | null;
   last_updated: string | null;
   status: string | null;
+  source: "claim" | "pack";
   attachments: Array<{
     filename: string | null;
     original_filename: string | null;
@@ -104,14 +117,15 @@ type ParsedClaimMessage = {
   }>;
 };
 
-function parseClaimMessage(raw: unknown): ParsedClaimMessage {
+// Parse messages from /post-purchase/v1/claims/{id}/messages
+function parseClaimMessage(raw: unknown): NormalizedMessage {
   const obj = getObject(raw);
   const sender = getObject(obj.sender);
   const receiver = getObject(obj.receiver);
   const attachments = Array.isArray(obj.attachments) ? obj.attachments : [];
 
   return {
-    id: getString(obj.id) || "",
+    id: getString(obj.id) || String(Math.random()),
     sender_role: getString(sender.role),
     receiver_role: getString(receiver.role),
     from_user_id: getNumber(sender.user_id),
@@ -120,6 +134,38 @@ function parseClaimMessage(raw: unknown): ParsedClaimMessage {
     date_created: getString(obj.date_created),
     last_updated: getString(obj.last_updated),
     status: getString(obj.status),
+    source: "claim",
+    attachments: attachments.map((att: unknown) => {
+      const a = getObject(att);
+      return {
+        filename: getString(a.filename),
+        original_filename: getString(a.original_filename),
+        type: getString(a.type),
+        size: getNumber(a.size),
+      };
+    }),
+  };
+}
+
+// Parse messages from /messages/packs/{packId}/sellers/{sellerId}
+function parsePackMessage(raw: unknown): NormalizedMessage {
+  const obj = getObject(raw);
+  const from = getObject(obj.from);
+  const to = getObject(obj.to);
+  const messageDate = getObject(obj.message_date);
+  const attachments = Array.isArray(obj.attachments) ? obj.attachments : [];
+
+  return {
+    id: getString(obj.id) || String(Math.random()),
+    sender_role: null,
+    receiver_role: null,
+    from_user_id: getNumber(from.user_id),
+    to_user_id: getNumber(to.user_id),
+    text: getString(obj.text),
+    date_created: getString(messageDate.created) || getString(messageDate.received),
+    last_updated: null,
+    status: getString(obj.status),
+    source: "pack",
     attachments: attachments.map((att: unknown) => {
       const a = getObject(att);
       return {
@@ -133,9 +179,13 @@ function parseClaimMessage(raw: unknown): ParsedClaimMessage {
 }
 
 /**
- * GET /api/integrations/mercadolivre/claim-messages?ml_user_id=XYZ&claim_id=123&limit=50&offset=0
+ * GET /api/integrations/mercadolivre/claim-messages?ml_user_id=XYZ&claim_id=123
  *
- * Fetches the message history for a specific claim.
+ * Strategy:
+ *  1. Try /post-purchase/v1/claims/{id}/messages (claim-level messages)
+ *  2. If empty, get claim detail to find resource_id (shipment/order)
+ *  3. From shipment, get pack_id/order_id
+ *  4. Fetch /messages/packs/{packId}/sellers/{sellerId} (post-sale messages)
  */
 export async function GET(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
@@ -151,42 +201,127 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "ml_user_id e claim_id sao obrigatorios" }, { status: 400 });
     }
 
-    const limit = Math.min(Math.max(Number(searchParams.get("limit") || 50), 1), 100);
-    const offset = Math.max(Number(searchParams.get("offset") || 0), 0);
-
     const credential = await getValidCredential(decoded.userId, mlUserId);
+    const accessToken = credential.access_token;
 
-    // Fetch all pages of messages for this claim
-    let allMessages: ParsedClaimMessage[] = [];
-    let currentOffset = offset;
-    let totalMessages = 0;
-    let pageCount = 0;
+    // ── Step 1: Try claim-level messages ──
+    let allMessages: NormalizedMessage[] = [];
+    let messageSource = "claim";
 
-    while (true) {
-      const data = (await fetchMlJson(
-        `https://api.mercadolibre.com/post-purchase/v1/claims/${claimId}/messages?limit=${limit}&offset=${currentOffset}`,
-        credential.access_token
-      )) as Record<string, unknown>;
+    try {
+      let currentOffset = 0;
+      const limit = 50;
+      let totalMessages = 0;
+      let pageCount = 0;
 
-      const paging = getObject(data.paging);
-      totalMessages = getNumber(paging.total) ?? 0;
-      const rawMessages = Array.isArray(data.data) ? data.data : [];
+      while (true) {
+        const data = (await fetchMlJson(
+          `https://api.mercadolibre.com/post-purchase/v1/claims/${claimId}/messages?limit=${limit}&offset=${currentOffset}`,
+          accessToken
+        )) as Record<string, unknown>;
 
-      if (rawMessages.length === 0) break;
+        const paging = getObject(data.paging);
+        totalMessages = getNumber(paging.total) ?? 0;
+        
+        // Try both "data" and "messages" fields  
+        const rawMessages = Array.isArray(data.data)
+          ? data.data
+          : Array.isArray(data.messages)
+          ? data.messages
+          : [];
 
-      allMessages = allMessages.concat(rawMessages.map(parseClaimMessage));
+        if (rawMessages.length === 0) break;
 
-      const pageLimit = getNumber(paging.limit) ?? limit;
-      const pageOffset = getNumber(paging.offset) ?? currentOffset;
-      const nextOffset = pageOffset + pageLimit;
+        allMessages = allMessages.concat(rawMessages.map(parseClaimMessage));
 
-      if (nextOffset >= totalMessages) break;
-      currentOffset = nextOffset;
-      pageCount++;
-      if (pageCount >= 40) break; // safety
+        const pageLimit = getNumber(paging.limit) ?? limit;
+        const pageOffset = getNumber(paging.offset) ?? currentOffset;
+        const nextOffset = pageOffset + pageLimit;
+
+        if (nextOffset >= totalMessages) break;
+        currentOffset = nextOffset;
+        pageCount++;
+        if (pageCount >= 40) break;
+      }
+    } catch (err) {
+      console.warn("Claim messages fetch failed:", err);
     }
 
-    // Sort messages chronologically (oldest first)
+    // ── Step 2: If no claim messages found, try via pack/order ──
+    if (allMessages.length === 0) {
+      messageSource = "pack";
+
+      try {
+        // Get claim details to find resource_id  
+        const claimData = await fetchMlJsonSafe(
+          `https://api.mercadolibre.com/post-purchase/v1/claims/${claimId}`,
+          accessToken
+        );
+
+        if (claimData) {
+          const resource = getString(claimData.resource);
+          const resourceId = getNumber(claimData.resource_id) ?? getString(claimData.resource_id);
+
+          let packId: string | null = null;
+
+          if (resource === "shipment" && resourceId) {
+            // From shipment, get pack_id or order_id
+            const shipmentData = await fetchMlJsonSafe(
+              `https://api.mercadolibre.com/shipments/${resourceId}`,
+              accessToken
+            );
+            if (shipmentData) {
+              packId = getString(shipmentData.pack_id) || String(getNumber(shipmentData.order_id) ?? "");
+            }
+          } else if (resource === "order" && resourceId) {
+            // From order, get pack_id
+            const orderData = await fetchMlJsonSafe(
+              `https://api.mercadolibre.com/orders/${resourceId}`,
+              accessToken
+            );
+            if (orderData) {
+              packId = getString(orderData.pack_id) || String(resourceId);
+            }
+          }
+
+          if (packId) {
+            // Fetch post-sale pack messages
+            let currentOffset = 0;
+            const limit = 50;
+            let pageCount = 0;
+
+            while (true) {
+              const threadData = await fetchMlJsonSafe(
+                `https://api.mercadolibre.com/messages/packs/${packId}/sellers/${mlUserId}?tag=post_sale&limit=${limit}&offset=${currentOffset}`,
+                accessToken
+              );
+
+              if (!threadData) break;
+
+              const rawMessages = Array.isArray(threadData.messages) ? threadData.messages : [];
+              if (rawMessages.length === 0) break;
+
+              allMessages = allMessages.concat(rawMessages.map(parsePackMessage));
+
+              const paging = getObject(threadData.paging);
+              const pageLimit = getNumber(paging.limit) ?? limit;
+              const pageOffset = getNumber(paging.offset) ?? currentOffset;
+              const total = getNumber(paging.total) ?? 0;
+              const nextOffset = pageOffset + pageLimit;
+
+              if (nextOffset >= total) break;
+              currentOffset = nextOffset;
+              pageCount++;
+              if (pageCount >= 40) break;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Pack messages fallback failed:", err);
+      }
+    }
+
+    // Sort chronologically (oldest first)
     allMessages.sort((a, b) => {
       const aDate = Date.parse(a.date_created || "");
       const bDate = Date.parse(b.date_created || "");
@@ -195,7 +330,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       claim_id: claimId,
-      total: Math.max(totalMessages, allMessages.length),
+      total: allMessages.length,
+      source: messageSource,
       messages: allMessages,
     });
   } catch (error) {
