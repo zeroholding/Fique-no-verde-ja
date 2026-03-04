@@ -180,6 +180,41 @@ type ClaimDetail = {
   }>;
 };
 
+type AffectingClaim = {
+  id: number;
+  resource_id: number | string | null;
+  status: string;
+  type: string;
+  stage: string;
+  reason_id: string | null;
+  resource: string | null;
+  date_created: string;
+  last_updated: string;
+  resolution_reason: string | null;
+  resolution_closed_by: string | null;
+  affects_reputation: string;
+  has_incentive: boolean;
+  due_date: string | null;
+};
+
+type ClaimMessage = {
+  id: string;
+  sender_role: string | null;
+  receiver_role: string | null;
+  from_user_id: number | null;
+  to_user_id: number | null;
+  text: string | null;
+  date_created: string | null;
+  last_updated: string | null;
+  status: string | null;
+  attachments: Array<{
+    filename: string | null;
+    original_filename: string | null;
+    type: string | null;
+    size: number | null;
+  }>;
+};
+
 type MLAccount = {
   ml_user_id: number;
   nickname: string | null;
@@ -214,6 +249,16 @@ export default function ReputationPage() {
   const [selectedClaim, setSelectedClaim] = useState<SupportClaim | null>(null);
   const [claimDetail, setClaimDetail] = useState<ClaimDetail | null>(null);
   const [claimLoading, setClaimLoading] = useState(false);
+
+  // [NEW] Claims affecting reputation
+  const [affectingClaims, setAffectingClaims] = useState<AffectingClaim[]>([]);
+  const [affectingLoading, setAffectingLoading] = useState(false);
+  const [affectingTotalChecked, setAffectingTotalChecked] = useState(0);
+
+  // [NEW] Claim messages modal
+  const [selectedClaimForMessages, setSelectedClaimForMessages] = useState<AffectingClaim | null>(null);
+  const [claimMessages, setClaimMessages] = useState<ClaimMessage[]>([]);
+  const [claimMessagesLoading, setClaimMessagesLoading] = useState(false);
 
   useEffect(() => {
     // Buscar lista de contas primeiro
@@ -291,6 +336,61 @@ export default function ReputationPage() {
     fetchReputation();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAccount]);
+
+  // [NEW] Fetch claims affecting reputation (async, non-blocking)
+  useEffect(() => {
+    if (selectedAccount === null) return;
+
+    const fetchAffecting = async () => {
+      setAffectingLoading(true);
+      setAffectingClaims([]);
+      setAffectingTotalChecked(0);
+      try {
+        const response = await fetch(`/api/integrations/mercadolivre/claims/affecting-reputation?ml_user_id=${selectedAccount}`);
+        if (!response.ok) {
+          const result = await response.json();
+          throw new Error(result.error || "Erro ao buscar reclamacoes");
+        }
+        const result = await response.json();
+        setAffectingClaims(result.claims || []);
+        setAffectingTotalChecked(result.total_claims_checked || 0);
+      } catch (err: unknown) {
+        console.error("Erro ao buscar claims afetando reputacao:", err);
+      } finally {
+        setAffectingLoading(false);
+      }
+    };
+
+    fetchAffecting();
+  }, [selectedAccount]);
+
+  const loadClaimMessages = async (claim: AffectingClaim) => {
+    if (!selectedAccount) return;
+    setSelectedClaimForMessages(claim);
+    setClaimMessages([]);
+    setClaimMessagesLoading(true);
+    try {
+      const response = await fetch(
+        `/api/integrations/mercadolivre/claim-messages?ml_user_id=${selectedAccount}&claim_id=${claim.id}`
+      );
+      if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.error || "Erro ao carregar mensagens");
+      }
+      const result = await response.json();
+      setClaimMessages(result.messages || []);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Erro ao carregar mensagens";
+      error(message);
+    } finally {
+      setClaimMessagesLoading(false);
+    }
+  };
+
+  const closeClaimMessagesModal = () => {
+    setSelectedClaimForMessages(null);
+    setClaimMessages([]);
+  };
 
   const sortMessagesAsc = (messages: SupportMessage[]) => {
     return [...messages].sort((a, b) => {
@@ -1247,6 +1347,190 @@ export default function ReputationPage() {
             )}
           </Card>
         </div>
+
+        {/* ═══════ RECLAMAÇÕES QUE IMPACTAM A REPUTAÇÃO ═══════ */}
+        <Card className="bg-white/5 border border-white/10">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-white">Reclamações que Impactam a Reputação</h3>
+              <p className="text-xs text-gray-400 mt-1">Vendas dos últimos 60 dias com reclamações que afetam negativamente o termômetro</p>
+            </div>
+            <div className="flex items-center gap-3">
+              {affectingLoading ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin"></div>
+                  <span className="text-xs text-gray-400">Analisando {affectingTotalChecked > 0 ? `${affectingTotalChecked} claims` : '...'}...</span>
+                </div>
+              ) : (
+                <span className={`text-xs px-2 py-1 rounded border ${
+                  affectingClaims.length > 0
+                    ? 'bg-red-500/10 text-red-300 border-red-500/20'
+                    : 'bg-green-500/10 text-green-300 border-green-500/20'
+                }`}>
+                  {affectingClaims.length} de {affectingTotalChecked} afetam
+                </span>
+              )}
+            </div>
+          </div>
+
+          {affectingLoading ? (
+            <div className="py-8 text-center">
+              <div className="w-8 h-8 border-3 border-red-500/30 border-t-red-500 rounded-full animate-spin mx-auto mb-3"></div>
+              <p className="text-sm text-gray-400">Verificando cada reclamação individualmente...</p>
+              <p className="text-xs text-gray-500 mt-1">Isso pode levar alguns segundos</p>
+            </div>
+          ) : affectingClaims.length === 0 ? (
+            <div className="py-6 text-center">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-green-500/10 flex items-center justify-center">
+                <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p className="text-sm text-green-300 font-medium">Nenhuma reclamação impactando a reputação</p>
+              <p className="text-xs text-gray-500 mt-1">{affectingTotalChecked} reclamações verificadas nos últimos 60 dias</p>
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-[500px] overflow-auto pr-1">
+              {affectingClaims.map((claim) => (
+                <button
+                  type="button"
+                  key={claim.id}
+                  className="w-full text-left p-4 rounded-xl bg-red-500/5 border border-red-500/20 hover:bg-red-500/10 transition-all group"
+                  onClick={() => loadClaimMessages(claim)}
+                >
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-red-500/20 rounded">
+                        <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <p className="text-sm text-white font-medium">Reclamação #{claim.id}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {claim.has_incentive && (
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-300 border border-yellow-500/30">
+                          Incentivo ativo
+                        </span>
+                      )}
+                      <span className={`text-[11px] px-2 py-0.5 rounded border ${
+                        claim.status === 'opened'
+                          ? 'bg-yellow-500/10 text-yellow-300 border-yellow-500/30'
+                          : 'bg-gray-500/10 text-gray-300 border-gray-500/30'
+                      }`}>
+                        {translate(claim.status, claimStatusLabels)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                    <p className="text-gray-400">
+                      Tipo: <span className="text-gray-300">{translate(claim.type, claimTypeLabels)}</span>
+                    </p>
+                    <p className="text-gray-400">
+                      Etapa: <span className="text-gray-300">{translate(claim.stage, claimStageLabels)}</span>
+                    </p>
+                    <p className="text-gray-400">
+                      Motivo: <span className="text-gray-300">{claim.reason_id || '-'}</span>
+                    </p>
+                    <p className="text-gray-400">
+                      Recurso: <span className="text-gray-300">{translate(claim.resource, claimResourceLabels)} / {String(claim.resource_id ?? '-')}</span>
+                    </p>
+                    <p className="text-gray-400">
+                      Criada: <span className="text-gray-300">{formatDateTime(claim.date_created)}</span>
+                    </p>
+                    <p className="text-gray-400">
+                      Atualizada: <span className="text-gray-300">{formatDateTime(claim.last_updated)}</span>
+                    </p>
+                    {claim.resolution_reason && (
+                      <p className="text-gray-400 col-span-2">
+                        Resolução: <span className="text-gray-300">{prettifyCode(claim.resolution_reason)}</span>
+                        {claim.resolution_closed_by && ` (por ${translate(claim.resolution_closed_by, resolutionByLabels)})`}
+                      </p>
+                    )}
+                  </div>
+                  <div className="mt-2 flex items-center gap-1 text-[11px] text-blue-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    Clique para ver mensagens trocadas
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </Card>
+
+        {/* ═══════ MODAL: MENSAGENS DA RECLAMAÇÃO ═══════ */}
+        <Modal
+          open={!!selectedClaimForMessages}
+          onClose={closeClaimMessagesModal}
+          title={selectedClaimForMessages ? `Mensagens da Reclamação #${selectedClaimForMessages.id}` : 'Mensagens'}
+          widthClassName="max-w-4xl"
+          footer={
+            <div className="flex items-center justify-between w-full">
+              <div className="text-xs text-gray-300">
+                {claimMessages.length} mensagem(ns) carregada(s)
+              </div>
+              <button
+                type="button"
+                className="px-3 py-1.5 rounded-lg border border-white/20 text-sm text-white"
+                onClick={closeClaimMessagesModal}
+              >
+                Fechar
+              </button>
+            </div>
+          }
+        >
+          {claimMessagesLoading ? (
+            <div className="py-6 text-center">
+              <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mx-auto mb-2"></div>
+              <p className="text-sm text-gray-300">Carregando histórico de mensagens...</p>
+            </div>
+          ) : claimMessages.length === 0 ? (
+            <p className="text-sm text-gray-300 py-4 text-center">Nenhuma mensagem encontrada para esta reclamação.</p>
+          ) : (
+            <div className="space-y-3">
+              <div className="max-h-[55vh] overflow-y-auto pr-1 space-y-2">
+                {claimMessages.map((message) => {
+                  const isSentBySeller =
+                    selectedAccount !== null && message.from_user_id === selectedAccount;
+                  const isMediator = message.sender_role === 'mediator';
+                  return (
+                    <div
+                      key={message.id}
+                      className={`flex ${isMediator ? 'justify-center' : isSentBySeller ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-[80%] rounded-xl px-3 py-2 border ${
+                          isMediator
+                            ? 'bg-purple-500/10 border-purple-500/20'
+                            : isSentBySeller
+                            ? 'bg-blue-500/20 border-blue-500/30'
+                            : 'bg-white/5 border-white/15'
+                        }`}
+                      >
+                        <p className="text-[11px] text-gray-400 mb-1">
+                          {isMediator ? '🔒 Mediador' : isSentBySeller ? 'Você (vendedor)' : 'Comprador'}
+                          {' — '}
+                          {formatDateTime(message.date_created)}
+                        </p>
+                        <p className="text-sm text-white whitespace-pre-wrap">
+                          {message.text || '(sem texto)'}
+                        </p>
+                        {message.attachments.length > 0 && (
+                          <p className="text-[11px] text-gray-400 mt-1">
+                            📎 {message.attachments.length} anexo(s)
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </Modal>
+
 
         <Modal
           open={!!selectedThread}
