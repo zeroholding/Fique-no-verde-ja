@@ -195,6 +195,7 @@ type AffectingClaim = {
   affects_reputation: string;
   has_incentive: boolean;
   due_date: string | null;
+  message_count: number;
 };
 
 type ClaimMessage = {
@@ -1405,7 +1406,12 @@ export default function ReputationPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <p className="text-sm text-white font-medium">Reclamação #{claim.id}</p>
+                      <p className="text-sm text-white font-medium">
+                        Reclamação #{claim.id}
+                        <span className={`ml-2 text-[11px] font-normal ${claim.message_count > 0 ? 'text-blue-300' : 'text-gray-500'}`}>
+                          ({claim.message_count} {claim.message_count === 1 ? 'mensagem' : 'mensagens'})
+                        </span>
+                      </p>
                     </div>
                     <div className="flex items-center gap-2">
                       {claim.has_incentive && (

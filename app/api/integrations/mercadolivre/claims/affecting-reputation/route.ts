@@ -40,6 +40,18 @@ async function fetchMlJson(url: string, accessToken: string): Promise<unknown> {
   return response.json();
 }
 
+async function fetchMlJsonSafe(url: string, accessToken: string): Promise<Record<string, unknown> | null> {
+  try {
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!response.ok) return null;
+    return (await response.json()) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
 async function refreshAccessToken(refreshToken: string) {
   const response = await fetch("https://api.mercadolibre.com/oauth/token", {
     method: "POST",
@@ -102,7 +114,69 @@ type AffectingClaim = {
   affects_reputation: string;
   has_incentive: boolean;
   due_date: string | null;
+  message_count: number;
 };
+
+async function getMessageCount(
+  claimId: number,
+  resource: string | null,
+  resourceId: number | string | null,
+  mlUserId: string,
+  accessToken: string
+): Promise<number> {
+  // 1. Try claim-level messages
+  try {
+    const data = await fetchMlJsonSafe(
+      `https://api.mercadolibre.com/post-purchase/v1/claims/${claimId}/messages?limit=1&offset=0`,
+      accessToken
+    );
+    if (data) {
+      const paging = getObject(data.paging);
+      const total = getNumber(paging.total) ?? 0;
+      const dataArr = Array.isArray(data.data) ? data.data : [];
+      const msgsArr = Array.isArray(data.messages) ? data.messages : [];
+      const count = total || dataArr.length || msgsArr.length;
+      if (count > 0) return count;
+    }
+  } catch { /* ignore */ }
+
+  // 2. Fallback: resolve pack via shipment/order and check pack messages
+  if (resource === "shipment" && resourceId) {
+    try {
+      const shipment = await fetchMlJsonSafe(`https://api.mercadolibre.com/shipments/${resourceId}`, accessToken);
+      if (shipment) {
+        const packId = getString(shipment.pack_id) || String(getNumber(shipment.order_id) ?? "");
+        if (packId) {
+          const threadData = await fetchMlJsonSafe(
+            `https://api.mercadolibre.com/messages/packs/${packId}/sellers/${mlUserId}?tag=post_sale&limit=1&offset=0`,
+            accessToken
+          );
+          if (threadData) {
+            const paging = getObject(threadData.paging);
+            return getNumber(paging.total) ?? (Array.isArray(threadData.messages) ? threadData.messages.length : 0);
+          }
+        }
+      }
+    } catch { /* ignore */ }
+  } else if (resource === "order" && resourceId) {
+    try {
+      const order = await fetchMlJsonSafe(`https://api.mercadolibre.com/orders/${resourceId}`, accessToken);
+      if (order) {
+        const packId = getString(order.pack_id) || String(resourceId);
+        const threadData = await fetchMlJsonSafe(
+          `https://api.mercadolibre.com/messages/packs/${packId}/sellers/${mlUserId}?tag=post_sale&limit=1&offset=0`,
+          accessToken
+        );
+        if (threadData) {
+          const paging = getObject(threadData.paging);
+          return getNumber(paging.total) ?? (Array.isArray(threadData.messages) ? threadData.messages.length : 0);
+        }
+      }
+    } catch { /* ignore */ }
+  }
+
+  return 0;
+}
 
 /**
  * GET /api/integrations/mercadolivre/claims/affecting-reputation?ml_user_id=XYZ
@@ -173,14 +247,20 @@ export async function GET(request: NextRequest) {
 
             if (affectsReputation === "affected") {
               const resolution = getObject(claim.resolution);
+              const resource = getString(claim.resource);
+              const resourceId = getNumber(claim.resource_id) ?? getString(claim.resource_id);
+
+              // Fetch message count
+              const msgCount = await getMessageCount(claimId, resource, resourceId, mlUserId, accessToken);
+
               return {
                 id: claimId,
-                resource_id: getNumber(claim.resource_id) ?? getString(claim.resource_id),
+                resource_id: resourceId,
                 status: getString(claim.status) ?? "",
                 type: getString(claim.type) ?? "",
                 stage: getString(claim.stage) ?? "",
                 reason_id: getString(claim.reason_id),
-                resource: getString(claim.resource),
+                resource: resource,
                 date_created: getString(claim.date_created) ?? "",
                 last_updated: getString(claim.last_updated) ?? "",
                 resolution_reason: getString(resolution.reason),
@@ -188,6 +268,7 @@ export async function GET(request: NextRequest) {
                 affects_reputation: affectsReputation,
                 has_incentive: repData.has_incentive === true,
                 due_date: getString(repData.due_date),
+                message_count: msgCount,
               } as AffectingClaim;
             }
             return null;
