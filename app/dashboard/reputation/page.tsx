@@ -1350,7 +1350,7 @@ export default function ReputationPage() {
         </div>
 
         {/* ═══════ RECLAMAÇÕES QUE IMPACTAM A REPUTAÇÃO ═══════ */}
-        <Card className="bg-white/5 border border-white/10">
+        <Card className="bg-[#18181b] border border-[#27272a] shadow-lg">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-lg font-semibold text-white">Reclamações que Impactam a Reputação</h3>
@@ -1396,7 +1396,7 @@ export default function ReputationPage() {
                 <button
                   type="button"
                   key={claim.id}
-                  className="w-full text-left p-4 rounded-xl bg-red-500/5 border border-red-500/20 hover:bg-red-500/10 transition-all group"
+                  className="w-full text-left p-4 rounded-xl bg-[#202022] border border-red-900/50 hover:bg-[#2a2a2d] transition-all group shadow-sm"
                   onClick={() => loadClaimMessages(claim)}
                 >
                   <div className="flex items-center justify-between gap-3 mb-2">
