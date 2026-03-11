@@ -3,186 +3,15 @@ import jwt from "jsonwebtoken";
 import { query } from "@/lib/db";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-this";
-const ML_APP_ID = process.env.MERCADO_LIVRE_APP_ID;
-const ML_SECRET_KEY = process.env.MERCADO_LIVRE_SECRET_KEY;
 
 type JwtPayload = { userId: string };
-type CredentialRow = {
-  access_token: string;
-  refresh_token: string;
-  expires_at: string;
-  ml_user_id: string | number;
-};
-
-function getNumber(v: unknown): number | null {
-  if (typeof v === "number" && Number.isFinite(v)) return v;
-  if (typeof v === "string" && v.trim() !== "") {
-    const p = Number(v);
-    return Number.isFinite(p) ? p : null;
-  }
-  return null;
-}
-function getString(v: unknown): string | null {
-  return typeof v === "string" ? v : null;
-}
-function getObject(v: unknown): Record<string, unknown> {
-  return typeof v === "object" && v !== null ? (v as Record<string, unknown>) : {};
-}
-
-async function fetchMlJson(url: string, accessToken: string): Promise<unknown> {
-  const response = await fetch(url, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`ML ${response.status}: ${body}`);
-  }
-  return response.json();
-}
-
-async function fetchMlJsonSafe(url: string, accessToken: string): Promise<Record<string, unknown> | null> {
-  try {
-    const response = await fetch(url, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    if (!response.ok) return null;
-    return (await response.json()) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-}
-
-async function refreshAccessToken(refreshToken: string) {
-  const response = await fetch("https://api.mercadolibre.com/oauth/token", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Accept: "application/json",
-    },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      client_id: ML_APP_ID!,
-      client_secret: ML_SECRET_KEY!,
-      refresh_token: refreshToken,
-    }),
-  });
-  if (!response.ok) throw new Error("Falha ao atualizar token");
-  return response.json();
-}
-
-async function getValidCredential(userId: string, mlUserId: string): Promise<CredentialRow> {
-  const result = await query(
-    "SELECT access_token, refresh_token, expires_at, ml_user_id FROM mercado_livre_credentials WHERE user_id = $1 AND ml_user_id = $2 LIMIT 1",
-    [userId, mlUserId]
-  );
-  if (result.rows.length === 0) throw new Error("Conta nao conectada");
-
-  const credential = result.rows[0] as CredentialRow;
-  const expirationDate = new Date(credential.expires_at);
-  const now = new Date();
-  if (now.getTime() + 300_000 <= expirationDate.getTime()) return credential;
-
-  const refreshed = await refreshAccessToken(credential.refresh_token);
-  const newAccessToken = getString((refreshed as Record<string, unknown>).access_token);
-  const newRefreshToken =
-    getString((refreshed as Record<string, unknown>).refresh_token) || credential.refresh_token;
-  const expiresIn = getNumber((refreshed as Record<string, unknown>).expires_in) || 0;
-  if (!newAccessToken) throw new Error("Falha ao atualizar token de acesso");
-
-  const newExpiresAt = new Date();
-  newExpiresAt.setSeconds(newExpiresAt.getSeconds() + expiresIn);
-  await query(
-    `UPDATE mercado_livre_credentials SET access_token = $1, refresh_token = $2, expires_at = $3, updated_at = NOW() WHERE user_id = $4 AND ml_user_id = $5`,
-    [newAccessToken, newRefreshToken, newExpiresAt.toISOString(), userId, mlUserId]
-  );
-  return { ...credential, access_token: newAccessToken, refresh_token: newRefreshToken, expires_at: newExpiresAt.toISOString() };
-}
-
-// ── Normalized Claim type for the frontend ──
-type AffectingClaim = {
-  id: number;
-  resource_id: number | string | null;
-  status: string;
-  type: string;
-  stage: string;
-  reason_id: string | null;
-  resource: string | null;
-  date_created: string;
-  last_updated: string;
-  resolution_reason: string | null;
-  resolution_closed_by: string | null;
-  affects_reputation: string;
-  has_incentive: boolean;
-  due_date: string | null;
-  message_count: number;
-};
-
-async function getMessageCount(
-  claimId: number,
-  resource: string | null,
-  resourceId: number | string | null,
-  mlUserId: string,
-  accessToken: string
-): Promise<number> {
-  // 1. Try claim-level messages
-  try {
-    const data = await fetchMlJsonSafe(
-      `https://api.mercadolibre.com/post-purchase/v1/claims/${claimId}/messages?limit=1&offset=0`,
-      accessToken
-    );
-    if (data) {
-      const paging = getObject(data.paging);
-      const total = getNumber(paging.total) ?? 0;
-      const dataArr = Array.isArray(data.data) ? data.data : [];
-      const msgsArr = Array.isArray(data.messages) ? data.messages : [];
-      const count = total || dataArr.length || msgsArr.length;
-      if (count > 0) return count;
-    }
-  } catch { /* ignore */ }
-
-  // 2. Fallback: resolve pack via shipment/order and check pack messages
-  if (resource === "shipment" && resourceId) {
-    try {
-      const shipment = await fetchMlJsonSafe(`https://api.mercadolibre.com/shipments/${resourceId}`, accessToken);
-      if (shipment) {
-        const packId = getString(shipment.pack_id) || String(getNumber(shipment.order_id) ?? "");
-        if (packId) {
-          const threadData = await fetchMlJsonSafe(
-            `https://api.mercadolibre.com/messages/packs/${packId}/sellers/${mlUserId}?tag=post_sale&limit=1&offset=0`,
-            accessToken
-          );
-          if (threadData) {
-            const paging = getObject(threadData.paging);
-            return getNumber(paging.total) ?? (Array.isArray(threadData.messages) ? threadData.messages.length : 0);
-          }
-        }
-      }
-    } catch { /* ignore */ }
-  } else if (resource === "order" && resourceId) {
-    try {
-      const order = await fetchMlJsonSafe(`https://api.mercadolibre.com/orders/${resourceId}`, accessToken);
-      if (order) {
-        const packId = getString(order.pack_id) || String(resourceId);
-        const threadData = await fetchMlJsonSafe(
-          `https://api.mercadolibre.com/messages/packs/${packId}/sellers/${mlUserId}?tag=post_sale&limit=1&offset=0`,
-          accessToken
-        );
-        if (threadData) {
-          const paging = getObject(threadData.paging);
-          return getNumber(paging.total) ?? (Array.isArray(threadData.messages) ? threadData.messages.length : 0);
-        }
-      }
-    } catch { /* ignore */ }
-  }
-
-  return 0;
-}
 
 /**
- * GET /api/integrations/mercadolivre/claims/affecting-reputation?ml_user_id=XYZ
+ * GET /api/integrations/mercadolivre/claims/affecting-reputation?ml_user_id=XYZ&page=1&limit=20
  *
- * Fetches ALL claims from the last 60 days, checks each one via the
- * /affects-reputation endpoint, and returns only those that are "affected".
+ * Reads from the LOCAL database (mercado_livre_claims table).
+ * Returns paginated claims where affects_reputation = 'affected'.
+ * Instant response — no ML API calls.
  */
 export async function GET(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
@@ -194,101 +23,85 @@ export async function GET(request: NextRequest) {
     const mlUserId = searchParams.get("ml_user_id");
     if (!mlUserId) return NextResponse.json({ error: "ml_user_id obrigatorio" }, { status: 400 });
 
-    const credential = await getValidCredential(decoded.userId, mlUserId);
-    const accessToken = credential.access_token;
+    const page = Math.max(Number(searchParams.get("page") || 1), 1);
+    const limit = Math.min(Math.max(Number(searchParams.get("limit") || 20), 1), 100);
+    const offset = (page - 1) * limit;
 
-    // 1. Fetch all recent claims with pagination
-    const pageLimit = 50;
-    const maxClaims = 500;
-    type RawClaim = Record<string, unknown>;
-    const allClaims: RawClaim[] = [];
-    let offset = 0;
-
-    while (true) {
-      const claimsData = (await fetchMlJson(
-        `https://api.mercadolibre.com/post-purchase/v1/claims/search?player_role=respondent&player_user_id=${mlUserId}&sort=last_updated:desc&limit=${pageLimit}&offset=${offset}`,
-        accessToken
-      )) as Record<string, unknown>;
-
-      const rows = Array.isArray(claimsData?.data) ? claimsData.data : [];
-      const total = Number((getObject(claimsData?.paging) as Record<string, unknown>)?.total ?? rows.length);
-
-      for (const row of rows) {
-        if (allClaims.length >= maxClaims) break;
-        allClaims.push(getObject(row));
-      }
-
-      const currentLimit = Number((getObject(claimsData?.paging) as Record<string, unknown>)?.limit ?? pageLimit);
-      const currentOffset = Number((getObject(claimsData?.paging) as Record<string, unknown>)?.offset ?? offset);
-      const nextOffset = currentOffset + currentLimit;
-
-      if (rows.length === 0 || nextOffset >= total || allClaims.length >= maxClaims) break;
-      offset = nextOffset;
+    // Check if table exists (graceful handling before first sync)
+    try {
+      await query("SELECT 1 FROM mercado_livre_claims LIMIT 0");
+    } catch {
+      // Table doesn't exist yet — return empty result
+      return NextResponse.json({
+        total_claims_checked: 0,
+        affecting_count: 0,
+        claims: [],
+        page,
+        limit,
+        total_pages: 0,
+        last_sync: null,
+      });
     }
 
-    // 2. For each claim, check affects-reputation in parallel batches of 10
-    const batchSize = 10;
-    const affectingClaims: AffectingClaim[] = [];
+    // Count total affected
+    const countResult = await query(
+      "SELECT COUNT(*) as total FROM mercado_livre_claims WHERE user_id = $1 AND ml_user_id = $2 AND affects_reputation = 'affected'",
+      [decoded.userId, mlUserId]
+    );
+    const affectingCount = Number(countResult.rows[0]?.total ?? 0);
 
-    for (let i = 0; i < allClaims.length; i += batchSize) {
-      const batch = allClaims.slice(i, i + batchSize);
-      const results = await Promise.allSettled(
-        batch.map(async (claim) => {
-          const claimId = getNumber(claim.id);
-          if (!claimId) return null;
+    // Count total claims for this user
+    const totalResult = await query(
+      "SELECT COUNT(*) as total FROM mercado_livre_claims WHERE user_id = $1 AND ml_user_id = $2",
+      [decoded.userId, mlUserId]
+    );
+    const totalChecked = Number(totalResult.rows[0]?.total ?? 0);
 
-          try {
-            const repData = (await fetchMlJson(
-              `https://api.mercadolibre.com/post-purchase/v1/claims/${claimId}/affects-reputation`,
-              accessToken
-            )) as Record<string, unknown>;
+    // Fetch paginated affected claims
+    const claimsResult = await query(
+      `SELECT id, resource_id, status, type, stage, reason_id, resource, 
+              date_created, last_updated, resolution_reason, resolution_closed_by,
+              affects_reputation, has_incentive, due_date, message_count, synced_at
+       FROM mercado_livre_claims 
+       WHERE user_id = $1 AND ml_user_id = $2 AND affects_reputation = 'affected'
+       ORDER BY date_created DESC
+       LIMIT $3 OFFSET $4`,
+      [decoded.userId, mlUserId, limit, offset]
+    );
 
-            const affectsReputation = getString(repData.affects_reputation) ?? "unknown";
+    // Get last sync time
+    const syncResult = await query(
+      "SELECT MAX(synced_at) as last_sync FROM mercado_livre_claims WHERE user_id = $1 AND ml_user_id = $2",
+      [decoded.userId, mlUserId]
+    );
+    const lastSync = syncResult.rows[0]?.last_sync ?? null;
 
-            if (affectsReputation === "affected") {
-              const resolution = getObject(claim.resolution);
-              const resource = getString(claim.resource);
-              const resourceId = getNumber(claim.resource_id) ?? getString(claim.resource_id);
-
-              // Fetch message count
-              const msgCount = await getMessageCount(claimId, resource, resourceId, mlUserId, accessToken);
-
-              return {
-                id: claimId,
-                resource_id: resourceId,
-                status: getString(claim.status) ?? "",
-                type: getString(claim.type) ?? "",
-                stage: getString(claim.stage) ?? "",
-                reason_id: getString(claim.reason_id),
-                resource: resource,
-                date_created: getString(claim.date_created) ?? "",
-                last_updated: getString(claim.last_updated) ?? "",
-                resolution_reason: getString(resolution.reason),
-                resolution_closed_by: getString(resolution.closed_by),
-                affects_reputation: affectsReputation,
-                has_incentive: repData.has_incentive === true,
-                due_date: getString(repData.due_date),
-                message_count: msgCount,
-              } as AffectingClaim;
-            }
-            return null;
-          } catch {
-            return null;
-          }
-        })
-      );
-
-      for (const result of results) {
-        if (result.status === "fulfilled" && result.value) {
-          affectingClaims.push(result.value);
-        }
-      }
-    }
+    const totalPages = Math.ceil(affectingCount / limit);
 
     return NextResponse.json({
-      total_claims_checked: allClaims.length,
-      affecting_count: affectingClaims.length,
-      claims: affectingClaims,
+      total_claims_checked: totalChecked,
+      affecting_count: affectingCount,
+      claims: claimsResult.rows.map((row: Record<string, unknown>) => ({
+        id: Number(row.id),
+        resource_id: row.resource_id,
+        status: row.status,
+        type: row.type,
+        stage: row.stage,
+        reason_id: row.reason_id,
+        resource: row.resource,
+        date_created: row.date_created,
+        last_updated: row.last_updated,
+        resolution_reason: row.resolution_reason,
+        resolution_closed_by: row.resolution_closed_by,
+        affects_reputation: row.affects_reputation,
+        has_incentive: row.has_incentive,
+        due_date: row.due_date,
+        message_count: Number(row.message_count ?? 0),
+      })),
+      page,
+      limit,
+      total_pages: totalPages,
+      last_sync: lastSync,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Erro interno";

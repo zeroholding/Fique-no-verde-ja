@@ -255,6 +255,12 @@ export default function ReputationPage() {
   const [affectingClaims, setAffectingClaims] = useState<AffectingClaim[]>([]);
   const [affectingLoading, setAffectingLoading] = useState(false);
   const [affectingTotalChecked, setAffectingTotalChecked] = useState(0);
+  const [affectingCount, setAffectingCount] = useState(0);
+  const [affectingPage, setAffectingPage] = useState(1);
+  const [affectingTotalPages, setAffectingTotalPages] = useState(0);
+  const [affectingLastSync, setAffectingLastSync] = useState<string | null>(null);
+  const [syncRunning, setSyncRunning] = useState(false);
+  const AFFECTING_PAGE_SIZE = 20;
 
   // [NEW] Claim messages modal
   const [selectedClaimForMessages, setSelectedClaimForMessages] = useState<AffectingClaim | null>(null);
@@ -338,32 +344,56 @@ export default function ReputationPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAccount]);
 
-  // [NEW] Fetch claims affecting reputation (async, non-blocking)
+  // [NEW] Fetch claims affecting reputation from LOCAL DB (instant)
+  const fetchAffectingPage = async (page: number = 1) => {
+    if (selectedAccount === null) return;
+    setAffectingLoading(true);
+    try {
+      const response = await fetch(`/api/integrations/mercadolivre/claims/affecting-reputation?ml_user_id=${selectedAccount}&page=${page}&limit=${AFFECTING_PAGE_SIZE}`);
+      if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.error || "Erro ao buscar reclamacoes");
+      }
+      const result = await response.json();
+      setAffectingClaims(result.claims || []);
+      setAffectingTotalChecked(result.total_claims_checked || 0);
+      setAffectingCount(result.affecting_count || 0);
+      setAffectingPage(result.page || 1);
+      setAffectingTotalPages(result.total_pages || 0);
+      setAffectingLastSync(result.last_sync || null);
+    } catch (err: unknown) {
+      console.error("Erro ao buscar claims afetando reputacao:", err);
+    } finally {
+      setAffectingLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (selectedAccount === null) return;
-
-    const fetchAffecting = async () => {
-      setAffectingLoading(true);
-      setAffectingClaims([]);
-      setAffectingTotalChecked(0);
-      try {
-        const response = await fetch(`/api/integrations/mercadolivre/claims/affecting-reputation?ml_user_id=${selectedAccount}`);
-        if (!response.ok) {
-          const result = await response.json();
-          throw new Error(result.error || "Erro ao buscar reclamacoes");
-        }
-        const result = await response.json();
-        setAffectingClaims(result.claims || []);
-        setAffectingTotalChecked(result.total_claims_checked || 0);
-      } catch (err: unknown) {
-        console.error("Erro ao buscar claims afetando reputacao:", err);
-      } finally {
-        setAffectingLoading(false);
-      }
-    };
-
-    fetchAffecting();
+    fetchAffectingPage(1);
   }, [selectedAccount]);
+
+  // Sync trigger (calls the heavy ML sync)
+  const triggerSync = async () => {
+    if (selectedAccount === null || syncRunning) return;
+    setSyncRunning(true);
+    try {
+      const response = await fetch(`/api/integrations/mercadolivre/claims/sync?ml_user_id=${selectedAccount}`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.error || "Erro ao sincronizar");
+      }
+      // Refresh the page after sync
+      await fetchAffectingPage(1);
+    } catch (err: unknown) {
+      console.error("Erro no sync:", err);
+      error(err instanceof Error ? err.message : "Erro ao sincronizar reclamações");
+    } finally {
+      setSyncRunning(false);
+    }
+  };
 
   const loadClaimMessages = async (claim: AffectingClaim) => {
     if (!selectedAccount) return;
@@ -1354,21 +1384,38 @@ export default function ReputationPage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-lg font-semibold text-white">Reclamações que Impactam a Reputação</h3>
-              <p className="text-xs text-gray-400 mt-1">Vendas dos últimos 60 dias com reclamações que afetam negativamente o termômetro</p>
+              <p className="text-xs text-gray-400 mt-1">
+                Vendas dos últimos 60 dias com reclamações que afetam negativamente o termômetro
+                {affectingLastSync && (
+                  <span className="ml-2 text-gray-500">
+                    (Última sincronização: {formatDateTime(affectingLastSync)})
+                  </span>
+                )}
+              </p>
             </div>
             <div className="flex items-center gap-3">
-              {affectingLoading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin"></div>
-                  <span className="text-xs text-gray-400">Analisando {affectingTotalChecked > 0 ? `${affectingTotalChecked} claims` : '...'}...</span>
-                </div>
-              ) : (
+              <button
+                type="button"
+                onClick={triggerSync}
+                disabled={syncRunning || affectingLoading}
+                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-all ${
+                  syncRunning
+                    ? 'bg-blue-500/10 text-blue-300 border-blue-500/30 cursor-wait'
+                    : 'bg-blue-500/10 text-blue-300 border-blue-500/20 hover:bg-blue-500/20 hover:border-blue-500/40'
+                }`}
+              >
+                <svg className={`w-3.5 h-3.5 ${syncRunning ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                {syncRunning ? 'Sincronizando...' : 'Sincronizar'}
+              </button>
+              {!affectingLoading && (
                 <span className={`text-xs px-2 py-1 rounded border ${
-                  affectingClaims.length > 0
+                  affectingCount > 0
                     ? 'bg-red-500/10 text-red-300 border-red-500/20'
                     : 'bg-green-500/10 text-green-300 border-green-500/20'
                 }`}>
-                  {affectingClaims.length} de {affectingTotalChecked} afetam
+                  {affectingCount} de {affectingTotalChecked} afetam
                 </span>
               )}
             </div>
@@ -1463,6 +1510,33 @@ export default function ReputationPage() {
                 </button>
               ))}
             </div>
+
+            {/* ── PAGINATION ── */}
+            {affectingTotalPages > 1 && (
+              <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#27272a]">
+                <p className="text-xs text-gray-400">
+                  Página {affectingPage} de {affectingTotalPages} ({affectingCount} reclamações)
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fetchAffectingPage(affectingPage - 1)}
+                    disabled={affectingPage <= 1 || affectingLoading}
+                    className="text-xs px-3 py-1 rounded border border-[#3f3f46] bg-[#27272a] text-gray-300 hover:bg-[#3f3f46] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  >
+                    ← Anterior
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fetchAffectingPage(affectingPage + 1)}
+                    disabled={affectingPage >= affectingTotalPages || affectingLoading}
+                    className="text-xs px-3 py-1 rounded border border-[#3f3f46] bg-[#27272a] text-gray-300 hover:bg-[#3f3f46] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  >
+                    Próxima →
+                  </button>
+                </div>
+              </div>
+            )}
           )}
         </Card>
 
