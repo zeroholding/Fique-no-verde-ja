@@ -105,6 +105,7 @@ async function ensureTable() {
       type VARCHAR(50),
       stage VARCHAR(50),
       reason_id VARCHAR(50),
+      reason_description TEXT,
       resource VARCHAR(50),
       date_created VARCHAR(50),
       last_updated VARCHAR(50),
@@ -121,6 +122,10 @@ async function ensureTable() {
     CREATE INDEX IF NOT EXISTS idx_ml_claims_user_ml
     ON mercado_livre_claims (user_id, ml_user_id, affects_reputation);
   `);
+  // Add reason_description column if missing (for existing tables)
+  try {
+    await query(`ALTER TABLE mercado_livre_claims ADD COLUMN IF NOT EXISTS reason_description TEXT`);
+  } catch { /* column already exists */ }
 }
 
 // ── Get message count (claim-level first, then pack fallback) ──
@@ -287,6 +292,7 @@ export async function POST(request: NextRequest) {
           let affectsReputation = "unknown";
           let hasIncentive = false;
           let dueDate: string | null = null;
+          let reasonDescription: string | null = null;
 
           try {
             const repData = await fetchMlJsonSafe(
@@ -297,6 +303,21 @@ export async function POST(request: NextRequest) {
               affectsReputation = getString(repData.affects_reputation) ?? "unknown";
               hasIncentive = repData.has_incentive === true;
               dueDate = getString(repData.due_date);
+            }
+          } catch { /* ignore */ }
+
+          // Fetch claim detail to get reason_description
+          try {
+            const claimDetail = await fetchMlJsonSafe(
+              `https://api.mercadolibre.com/post-purchase/v1/claims/${claimId}`,
+              accessToken
+            );
+            if (claimDetail) {
+              // ML returns reason_detail.description or just check for common fields
+              const reasonDetail = getObject(claimDetail.reason_detail);
+              reasonDescription = getString(reasonDetail.description)
+                || getString(claimDetail.reason_description)
+                || null;
             }
           } catch { /* ignore */ }
 
@@ -316,14 +337,15 @@ export async function POST(request: NextRequest) {
           try {
             await query(
               `INSERT INTO mercado_livre_claims (
-                id, user_id, ml_user_id, resource_id, status, type, stage, reason_id,
+                id, user_id, ml_user_id, resource_id, status, type, stage, reason_id, reason_description,
                 resource, date_created, last_updated, resolution_reason, resolution_closed_by,
                 affects_reputation, has_incentive, due_date, message_count, synced_at
-              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,NOW())
+              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,NOW())
               ON CONFLICT (id) DO UPDATE SET
                 status = EXCLUDED.status,
                 stage = EXCLUDED.stage,
                 last_updated = EXCLUDED.last_updated,
+                reason_description = EXCLUDED.reason_description,
                 resolution_reason = EXCLUDED.resolution_reason,
                 resolution_closed_by = EXCLUDED.resolution_closed_by,
                 affects_reputation = EXCLUDED.affects_reputation,
@@ -341,6 +363,7 @@ export async function POST(request: NextRequest) {
                 getString(claim.type) ?? "",
                 getString(claim.stage) ?? "",
                 getString(claim.reason_id),
+                reasonDescription,
                 resource,
                 getString(claim.date_created) ?? "",
                 claimLastUpdated,

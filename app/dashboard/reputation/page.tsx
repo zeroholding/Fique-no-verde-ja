@@ -187,6 +187,7 @@ type AffectingClaim = {
   type: string;
   stage: string;
   reason_id: string | null;
+  reason_description?: string | null;
   resource: string | null;
   date_created: string;
   last_updated: string;
@@ -1303,118 +1304,7 @@ export default function ReputationPage() {
             </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="bg-white/5 border border-white/10">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">Reclamacoes</h3>
-              <span className="text-xs px-2 py-1 rounded bg-red-500/10 text-red-300 border border-red-500/20">
-                Abertas: {supportClaimsOpenedCount}
-              </span>
-            </div>
 
-            {supportClaimsOpened.length === 0 && supportClaimsRecentOnly.length === 0 ? (
-              <p className="text-sm text-gray-400">Nenhuma reclamacao retornada pela API.</p>
-            ) : (
-              <div className="space-y-3 max-h-[420px] overflow-auto pr-1">
-                {supportClaimsOpened.map((claim) => (
-                  <button
-                    type="button"
-                    key={claim.id}
-                    className="w-full text-left p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/20 hover:bg-yellow-500/10 transition-colors"
-                    onClick={() => handleOpenClaim(claim)}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm text-white font-medium">#{claim.id}</p>
-                      <span className="text-[11px] px-2 py-0.5 rounded border bg-yellow-500/10 text-yellow-300 border-yellow-500/30">
-                        aberta
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-400 mt-1">
-                      {translate(claim.type, claimTypeLabels)} - {translate(claim.stage, claimStageLabels)} -{" "}
-                      {translate(claim.resource, claimResourceLabels)}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Motivo: {claim.reason_id || "-"} - Atualizado: {formatDateTime(claim.last_updated)}
-                    </p>
-                  </button>
-                ))}
-
-                {supportClaimsRecentOnly.map((claim) => (
-                  <button
-                    type="button"
-                    key={claim.id}
-                    className="w-full text-left p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
-                    onClick={() => handleOpenClaim(claim)}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm text-white font-medium">#{claim.id}</p>
-                      <span
-                        className={`text-[11px] px-2 py-0.5 rounded border ${
-                          claim.status === "opened"
-                            ? "bg-yellow-500/10 text-yellow-300 border-yellow-500/30"
-                            : "bg-gray-500/10 text-gray-300 border-gray-500/30"
-                        }`}
-                      >
-                        {translate(claim.status, claimStatusLabels)}
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-400 mt-1">
-                      {translate(claim.type, claimTypeLabels)} - {translate(claim.stage, claimStageLabels)} -{" "}
-                      {translate(claim.resource, claimResourceLabels)}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Motivo: {claim.reason_id || "-"} - Atualizado: {formatDateTime(claim.last_updated)}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            )}
-          </Card>
-
-          <Card className="bg-white/5 border border-white/10">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">Mensagens Pos-venda</h3>
-              <span className="text-xs px-2 py-1 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">
-                Nao lidas: {supportUnreadTotal}
-              </span>
-            </div>
-
-            {supportThreads.length === 0 ? (
-              <p className="text-sm text-gray-400">Nenhuma thread de mensagem retornada.</p>
-            ) : (
-              <div className="space-y-3 max-h-[420px] overflow-auto pr-1">
-                {supportThreads.map((thread) => (
-                  <button
-                    type="button"
-                    key={thread.path}
-                    className="w-full text-left p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
-                    onClick={() => handleOpenThread(thread)}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm text-white font-medium">
-                        Pack: {thread.pack_id || "-"}
-                      </p>
-                      <span className="text-[11px] px-2 py-0.5 rounded border bg-blue-500/10 text-blue-300 border-blue-500/30">
-                        {thread.unread_count} nao lidas
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-400 mt-1">
-                      Status: {translate(thread.status, threadStatusLabels)}{" "}
-                      {thread.substatus ? `(${translate(thread.substatus, threadSubstatusLabels)})` : ""}
-                    </p>
-                    <p className="text-xs text-gray-300 mt-1 line-clamp-2">
-                      {thread.last_message_text || "Sem texto de mensagem."}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Ultima: {formatDateTime(thread.last_message_date)} - Total: {thread.total_messages}
-                      {thread.claim_ids.length > 0 ? ` - Reclamacoes: ${thread.claim_ids.join(", ")}` : ""}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            )}
-          </Card>
-        </div>
 
         {/* ═══════ RECLAMAÇÕES QUE IMPACTAM A REPUTAÇÃO ═══════ */}
         <Card className="bg-[#18181b] border border-[#27272a] shadow-lg">
@@ -1613,7 +1503,11 @@ export default function ReputationPage() {
                       Etapa: <span className="text-gray-300">{translate(claim.stage, claimStageLabels)}</span>
                     </p>
                     <p className="text-gray-400">
-                      Motivo: <span className="text-gray-300">{claim.reason_id || '-'}</span>
+                      Motivo: <span className="text-gray-300">
+                        {claim.reason_description 
+                          ? `${claim.reason_description} (${claim.reason_id})` 
+                          : (claim.reason_id || '-')}
+                      </span>
                     </p>
                     <p className="text-gray-400">
                       Recurso: <span className="text-gray-300">{translate(claim.resource, claimResourceLabels)} / {String(claim.resource_id ?? '-')}</span>
