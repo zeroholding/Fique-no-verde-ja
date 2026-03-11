@@ -262,6 +262,21 @@ export default function ReputationPage() {
   const [syncRunning, setSyncRunning] = useState(false);
   const AFFECTING_PAGE_SIZE = 20;
 
+  // Filters
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterType, setFilterType] = useState('');
+  const [filterStage, setFilterStage] = useState('');
+  const [filterIncentive, setFilterIncentive] = useState('');
+  const [filterMessages, setFilterMessages] = useState('');
+  const [filterPeriod, setFilterPeriod] = useState('');
+  const [filterResolution, setFilterResolution] = useState('');
+  const [availableFilters, setAvailableFilters] = useState<{
+    statuses?: string[];
+    types?: string[];
+    stages?: string[];
+    resolutions?: string[];
+  }>({});
+
   // [NEW] Claim messages modal
   const [selectedClaimForMessages, setSelectedClaimForMessages] = useState<AffectingClaim | null>(null);
   const [claimMessages, setClaimMessages] = useState<ClaimMessage[]>([]);
@@ -345,11 +360,32 @@ export default function ReputationPage() {
   }, [selectedAccount]);
 
   // [NEW] Fetch claims affecting reputation from LOCAL DB (instant)
-  const fetchAffectingPage = async (page: number = 1) => {
+  const fetchAffectingPage = async (page: number = 1, filters?: {
+    status?: string; type?: string; stage?: string; incentive?: string;
+    messages?: string; period?: string; resolution?: string;
+  }) => {
     if (selectedAccount === null) return;
     setAffectingLoading(true);
     try {
-      const response = await fetch(`/api/integrations/mercadolivre/claims/affecting-reputation?ml_user_id=${selectedAccount}&page=${page}&limit=${AFFECTING_PAGE_SIZE}`);
+      const f = filters || {
+        status: filterStatus, type: filterType, stage: filterStage,
+        incentive: filterIncentive, messages: filterMessages,
+        period: filterPeriod, resolution: filterResolution,
+      };
+      const params = new URLSearchParams({
+        ml_user_id: String(selectedAccount),
+        page: String(page),
+        limit: String(AFFECTING_PAGE_SIZE),
+      });
+      if (f.status) params.set('status', f.status);
+      if (f.type) params.set('type', f.type);
+      if (f.stage) params.set('stage', f.stage);
+      if (f.incentive) params.set('incentive', f.incentive);
+      if (f.messages) params.set('messages', f.messages);
+      if (f.period) params.set('period', f.period);
+      if (f.resolution) params.set('resolution', f.resolution);
+
+      const response = await fetch(`/api/integrations/mercadolivre/claims/affecting-reputation?${params.toString()}`);
       if (!response.ok) {
         const result = await response.json();
         throw new Error(result.error || "Erro ao buscar reclamacoes");
@@ -361,6 +397,7 @@ export default function ReputationPage() {
       setAffectingPage(result.page || 1);
       setAffectingTotalPages(result.total_pages || 0);
       setAffectingLastSync(result.last_sync || null);
+      if (result.available_filters) setAvailableFilters(result.available_filters);
     } catch (err: unknown) {
       console.error("Erro ao buscar claims afetando reputacao:", err);
     } finally {
@@ -1433,14 +1470,95 @@ export default function ReputationPage() {
               <div className="w-8 h-8 border-3 border-red-500/30 border-t-red-500 rounded-full animate-spin mx-auto mb-3"></div>
               <p className="text-sm text-gray-400">Carregando reclamações...</p>
             </div>
-          ) : affectingClaims.length === 0 ? (
+          ) : (
+            <>
+            {/* ── FILTROS ── */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 mb-4">
+              <select
+                value={filterStatus}
+                onChange={(e) => { setFilterStatus(e.target.value); fetchAffectingPage(1, { status: e.target.value, type: filterType, stage: filterStage, incentive: filterIncentive, messages: filterMessages, period: filterPeriod, resolution: filterResolution }); }}
+                className="text-xs bg-[#27272a] border border-[#3f3f46] text-gray-300 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500/50"
+              >
+                <option value="">Status: Todos</option>
+                {(availableFilters.statuses || []).map((s) => (
+                  <option key={String(s)} value={String(s)}>{translate(String(s), claimStatusLabels)}</option>
+                ))}
+              </select>
+
+              <select
+                value={filterType}
+                onChange={(e) => { setFilterType(e.target.value); fetchAffectingPage(1, { status: filterStatus, type: e.target.value, stage: filterStage, incentive: filterIncentive, messages: filterMessages, period: filterPeriod, resolution: filterResolution }); }}
+                className="text-xs bg-[#27272a] border border-[#3f3f46] text-gray-300 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500/50"
+              >
+                <option value="">Tipo: Todos</option>
+                {(availableFilters.types || []).map((t) => (
+                  <option key={String(t)} value={String(t)}>{translate(String(t), claimTypeLabels)}</option>
+                ))}
+              </select>
+
+              <select
+                value={filterStage}
+                onChange={(e) => { setFilterStage(e.target.value); fetchAffectingPage(1, { status: filterStatus, type: filterType, stage: e.target.value, incentive: filterIncentive, messages: filterMessages, period: filterPeriod, resolution: filterResolution }); }}
+                className="text-xs bg-[#27272a] border border-[#3f3f46] text-gray-300 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500/50"
+              >
+                <option value="">Etapa: Todas</option>
+                {(availableFilters.stages || []).map((s) => (
+                  <option key={String(s)} value={String(s)}>{translate(String(s), claimStageLabels)}</option>
+                ))}
+              </select>
+
+              <select
+                value={filterIncentive}
+                onChange={(e) => { setFilterIncentive(e.target.value); fetchAffectingPage(1, { status: filterStatus, type: filterType, stage: filterStage, incentive: e.target.value, messages: filterMessages, period: filterPeriod, resolution: filterResolution }); }}
+                className="text-xs bg-[#27272a] border border-[#3f3f46] text-gray-300 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500/50"
+              >
+                <option value="">Incentivo: Todos</option>
+                <option value="true">Com incentivo</option>
+                <option value="false">Sem incentivo</option>
+              </select>
+
+              <select
+                value={filterMessages}
+                onChange={(e) => { setFilterMessages(e.target.value); fetchAffectingPage(1, { status: filterStatus, type: filterType, stage: filterStage, incentive: filterIncentive, messages: e.target.value, period: filterPeriod, resolution: filterResolution }); }}
+                className="text-xs bg-[#27272a] border border-[#3f3f46] text-gray-300 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500/50"
+              >
+                <option value="">Mensagens: Todas</option>
+                <option value="with">Com mensagens</option>
+                <option value="without">Sem mensagens</option>
+              </select>
+
+              <select
+                value={filterPeriod}
+                onChange={(e) => { setFilterPeriod(e.target.value); fetchAffectingPage(1, { status: filterStatus, type: filterType, stage: filterStage, incentive: filterIncentive, messages: filterMessages, period: e.target.value, resolution: filterResolution }); }}
+                className="text-xs bg-[#27272a] border border-[#3f3f46] text-gray-300 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500/50"
+              >
+                <option value="">Últ. 60 dias</option>
+                <option value="7">Últ. 7 dias</option>
+                <option value="15">Últ. 15 dias</option>
+                <option value="30">Últ. 30 dias</option>
+              </select>
+
+              <select
+                value={filterResolution}
+                onChange={(e) => { setFilterResolution(e.target.value); fetchAffectingPage(1, { status: filterStatus, type: filterType, stage: filterStage, incentive: filterIncentive, messages: filterMessages, period: filterPeriod, resolution: e.target.value }); }}
+                className="text-xs bg-[#27272a] border border-[#3f3f46] text-gray-300 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500/50"
+              >
+                <option value="">Resolução: Todas</option>
+                <option value="mediator">Mediador ML</option>
+                <option value="buyer">Comprador</option>
+                <option value="seller">Vendedor</option>
+                <option value="none">Sem resolução</option>
+              </select>
+            </div>
+
+            {affectingClaims.length === 0 ? (
             <div className="py-6 text-center">
               <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-green-500/10 flex items-center justify-center">
                 <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <p className="text-sm text-green-300 font-medium">Nenhuma reclamação impactando a reputação</p>
+              <p className="text-sm text-green-300 font-medium">Nenhuma reclamação encontrada com esses filtros</p>
               <p className="text-xs text-gray-500 mt-1">{affectingTotalChecked} reclamações verificadas nos últimos 60 dias</p>
             </div>
           ) : (
@@ -1462,6 +1580,11 @@ export default function ReputationPage() {
                       </div>
                       <p className="text-sm text-white font-medium">
                         Reclamação #{claim.id}
+                        {claim.resource_id && (
+                          <span className="ml-1 text-[11px] font-normal text-gray-400">
+                            (Pedido: {String(claim.resource_id)})
+                          </span>
+                        )}
                         <span className={`ml-2 text-[11px] font-normal ${claim.message_count > 0 ? 'text-blue-300' : 'text-gray-500'}`}>
                           ({claim.message_count} {claim.message_count === 1 ? 'mensagem' : 'mensagens'})
                         </span>
@@ -1545,6 +1668,8 @@ export default function ReputationPage() {
               </div>
             )}
             </>
+          )}
+          </>
           )}
         </Card>
 

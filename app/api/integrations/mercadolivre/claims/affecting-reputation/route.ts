@@ -7,11 +7,18 @@ const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-this";
 type JwtPayload = { userId: string };
 
 /**
- * GET /api/integrations/mercadolivre/claims/affecting-reputation?ml_user_id=XYZ&page=1&limit=20
+ * GET /api/integrations/mercadolivre/claims/affecting-reputation
  *
- * Reads from the LOCAL database (mercado_livre_claims table).
- * Returns paginated claims where affects_reputation = 'affected'.
- * Instant response — no ML API calls.
+ * Query params:
+ *   ml_user_id (required)
+ *   page, limit (pagination)
+ *   status     - "opened" | "closed" | "" (all)
+ *   type       - claim type filter
+ *   stage      - claim stage filter
+ *   incentive  - "true" | "false" | "" (all)
+ *   messages   - "with" | "without" | "" (all)
+ *   period     - "7" | "15" | "30" | "60" | "" (all)
+ *   resolution - "mediator" | "buyer" | "seller" | "none" | "" (all)
  */
 export async function GET(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
@@ -27,11 +34,19 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(Math.max(Number(searchParams.get("limit") || 20), 1), 100);
     const offset = (page - 1) * limit;
 
-    // Check if table exists (graceful handling before first sync)
+    // Filter params
+    const filterStatus = searchParams.get("status") || "";
+    const filterType = searchParams.get("type") || "";
+    const filterStage = searchParams.get("stage") || "";
+    const filterIncentive = searchParams.get("incentive") || "";
+    const filterMessages = searchParams.get("messages") || "";
+    const filterPeriod = searchParams.get("period") || "";
+    const filterResolution = searchParams.get("resolution") || "";
+
+    // Check if table exists
     try {
       await query("SELECT 1 FROM mercado_livre_claims LIMIT 0");
     } catch {
-      // Table doesn't exist yet — return empty result
       return NextResponse.json({
         total_claims_checked: 0,
         affecting_count: 0,
@@ -40,33 +55,93 @@ export async function GET(request: NextRequest) {
         limit,
         total_pages: 0,
         last_sync: null,
+        available_filters: {},
       });
     }
 
-    // Count total affected
+    // Build dynamic WHERE clause
+    const conditions: string[] = [
+      "user_id = $1",
+      "ml_user_id = $2",
+      "affects_reputation = 'affected'",
+    ];
+    const params: (string | number | boolean)[] = [decoded.userId, mlUserId];
+    let paramIndex = 3;
+
+    if (filterStatus) {
+      conditions.push(`status = $${paramIndex}`);
+      params.push(filterStatus);
+      paramIndex++;
+    }
+
+    if (filterType) {
+      conditions.push(`type = $${paramIndex}`);
+      params.push(filterType);
+      paramIndex++;
+    }
+
+    if (filterStage) {
+      conditions.push(`stage = $${paramIndex}`);
+      params.push(filterStage);
+      paramIndex++;
+    }
+
+    if (filterIncentive === "true") {
+      conditions.push("has_incentive = true");
+    } else if (filterIncentive === "false") {
+      conditions.push("has_incentive = false");
+    }
+
+    if (filterMessages === "with") {
+      conditions.push("message_count > 0");
+    } else if (filterMessages === "without") {
+      conditions.push("message_count = 0");
+    }
+
+    if (filterPeriod && ["7", "15", "30", "60"].includes(filterPeriod)) {
+      const daysAgo = new Date();
+      daysAgo.setDate(daysAgo.getDate() - Number(filterPeriod));
+      conditions.push(`date_created >= $${paramIndex}`);
+      params.push(daysAgo.toISOString());
+      paramIndex++;
+    }
+
+    if (filterResolution === "mediator") {
+      conditions.push("resolution_closed_by = 'mediator'");
+    } else if (filterResolution === "buyer") {
+      conditions.push("resolution_closed_by = 'complainant'");
+    } else if (filterResolution === "seller") {
+      conditions.push("resolution_closed_by = 'respondent'");
+    } else if (filterResolution === "none") {
+      conditions.push("(resolution_closed_by IS NULL OR resolution_closed_by = '')");
+    }
+
+    const whereClause = conditions.join(" AND ");
+
+    // Count total affected (with filters)
     const countResult = await query(
-      "SELECT COUNT(*) as total FROM mercado_livre_claims WHERE user_id = $1 AND ml_user_id = $2 AND affects_reputation = 'affected'",
-      [decoded.userId, mlUserId]
+      `SELECT COUNT(*) as total FROM mercado_livre_claims WHERE ${whereClause}`,
+      params
     );
     const affectingCount = Number(countResult.rows[0]?.total ?? 0);
 
-    // Count total claims for this user
+    // Count total claims for this user (no filters — overall stat)
     const totalResult = await query(
       "SELECT COUNT(*) as total FROM mercado_livre_claims WHERE user_id = $1 AND ml_user_id = $2",
       [decoded.userId, mlUserId]
     );
     const totalChecked = Number(totalResult.rows[0]?.total ?? 0);
 
-    // Fetch paginated affected claims
+    // Fetch paginated affected claims (with filters)
     const claimsResult = await query(
       `SELECT id, resource_id, status, type, stage, reason_id, resource, 
               date_created, last_updated, resolution_reason, resolution_closed_by,
               affects_reputation, has_incentive, due_date, message_count, synced_at
        FROM mercado_livre_claims 
-       WHERE user_id = $1 AND ml_user_id = $2 AND affects_reputation = 'affected'
+       WHERE ${whereClause}
        ORDER BY date_created DESC
-       LIMIT $3 OFFSET $4`,
-      [decoded.userId, mlUserId, limit, offset]
+       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+      [...params, limit, offset]
     );
 
     // Get last sync time
@@ -75,6 +150,26 @@ export async function GET(request: NextRequest) {
       [decoded.userId, mlUserId]
     );
     const lastSync = syncResult.rows[0]?.last_sync ?? null;
+
+    // Get available filter options (distinct values from DB)
+    const [statusOpts, typeOpts, stageOpts, resOpts] = await Promise.all([
+      query(
+        "SELECT DISTINCT status FROM mercado_livre_claims WHERE user_id = $1 AND ml_user_id = $2 AND affects_reputation = 'affected' AND status IS NOT NULL ORDER BY status",
+        [decoded.userId, mlUserId]
+      ),
+      query(
+        "SELECT DISTINCT type FROM mercado_livre_claims WHERE user_id = $1 AND ml_user_id = $2 AND affects_reputation = 'affected' AND type IS NOT NULL ORDER BY type",
+        [decoded.userId, mlUserId]
+      ),
+      query(
+        "SELECT DISTINCT stage FROM mercado_livre_claims WHERE user_id = $1 AND ml_user_id = $2 AND affects_reputation = 'affected' AND stage IS NOT NULL ORDER BY stage",
+        [decoded.userId, mlUserId]
+      ),
+      query(
+        "SELECT DISTINCT resolution_closed_by FROM mercado_livre_claims WHERE user_id = $1 AND ml_user_id = $2 AND affects_reputation = 'affected' AND resolution_closed_by IS NOT NULL AND resolution_closed_by != '' ORDER BY resolution_closed_by",
+        [decoded.userId, mlUserId]
+      ),
+    ]);
 
     const totalPages = Math.ceil(affectingCount / limit);
 
@@ -102,6 +197,12 @@ export async function GET(request: NextRequest) {
       limit,
       total_pages: totalPages,
       last_sync: lastSync,
+      available_filters: {
+        statuses: statusOpts.rows.map((r: Record<string, unknown>) => r.status),
+        types: typeOpts.rows.map((r: Record<string, unknown>) => r.type),
+        stages: stageOpts.rows.map((r: Record<string, unknown>) => r.stage),
+        resolutions: resOpts.rows.map((r: Record<string, unknown>) => r.resolution_closed_by),
+      },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Erro interno";
