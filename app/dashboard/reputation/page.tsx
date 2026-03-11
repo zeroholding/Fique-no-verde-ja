@@ -1421,13 +1421,14 @@ export default function ReputationPage() {
             </div>
           </div>
 
-          {syncRunning ? (
-            <div className="py-8 text-center">
-              <div className="w-8 h-8 border-3 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mx-auto mb-3"></div>
-              <p className="text-sm text-blue-300">Sincronizando reclamações com o Mercado Livre...</p>
-              <p className="text-xs text-gray-500 mt-1">Isso pode levar alguns minutos na primeira vez</p>
+          {syncRunning && (
+            <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+              <div className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+              <p className="text-xs text-blue-300">Sincronizando reclamações com o Mercado Livre... isso pode levar alguns minutos</p>
             </div>
-          ) : affectingLoading ? (
+          )}
+
+          {affectingLoading ? (
             <div className="py-8 text-center">
               <div className="w-8 h-8 border-3 border-red-500/30 border-t-red-500 rounded-full animate-spin mx-auto mb-3"></div>
               <p className="text-sm text-gray-400">Carregando reclamações...</p>
@@ -1579,27 +1580,32 @@ export default function ReputationPage() {
             <div className="space-y-3">
               <div className="max-h-[55vh] overflow-y-auto pr-1 space-y-2">
                 {claimMessages.map((message) => {
-                  const isSentBySeller =
-                    selectedAccount !== null && message.from_user_id === selectedAccount;
-                  const isMediator = message.sender_role === 'mediator';
+                  const role = message.sender_role;
+                  const isSeller = role === 'seller' || role === 'respondent';
+                  const isMediator = role === 'mediator';
+                  const isBuyer = !isSeller && !isMediator;
                   return (
                     <div
                       key={message.id}
-                      className={`flex ${isMediator ? 'justify-center' : isSentBySeller ? 'justify-end' : 'justify-start'}`}
+                      className={`flex ${isMediator ? 'justify-center' : isSeller ? 'justify-end' : 'justify-start'}`}
                     >
                       <div
                         className={`max-w-[80%] rounded-xl px-3 py-2 border ${
                           isMediator
                             ? 'bg-purple-500/10 border-purple-500/20'
-                            : isSentBySeller
-                            ? 'bg-blue-500/20 border-blue-500/30'
+                            : isSeller
+                            ? 'bg-emerald-500/15 border-emerald-500/30'
                             : 'bg-white/5 border-white/15'
                         }`}
                       >
-                        <p className="text-[11px] text-gray-400 mb-1">
-                          {isMediator ? '🔒 Mediador' : isSentBySeller ? 'Você (vendedor)' : 'Comprador'}
-                          {' — '}
-                          {formatDateTime(message.date_created)}
+                        <p className={`text-[11px] mb-1 font-medium ${
+                          isMediator ? 'text-purple-300' : isSeller ? 'text-emerald-300' : 'text-orange-300'
+                        }`}>
+                          {isMediator ? '🔒 Mediador (ML)' : isSeller ? '🏢 Vendedor (Você)' : '👤 Comprador'}
+                          <span className="text-gray-500 font-normal">
+                            {' — '}
+                            {formatDateTime(message.date_created)}
+                          </span>
                         </p>
                         <p className="text-sm text-white whitespace-pre-wrap">
                           {message.text || '(sem texto)'}
