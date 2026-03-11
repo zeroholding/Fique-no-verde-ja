@@ -1438,6 +1438,7 @@ export default function ReputationPage() {
               <p className="text-xs text-gray-500 mt-1">{affectingTotalChecked} reclamações verificadas nos últimos 60 dias</p>
             </div>
           ) : (
+            <>
             <div className="space-y-2 max-h-[500px] overflow-auto pr-1">
               {affectingClaims.map((claim) => (
                 <button
@@ -1537,6 +1538,7 @@ export default function ReputationPage() {
                 </div>
               </div>
             )}
+            </>
           )}
         </Card>
 
