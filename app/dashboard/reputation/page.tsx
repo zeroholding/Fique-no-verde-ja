@@ -1409,7 +1409,7 @@ export default function ReputationPage() {
                 </svg>
                 {syncRunning ? 'Sincronizando...' : 'Sincronizar'}
               </button>
-              {!affectingLoading && (
+              {!affectingLoading && !syncRunning && (
                 <span className={`text-xs px-2 py-1 rounded border ${
                   affectingCount > 0
                     ? 'bg-red-500/10 text-red-300 border-red-500/20'
@@ -1421,11 +1421,16 @@ export default function ReputationPage() {
             </div>
           </div>
 
-          {affectingLoading ? (
+          {syncRunning ? (
+            <div className="py-8 text-center">
+              <div className="w-8 h-8 border-3 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mx-auto mb-3"></div>
+              <p className="text-sm text-blue-300">Sincronizando reclamações com o Mercado Livre...</p>
+              <p className="text-xs text-gray-500 mt-1">Isso pode levar alguns minutos na primeira vez</p>
+            </div>
+          ) : affectingLoading ? (
             <div className="py-8 text-center">
               <div className="w-8 h-8 border-3 border-red-500/30 border-t-red-500 rounded-full animate-spin mx-auto mb-3"></div>
-              <p className="text-sm text-gray-400">Verificando cada reclamação individualmente...</p>
-              <p className="text-xs text-gray-500 mt-1">Isso pode levar alguns segundos</p>
+              <p className="text-sm text-gray-400">Carregando reclamações...</p>
             </div>
           ) : affectingClaims.length === 0 ? (
             <div className="py-6 text-center">

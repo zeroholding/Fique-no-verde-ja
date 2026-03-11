@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { query } from "@/lib/db";
 
+// Allow up to 5 minutes for the sync operation
+export const maxDuration = 300;
+export const dynamic = "force-dynamic";
+
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-this";
 const ML_APP_ID = process.env.MERCADO_LIVRE_APP_ID;
 const ML_SECRET_KEY = process.env.MERCADO_LIVRE_SECRET_KEY;
@@ -28,9 +32,13 @@ async function fetchMlJsonSafe(url: string, accessToken: string): Promise<Record
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.warn(`[ML-SYNC] API ${response.status} for ${url.substring(0, 100)}`);
+      return null;
+    }
     return (await response.json()) as Record<string, unknown>;
-  } catch {
+  } catch (err) {
+    console.warn(`[ML-SYNC] Fetch error for ${url.substring(0, 100)}:`, err);
     return null;
   }
 }
@@ -211,16 +219,23 @@ export async function POST(request: NextRequest) {
     const allClaims: RawClaim[] = [];
     let offset = 0;
 
+    console.log(`[ML-SYNC] Starting sync for ml_user_id=${mlUserId}, userId=${userId}`);
+
     while (true) {
       const claimsData = await fetchMlJsonSafe(
         `https://api.mercadolibre.com/post-purchase/v1/claims/search?player_role=respondent&player_user_id=${mlUserId}&sort=last_updated:desc&limit=${pageLimit}&offset=${offset}`,
         accessToken
       );
-      if (!claimsData) break;
+      if (!claimsData) {
+        console.warn(`[ML-SYNC] Failed to fetch claims page at offset=${offset}`);
+        break;
+      }
 
       const rows = Array.isArray(claimsData.data) ? claimsData.data : [];
       const paging = getObject(claimsData.paging);
       const total = getNumber(paging.total) ?? rows.length;
+
+      console.log(`[ML-SYNC] Page offset=${offset}: got ${rows.length} claims, total=${total}`);
 
       for (const row of rows) {
         allClaims.push(getObject(row));
@@ -233,6 +248,8 @@ export async function POST(request: NextRequest) {
       if (rows.length === 0 || nextOffset >= total) break;
       offset = nextOffset;
     }
+
+    console.log(`[ML-SYNC] Total claims fetched from ML: ${allClaims.length}`);
 
     // 2. Get existing claim IDs + last_updated from DB to skip unchanged
     const existingResult = await query(
@@ -296,48 +313,53 @@ export async function POST(request: NextRequest) {
           const resolution = getObject(claim.resolution);
 
           // Upsert
-          await query(
-            `INSERT INTO mercado_livre_claims (
-              id, user_id, ml_user_id, resource_id, status, type, stage, reason_id,
-              resource, date_created, last_updated, resolution_reason, resolution_closed_by,
-              affects_reputation, has_incentive, due_date, message_count, synced_at
-            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,NOW())
-            ON CONFLICT (id) DO UPDATE SET
-              status = EXCLUDED.status,
-              stage = EXCLUDED.stage,
-              last_updated = EXCLUDED.last_updated,
-              resolution_reason = EXCLUDED.resolution_reason,
-              resolution_closed_by = EXCLUDED.resolution_closed_by,
-              affects_reputation = EXCLUDED.affects_reputation,
-              has_incentive = EXCLUDED.has_incentive,
-              due_date = EXCLUDED.due_date,
-              message_count = EXCLUDED.message_count,
-              synced_at = NOW()
-            `,
-            [
-              claimId,
-              userId,
-              mlUserId,
-              String(resourceId ?? ""),
-              getString(claim.status) ?? "",
-              getString(claim.type) ?? "",
-              getString(claim.stage) ?? "",
-              getString(claim.reason_id),
-              resource,
-              getString(claim.date_created) ?? "",
-              claimLastUpdated,
-              getString(resolution.reason),
-              getString(resolution.closed_by),
-              affectsReputation,
-              hasIncentive,
-              dueDate,
-              messageCount,
-            ]
-          );
-
-          synced++;
+          try {
+            await query(
+              `INSERT INTO mercado_livre_claims (
+                id, user_id, ml_user_id, resource_id, status, type, stage, reason_id,
+                resource, date_created, last_updated, resolution_reason, resolution_closed_by,
+                affects_reputation, has_incentive, due_date, message_count, synced_at
+              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,NOW())
+              ON CONFLICT (id) DO UPDATE SET
+                status = EXCLUDED.status,
+                stage = EXCLUDED.stage,
+                last_updated = EXCLUDED.last_updated,
+                resolution_reason = EXCLUDED.resolution_reason,
+                resolution_closed_by = EXCLUDED.resolution_closed_by,
+                affects_reputation = EXCLUDED.affects_reputation,
+                has_incentive = EXCLUDED.has_incentive,
+                due_date = EXCLUDED.due_date,
+                message_count = EXCLUDED.message_count,
+                synced_at = NOW()
+              `,
+              [
+                claimId,
+                userId,
+                mlUserId,
+                String(resourceId ?? ""),
+                getString(claim.status) ?? "",
+                getString(claim.type) ?? "",
+                getString(claim.stage) ?? "",
+                getString(claim.reason_id),
+                resource,
+                getString(claim.date_created) ?? "",
+                claimLastUpdated,
+                getString(resolution.reason),
+                getString(resolution.closed_by),
+                affectsReputation,
+                hasIncentive,
+                dueDate,
+                messageCount,
+              ]
+            );
+            synced++;
+          } catch (dbErr) {
+            console.error(`[ML-SYNC] DB upsert failed for claim ${claimId}:`, dbErr);
+          }
         })
       );
+
+      console.log(`[ML-SYNC] Batch progress: ${Math.min(i + batchSize, allClaims.length)}/${allClaims.length} (synced=${synced}, skipped=${skipped}, affected=${affectedCount})`);
     }
 
     return NextResponse.json({
