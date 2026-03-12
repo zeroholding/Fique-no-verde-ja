@@ -188,6 +188,8 @@ type AffectingClaim = {
   stage: string;
   reason_id: string | null;
   reason_description?: string | null;
+  product_title?: string | null;
+  sale_date?: string | null;
   resource: string | null;
   date_created: string;
   last_updated: string;
@@ -1468,19 +1470,31 @@ export default function ReputationPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <p className="text-sm text-white font-medium">
-                        Reclamação #{claim.id}
-                        {claim.resource_id && (
-                          <span className="ml-1 text-[11px] font-normal text-gray-400">
-                            (Pedido: {String(claim.resource_id)})
+                      <div className="flex flex-col">
+                        <p className="text-sm text-white font-medium flex items-center gap-2">
+                          Reclamação #{claim.id}
+                          {claim.resource_id && (
+                            <span className="text-[11px] font-normal text-gray-400">
+                              (Pedido: {String(claim.resource_id)})
+                            </span>
+                          )}
+                          <span className={`text-[11px] font-normal ${claim.message_count > 0 ? 'text-blue-300' : 'text-gray-500'}`}>
+                            ({claim.message_count} {claim.message_count === 1 ? 'mensagem' : 'mensagens'})
                           </span>
+                        </p>
+                        {claim.product_title && (
+                          <p className="text-[12px] text-gray-300 mt-0.5 font-medium truncate max-w-[300px]" title={claim.product_title}>
+                            {claim.product_title}
+                          </p>
                         )}
-                        <span className={`ml-2 text-[11px] font-normal ${claim.message_count > 0 ? 'text-blue-300' : 'text-gray-500'}`}>
-                          ({claim.message_count} {claim.message_count === 1 ? 'mensagem' : 'mensagens'})
-                        </span>
-                      </p>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
+                      {(claim.type === 'mediacao' || claim.stage === 'dispute') && (
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/40 uppercase tracking-wide">
+                          ⚖️ Mediação ML
+                        </span>
+                      )}
                       {claim.has_incentive && (
                         <span className="text-[10px] px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-300 border border-yellow-500/30">
                           Incentivo ativo
@@ -1513,10 +1527,13 @@ export default function ReputationPage() {
                       Recurso: <span className="text-gray-300">{translate(claim.resource, claimResourceLabels)} / {String(claim.resource_id ?? '-')}</span>
                     </p>
                     <p className="text-gray-400">
-                      Criada: <span className="text-gray-300">{formatDateTime(claim.date_created)}</span>
+                      Data da Venda: <span className="text-gray-300">{claim.sale_date ? formatDateTime(claim.sale_date) : '-'}</span>
                     </p>
                     <p className="text-gray-400">
-                      Atualizada: <span className="text-gray-300">{formatDateTime(claim.last_updated)}</span>
+                      Criada (Sinc): <span className="text-gray-300">{formatDateTime(claim.date_created)}</span>
+                    </p>
+                    <p className="text-gray-400">
+                      Atualizada (Sinc): <span className="text-gray-300">{formatDateTime(claim.last_updated)}</span>
                     </p>
                     {claim.resolution_reason && (
                       <p className="text-gray-400 col-span-2">
@@ -1606,31 +1623,30 @@ export default function ReputationPage() {
                   return (
                     <div
                       key={message.id}
-                      className={`flex ${isMediator ? 'justify-center' : isSeller ? 'justify-end' : 'justify-start'}`}
+                      className={`flex ${isMediator ? 'justify-center w-full my-4' : isSeller ? 'justify-end' : 'justify-start'}`}
                     >
                       <div
-                        className={`max-w-[80%] rounded-xl px-3 py-2 border ${
+                        className={`max-w-[80%] rounded-xl px-4 py-3 border ${
                           isMediator
-                            ? 'bg-purple-500/10 border-purple-500/20'
+                            ? 'bg-purple-900/40 border-purple-500/60 shadow-[0_0_15px_rgba(168,85,247,0.2)]'
                             : isSeller
                             ? 'bg-emerald-500/15 border-emerald-500/30'
                             : 'bg-white/5 border-white/15'
                         }`}
                       >
-                        <p className={`text-[11px] mb-1 font-medium ${
-                          isMediator ? 'text-purple-300' : isSeller ? 'text-emerald-300' : 'text-orange-300'
+                        <p className={`text-[12px] mb-2 font-bold flex items-center gap-2 ${
+                          isMediator ? 'text-purple-300 uppercase tracking-wide' : isSeller ? 'text-emerald-300' : 'text-orange-300'
                         }`}>
-                          {isMediator ? '🔒 Mediador (ML)' : isSeller ? '🏢 Vendedor (Você)' : '👤 Comprador'}
-                          <span className="text-gray-500 font-normal">
-                            {' — '}
+                          {isMediator ? '🛡️ MERCADO LIVRE RESPONDEU' : isSeller ? '🏢 Vendedor (Você)' : '👤 Comprador'}
+                          <span className="text-gray-400 font-normal normal-case text-[11px]">
                             {formatDateTime(message.date_created)}
                           </span>
                         </p>
-                        <p className="text-sm text-white whitespace-pre-wrap">
+                        <p className={`whitespace-pre-wrap leading-relaxed ${isMediator ? 'text-white text-[15px]' : 'text-sm text-gray-200'}`}>
                           {message.text || '(sem texto)'}
                         </p>
                         {message.attachments.length > 0 && (
-                          <p className="text-[11px] text-gray-400 mt-1">
+                          <p className="text-[11px] text-gray-400 mt-2 flex items-center gap-1 bg-black/20 px-2 py-1 rounded inline-block">
                             📎 {message.attachments.length} anexo(s)
                           </p>
                         )}

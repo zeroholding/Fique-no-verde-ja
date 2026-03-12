@@ -106,6 +106,8 @@ async function ensureTable() {
       stage VARCHAR(50),
       reason_id VARCHAR(50),
       reason_description TEXT,
+      product_title TEXT,
+      sale_date VARCHAR(50),
       resource VARCHAR(50),
       date_created VARCHAR(50),
       last_updated VARCHAR(50),
@@ -122,10 +124,12 @@ async function ensureTable() {
     CREATE INDEX IF NOT EXISTS idx_ml_claims_user_ml
     ON mercado_livre_claims (user_id, ml_user_id, affects_reputation);
   `);
-  // Add reason_description column if missing (for existing tables)
+  // Add reason_description, product_title, sale_date columns if missing (for existing tables)
   try {
     await query(`ALTER TABLE mercado_livre_claims ADD COLUMN IF NOT EXISTS reason_description TEXT`);
-  } catch { /* column already exists */ }
+    await query(`ALTER TABLE mercado_livre_claims ADD COLUMN IF NOT EXISTS product_title TEXT`);
+    await query(`ALTER TABLE mercado_livre_claims ADD COLUMN IF NOT EXISTS sale_date VARCHAR(50)`);
+  } catch { /* columns already exist */ }
 }
 
 // ── Get message count (claim-level first, then pack fallback) ──
@@ -325,10 +329,32 @@ export async function POST(request: NextRequest) {
           let messageCount = 0;
           const resource = getString(claim.resource);
           const resourceId = getNumber(claim.resource_id) ?? getString(claim.resource_id);
+          
+          let productTitle: string | null = null;
+          let saleDate: string | null = null;
 
           if (affectsReputation === "affected") {
             affectedCount++;
             messageCount = await getMessageCount(claimId, resource, resourceId, mlUserId, accessToken);
+            
+            // Fetch order info
+            try {
+              let orderId = resourceId;
+              if (resource === "shipment" && resourceId) {
+                const shipment = await fetchMlJsonSafe(`https://api.mercadolibre.com/shipments/${resourceId}`, accessToken);
+                if (shipment) orderId = getNumber(shipment.order_id) || getString(shipment.order_id);
+              }
+              if (orderId) {
+                const order = await fetchMlJsonSafe(`https://api.mercadolibre.com/orders/${orderId}`, accessToken);
+                if (order) {
+                  saleDate = getString(order.date_created);
+                  const orderItems = Array.isArray(order.order_items) ? order.order_items : [];
+                  if (orderItems.length > 0) {
+                    productTitle = getString(getObject(orderItems[0].item).title);
+                  }
+                }
+              }
+            } catch { /* ignore */ }
           }
 
           const resolution = getObject(claim.resolution);
@@ -338,14 +364,17 @@ export async function POST(request: NextRequest) {
             await query(
               `INSERT INTO mercado_livre_claims (
                 id, user_id, ml_user_id, resource_id, status, type, stage, reason_id, reason_description,
+                product_title, sale_date,
                 resource, date_created, last_updated, resolution_reason, resolution_closed_by,
                 affects_reputation, has_incentive, due_date, message_count, synced_at
-              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,NOW())
+              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,NOW())
               ON CONFLICT (id) DO UPDATE SET
                 status = EXCLUDED.status,
                 stage = EXCLUDED.stage,
                 last_updated = EXCLUDED.last_updated,
                 reason_description = EXCLUDED.reason_description,
+                product_title = COALESCE(EXCLUDED.product_title, mercado_livre_claims.product_title),
+                sale_date = COALESCE(EXCLUDED.sale_date, mercado_livre_claims.sale_date),
                 resolution_reason = EXCLUDED.resolution_reason,
                 resolution_closed_by = EXCLUDED.resolution_closed_by,
                 affects_reputation = EXCLUDED.affects_reputation,
@@ -364,6 +393,8 @@ export async function POST(request: NextRequest) {
                 getString(claim.stage) ?? "",
                 getString(claim.reason_id),
                 reasonDescription,
+                productTitle,
+                saleDate,
                 resource,
                 getString(claim.date_created) ?? "",
                 claimLastUpdated,
