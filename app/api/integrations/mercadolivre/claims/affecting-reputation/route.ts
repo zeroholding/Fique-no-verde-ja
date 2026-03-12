@@ -46,9 +46,13 @@ export async function GET(request: NextRequest) {
     const filterPeriodFrom = searchParams.get("periodFrom") || "";
     const filterPeriodTo = searchParams.get("periodTo") || "";
 
-    // Check if table exists
+    // Check if table exists and ensure new columns
     try {
       await query("SELECT 1 FROM mercado_livre_claims LIMIT 0");
+      // Ensure new columns exist (safe migration)
+      try {
+        await query(`ALTER TABLE mercado_livre_claims ADD COLUMN IF NOT EXISTS product_image TEXT`);
+      } catch { /* column already exists or table doesn't support IF NOT EXISTS */ }
     } catch {
       return NextResponse.json({
         total_claims_checked: 0,

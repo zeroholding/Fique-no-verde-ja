@@ -342,15 +342,41 @@ export async function POST(request: NextRequest) {
             
             // Fetch order info
             try {
-              let orderId = resourceId;
+              let orderId: string | number | null = null;
               
-              // If it's a shipment, search for the order containing this shipment
               if (resource === "shipment" && resourceId) {
-                const searchOrders = await fetchMlJsonSafe(`https://api.mercadolibre.com/orders/search?seller=${mlUserId}&q=${resourceId}`, accessToken);
-                const results = Array.isArray(searchOrders?.results) ? searchOrders.results : [];
-                if (results.length > 0) {
-                  orderId = getNumber(results[0].id) || getString(results[0].id);
+                // Strategy 1: fetch shipment directly to get order_id
+                const shipment = await fetchMlJsonSafe(`https://api.mercadolibre.com/shipments/${resourceId}`, accessToken);
+                if (shipment) {
+                  orderId = getNumber(shipment.order_id) || getString(shipment.order_id);
+                  console.log(`[ML-SYNC] Shipment ${resourceId} → order_id=${orderId}`);
                 }
+                
+                // Strategy 2: search orders by shipment ID
+                if (!orderId) {
+                  const searchOrders = await fetchMlJsonSafe(`https://api.mercadolibre.com/orders/search?seller=${mlUserId}&q=${resourceId}`, accessToken);
+                  const results = Array.isArray(searchOrders?.results) ? searchOrders.results : [];
+                  if (results.length > 0) {
+                    orderId = getNumber(results[0].id) || getString(results[0].id);
+                    console.log(`[ML-SYNC] Search found order ${orderId} for shipment ${resourceId}`);
+                  }
+                }
+
+                // Strategy 3: try resourceId as orderId directly (some claims use order IDs even with resource=shipment)
+                if (!orderId) {
+                  const tryOrder = await fetchMlJsonSafe(`https://api.mercadolibre.com/orders/${resourceId}`, accessToken);
+                  if (tryOrder && tryOrder.id) {
+                    orderId = resourceId;
+                    console.log(`[ML-SYNC] resourceId ${resourceId} is actually an order`);
+                  }
+                }
+                
+                if (!orderId) {
+                  console.log(`[ML-SYNC] Could not resolve order for shipment ${resourceId}`);
+                }
+              } else if (resourceId) {
+                // resource === "order" — use directly
+                orderId = resourceId;
               }
 
               if (orderId) {
@@ -373,7 +399,9 @@ export async function POST(request: NextRequest) {
                   }
                 }
               }
-            } catch { /* ignore */ }
+            } catch (err) {
+              console.warn(`[ML-SYNC] Order resolution error for claim ${claimId}:`, err);
+            }
           }
 
           const resolution = getObject(claim.resolution);
