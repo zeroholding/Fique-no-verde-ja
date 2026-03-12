@@ -284,6 +284,7 @@ export default function ReputationPage() {
   const [selectedClaimForMessages, setSelectedClaimForMessages] = useState<AffectingClaim | null>(null);
   const [claimMessages, setClaimMessages] = useState<ClaimMessage[]>([]);
   const [claimMessagesLoading, setClaimMessagesLoading] = useState(false);
+  const [activeChatTab, setActiveChatTab] = useState<'buyer' | 'ml'>('buyer');
 
   useEffect(() => {
     // Buscar lista de contas primeiro
@@ -388,6 +389,19 @@ export default function ReputationPage() {
       if (f.period) params.set('period', f.period);
       if (f.resolution) params.set('resolution', f.resolution);
 
+      // Exact match logic from ML Reputation
+      const mlPeriodStr = typeof data?.seller_reputation?.metrics?.claims?.period === 'string' 
+        ? data.seller_reputation.metrics.claims.period 
+        : null;
+
+      if (mlPeriodStr && mlPeriodStr.includes('/')) {
+        const [fromD, toD] = mlPeriodStr.split('/');
+        if (fromD && toD) {
+          params.set('periodFrom', fromD);
+          params.set('periodTo', toD);
+        }
+      }
+
       const response = await fetch(`/api/integrations/mercadolivre/claims/affecting-reputation?${params.toString()}`);
       if (!response.ok) {
         const result = await response.json();
@@ -411,7 +425,8 @@ export default function ReputationPage() {
   useEffect(() => {
     if (selectedAccount === null) return;
     fetchAffectingPage(1);
-  }, [selectedAccount]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAccount, data?.seller_reputation?.metrics?.claims?.period]);
 
   // Sync trigger (calls the heavy ML sync)
   const triggerSync = async () => {
@@ -1471,16 +1486,14 @@ export default function ReputationPage() {
                         </svg>
                       </div>
                       <div className="flex flex-col">
-                        <p className="text-sm text-white font-medium flex items-center gap-2">
-                          Reclamação #{claim.id}
-                          {claim.resource_id && (
-                            <span className="text-[11px] font-normal text-gray-400">
-                              (Pedido: {String(claim.resource_id)})
-                            </span>
-                          )}
+                        <p className="text-[16px] text-white font-bold flex items-center gap-2">
+                          {claim.resource_id ? `Pedido #${String(claim.resource_id)}` : 'Venda sem Pedido'}
                           <span className={`text-[11px] font-normal ${claim.message_count > 0 ? 'text-blue-300' : 'text-gray-500'}`}>
                             ({claim.message_count} {claim.message_count === 1 ? 'mensagem' : 'mensagens'})
                           </span>
+                        </p>
+                        <p className="text-[12px] text-gray-400 font-medium">
+                          Reclamação #{claim.id}
                         </p>
                         {claim.product_title && (
                           <p className="text-[12px] text-gray-300 mt-0.5 font-medium truncate max-w-[300px]" title={claim.product_title}>
@@ -1613,13 +1626,42 @@ export default function ReputationPage() {
           ) : claimMessages.length === 0 ? (
             <p className="text-sm text-gray-300 py-4 text-center">Nenhuma mensagem encontrada para esta reclamação.</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
+              {/* TABS */}
+              <div className="flex border-b border-gray-700">
+                <button
+                  className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${
+                    activeChatTab === 'buyer'
+                      ? 'border-blue-500 text-blue-400 bg-blue-500/5'
+                      : 'border-transparent text-gray-400 hover:text-gray-300 hover:bg-gray-800/50'
+                  }`}
+                  onClick={() => setActiveChatTab('buyer')}
+                >
+                  Mensagens com o comprador
+                </button>
+                <button
+                  className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${
+                    activeChatTab === 'ml'
+                      ? 'border-purple-500 text-purple-400 bg-purple-500/5'
+                      : 'border-transparent text-gray-400 hover:text-gray-300 hover:bg-gray-800/50'
+                  }`}
+                  onClick={() => setActiveChatTab('ml')}
+                >
+                  Mensagens com o Mercado Livre
+                </button>
+              </div>
+
               <div className="max-h-[55vh] overflow-y-auto pr-1 space-y-2">
-                {claimMessages.map((message) => {
+                {claimMessages
+                  .filter((msg) => {
+                    const isMediator = msg.sender_role === 'mediator' || msg.receiver_role === 'mediator';
+                    return activeChatTab === 'ml' ? isMediator : !isMediator;
+                  })
+                  .map((message) => {
                   const role = message.sender_role;
                   const isSeller = role === 'seller' || role === 'respondent';
                   const isMediator = role === 'mediator';
-                  const isBuyer = !isSeller && !isMediator;
+                  
                   return (
                     <div
                       key={message.id}

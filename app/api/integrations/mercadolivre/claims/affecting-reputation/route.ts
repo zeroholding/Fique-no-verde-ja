@@ -43,6 +43,9 @@ export async function GET(request: NextRequest) {
     const filterPeriod = searchParams.get("period") || "";
     const filterResolution = searchParams.get("resolution") || "";
 
+    const filterPeriodFrom = searchParams.get("periodFrom") || "";
+    const filterPeriodTo = searchParams.get("periodTo") || "";
+
     // Check if table exists
     try {
       await query("SELECT 1 FROM mercado_livre_claims LIMIT 0");
@@ -98,7 +101,14 @@ export async function GET(request: NextRequest) {
       conditions.push("message_count = 0");
     }
 
-    if (filterPeriod && ["7", "15", "30", "60"].includes(filterPeriod)) {
+    // Exact period match (from ML reputation payload)
+    if (filterPeriodFrom && filterPeriodTo) {
+      conditions.push(`date_created >= $${paramIndex} AND date_created <= $${paramIndex + 1}`);
+      params.push(filterPeriodFrom, filterPeriodTo);
+      paramIndex += 2;
+    } 
+    // Fallback relative 7, 15, 30, 60
+    else if (filterPeriod && ["7", "15", "30", "60"].includes(filterPeriod)) {
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - Number(filterPeriod));
       conditions.push(`date_created >= $${paramIndex}`);
