@@ -144,7 +144,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch paginated affected claims (with filters)
     const claimsResult = await query(
-      `SELECT id, resource_id, status, type, stage, reason_id, reason_description, product_title, sale_date, resource, 
+      `SELECT id, resource_id, status, type, stage, reason_id, reason_description, product_title, product_image, sale_date, resource, 
               date_created, last_updated, resolution_reason, resolution_closed_by,
               affects_reputation, has_incentive, due_date, message_count, synced_at
        FROM mercado_livre_claims 

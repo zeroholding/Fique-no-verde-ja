@@ -107,6 +107,7 @@ async function ensureTable() {
       reason_id VARCHAR(50),
       reason_description TEXT,
       product_title TEXT,
+      product_image TEXT,
       sale_date VARCHAR(50),
       resource VARCHAR(50),
       date_created VARCHAR(50),
@@ -128,6 +129,7 @@ async function ensureTable() {
   try {
     await query(`ALTER TABLE mercado_livre_claims ADD COLUMN IF NOT EXISTS reason_description TEXT`);
     await query(`ALTER TABLE mercado_livre_claims ADD COLUMN IF NOT EXISTS product_title TEXT`);
+    await query(`ALTER TABLE mercado_livre_claims ADD COLUMN IF NOT EXISTS product_image TEXT`);
     await query(`ALTER TABLE mercado_livre_claims ADD COLUMN IF NOT EXISTS sale_date VARCHAR(50)`);
   } catch { /* columns already exist */ }
 }
@@ -331,6 +333,7 @@ export async function POST(request: NextRequest) {
           const resourceId = getNumber(claim.resource_id) ?? getString(claim.resource_id);
           
           let productTitle: string | null = null;
+          let productImage: string | null = null;
           let saleDate: string | null = null;
 
           if (affectsReputation === "affected") {
@@ -340,17 +343,33 @@ export async function POST(request: NextRequest) {
             // Fetch order info
             try {
               let orderId = resourceId;
+              
+              // If it's a shipment, search for the order containing this shipment
               if (resource === "shipment" && resourceId) {
-                const shipment = await fetchMlJsonSafe(`https://api.mercadolibre.com/shipments/${resourceId}`, accessToken);
-                if (shipment) orderId = getNumber(shipment.order_id) || getString(shipment.order_id);
+                const searchOrders = await fetchMlJsonSafe(`https://api.mercadolibre.com/orders/search?seller=${mlUserId}&q=${resourceId}`, accessToken);
+                const results = Array.isArray(searchOrders?.results) ? searchOrders.results : [];
+                if (results.length > 0) {
+                  orderId = getNumber(results[0].id) || getString(results[0].id);
+                }
               }
+
               if (orderId) {
                 const order = await fetchMlJsonSafe(`https://api.mercadolibre.com/orders/${orderId}`, accessToken);
                 if (order) {
                   saleDate = getString(order.date_created);
                   const orderItems = Array.isArray(order.order_items) ? order.order_items : [];
                   if (orderItems.length > 0) {
-                    productTitle = getString(getObject(orderItems[0].item).title);
+                    const itemObj = getObject(orderItems[0].item);
+                    productTitle = getString(itemObj.title);
+                    
+                    const itemId = getString(itemObj.id);
+                    if (itemId) {
+                      // Fetch the item to get its thumbnail
+                      const itemData = await fetchMlJsonSafe(`https://api.mercadolibre.com/items/${itemId}`, accessToken);
+                      if (itemData) {
+                        productImage = getString(itemData.thumbnail) || getString(itemData.secure_thumbnail);
+                      }
+                    }
                   }
                 }
               }
@@ -364,16 +383,17 @@ export async function POST(request: NextRequest) {
             await query(
               `INSERT INTO mercado_livre_claims (
                 id, user_id, ml_user_id, resource_id, status, type, stage, reason_id, reason_description,
-                product_title, sale_date,
+                product_title, product_image, sale_date,
                 resource, date_created, last_updated, resolution_reason, resolution_closed_by,
                 affects_reputation, has_incentive, due_date, message_count, synced_at
-              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,NOW())
+              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,NOW())
               ON CONFLICT (id) DO UPDATE SET
                 status = EXCLUDED.status,
                 stage = EXCLUDED.stage,
                 last_updated = EXCLUDED.last_updated,
                 reason_description = EXCLUDED.reason_description,
                 product_title = COALESCE(EXCLUDED.product_title, mercado_livre_claims.product_title),
+                product_image = COALESCE(EXCLUDED.product_image, mercado_livre_claims.product_image),
                 sale_date = COALESCE(EXCLUDED.sale_date, mercado_livre_claims.sale_date),
                 resolution_reason = EXCLUDED.resolution_reason,
                 resolution_closed_by = EXCLUDED.resolution_closed_by,
@@ -394,6 +414,7 @@ export async function POST(request: NextRequest) {
                 getString(claim.reason_id),
                 reasonDescription,
                 productTitle,
+                productImage,
                 saleDate,
                 resource,
                 getString(claim.date_created) ?? "",

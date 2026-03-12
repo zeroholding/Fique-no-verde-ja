@@ -189,6 +189,7 @@ type AffectingClaim = {
   reason_id: string | null;
   reason_description?: string | null;
   product_title?: string | null;
+  product_image?: string | null;
   sale_date?: string | null;
   resource: string | null;
   date_created: string;
@@ -741,80 +742,132 @@ export default function ReputationPage() {
   };
 
   const claimStatusLabels: Record<string, string> = {
-    opened: "aberta",
-    closed: "fechada",
-    dismissed: "encerrada",
-    pending: "pendente",
+    opened: "Aberta",
+    closed: "Fechada",
+    dismissed: "Encerrada",
+    pending: "Pendente",
+    resolved: "Resolvida",
+    expired: "Expirada",
   };
   const claimTypeLabels: Record<string, string> = {
-    mediations: "mediacao",
-    cancel_purchase: "cancelamento da compra",
-    return: "devolucao",
-    chargeback: "chargeback",
-    claim: "reclamacao",
-    dispute: "disputa",
+    mediations: "Mediação",
+    cancel_purchase: "Cancelamento de compra",
+    return: "Devolução",
+    chargeback: "Chargeback",
+    claim: "Reclamação",
+    dispute: "Disputa",
+    shipping: "Envio",
+    missing: "Extravio",
   };
   const claimStageLabels: Record<string, string> = {
-    dispute: "disputa",
-    claim: "reclamacao formal",
-    none: "sem etapa ativa",
-    recontact: "recontato",
+    dispute: "Disputa",
+    claim: "Reclamação formal",
+    none: "Sem etapa ativa",
+    recontact: "Recontato",
+    reopened: "Reaberta",
   };
   const claimResourceLabels: Record<string, string> = {
-    order: "pedido",
-    shipment: "envio",
-    payment: "pagamento",
+    order: "Pedido",
+    shipment: "Envio",
+    payment: "Pagamento",
   };
   const resolutionByLabels: Record<string, string> = {
-    mediator: "mediador do Mercado Livre",
-    complainant: "reclamante",
-    respondent: "respondente",
-    system: "sistema",
+    mediator: "Mediador do Mercado Livre",
+    complainant: "Reclamante (comprador)",
+    respondent: "Respondente (vendedor)",
+    system: "Sistema",
+  };
+  const resolutionReasonLabels: Record<string, string> = {
+    already_shipped: "Produto já enviado",
+    buyer_refunded: "Comprador reembolsado",
+    buyer_request: "Solicitação do comprador",
+    changed_mind: "Desistência do comprador",
+    delivered: "Produto entregue",
+    item_returned: "Produto devolvido",
+    not_delivered: "Não entregue",
+    not_resolved: "Não resolvido",
+    refunded: "Reembolsado",
+    replaced: "Produto substituído",
+    seller_agreement: "Acordo do vendedor",
+    seller_refund: "Reembolso pelo vendedor",
+    shipping_cost_refund: "Reembolso do frete",
+    waiting_buyer: "Aguardando comprador",
+    waiting_seller: "Aguardando vendedor",
+    expired: "Expirada",
+    resolved_by_mediation: "Resolvida por mediação",
+    closed_by_buyer: "Fechada pelo comprador",
+    closed_by_seller: "Fechada pelo vendedor",
+    cancelled: "Cancelada",
+  };
+  const reasonIdLabels: Record<string, string> = {
+    // Produto
+    "PDD001": "Produto com defeito",
+    "PDD002": "Produto diferente do anunciado",
+    "PDD003": "Produto incompleto",
+    "PDD004": "Produto danificado no transporte",
+    "PDD005": "Produto usado (anunciado como novo)",
+    "PDD006": "Produto falsificado",
+    // Envio
+    "SHP001": "Não recebi o produto",
+    "SHP002": "Produto atrasou",
+    "SHP003": "Envio com problema",
+    "SHP004": "Produto extraviado",
+    // Compra
+    "PUR001": "Arrependimento de compra",
+    "PUR002": "Compra duplicada",
+    "PUR003": "Compra não reconhecida",
+    // Genéricos — ML não padroniza muito, deixar o fallback
+    SNI: "Produto não recebido",
+    PDS: "Produto diferente do descrito",
+    DFT: "Produto com defeito",
+    RET: "Devolução solicitada",
+    CBK: "Chargeback / Contestação",
   };
   const playerRoleLabels: Record<string, string> = {
-    complainant: "reclamante",
-    respondent: "respondente",
-    mediator: "mediador",
+    complainant: "Reclamante",
+    respondent: "Respondente",
+    mediator: "Mediador",
   };
   const playerTypeLabels: Record<string, string> = {
-    buyer: "comprador",
-    seller: "vendedor",
-    receiver: "destinatario",
-    sender: "remetente",
-    internal: "interno",
+    buyer: "Comprador",
+    seller: "Vendedor",
+    receiver: "Destinatário",
+    sender: "Remetente",
+    internal: "Interno (ML)",
   };
   const threadStatusLabels: Record<string, string> = {
-    active: "ativa",
-    blocked: "bloqueada",
-    closed: "fechada",
-    archived: "arquivada",
+    active: "Ativa",
+    blocked: "Bloqueada",
+    closed: "Fechada",
+    archived: "Arquivada",
   };
   const threadSubstatusLabels: Record<string, string> = {
     blocked_by_conversation_initiated_by_seller_limited:
-      "bloqueada pelo limite de conversa iniciada pelo vendedor",
-    blocked_by_time_window: "bloqueada pela janela de tempo",
-    blocked_by_claim: "bloqueada por reclamacao",
-    blocked_by_buyer: "bloqueada pelo comprador",
+      "Bloqueada (limite de conversa do vendedor)",
+    blocked_by_time_window: "Bloqueada (janela de tempo)",
+    blocked_by_claim: "Bloqueada por reclamação",
+    blocked_by_buyer: "Bloqueada pelo comprador",
   };
   const messageStatusLabels: Record<string, string> = {
-    available: "disponivel",
-    sent: "enviada",
-    delivered: "entregue",
-    read: "lida",
-    blocked: "bloqueada",
-    moderated: "moderada",
+    available: "Disponível",
+    sent: "Enviada",
+    delivered: "Entregue",
+    read: "Lida",
+    blocked: "Bloqueada",
+    moderated: "Moderada",
   };
   const messageTypeLabels: Record<string, string> = {
-    text: "texto",
-    image: "imagem",
-    custom: "personalizada",
-    automatic: "automatica",
+    text: "Texto",
+    image: "Imagem",
+    custom: "Personalizada",
+    automatic: "Automática",
   };
   const messageSourceLabels: Record<string, string> = {
-    post_sale: "pos-venda",
-    zenia: "assistente do Mercado Livre",
-    buyer: "comprador",
-    seller: "vendedor",
+    post_sale: "Pós-venda",
+    zenia: "Assistente do Mercado Livre",
+    buyer: "Comprador",
+    seller: "Vendedor",
+    mediator: "Mediador ML",
   };
   const formatYesNo = (value: boolean | null | undefined) => {
     if (value === null || value === undefined) return "-";
@@ -1496,9 +1549,20 @@ export default function ReputationPage() {
                           Reclamação #{claim.id}
                         </p>
                         {claim.product_title && (
-                          <p className="text-[12px] text-gray-300 mt-0.5 font-medium truncate max-w-[300px]" title={claim.product_title}>
-                            {claim.product_title}
-                          </p>
+                          <div className="flex items-center gap-3 mt-2 pr-4">
+                            {claim.product_image ? (
+                              <img src={claim.product_image} alt="Produto" className="w-12 h-12 object-cover rounded-md border border-white/10 flex-shrink-0" />
+                            ) : (
+                              <div className="w-12 h-12 bg-gray-800 rounded-md border border-white/10 flex items-center justify-center flex-shrink-0">
+                                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                            )}
+                            <p className="text-[14px] text-gray-300 mt-0.5 font-medium truncate max-w-[300px]" title={claim.product_title}>
+                              {claim.product_title}
+                            </p>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -1532,8 +1596,8 @@ export default function ReputationPage() {
                     <p className="text-gray-400">
                       Motivo: <span className="text-gray-300">
                         {claim.reason_description 
-                          ? `${claim.reason_description} (${claim.reason_id})` 
-                          : (claim.reason_id || '-')}
+                          ? claim.reason_description 
+                          : translate(claim.reason_id, reasonIdLabels)}
                       </span>
                     </p>
                     <p className="text-gray-400">
@@ -1550,7 +1614,7 @@ export default function ReputationPage() {
                     </p>
                     {claim.resolution_reason && (
                       <p className="text-gray-400 col-span-2">
-                        Resolução: <span className="text-gray-300">{prettifyCode(claim.resolution_reason)}</span>
+                        Resolução: <span className="text-gray-300">{translate(claim.resolution_reason, resolutionReasonLabels)}</span>
                         {claim.resolution_closed_by && ` (por ${translate(claim.resolution_closed_by, resolutionByLabels)})`}
                       </p>
                     )}
@@ -1839,7 +1903,7 @@ export default function ReputationPage() {
                 </div>
                 <div className="p-3 rounded-lg bg-white/5 border border-white/10">
                   <p className="text-xs text-gray-400">Motivo</p>
-                  <p className="text-sm text-white">{claimDetail.reason_id || "-"}</p>
+                  <p className="text-sm text-white">{claimDetail.reason_id ? translate(claimDetail.reason_id, reasonIdLabels) : "-"}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-white/5 border border-white/10">
                   <p className="text-xs text-gray-400">Recurso</p>
@@ -1869,10 +1933,10 @@ export default function ReputationPage() {
               </div>
 
               <div className="p-3 rounded-lg bg-white/5 border border-white/10 space-y-1">
-                <p className="text-xs text-gray-400">Resolucao</p>
+                <p className="text-xs text-gray-400">Resolução</p>
                 <p className="text-sm text-white">
-                  Motivo da resolucao:{" "}
-                  {claimDetail.resolution_reason ? prettifyCode(claimDetail.resolution_reason) : "-"}
+                  Motivo da resolução:{" "}
+                  {claimDetail.resolution_reason ? translate(claimDetail.resolution_reason, resolutionReasonLabels) : "-"}
                 </p>
                 <p className="text-sm text-white">
                   Fechada por: {translate(claimDetail.resolution_closed_by, resolutionByLabels)}
