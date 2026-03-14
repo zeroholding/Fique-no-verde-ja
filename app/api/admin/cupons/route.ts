@@ -13,10 +13,11 @@ export async function GET(request: NextRequest) {
     const token = request.cookies.get("token")?.value;
     if (!token) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string, role: string };
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+    const userResult = await query("SELECT is_admin FROM users WHERE id = $1", [decoded.userId]);
     
     // Somente admin geral
-    if (decoded.role !== 'admin') {
+    if (userResult.rowCount === 0 || !userResult.rows[0].is_admin) {
       return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
     }
 
@@ -48,8 +49,11 @@ export async function POST(request: NextRequest) {
     const token = request.cookies.get("token")?.value;
     if (!token) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string, role: string };
-    if (decoded.role !== 'admin') {
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+    const userResult = await query("SELECT is_admin FROM users WHERE id = $1", [decoded.userId]);
+    
+    // Somente admin geral
+    if (userResult.rowCount === 0 || !userResult.rows[0].is_admin) {
       return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
     }
 
