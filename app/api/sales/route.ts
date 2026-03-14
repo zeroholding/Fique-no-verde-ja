@@ -427,6 +427,8 @@ export async function POST(request: NextRequest) {
       carrierId, // Transportadora (dona do pacote) para tipo "02" e "03"
       attendantId, // [NEW] ID do atendente (opcional, apenas para admin)
       saleDate: requestedSaleDate, // [FIX] Avoid shadowing collision with inner variable
+      cupomId,
+      couponDiscountAmount
     } = body;
 
     const normalizedSaleType: "01" | "02" | "03" = saleType || "01";
@@ -627,8 +629,10 @@ export async function POST(request: NextRequest) {
           general_discount_type,
           general_discount_value,
           status,
-          confirmed_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'confirmada', CURRENT_TIMESTAMP)
+          confirmed_at,
+          cupom_id,
+          discount_amount
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'confirmada', CURRENT_TIMESTAMP, $8, $9)
         RETURNING id, sale_date`,
         [
           saleClientId,
@@ -640,6 +644,8 @@ export async function POST(request: NextRequest) {
           paymentMethod,
           generalDiscountType || null,
           generalDiscountValue || 0,
+          cupomId || null,
+          couponDiscountAmount || 0,
         ]
       );
 
@@ -786,11 +792,12 @@ export async function POST(request: NextRequest) {
 
 
 
-      const finalTotal = totalSubtotal - totalDiscountAmount - generalDiscountAmount;
+      const expectedCouponDiscount = couponDiscountAmount || 0;
+      const finalTotal = totalSubtotal - totalDiscountAmount - generalDiscountAmount - expectedCouponDiscount;
 
-      const totalDiscountGiven = totalDiscountAmount + generalDiscountAmount;
+      const totalDiscountGiven = totalDiscountAmount + generalDiscountAmount + expectedCouponDiscount;
 
-      const netAmount = finalTotal; // Valor lÃƒÆ’Ã‚Â­quido (apÃƒÆ’Ã‚Â³s descontos)
+      const netAmount = finalTotal; // Valor líquido (após descontos)
 
 
 

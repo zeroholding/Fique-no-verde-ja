@@ -147,6 +147,11 @@ export default function SalesPage() {
   const [saving, setSaving] = useState(false);
   const [viewingSale, setViewingSale] = useState<Sale | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<Sale | null>(null);
+  
+  // [NEW] Coupon states
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{ id: string, code: string, type: 'percent'|'fixed', value: number } | null>(null);
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<Sale | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Sale | null>(null);
   const [refundTarget, setRefundTarget] = useState<Sale | null>(null);
@@ -575,6 +580,28 @@ export default function SalesPage() {
   const closeModal = () => {
     setIsModalOpen(false);
     setFormData(initialForm);
+    setCouponCode("");
+    setAppliedCoupon(null);
+  };
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode) return;
+    setValidatingCoupon(true);
+    try {
+      const res = await fetch(`/api/cupons/validate?code=${couponCode}`);
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setAppliedCoupon(data.data);
+        success("Cupom aplicado com sucesso!");
+      } else {
+        error(data.error || "Cupom inválido");
+        setAppliedCoupon(null);
+      }
+    } catch (err) {
+      error("Erro ao validar cupom");
+    } finally {
+      setValidatingCoupon(false);
+    }
   };
 
   const openRefundModal = (sale: Sale) => {
@@ -701,8 +728,18 @@ export default function SalesPage() {
       discount = formData.discountValue;
     }
 
-    return Math.max(0, subtotal - discount);
-  }, [formData.saleType, formData.quantity, formData.discountType, formData.discountValue, selectedPackage, selectedService, calculateProgressivePrice]);
+    let finalTotal = Math.max(0, subtotal - discount);
+
+    if (formData.saleType === "01" && appliedCoupon) {
+      if (appliedCoupon.type === 'percent') {
+        finalTotal = finalTotal - (finalTotal * (appliedCoupon.value / 100));
+      } else {
+        finalTotal = Math.max(0, finalTotal - appliedCoupon.value);
+      }
+    }
+
+    return finalTotal;
+  }, [formData.saleType, formData.quantity, formData.discountType, formData.discountValue, selectedPackage, selectedService, calculateProgressivePrice, appliedCoupon]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -829,6 +866,17 @@ export default function SalesPage() {
         productName = selectedService!.name;
       }
 
+      // Calculate the specific coupon discount amount for the payload
+      let couponDiscountAmountForPayload = 0;
+      if (formData.saleType === "01" && appliedCoupon) {
+         let subtotalAfterManualDiscount = Math.max(0, calculatedSubtotal - (formData.discountType === "percentage" ? calculatedSubtotal * (formData.discountValue / 100) : formData.discountValue));
+         if (appliedCoupon.type === 'percent') {
+            couponDiscountAmountForPayload = subtotalAfterManualDiscount * (appliedCoupon.value / 100);
+         } else {
+            couponDiscountAmountForPayload = appliedCoupon.value;
+         }
+      }
+
       const payload: any = {
         clientId:
           formData.saleType === "03"
@@ -841,6 +889,8 @@ export default function SalesPage() {
         saleType: formData.saleType,
         attendantId: formData.attendantId, // [NEW] Enviar ID do atendente (se admin tiver selecionado)
         saleDate: formData.saleDate, // [NEW] Enviar data personalizada (se admin)
+        cupomId: formData.saleType === "01" && appliedCoupon ? appliedCoupon.id : null,
+        couponDiscountAmount: formData.saleType === "01" && appliedCoupon ? couponDiscountAmountForPayload : 0,
         generalDiscountType: "percentage" as DiscountType,
         generalDiscountValue: 0,
         items: [
@@ -2170,6 +2220,58 @@ export default function SalesPage() {
             </div>
           )}
 
+          {formData.saleType === "01" && (
+            <div>
+              <label className="block text-xs uppercase text-gray-400 mb-2">
+                Cupom de Desconto (opcional)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="EX: CYBER10"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  disabled={!!appliedCoupon}
+                  className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none uppercase disabled:opacity-50"
+                  onKeyDown={(e) => {
+                     if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleApplyCoupon();
+                     }
+                  }}
+                />
+                {!appliedCoupon ? (
+                  <Button 
+                    type="button" 
+                    onClick={handleApplyCoupon}
+                    disabled={validatingCoupon || !couponCode}
+                    className="rounded-xl px-5 whitespace-nowrap bg-indigo-600 hover:bg-indigo-700 border-indigo-500"
+                  >
+                    {validatingCoupon ? "Validando..." : "Aplicar"}
+                  </Button>
+                ) : (
+                  <Button 
+                    type="button" 
+                    variant="ghost"
+                    onClick={() => {
+                        setAppliedCoupon(null);
+                        setCouponCode("");
+                    }}
+                    className="rounded-xl px-5 whitespace-nowrap border border-red-500/30 text-red-400 hover:bg-red-500/10"
+                  >
+                    Remover
+                  </Button>
+                )}
+              </div>
+              {appliedCoupon && (
+                <p className="text-xs text-green-400 mt-2 flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                  Cupom {appliedCoupon.code} aplicado! (-{appliedCoupon.type === 'percent' ? `${appliedCoupon.value}%` : formatCurrency(appliedCoupon.value)})
+                </p>
+              )}
+            </div>
+          )}
+
           <div>
             <label className="block text-xs uppercase text-gray-400 mb-2">
               Observações (opcional)
@@ -2193,12 +2295,24 @@ export default function SalesPage() {
                 </div>
                 {formData.discountValue > 0 && (
                   <div className="flex justify-between text-sm text-gray-300">
-                    <span>Desconto ({formData.discountType === "percentage" ? `${formData.discountValue}%` : formatCurrency(formData.discountValue)}):</span>
-                    <span className="text-red-300">
+                    <span>Desconto extra ({formData.discountType === "percentage" ? `${formData.discountValue}%` : formatCurrency(formData.discountValue)}):</span>
+                    <span className="text-orange-300">
                       -{formatCurrency(
                         formData.discountType === "percentage"
                           ? (modalSubtotal * formData.discountValue) / 100
                           : formData.discountValue
+                      )}
+                    </span>
+                  </div>
+                )}
+                {appliedCoupon && formData.saleType === "01" && (
+                  <div className="flex justify-between text-sm text-green-300">
+                    <span>Desconto Cupom ({appliedCoupon.code}):</span>
+                    <span>
+                      -{formatCurrency(
+                        appliedCoupon.type === "percent"
+                          ? (Math.max(0, modalSubtotal - (formData.discountType === "percentage" ? modalSubtotal * (formData.discountValue / 100) : formData.discountValue)) * (appliedCoupon.value / 100))
+                          : appliedCoupon.value
                       )}
                     </span>
                   </div>
