@@ -97,113 +97,132 @@ export default function CuponsAdminPage() {
   });
 
   return (
-    <div className="p-8 pb-32">
-      <div className="max-w-7xl mx-auto space-y-8">
-        
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Cupons de Desconto</h1>
-            <p className="text-gray-500 mt-2">
-              Crie e gerencie cupons de desconto para compra de créditos. Defina valores fixos em reais ou percentuais.
-            </p>
-          </div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-[#2A3756] hover:bg-slate-700 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-medium"
-          >
-            <span className="text-lg">+</span> Criar Cupom
-          </button>
+    <div className="p-4 sm:p-8 space-y-6 text-white min-h-screen">
+      <div className="flex flex-col gap-2 mb-6">
+        <p className="text-xs sm:text-sm uppercase tracking-widest text-emerald-500 font-semibold">
+          Administração de Vendas
+        </p>
+        <h1 className="text-2xl sm:text-3xl font-semibold">Cupons de Desconto</h1>
+        <p className="text-sm sm:text-base text-gray-400">
+          Crie e gerencie cupons de desconto para acompanhamento de parceiros. Defina valores fixos em reais ou percentuais.
+        </p>
+      </div>
+
+      <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-6">
+        {/* Header Actions */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+           <div className="w-full sm:w-auto flex-1 max-w-md relative">
+              <input 
+                type="text"
+                placeholder="Buscar por código do cupom..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-11 pr-4 py-3 border border-white/20 rounded-xl bg-black/30 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-shadow"
+              />
+              <svg className="w-5 h-5 absolute left-4 top-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+           </div>
+           
+           <div className="flex items-center gap-3 w-full sm:w-auto">
+              {/* Filtros rápidos estilo botões toggle */}
+              <div className="flex bg-black/40 border border-white/10 rounded-xl p-1 shrink-0 overflow-x-auto">
+                <button 
+                  onClick={() => setFilter("todos")}
+                  className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filter === 'todos' ? 'bg-white/10 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                >
+                  Todos
+                </button>
+                <button 
+                  onClick={() => setFilter("ativos")}
+                  className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filter === 'ativos' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-gray-400 hover:text-white'}`}
+                >
+                  Ativos
+                </button>
+                <button 
+                  onClick={() => setFilter("inativos")}
+                  className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filter === 'inativos' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'text-gray-400 hover:text-white'}`}
+                >
+                  Inativos
+                </button>
+              </div>
+
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-3 rounded-xl flex items-center gap-2 font-semibold transition-colors shrink-0 whitespace-nowrap"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/></svg>
+                <span className="hidden sm:inline">Novo Cupom</span>
+              </button>
+           </div>
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="relative flex-1 min-w-[250px] max-w-sm">
-            <input 
-              type="text"
-              placeholder="Buscar por código..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-[#383C47] rounded-lg bg-white dark:bg-[#1C212A] text-gray-900 dark:text-white"
-            />
-            <svg className="w-5 h-5 absolute left-3 top-2.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-
-          <div className="flex bg-white dark:bg-[#1C212A] border border-gray-200 dark:border-[#383C47] rounded-lg p-1">
-            <button 
-              onClick={() => setFilter("todos")}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${filter === 'todos' ? 'bg-[#2A3756] text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#2A3756]'}`}
-            >
-              Todos
-            </button>
-            <button 
-              onClick={() => setFilter("ativos")}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${filter === 'ativos' ? 'bg-[#2A3756] text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#2A3756]'}`}
-            >
-              Ativos
-            </button>
-            <button 
-              onClick={() => setFilter("inativos")}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${filter === 'inativos' ? 'bg-[#2A3756] text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#2A3756]'}`}
-            >
-              Inativos
-            </button>
-          </div>
-        </div>
-
-        <p className="text-sm text-gray-500">{filteredCupons.length} cupons no total</p>
+        <p className="text-sm text-gray-500 mb-6">{filteredCupons.length} cupons encontrados</p>
 
         {/* Grid de Cupons */}
         {loading ? (
-          <div className="text-center py-10">Calculando estatísticas...</div>
+          <div className="text-center py-16 text-gray-400">
+             <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+             Carregando cupons...
+          </div>
+        ) : filteredCupons.length === 0 ? (
+          <div className="text-center py-16 text-gray-500">
+             <svg className="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>
+             Nenhum cupom encontrado com os filtros selecionados.
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredCupons.map(cupom => (
-              <div key={cupom.id} className="bg-white dark:bg-[#1C212A] border border-gray-200 dark:border-[#383C47] rounded-xl p-6 flex flex-col justify-between hover:shadow-lg transition-shadow">
-                <div>
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="font-bold text-gray-900 dark:text-white text-xl uppercase tracking-wider">{cupom.code}</h3>
-                    <span className={`px-2 py-1 text-xs font-medium rounded ${cupom.is_active ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+              <div key={cupom.id} className="bg-black/30 border border-white/10 rounded-2xl p-5 flex flex-col justify-between hover:border-emerald-500/40 transition-colors group relative overflow-hidden">
+                {/* Efeito luminoso fraco no background */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/10 transition-colors"></div>
+                
+                <div className="relative z-10">
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="font-bold text-white text-xl uppercase tracking-wider font-mono">{cupom.code}</h3>
+                    <span className={`px-2 py-0.5 text-[10px] font-bold rounded uppercase tracking-wider border ${cupom.is_active ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}>
                       {cupom.is_active ? 'Ativo' : 'Inativo'}
                     </span>
                   </div>
                   
-                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
-                    {cupom.discount_type === 'percent' 
-                      ? `${Number(cupom.discount_value).toFixed(2)}% de desconto`
-                      : `R$ ${Number(cupom.discount_value).toFixed(2)} de desconto`}
-                  </p>
-
-                  <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-[#383C47] pt-4 mt-2">
-                    <span>Usos:</span>
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {cupom.current_uses} / {cupom.max_uses === null ? '∞' : cupom.max_uses}
-                    </span>
+                  <div className="inline-block bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg mb-4">
+                     <p className="text-emerald-400 font-semibold text-sm">
+                       {cupom.discount_type === 'percent' 
+                         ? `${Number(cupom.discount_value).toFixed(0)}% de desconto`
+                         : `R$ ${Number(cupom.discount_value).toFixed(2)} desconto`}
+                     </p>
                   </div>
 
-                  {cupom.expires_at && (
-                    <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mt-2">
-                      <span>Expira em:</span>
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        {format(new Date(cupom.expires_at), 'dd/MM/yyyy')}
-                      </span>
-                    </div>
-                  )}
+                  <div className="space-y-2 mt-2">
+                     <div className="flex justify-between text-sm text-gray-400 border-t border-white/5 pt-3">
+                       <span>Total de Usos:</span>
+                       <span className="font-semibold text-white">
+                         {cupom.current_uses} <span className="text-gray-600 font-normal">/ {cupom.max_uses === null ? 'Ilimitado' : cupom.max_uses}</span>
+                       </span>
+                     </div>
+
+                     {cupom.expires_at && (
+                       <div className="flex justify-between text-sm text-gray-400">
+                         <span>Validade:</span>
+                         <span className="font-semibold text-red-300">
+                           {format(new Date(cupom.expires_at), 'dd/MM/yyyy')}
+                         </span>
+                       </div>
+                     )}
+                  </div>
                 </div>
 
-                <div className="mt-6 flex justify-between items-end">
-                  <span className="text-xs text-gray-400">
-                    Criado em {format(new Date(cupom.created_at), 'dd/MM/yyyy')}
+                <div className="mt-5 pt-4 border-t border-white/5 flex justify-between items-center relative z-10">
+                  <span className="text-[10px] text-gray-500 uppercase tracking-wider">
+                    Criado: {format(new Date(cupom.created_at), 'dd/MM/yyyy')}
                   </span>
                   
                   <button 
                     onClick={() => copyLink(cupom.id)}
-                    className="text-[#2A3756] dark:text-[#5B8EFF] text-sm font-medium hover:underline flex items-center gap-1"
+                    className="text-emerald-400 hover:text-emerald-300 text-sm font-medium flex items-center gap-1.5 bg-emerald-500/10 px-3 py-1.5 rounded-lg hover:bg-emerald-500/20 transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                     </svg>
                     Link Parceiro
                   </button>
@@ -216,101 +235,102 @@ export default function CuponsAdminPage() {
 
       {/* Modal Criar Cupom */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white dark:bg-[#202736] w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-[#383C47]">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Criar Novo Cupom</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-[#111111] border border-white/10 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-white/10 bg-white/5">
+              <h2 className="text-xl font-bold text-white">Criar Novo Cupom</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white transition-colors bg-white/5 p-1 rounded-lg">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
             
-            <form onSubmit={handleCreateMenu} className="p-6 space-y-4">
+            <form onSubmit={handleCreateMenu} className="p-6 space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Código do Cupom</label>
+                <label className="block text-xs uppercase text-gray-400 tracking-wider mb-2 font-semibold">Código do Cupom</label>
                 <input 
                   type="text" 
                   required
                   value={newCode}
                   onChange={e => setNewCode(e.target.value.toUpperCase())}
-                  placeholder="EX: DESCONTO10"
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-[#383C47] rounded-lg bg-transparent text-gray-900 dark:text-white font-mono uppercase focus:ring-2 focus:ring-[#2A3756]"
+                  placeholder="EX: NATAL20"
+                  className="w-full px-4 py-3 border border-white/20 rounded-xl bg-black/50 text-white font-mono uppercase focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 placeholder-gray-600 shadow-inner"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de Desconto</label>
-                <div className="grid grid-cols-2 gap-4">
+                <label className="block text-xs uppercase text-gray-400 tracking-wider mb-2 font-semibold">Tipo de Desconto</label>
+                <div className="grid grid-cols-2 gap-3">
                   <button 
                     type="button"
                     onClick={() => setNewType('percent')}
-                    className={`py-3 border rounded-lg flex flex-col items-center justify-center transition-colors ${newType === 'percent' ? 'border-[#2A3756] bg-blue-50 dark:bg-[#2A3756]/20 text-[#2A3756] dark:text-[#5B8EFF] font-bold' : 'border-gray-200 dark:border-[#383C47] text-gray-500'}`}
+                    className={`py-3 border rounded-xl flex flex-col items-center justify-center transition-all ${newType === 'percent' ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400 font-bold shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'border-white/10 bg-black/30 text-gray-500 hover:bg-white/5 hover:text-gray-300'}`}
                   >
-                    <span className="text-xl">%</span>
-                    <span className="text-xs mt-1 font-medium">Percentual</span>
+                    <span className="text-2xl mb-1">%</span>
+                    <span className="text-[11px] uppercase tracking-wider">Percentual</span>
                   </button>
                   <button 
                     type="button"
                     onClick={() => setNewType('fixed')}
-                    className={`py-3 border rounded-lg flex flex-col items-center justify-center transition-colors ${newType === 'fixed' ? 'border-[#2A3756] bg-blue-50 dark:bg-[#2A3756]/20 text-[#2A3756] dark:text-[#5B8EFF] font-bold' : 'border-gray-200 dark:border-[#383C47] text-gray-500'}`}
+                    className={`py-3 border rounded-xl flex flex-col items-center justify-center transition-all ${newType === 'fixed' ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400 font-bold shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'border-white/10 bg-black/30 text-gray-500 hover:bg-white/5 hover:text-gray-300'}`}
                   >
-                    <span className="text-xl">R$</span>
-                    <span className="text-xs mt-1 font-medium">Fixo</span>
+                    <span className="text-2xl mb-1">R$</span>
+                    <span className="text-[11px] uppercase tracking-wider">Fixo</span>
                   </button>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Valor do Desconto</label>
+                <label className="block text-xs uppercase text-gray-400 tracking-wider mb-2 font-semibold">Valor do Desconto</label>
                 <div className="relative">
-                  <span className="absolute left-4 top-2.5 text-gray-500">{newType === 'percent' ? '%' : 'R$'}</span>
+                  <span className="absolute left-4 top-3.5 text-gray-500 font-semibold">{newType === 'percent' ? '%' : 'R$'}</span>
                   <input 
                     type="number" 
                     step="0.01"
                     required
                     value={newValue}
                     onChange={e => setNewValue(e.target.value)}
-                    placeholder="10"
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-[#383C47] rounded-lg bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2A3756]"
+                    placeholder="10.00"
+                    className="w-full pl-11 pr-4 py-3 border border-white/20 rounded-xl bg-black/50 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 placeholder-gray-600 shadow-inner"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Máximo de Usos <span className="text-gray-400 text-xs font-normal">(opcional)</span></label>
+                <label className="block text-xs uppercase text-gray-400 tracking-wider mb-2 font-semibold">Máximo de Usos <span className="text-gray-600 font-normal lowercase tracking-normal pl-1">(opcional)</span></label>
                 <input 
                   type="number" 
                   value={newMaxUses}
                   onChange={e => setNewMaxUses(e.target.value)}
-                  placeholder="Deixe vazio para ilimitado"
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-[#383C47] rounded-lg bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2A3756]"
+                  placeholder="Deixe vazio para uso ilimitado"
+                  className="w-full px-4 py-3 border border-white/20 rounded-xl bg-black/50 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 placeholder-gray-600 shadow-inner"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data de Expiração <span className="text-gray-400 text-xs font-normal">(opcional)</span></label>
+                <label className="block text-xs uppercase text-gray-400 tracking-wider mb-2 font-semibold">Data de Expiração <span className="text-gray-600 font-normal lowercase tracking-normal pl-1">(opcional)</span></label>
                 <input 
                   type="date" 
                   value={newExpiresAt}
                   onChange={e => setNewExpiresAt(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-[#383C47] rounded-lg bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2A3756]"
+                  className="w-full px-4 py-3 border border-white/20 rounded-xl bg-black/50 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 shadow-inner"
+                  style={{ colorScheme: 'dark' }}
                 />
               </div>
 
-              <div className="pt-4 flex justify-end gap-3">
+              <div className="pt-6 border-t border-white/10 flex justify-end gap-3">
                 <button 
                   type="button" 
                   onClick={() => setIsModalOpen(false)}
-                  className="px-5 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#383C47] rounded-lg font-medium"
+                  className="px-6 py-2.5 bg-transparent border border-white/20 text-gray-300 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-colors"
                 >
                   Cancelar
                 </button>
                 <button 
                   type="submit" 
                   disabled={saving}
-                  className="px-5 py-2 bg-[#2A3756] hover:bg-slate-700 text-white rounded-lg font-medium disabled:opacity-50"
+                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium disabled:opacity-50 transition-colors shadow-lg shadow-emerald-600/20"
                 >
-                  {saving ? 'Salvando...' : 'Criar Cupom'}
+                  {saving ? 'Criando...' : 'Confirmar e Criar'}
                 </button>
               </div>
             </form>
