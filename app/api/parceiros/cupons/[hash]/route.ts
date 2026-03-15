@@ -15,11 +15,11 @@ export async function GET(request: NextRequest, context: any) {
     // Buscar informações do Cupom (apenas as estatísticas)
     const result = await query(`
         SELECT 
-            c.id, c.code, c.discount_type, c.discount_value,
+            c.id, c.code, c.discount_type, c.discount_value, c.is_active,
             COUNT(s.id) as current_uses,
             COALESCE(SUM(s.discount_amount), 0) as total_saved
         FROM cupons c
-        LEFT JOIN sales s ON s.cupom_id = c.id
+        LEFT JOIN sales s ON s.cupom_id = c.id AND s.status != 'cancelada'
         WHERE c.id = $1
         GROUP BY c.id
     `, [hash]);
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest, context: any) {
             created_at as sale_date,
             discount_amount
         FROM sales
-        WHERE cupom_id = $1 AND discount_amount > 0
+        WHERE cupom_id = $1 AND discount_amount > 0 AND status != 'cancelada'
         ORDER BY created_at DESC
         LIMIT 50
     `, [hash]);
@@ -50,9 +50,11 @@ export async function GET(request: NextRequest, context: any) {
         discount_value: Number(cupom.discount_value),
         current_uses: parseInt(cupom.current_uses, 10),
         total_saved: Number(cupom.total_saved),
+        is_active: cupom.is_active,
         history: historyResult.rows.map((row: any) => ({
-          date: row.sale_date,
-          discount: Number(row.discount_amount)
+          id: Math.random().toString(), // Helper check
+          saleDate: row.sale_date,
+          discountAmount: Number(row.discount_amount)
         }))
       }
     });

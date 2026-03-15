@@ -935,7 +935,7 @@ export async function POST(request: NextRequest) {
           totalSubtotal,
           FinalDiscountGiven,
           FinalTotalSales,
-          FinalDiscountGiven,
+          expectedCouponDiscountForRecalc, // Mantém a coluna discount_amount restrita apenas ao desconto do Cupom, se existir
           commissionAmount,
           saleId
         ]
@@ -1238,7 +1238,7 @@ export async function PUT(request: NextRequest) {
 
     const saleCheck = await query(
 
-      `SELECT id, attendant_id, status FROM sales WHERE id = $1`,
+      `SELECT id, attendant_id, status, cupom_id, discount_amount FROM sales WHERE id = $1`,
 
       [id]
 
@@ -1490,9 +1490,10 @@ export async function PUT(request: NextRequest) {
 
 
 
-      const finalTotal = totalSubtotal - totalDiscountAmount - generalDiscountAmount;
-
-
+      // Aplicar desconto geral e também do cupom antigo (Edição não pode resetar cupom já validado no POST)
+      const existingCouponDiscount = Number(sale.discount_amount) || 0;
+      const FinalDiscountGiven = totalDiscountAmount + generalDiscountAmount + existingCouponDiscount;
+      const finalTotal = Math.max(0, totalSubtotal - totalDiscountAmount - generalDiscountAmount - existingCouponDiscount);
 
       // Atualizar totais
 
@@ -1504,7 +1505,7 @@ export async function PUT(request: NextRequest) {
 
          WHERE id = $4`,
 
-        [totalSubtotal, totalDiscountAmount + generalDiscountAmount, finalTotal, id]
+        [totalSubtotal, FinalDiscountGiven, finalTotal, id]
 
       );
 

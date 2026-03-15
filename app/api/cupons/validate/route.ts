@@ -34,18 +34,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Este cupom está inativo." }, { status: 400 });
     }
 
-    // Verificar data de expiração
-    if (cupom.expires_at && new Date(cupom.expires_at) < new Date()) {
-      return NextResponse.json({ error: "Este cupom já expirou." }, { status: 400 });
+    // Verificar data de expiração (ignorando horas para evitar fuso horário de UTC na véspera)
+    if (cupom.expires_at) {
+      const expDate = new Date(cupom.expires_at);
+      const today = new Date();
+      // Zerar a hora para comparar apenas os dias
+      expDate.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+
+      if (expDate < today) {
+        return NextResponse.json({ error: "Este cupom já expirou." }, { status: 400 });
+      }
     }
 
-    // Verificar limite de usos
+    // Verificar limite de usos (ignorando vendas canceladas)
     if (cupom.max_uses !== null) {
-      const usesResult = await query(`SELECT COUNT(id) as total_uses FROM sales WHERE cupom_id = $1`, [cupom.id]);
+      const usesResult = await query(
+        `SELECT COUNT(id) as total_uses FROM sales WHERE cupom_id = $1 AND status != 'cancelada'`, 
+        [cupom.id]
+      );
       const currentUses = parseInt(usesResult.rows[0].total_uses, 10);
       
       if (currentUses >= cupom.max_uses) {
-        return NextResponse.json({ error: "O limite de uso deste cupom foi atingido." }, { status: 400 });
+        return NextResponse.json({ error: "O limite máximo de uso deste cupom foi atingido." }, { status: 400 });
       }
     }
 

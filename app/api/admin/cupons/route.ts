@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
         COUNT(s.id) as current_uses,
         COALESCE(SUM(s.discount_amount), 0) as total_saved
       FROM cupons c
-      LEFT JOIN sales s ON s.cupom_id = c.id
+      LEFT JOIN sales s ON s.cupom_id = c.id AND s.status != 'cancelada'
       GROUP BY c.id
       ORDER BY c.created_at DESC
     `);
