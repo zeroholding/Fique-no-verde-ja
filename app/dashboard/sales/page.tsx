@@ -53,6 +53,8 @@ type Sale = {
   createdAt: string;
   updatedAt: string;
   saleType?: "01" | "02" | "03";
+  couponCode?: string | null;
+  couponDiscount?: number;
 };
 
 type Client = {
@@ -2228,7 +2230,7 @@ export default function SalesPage() {
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="EX: CYBER10"
+                  placeholder="EX: MEUCUPOM"
                   value={couponCode}
                   onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                   disabled={!!appliedCoupon}
@@ -2427,7 +2429,13 @@ export default function SalesPage() {
                   <span>{formatCurrency(viewingSale.commissionAmount || 0)}</span>
                 </div>
               ) : null}
-              <div className="flex justify-between text-lg font-semibold">
+              {viewingSale.couponCode && viewingSale.couponDiscount ? (
+                <div className="flex justify-between text-sm text-green-300">
+                  <span className="font-medium">Cupom ({viewingSale.couponCode}):</span>
+                  <span>-{formatCurrency(viewingSale.couponDiscount)}</span>
+                </div>
+              ) : null}
+              <div className="flex justify-between text-lg font-semibold pt-2 border-t border-white/10">
                 <span>Total:</span>
                 <span className="text-green-400">{formatCurrency(viewingSale.total)}</span>
               </div>

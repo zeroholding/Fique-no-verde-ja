@@ -178,12 +178,16 @@ export async function GET(request: NextRequest) {
           s.created_at,
           s.updated_at,
           s.commission_amount,
+          s.cupom_id,
+          s.discount_amount as coupon_discount,
+          cp.code as coupon_code,
           c.name as client_name,
           c.client_type,
           u.first_name || ' ' || u.last_name as attendant_name
          FROM sales s
          JOIN clients c ON s.client_id = c.id
          JOIN users u ON s.attendant_id = u.id
+         LEFT JOIN cupons cp ON s.cupom_id = cp.id
          ${whereClause}
          ORDER BY s.sale_date DESC, s.created_at DESC`,
         queryParams
@@ -211,12 +215,16 @@ export async function GET(request: NextRequest) {
             s.created_at,
             s.updated_at,
             s.commission_amount,
+            s.cupom_id,
+            s.discount_amount as coupon_discount,
+            cp.code as coupon_code,
             c.name as client_name,
             c.client_type,
             u.first_name || ' ' || u.last_name as attendant_name
            FROM sales s
            JOIN clients c ON s.client_id = c.id
            JOIN users u ON s.attendant_id = u.id
+           LEFT JOIN cupons cp ON s.cupom_id = cp.id
            ${whereClause}
            ORDER BY s.sale_date DESC, s.created_at DESC`,
           queryParams
@@ -342,9 +350,11 @@ export async function GET(request: NextRequest) {
           generalDiscountValue: sale.general_discount_value,
           subtotal: parseFloat(sale.subtotal),
           totalDiscount: parseFloat(sale.total_discount),
-          total: parseFloat(sale.total),
-          refundTotal: hasRefundSupport ? parseFloat(sale.refund_total || 0) : 0,
-          commissionAmount: commissionVal,
+          total: Number(sale.total) || 0,
+          refundTotal: hasRefundSupport ? (Number(sale.refund_total) || 0) : undefined,
+          commissionAmount: Number(sale.commission_amount) || 0,
+          couponCode: sale.coupon_code || null,
+          couponDiscount: Number(sale.coupon_discount) || 0,
           confirmedAt: sale.confirmed_at,
           cancelledAt: sale.cancelled_at,
           createdAt: sale.created_at,
