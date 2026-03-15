@@ -154,6 +154,7 @@ export default function SalesPage() {
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{ id: string, code: string, type: 'percent'|'fixed', value: number } | null>(null);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
+  const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
   const [cancelTarget, setCancelTarget] = useState<Sale | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Sale | null>(null);
   const [refundTarget, setRefundTarget] = useState<Sale | null>(null);
@@ -517,13 +518,26 @@ export default function SalesPage() {
     }
   }, []);
 
+  const fetchCoupons = useCallback(async () => {
+    try {
+      const response = await fetch("/api/cupons");
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setAvailableCoupons(data.data || []);
+      }
+    } catch (err) {
+      console.error("Erro ao carregar cupons disponíveis:", err);
+    }
+  }, []);
+
   useEffect(() => {
     fetchSales();
     fetchClients();
     fetchServices();
     fetchClientPackages();
     fetchCurrentUser();
-  }, [fetchSales, fetchClients, fetchServices, fetchClientPackages, fetchCurrentUser]);
+    fetchCoupons();
+  }, [fetchSales, fetchClients, fetchServices, fetchClientPackages, fetchCurrentUser, fetchCoupons]);
 
   const handleChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -2227,6 +2241,22 @@ export default function SalesPage() {
               <label className="block text-xs uppercase text-gray-400 mb-2">
                 Cupom de Desconto (opcional)
               </label>
+              
+              {availableCoupons.length > 0 && !appliedCoupon && (
+                <div className="flex gap-2 mb-3 overflow-x-auto pb-1 disable-scrollbar">
+                   {availableCoupons.map(c => (
+                     <button
+                       key={c.id}
+                       type="button"
+                       onClick={() => { setCouponCode(c.code); }}
+                       className="px-3 py-1.5 text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 whitespace-nowrap transition-colors flex-shrink-0"
+                     >
+                        {c.code} (-{c.discountType === 'percent' ? `${c.discountValue}%` : formatCurrency(c.discountValue)})
+                     </button>
+                   ))}
+                </div>
+              )}
+
               <div className="flex gap-2">
                 <input
                   type="text"
