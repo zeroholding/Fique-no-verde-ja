@@ -917,9 +917,10 @@ export async function POST(request: NextRequest) {
           });
       }
 
-      // Adicionar desconto geral se houver
-      const FinalDiscountGiven = calculatedTotalDiscount + generalDiscountAmount;
-      const FinalTotalSales = calculatedTotal - generalDiscountAmount;
+      // Adicionar desconto geral e cupom se houver
+      const expectedCouponDiscountForRecalc = couponDiscountAmount || 0;
+      const FinalDiscountGiven = calculatedTotalDiscount + generalDiscountAmount + expectedCouponDiscountForRecalc;
+      const FinalTotalSales = Math.max(0, calculatedTotal - generalDiscountAmount - expectedCouponDiscountForRecalc);
 
       // Atualizar totais da venda (incluindo comissao e desconto)
       await query(
