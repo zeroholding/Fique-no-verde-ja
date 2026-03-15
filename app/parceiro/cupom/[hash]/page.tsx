@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useParams } from "next/navigation";
 
 type CouponData = {
   code: string;
@@ -20,11 +21,10 @@ type CouponData = {
   }>;
 };
 
-export default function ParceiroCupomPage({
-  params,
-}: {
-  params: { hash: string };
-}) {
+export default function ParceiroCupomPage() {
+  const params = useParams();
+  const hash = params?.hash as string;
+
   const [data, setData] = useState<CouponData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +32,9 @@ export default function ParceiroCupomPage({
   useEffect(() => {
     const fetchCouponData = async () => {
       try {
-        const res = await fetch(`/api/parceiros/cupons/${params.hash}`);
+        if (!hash) return;
+        
+        const res = await fetch(`/api/parceiros/cupons/${hash}`);
         const json = await res.json();
         
         if (res.ok && json.success) {
@@ -47,8 +49,10 @@ export default function ParceiroCupomPage({
       }
     };
 
-    fetchCouponData();
-  }, [params.hash]);
+    if (hash) {
+      fetchCouponData();
+    }
+  }, [hash]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {

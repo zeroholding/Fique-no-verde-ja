@@ -4,9 +4,9 @@ import { query } from "@/lib/db";
 // ROTA PÚBLICA! Não precisa de JWT
 // GET /api/parceiros/cupons/[hash]
 // export async function GET(request: NextRequest, { params }: { params: { hash: string } }) {
-export async function GET(request: NextRequest, context: any) {
+export async function GET(request: NextRequest, context: { params: Promise<{ hash: string }> }) {
   try {
-    const hash = context.params.hash;
+    const { hash } = await context.params;
 
     if (!hash) {
       return NextResponse.json({ error: "Hash inválido" }, { status: 400 });
