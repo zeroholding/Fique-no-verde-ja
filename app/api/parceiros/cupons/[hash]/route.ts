@@ -15,7 +15,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ has
     // Buscar informações do Cupom (apenas as estatísticas)
     const result = await query(`
         SELECT 
-            c.id, c.code, c.discount_type, c.discount_value, c.is_active,
+            c.id, c.code, c.discount_type, c.discount_value, c.is_active, c.max_uses,
             COUNT(s.id) as current_uses,
             COALESCE(SUM(s.discount_amount), 0) as total_saved
         FROM cupons c
@@ -46,11 +46,12 @@ export async function GET(request: NextRequest, context: { params: Promise<{ has
       data: {
         id: cupom.id,
         code: cupom.code,
-        discount_type: cupom.discount_type,
-        discount_value: Number(cupom.discount_value),
-        current_uses: parseInt(cupom.current_uses, 10),
-        total_saved: Number(cupom.total_saved),
-        is_active: cupom.is_active,
+        discountType: cupom.discount_type,
+        discountValue: Number(cupom.discount_value),
+        currentUses: parseInt(cupom.current_uses, 10),
+        maxUses: cupom.max_uses,
+        totalSaved: Number(cupom.total_saved),
+        isActive: cupom.is_active,
         history: historyResult.rows.map((row: any) => ({
           id: Math.random().toString(), // Helper check
           saleDate: row.sale_date,

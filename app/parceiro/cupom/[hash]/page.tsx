@@ -97,9 +97,9 @@ export default function ParceiroCupomPage() {
         
         {/* Branding/Header */}
         <div className="mb-10 text-center sm:text-left">
-          <p className="text-emerald-500 font-semibold tracking-wider text-sm uppercase mb-2">Painel do Parceiro</p>
-          <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight flex items-center justify-center sm:justify-start gap-3 flex-wrap">
-            Cupom <span className="text-emerald-400 bg-emerald-400/10 px-4 py-1 rounded-xl border border-emerald-400/20 font-mono inline-block mt-2 sm:mt-0 shadow-lg shadow-emerald-500/20">{data.code}</span>
+          <p className="text-emerald-500 font-semibold tracking-wider text-xs uppercase mb-2">Painel do Parceiro</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight flex items-center justify-center sm:justify-start gap-3 flex-wrap">
+            Cupom <span className="text-emerald-400 bg-emerald-400/10 px-3 py-1 rounded-lg border border-emerald-400/20 font-mono inline-block mt-2 sm:mt-0 shadow-lg shadow-emerald-500/20">{data.code}</span>
           </h1>
           <p className="text-gray-400 mt-4 max-w-xl mx-auto sm:mx-0">
             Acompanhe em tempo real o desempenho do seu cupom de desconto. Compartilhe seu código com sua audiência para gerar mais vendas!
@@ -136,10 +136,10 @@ export default function ParceiroCupomPage() {
                 <h3 className="text-gray-400 text-sm font-medium mb-1 uppercase tracking-wider">Usos Totais</h3>
               </div>
               <div>
-                <div className="flex items-end gap-2">
-                  <span className="text-5xl font-black text-white">{data.currentUses}</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-bold text-white">{data.currentUses}</span>
                   {data.maxUses && (
-                    <span className="text-gray-500 text-lg mb-1">/ {data.maxUses} max</span>
+                    <span className="text-gray-500 text-sm mb-1">/ {data.maxUses} max</span>
                   )}
                 </div>
               </div>
@@ -163,8 +163,8 @@ export default function ParceiroCupomPage() {
               
               <div className="mt-4">
                 <h3 className="text-emerald-400/80 text-sm font-medium mb-1 uppercase tracking-wider">Desconto Total Gerado para seus seguidores</h3>
-                <div className="flex items-end gap-2 text-wrap break-all">
-                  <span className="text-4xl sm:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-white">{formatCurrency(data.totalSaved)}</span>
+                <div className="flex items-baseline gap-2 text-wrap break-all">
+                  <span className="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-white">{formatCurrency(data.totalSaved)}</span>
                 </div>
               </div>
             </div>
