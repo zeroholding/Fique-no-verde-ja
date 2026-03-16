@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useParams, useRouter } from "next/navigation";
-import { Sidebar } from "@/components/Sidebar";
-
 type AdminCouponData = {
   code: string;
   discountType: "percent" | "fixed";
@@ -93,9 +91,8 @@ export default function AdminCouponDashboardPage() {
   };
 
   return (
-    <div className="flex bg-[#0a0a0a] min-h-screen font-sans selection:bg-emerald-500/30">
-        <Sidebar />
-        <div className="flex-1 flex flex-col p-4 sm:p-8 ml-0 md:ml-64 w-full md:w-[calc(100%-16rem)] min-h-screen overflow-x-hidden relative">
+    <div className="p-4 sm:p-8 space-y-2 text-white min-h-screen font-sans selection:bg-emerald-500/30">
+        <div className="flex flex-col relative">
             <div className="mb-8 flex items-center gap-4">
               <button 
                 onClick={() => router.push('/dashboard/admin/cupons')}

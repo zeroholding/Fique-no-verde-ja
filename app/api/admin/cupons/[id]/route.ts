@@ -6,7 +6,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-this";
 
 // ROTA PRIVADA! Apenas Admin
 // GET /api/admin/cupons/[id]
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const token = request.cookies.get("token")?.value;
     if (!token) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
     }
 
-    const { id } = params;
+    const { id } = await context.params;
     if (!id) {
       return NextResponse.json({ error: "ID inválido" }, { status: 400 });
     }
