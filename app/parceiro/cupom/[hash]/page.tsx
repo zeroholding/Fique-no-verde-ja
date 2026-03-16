@@ -18,6 +18,10 @@ type CouponData = {
     id: string;
     saleDate: string;
     discountAmount: number;
+    clientName: string;
+    services: string;
+    quantity: number;
+    grossValue: number;
   }>;
 };
 
@@ -29,12 +33,34 @@ export default function ParceiroCupomPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Filtros
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [serviceFilter, setServiceFilter] = useState("");
+  const [services, setServices] = useState<any[]>([]);
+
+  // Buscar serviços para o select
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const res = await fetch("/api/services");
+        const json = await res.json();
+        if (res.ok && json.success) setServices(json.data || []);
+      } catch (err) {}
+    };
+    fetchServices();
+  }, []);
+
   useEffect(() => {
     const fetchCouponData = async () => {
       try {
         if (!hash) return;
-        
-        const res = await fetch(`/api/parceiros/cupons/${hash}`);
+        const params = new URLSearchParams();
+        if (startDate) params.set("startDate", startDate);
+        if (endDate) params.set("endDate", endDate);
+        if (serviceFilter) params.set("service", serviceFilter);
+
+        const res = await fetch(`/api/parceiros/cupons/${hash}?${params.toString()}`);
         const json = await res.json();
         
         if (res.ok && json.success) {
@@ -52,7 +78,7 @@ export default function ParceiroCupomPage() {
     if (hash) {
       fetchCouponData();
     }
-  }, [hash]);
+  }, [hash, startDate, endDate, serviceFilter]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -174,9 +200,36 @@ export default function ParceiroCupomPage() {
 
         {/* History Section */}
         <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden backdrop-blur-sm shadow-2xl">
-          <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-white">Últimas utilizações</h2>
-            <span className="text-xs bg-white/10 text-white px-2.5 py-1 rounded-full font-medium">Top {Math.min(data.history.length, 50)} recentes</span>
+          <div className="px-6 py-5 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold text-white">Últimas utilizações</h2>
+              <span className="text-xs text-gray-400 mt-1 block">Acompanhe as vendas convertidas</span>
+            </div>
+            
+            <div className="flex flex-wrap gap-2">
+               <input 
+                  type="date"
+                  value={startDate}
+                  onChange={e => setStartDate(e.target.value)}
+                  className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-emerald-500/50"
+               />
+               <input 
+                  type="date"
+                  value={endDate}
+                  onChange={e => setEndDate(e.target.value)}
+                  className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-emerald-500/50"
+               />
+               <select
+                  value={serviceFilter}
+                  onChange={e => setServiceFilter(e.target.value)}
+                  className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-emerald-500/50 appearance-none"
+               >
+                  <option value="">Todos os Serviços</option>
+                  {services.map(s => (
+                     <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+               </select>
+            </div>
           </div>
           
           <div className="p-0 sm:p-2">
@@ -194,8 +247,11 @@ export default function ParceiroCupomPage() {
                   <thead>
                     <tr className="bg-black/20 text-gray-400 text-xs uppercase tracking-wider">
                       <th className="px-6 py-4 font-semibold">Data e Hora</th>
-                      <th className="px-6 py-4 font-semibold">Status do Desconto</th>
-                      <th className="px-6 py-4 font-semibold text-right">Valor Economizado</th>
+                      <th className="px-6 py-4 font-semibold">Cliente</th>
+                      <th className="px-6 py-4 font-semibold max-w-[200px]">Serviço</th>
+                      <th className="px-6 py-4 font-semibold text-center">Qtde</th>
+                      <th className="px-6 py-4 font-semibold text-right">Valor Bruto</th>
+                      <th className="px-6 py-4 font-semibold text-right text-emerald-400">Desconto</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
@@ -217,12 +273,23 @@ export default function ParceiroCupomPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                           <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-xs font-semibold tracking-wider uppercase">
-                              Desconto Aplicado
+                           <span className="text-sm font-medium text-gray-300">
+                             {item.clientName}
+                           </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-400 max-w-[200px] truncate">
+                           {item.services}
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                           <span className="bg-white/5 px-2 py-1 rounded text-xs font-mono text-gray-300 border border-white/10">
+                              {item.quantity}x
                            </span>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <span className="text-white font-bold">{formatCurrency(item.discountAmount)}</span>
+                          <span className="text-gray-300 font-medium">{formatCurrency(item.grossValue)}</span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-1 rounded lg:inline-block">-{formatCurrency(item.discountAmount)}</span>
                         </td>
                       </tr>
                     ))}

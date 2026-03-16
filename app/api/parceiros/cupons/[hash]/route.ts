@@ -30,16 +30,43 @@ export async function GET(request: NextRequest, context: { params: Promise<{ has
 
     const cupom = result.rows[0];
 
-    // Buscar histórico recente de usos desse cupom (últimos 50 usos)
+    const url = new URL(request.url);
+    const startDate = url.searchParams.get("startDate");
+    const endDate = url.searchParams.get("endDate");
+    const serviceFilter = url.searchParams.get("service");
+
+    let historyWhere = "s.cupom_id = $1 AND s.discount_amount > 0 AND s.status != 'cancelada'";
+    const queryParams: any[] = [hash];
+    
+    if (startDate) {
+        queryParams.push(`${startDate} 00:00:00`);
+        historyWhere += ` AND s.sale_date >= $${queryParams.length}`;
+    }
+    if (endDate) {
+        queryParams.push(`${endDate} 23:59:59`);
+        historyWhere += ` AND s.sale_date <= $${queryParams.length}`;
+    }
+    if (serviceFilter) {
+        queryParams.push(serviceFilter);
+        historyWhere += ` AND EXISTS (SELECT 1 FROM sale_items si WHERE si.sale_id = s.id AND si.product_id = $${queryParams.length})`;
+    }
+
+    // Buscar histórico de usos com sub-consultas para itens e clientes
     const historyResult = await query(`
         SELECT 
-            created_at as sale_date,
-            discount_amount
-        FROM sales
-        WHERE cupom_id = $1 AND discount_amount > 0 AND status != 'cancelada'
-        ORDER BY created_at DESC
-        LIMIT 50
-    `, [hash]);
+            s.id,
+            s.created_at as sale_date,
+            s.discount_amount,
+            s.subtotal,
+            c.name as client_name,
+            (SELECT string_agg(si.product_name, ', ') FROM sale_items si WHERE si.sale_id = s.id) as services_names,
+            (SELECT COALESCE(sum(si.quantity), 0) FROM sale_items si WHERE si.sale_id = s.id) as total_quantity
+        FROM sales s
+        LEFT JOIN clients c ON s.client_id = c.id
+        WHERE ${historyWhere}
+        ORDER BY s.created_at DESC
+        LIMIT 100
+    `, queryParams);
 
     return NextResponse.json({
       success: true,
@@ -52,11 +79,23 @@ export async function GET(request: NextRequest, context: { params: Promise<{ has
         maxUses: cupom.max_uses,
         totalSaved: Number(cupom.total_saved),
         isActive: cupom.is_active,
-        history: historyResult.rows.map((row: any) => ({
-          id: Math.random().toString(), // Helper check
-          saleDate: row.sale_date,
-          discountAmount: Number(row.discount_amount)
-        }))
+        history: historyResult.rows.map((row: any) => {
+          let obfuscatedName = "Cliente Não Informado";
+          if (row.client_name) {
+             const parts = row.client_name.trim().split(" ");
+             obfuscatedName = parts.map((p: string) => p.charAt(0) + "***").join(" ");
+          }
+          
+          return {
+            id: row.id,
+            saleDate: row.sale_date,
+            discountAmount: Number(row.discount_amount),
+            clientName: obfuscatedName,
+            services: row.services_names || "-",
+            quantity: Number(row.total_quantity),
+            grossValue: Number(row.subtotal)
+          };
+        })
       }
     });
 
