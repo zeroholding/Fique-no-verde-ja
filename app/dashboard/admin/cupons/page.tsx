@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useRouter } from "next/navigation";
 
 interface Cupom {
   id: string;
@@ -17,6 +18,7 @@ interface Cupom {
 }
 
 export default function CuponsAdminPage() {
+  const router = useRouter();
   const [cupons, setCupons] = useState<Cupom[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -217,15 +219,27 @@ export default function CuponsAdminPage() {
                     Criado: {format(new Date(cupom.created_at), 'dd/MM/yyyy')}
                   </span>
                   
-                  <button 
-                    onClick={() => copyLink(cupom.id)}
-                    className="text-emerald-400 hover:text-emerald-300 text-sm font-medium flex items-center gap-1.5 bg-emerald-500/10 px-3 py-1.5 rounded-lg hover:bg-emerald-500/20 transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                    </svg>
-                    Link Parceiro
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => router.push(`/dashboard/admin/cupons/${cupom.id}`)}
+                      title="Painel Analítico"
+                      className="text-indigo-400 hover:text-indigo-300 text-sm font-medium flex items-center justify-center bg-indigo-500/10 w-8 h-8 rounded-lg hover:bg-indigo-500/20 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                    </button>
+                    
+                    <button 
+                      onClick={() => copyLink(cupom.id)}
+                      className="text-emerald-400 hover:text-emerald-300 text-sm font-medium flex items-center gap-1.5 bg-emerald-500/10 px-3 py-1.5 rounded-lg hover:bg-emerald-500/20 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                      </svg>
+                      Link Parceiro
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
