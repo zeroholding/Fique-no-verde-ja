@@ -42,15 +42,7 @@ export default function AdminCouponDashboardPage() {
   const [serviceFilter, setServiceFilter] = useState("");
   const [services, setServices] = useState<any[]>([]);
 
-  // Verificação de Admin Básica Local
-  useEffect(() => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-    const userRole = typeof window !== "undefined" ? localStorage.getItem("userRole") : null;
-    if (!token || userRole !== "admin") {
-      router.replace("/login");
-    }
-  }, [router]);
-
+  // A proteção da rota ocorre via middleware/componente Layout.
   useEffect(() => {
     const fetchServices = async () => {
       try {
