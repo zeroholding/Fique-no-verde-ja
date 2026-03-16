@@ -181,10 +181,11 @@ export default function SalesPage() {
   const [saleTypeFilter, setSaleTypeFilter] = useState<"" | "common" | "package" | "purchase">("");
   const [searchTerm, setSearchTerm] = useState(""); // [NEW] Search State
   const [statusFilter, setStatusFilter] = useState("active"); // [NEW] Status Filter
+  const [couponFilter, setCouponFilter] = useState<"all" | "with_coupon" | "without_coupon">("all");
 
   const hasFilters = useMemo(
-    () => Boolean(startDate || endDate || serviceFilter || attendantFilter || dayType || saleTypeFilter || statusFilter !== "active"),
-    [startDate, endDate, serviceFilter, attendantFilter, dayType, saleTypeFilter, statusFilter]
+    () => Boolean(startDate || endDate || serviceFilter || attendantFilter || dayType || saleTypeFilter || statusFilter !== "active" || couponFilter !== "all"),
+    [startDate, endDate, serviceFilter, attendantFilter, dayType, saleTypeFilter, statusFilter, couponFilter]
   );
 
   const clientOptions = useMemo(() => {
@@ -279,8 +280,14 @@ export default function SalesPage() {
       });
     }
 
+    if (couponFilter === "with_coupon") {
+      result = result.filter(sale => !!sale.couponCode);
+    } else if (couponFilter === "without_coupon") {
+      result = result.filter(sale => !sale.couponCode);
+    }
+
     return result;
-  }, [attendantFilter, dayType, endDate, isAdmin, sales, serviceFilter, services, startDate, saleTypeFilter, clients, statusFilter]);
+  }, [attendantFilter, dayType, endDate, isAdmin, sales, serviceFilter, services, startDate, saleTypeFilter, clients, statusFilter, couponFilter]);
 
   const sortedSales = useMemo(() => {
     const sorted = [...filteredSales];
@@ -1415,6 +1422,23 @@ export default function SalesPage() {
                 <option value="open">Apenas Abertas</option>
               </select>
             </div>
+            
+            {/* Coupon Filter */}
+            <div className="flex flex-col gap-1">
+              <p className="text-xs uppercase text-gray-400">Cupons</p>
+              <select
+                value={couponFilter}
+                onChange={(e) => {
+                   setCouponFilter(e.target.value as any);
+                   setCurrentPage(1);
+                }}
+                className="rounded-xl border border-white/20 bg-black/30 px-3 py-2 text-white text-sm focus:border-white focus:outline-none"
+              >
+                <option value="all">Todos</option>
+                <option value="with_coupon">Apenas com Cupom</option>
+                <option value="without_coupon">Sem Cupom</option>
+              </select>
+            </div>
 
 
           </div>
@@ -1548,6 +1572,11 @@ export default function SalesPage() {
                             </div>
                           );
                         })()}
+                        {sale.couponCode && (
+                          <span className="text-[10px] px-2 py-0.5 rounded border font-medium bg-emerald-500/20 text-emerald-300 border-emerald-500/40 uppercase">
+                            CUPOM: {sale.couponCode}
+                          </span>
+                        )}
                         {sale.status === "cancelada" && (
                           <span className={`text-[10px] px-2 py-0.5 rounded border font-medium uppercase ${statusColors[sale.status].bg} ${statusColors[sale.status].text} ${statusColors[sale.status].border}`}>
                             CANCELADA
