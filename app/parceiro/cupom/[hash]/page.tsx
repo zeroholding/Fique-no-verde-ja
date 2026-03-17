@@ -37,19 +37,16 @@ export default function ParceiroCupomPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [serviceFilter, setServiceFilter] = useState("");
-  const [services, setServices] = useState<any[]>([]);
+  // Serviços são extraídos automaticamente do histórico retornado
+  const availableServices = data?.history
+    ? [...new Set(data.history.map(h => h.services).filter(s => s && s !== "-"))]
+    : [];
 
-  // Buscar serviços para o select
-  useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        const res = await fetch("/api/services");
-        const json = await res.json();
-        if (res.ok && json.success) setServices(json.data || []);
-      } catch (err) {}
-    };
-    fetchServices();
-  }, []);
+  // Histórico filtrado localmente por serviço
+  const filteredHistory = data?.history?.filter(item => {
+    if (!serviceFilter) return true;
+    return item.services?.toLowerCase().includes(serviceFilter.toLowerCase());
+  }) || [];
 
   useEffect(() => {
     const fetchCouponData = async () => {
@@ -222,18 +219,18 @@ export default function ParceiroCupomPage() {
                <select
                   value={serviceFilter}
                   onChange={e => setServiceFilter(e.target.value)}
-                  className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-emerald-500/50 appearance-none"
+                  className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-emerald-500/50"
                >
                   <option value="">Todos os Serviços</option>
-                  {services.map(s => (
-                     <option key={s.id} value={s.id}>{s.name}</option>
+                  {availableServices.map((svc, i) => (
+                     <option key={i} value={svc}>{svc}</option>
                   ))}
                </select>
             </div>
           </div>
           
           <div className="p-0 sm:p-2">
-            {data.history.length === 0 ? (
+            {filteredHistory.length === 0 ? (
               <div className="text-center py-16 px-4">
                 <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-500">
                   <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -243,21 +240,21 @@ export default function ParceiroCupomPage() {
               </div>
             ) : (
               <div className="divide-y divide-white/5 overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[500px]">
+                <table className="w-full text-left border-collapse min-w-[900px]">
                   <thead>
                     <tr className="bg-black/20 text-gray-400 text-xs uppercase tracking-wider">
-                      <th className="px-6 py-4 font-semibold">Data e Hora</th>
-                      <th className="px-6 py-4 font-semibold">Cliente</th>
-                      <th className="px-6 py-4 font-semibold max-w-[200px]">Serviço</th>
-                      <th className="px-6 py-4 font-semibold text-center">Qtde</th>
-                      <th className="px-6 py-4 font-semibold text-right">Valor Bruto</th>
-                      <th className="px-6 py-4 font-semibold text-right text-emerald-400">Desconto</th>
+                      <th className="px-4 py-4 font-semibold whitespace-nowrap">Data e Hora</th>
+                      <th className="px-4 py-4 font-semibold whitespace-nowrap">Cliente</th>
+                      <th className="px-4 py-4 font-semibold">Serviço</th>
+                      <th className="px-4 py-4 font-semibold text-center whitespace-nowrap">Qtde</th>
+                      <th className="px-4 py-4 font-semibold text-right whitespace-nowrap">Valor Bruto</th>
+                      <th className="px-4 py-4 font-semibold text-right text-emerald-400 whitespace-nowrap">Desconto</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
-                    {data.history.map((item, idx) => (
+                    {filteredHistory.map((item, idx) => (
                       <tr key={idx} className="hover:bg-white/5 transition-colors group">
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 group-hover:bg-blue-500/20 transition-colors shrink-0">
                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -272,24 +269,24 @@ export default function ParceiroCupomPage() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-4 whitespace-nowrap">
                            <span className="text-sm font-medium text-gray-300">
                              {item.clientName}
                            </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-400 max-w-[200px] truncate">
+                        <td className="px-4 py-4 text-sm text-gray-400">
                            {item.services}
                         </td>
-                        <td className="px-6 py-4 text-center">
+                        <td className="px-4 py-4 text-center whitespace-nowrap">
                            <span className="bg-white/5 px-2 py-1 rounded text-xs font-mono text-gray-300 border border-white/10">
                               {item.quantity}x
                            </span>
                         </td>
-                        <td className="px-6 py-4 text-right">
+                        <td className="px-4 py-4 text-right whitespace-nowrap">
                           <span className="text-gray-300 font-medium">{formatCurrency(item.grossValue)}</span>
                         </td>
-                        <td className="px-6 py-4 text-right">
-                          <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-1 rounded lg:inline-block">-{formatCurrency(item.discountAmount)}</span>
+                        <td className="px-4 py-4 text-right whitespace-nowrap">
+                          <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-1 rounded inline-block">-{formatCurrency(item.discountAmount)}</span>
                         </td>
                       </tr>
                     ))}
