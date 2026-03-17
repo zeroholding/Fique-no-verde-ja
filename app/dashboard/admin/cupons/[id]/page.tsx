@@ -38,19 +38,16 @@ export default function AdminCouponDashboardPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [serviceFilter, setServiceFilter] = useState("");
-  const [services, setServices] = useState<any[]>([]);
+  // Serviços são extraídos automaticamente do histórico retornado em tempo real
+  const availableServices = data?.history
+    ? [...new Set(data.history.map(h => h.services).filter(s => s && s !== "-"))]
+    : [];
 
-  // A proteção da rota ocorre via middleware/componente Layout.
-  useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        const res = await fetch("/api/services");
-        const json = await res.json();
-        if (res.ok && json.success) setServices(json.data || []);
-      } catch (err) {}
-    };
-    fetchServices();
-  }, []);
+  // Histórico filtrado localmente por serviço
+  const filteredHistory = data?.history?.filter(item => {
+    if (!serviceFilter) return true;
+    return item.services?.toLowerCase().includes(serviceFilter.toLowerCase());
+  }) || [];
 
   useEffect(() => {
     const fetchCouponData = async () => {
@@ -59,7 +56,7 @@ export default function AdminCouponDashboardPage() {
         const paramsStr = new URLSearchParams();
         if (startDate) paramsStr.set("startDate", startDate);
         if (endDate) paramsStr.set("endDate", endDate);
-        if (serviceFilter) paramsStr.set("service", serviceFilter);
+        // Filtro de serviço agora é feito no frontend para evitar erros de UUID no banco
 
         // API Interna (Requer os Cookies)
         const res = await fetch(`/api/admin/cupons/${id}?${paramsStr.toString()}`);
@@ -81,7 +78,7 @@ export default function AdminCouponDashboardPage() {
     if (id) {
       fetchCouponData();
     }
-  }, [id, startDate, endDate, serviceFilter]);
+  }, [id, startDate, endDate]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -199,18 +196,18 @@ export default function AdminCouponDashboardPage() {
                                 <select
                                     value={serviceFilter}
                                     onChange={e => setServiceFilter(e.target.value)}
-                                    className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-emerald-500/50 appearance-none"
+                                    className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-emerald-500/50"
                                 >
                                     <option value="">Todos os Serviços</option>
-                                    {services.map(s => (
-                                        <option key={s.id} value={s.id}>{s.name}</option>
+                                    {availableServices.map((svc, i) => (
+                                        <option key={i} value={svc}>{svc}</option>
                                     ))}
                                 </select>
                             </div>
                         </div>
 
                         <div className="p-0 sm:p-2">
-                            {data.history.length === 0 ? (
+                            {filteredHistory.length === 0 ? (
                                 <div className="text-center py-16 px-4">
                                     <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-500">
                                         <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -231,7 +228,7 @@ export default function AdminCouponDashboardPage() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/5">
-                                            {data.history.map((item, idx) => (
+                                            {filteredHistory.map((item, idx) => (
                                                 <tr key={item.id || idx} className="hover:bg-white/5 transition-colors group">
                                                     <td className="px-6 py-4">
                                                         <p className="text-white font-medium text-sm">

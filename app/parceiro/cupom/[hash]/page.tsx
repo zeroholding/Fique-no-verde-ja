@@ -55,8 +55,6 @@ export default function ParceiroCupomPage() {
         const params = new URLSearchParams();
         if (startDate) params.set("startDate", startDate);
         if (endDate) params.set("endDate", endDate);
-        if (serviceFilter) params.set("service", serviceFilter);
-
         const res = await fetch(`/api/parceiros/cupons/${hash}?${params.toString()}`);
         const json = await res.json();
         
@@ -75,7 +73,7 @@ export default function ParceiroCupomPage() {
     if (hash) {
       fetchCouponData();
     }
-  }, [hash, startDate, endDate, serviceFilter]);
+  }, [hash, startDate, endDate]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
