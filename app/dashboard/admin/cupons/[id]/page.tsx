@@ -228,7 +228,6 @@ export default function AdminCouponDashboardPage() {
                                                 <th className="px-6 py-4 font-semibold text-center">Qtde</th>
                                                 <th className="px-6 py-4 font-semibold text-right">Valor Bruto</th>
                                                 <th className="px-6 py-4 font-semibold text-right text-emerald-400">Cupom</th>
-                                                <th className="px-6 py-4 font-semibold text-right text-indigo-400">Comissão (Custo)</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/5">
@@ -261,11 +260,6 @@ export default function AdminCouponDashboardPage() {
                                                     <td className="px-6 py-4 text-right">
                                                         <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-1 rounded inline-block">
                                                             -{formatCurrency(item.discountAmount)}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-right">
-                                                        <span className="text-indigo-400 font-semibold bg-indigo-500/10 px-2 py-1 rounded block mt-1">
-                                                            {formatCurrency(item.commissionValue)}
                                                         </span>
                                                     </td>
                                                 </tr>
