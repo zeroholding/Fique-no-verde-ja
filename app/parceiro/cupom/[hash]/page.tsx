@@ -22,6 +22,7 @@ type CouponData = {
     services: string;
     quantity: number;
     grossValue: number;
+    commissionValue: number;
   }>;
 };
 
@@ -247,6 +248,7 @@ export default function ParceiroCupomPage() {
                       <th className="px-4 py-4 font-semibold text-center whitespace-nowrap">Qtde</th>
                       <th className="px-4 py-4 font-semibold text-right whitespace-nowrap">Valor Bruto</th>
                       <th className="px-4 py-4 font-semibold text-right text-emerald-400 whitespace-nowrap">Desconto</th>
+                      <th className="px-4 py-4 font-semibold text-right text-indigo-400 whitespace-nowrap">Comissão</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
@@ -285,6 +287,11 @@ export default function ParceiroCupomPage() {
                         </td>
                         <td className="px-4 py-4 text-right whitespace-nowrap">
                           <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-1 rounded inline-block">-{formatCurrency(item.discountAmount)}</span>
+                        </td>
+                        <td className="px-4 py-4 text-right whitespace-nowrap">
+                          <span className="text-indigo-400 font-semibold bg-indigo-500/10 px-2 py-1 rounded inline-block">
+                            {formatCurrency(item.commissionValue)}
+                          </span>
                         </td>
                       </tr>
                     ))}

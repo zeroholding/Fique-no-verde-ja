@@ -93,7 +93,8 @@ export async function GET(request: NextRequest, context: { params: Promise<{ has
             clientName: obfuscatedName,
             services: row.services_names || "-",
             quantity: Number(row.total_quantity),
-            grossValue: Number(row.subtotal)
+            grossValue: Number(row.subtotal),
+            commissionValue: Number(row.commission_amount) || 0
           };
         })
       }
