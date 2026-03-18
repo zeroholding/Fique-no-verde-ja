@@ -155,14 +155,14 @@ export async function GET(request: NextRequest) {
 
     // Fetch paginated affected claims (with filters)
     const claimsResult = await query(
-      `SELECT id, resource_id, order_id, status, type, stage, reason_id, reason_description, product_title, product_image, sale_date, resource, 
+      `SELECT id, resource_id, order_id, status, type, stage, reason_id, reason_description, product_title, product_image, product_link, sale_date, resource, 
               date_created, last_updated, resolution_reason, resolution_closed_by,
               affects_reputation, has_incentive, due_date, message_count, synced_at
        FROM mercado_livre_claims 
        WHERE ${whereClause}
        ORDER BY date_created DESC
-       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
-      [...params, limit, offset]
+       LIMIT $${paramIndex}`,
+      [...params, limit]
     );
 
     // Get last sync time
@@ -207,6 +207,8 @@ export async function GET(request: NextRequest) {
         reason_id: row.reason_id,
         reason_description: row.reason_description,
         product_title: row.product_title,
+        product_image: row.product_image,
+        product_link: row.product_link,
         sale_date: row.sale_date,
         resource: row.resource,
         date_created: row.date_created,

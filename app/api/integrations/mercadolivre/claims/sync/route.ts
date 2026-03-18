@@ -132,6 +132,7 @@ async function ensureTable() {
     await query(`ALTER TABLE mercado_livre_claims ADD COLUMN IF NOT EXISTS product_image TEXT`);
     await query(`ALTER TABLE mercado_livre_claims ADD COLUMN IF NOT EXISTS sale_date VARCHAR(50)`);
     await query(`ALTER TABLE mercado_livre_claims ADD COLUMN IF NOT EXISTS order_id VARCHAR(50)`);
+    await query(`ALTER TABLE mercado_livre_claims ADD COLUMN IF NOT EXISTS product_link TEXT`);
   } catch { /* columns already exist */ }
 }
 
@@ -335,6 +336,7 @@ export async function POST(request: NextRequest) {
           
           let productTitle: string | null = null;
           let productImage: string | null = null;
+          let productLink: string | null = null;
           let saleDate: string | null = null;
           let resolvedOrderId: string | null = null;
 
@@ -419,6 +421,7 @@ export async function POST(request: NextRequest) {
                       const itemData = await fetchMlJsonSafe(`https://api.mercadolibre.com/items/${itemId}`, accessToken);
                       if (itemData) {
                         productImage = getString(itemData.thumbnail) || getString(itemData.secure_thumbnail);
+                        productLink = getString(itemData.permalink);
                       }
                     }
                   }
@@ -436,10 +439,10 @@ export async function POST(request: NextRequest) {
             await query(
               `INSERT INTO mercado_livre_claims (
                 id, user_id, ml_user_id, resource_id, status, type, stage, reason_id, reason_description,
-                product_title, product_image, sale_date, order_id,
+                product_title, product_image, product_link, sale_date, order_id,
                 resource, date_created, last_updated, resolution_reason, resolution_closed_by,
                 affects_reputation, has_incentive, due_date, message_count, synced_at
-              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,NOW())
+              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,NOW())
               ON CONFLICT (id) DO UPDATE SET
                 status = EXCLUDED.status,
                 stage = EXCLUDED.stage,
@@ -447,6 +450,7 @@ export async function POST(request: NextRequest) {
                 reason_description = EXCLUDED.reason_description,
                 product_title = COALESCE(EXCLUDED.product_title, mercado_livre_claims.product_title),
                 product_image = COALESCE(EXCLUDED.product_image, mercado_livre_claims.product_image),
+                product_link = COALESCE(EXCLUDED.product_link, mercado_livre_claims.product_link),
                 sale_date = COALESCE(EXCLUDED.sale_date, mercado_livre_claims.sale_date),
                 order_id = COALESCE(EXCLUDED.order_id, mercado_livre_claims.order_id),
                 resolution_reason = EXCLUDED.resolution_reason,
@@ -469,6 +473,7 @@ export async function POST(request: NextRequest) {
                 reasonDescription,
                 productTitle,
                 productImage,
+                productLink,
                 saleDate,
                 resolvedOrderId,
                 resource,

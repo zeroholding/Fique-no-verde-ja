@@ -191,6 +191,7 @@ type AffectingClaim = {
   reason_description?: string | null;
   product_title?: string | null;
   product_image?: string | null;
+  product_link?: string | null;
   sale_date?: string | null;
   resource: string | null;
   date_created: string;
@@ -265,7 +266,7 @@ export default function ReputationPage() {
   const [affectingTotalPages, setAffectingTotalPages] = useState(0);
   const [affectingLastSync, setAffectingLastSync] = useState<string | null>(null);
   const [syncRunning, setSyncRunning] = useState(false);
-  const AFFECTING_PAGE_SIZE = 20;
+  const AFFECTING_PAGE_SIZE = 500;
 
   // Filters
   const [filterStatus, setFilterStatus] = useState('');
@@ -1537,7 +1538,7 @@ export default function ReputationPage() {
             </div>
           ) : (
             <>
-            <div className="space-y-2 max-h-[500px] overflow-auto pr-1">
+            <div className="space-y-2 pr-1">
               {affectingClaims.map((claim) => (
                 <button
                   type="button"
@@ -1565,7 +1566,9 @@ export default function ReputationPage() {
                         {claim.product_title && (
                           <div className="flex items-center gap-3 mt-2 pr-4">
                             {claim.product_image ? (
-                              <img src={claim.product_image} alt="Produto" className="w-12 h-12 object-cover rounded-md border border-white/10 flex-shrink-0" />
+                              <a href={claim.product_link || '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="flex-shrink-0 hover:opacity-80 transition-opacity">
+                                <img src={claim.product_image} alt="Produto" className="w-12 h-12 object-cover rounded-md border border-white/10" />
+                              </a>
                             ) : (
                               <div className="w-12 h-12 bg-gray-800 rounded-md border border-white/10 flex items-center justify-center flex-shrink-0">
                                 <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1573,9 +1576,9 @@ export default function ReputationPage() {
                                 </svg>
                               </div>
                             )}
-                            <p className="text-[14px] text-gray-300 mt-0.5 font-medium truncate max-w-[300px]" title={claim.product_title}>
+                            <a href={claim.product_link || '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-[14px] text-blue-300 mt-0.5 font-medium truncate max-w-[300px] hover:text-blue-200 hover:underline transition-colors" title={claim.product_title}>
                               {claim.product_title}
-                            </p>
+                            </a>
                           </div>
                         )}
                       </div>
@@ -1642,33 +1645,6 @@ export default function ReputationPage() {
                 </button>
               ))}
             </div>
-
-            {/* ── PAGINATION ── */}
-            {affectingTotalPages > 1 && (
-              <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#27272a]">
-                <p className="text-xs text-gray-400">
-                  Página {affectingPage} de {affectingTotalPages} ({affectingCount} reclamações)
-                </p>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => fetchAffectingPage(affectingPage - 1)}
-                    disabled={affectingPage <= 1 || affectingLoading}
-                    className="text-xs px-3 py-1 rounded border border-[#3f3f46] bg-[#27272a] text-gray-300 hover:bg-[#3f3f46] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                  >
-                    ← Anterior
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fetchAffectingPage(affectingPage + 1)}
-                    disabled={affectingPage >= affectingTotalPages || affectingLoading}
-                    className="text-xs px-3 py-1 rounded border border-[#3f3f46] bg-[#27272a] text-gray-300 hover:bg-[#3f3f46] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                  >
-                    Próxima →
-                  </button>
-                </div>
-              </div>
-            )}
             </>
           )}
           </>
