@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
     const filterMessages = searchParams.get("messages") || "";
     const filterPeriod = searchParams.get("period") || "";
     const filterResolution = searchParams.get("resolution") || "";
+    const filterMediation = searchParams.get("mediation") || "";
 
     const filterPeriodFrom = searchParams.get("periodFrom") || "";
     const filterPeriodTo = searchParams.get("periodTo") || "";
@@ -103,6 +104,12 @@ export async function GET(request: NextRequest) {
       conditions.push("message_count > 0");
     } else if (filterMessages === "without") {
       conditions.push("message_count = 0");
+    }
+
+    if (filterMediation === "open") {
+      conditions.push("stage = 'dispute'");
+    } else if (filterMediation === "no") {
+      conditions.push("(stage IS NULL OR stage != 'dispute')");
     }
 
     // Exact period match (from ML reputation payload)

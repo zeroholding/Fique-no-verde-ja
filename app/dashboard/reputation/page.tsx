@@ -275,6 +275,7 @@ export default function ReputationPage() {
   const [filterMessages, setFilterMessages] = useState('');
   const [filterPeriod, setFilterPeriod] = useState('');
   const [filterResolution, setFilterResolution] = useState('');
+  const [filterMediation, setFilterMediation] = useState('');
   const [availableFilters, setAvailableFilters] = useState<{
     statuses?: string[];
     types?: string[];
@@ -368,7 +369,7 @@ export default function ReputationPage() {
   // [NEW] Fetch claims affecting reputation from LOCAL DB (instant)
   const fetchAffectingPage = async (page: number = 1, filters?: {
     status?: string; type?: string; stage?: string; incentive?: string;
-    messages?: string; period?: string; resolution?: string;
+    messages?: string; period?: string; resolution?: string; mediation?: string;
   }) => {
     if (selectedAccount === null) return;
     setAffectingLoading(true);
@@ -377,6 +378,7 @@ export default function ReputationPage() {
         status: filterStatus, type: filterType, stage: filterStage,
         incentive: filterIncentive, messages: filterMessages,
         period: filterPeriod, resolution: filterResolution,
+        mediation: filterMediation,
       };
       const params = new URLSearchParams({
         ml_user_id: String(selectedAccount),
@@ -390,6 +392,7 @@ export default function ReputationPage() {
       if (f.messages) params.set('messages', f.messages);
       if (f.period) params.set('period', f.period);
       if (f.resolution) params.set('resolution', f.resolution);
+      if (f.mediation) params.set('mediation', f.mediation);
 
       // Exact match logic from ML Reputation
       const mlPeriodStr = typeof data?.seller_reputation?.metrics?.claims?.period === 'string' 
@@ -1434,10 +1437,10 @@ export default function ReputationPage() {
           ) : (
             <>
             {/* ── FILTROS ── */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 mb-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 mb-4">
               <select
                 value={filterStatus}
-                onChange={(e) => { setFilterStatus(e.target.value); fetchAffectingPage(1, { status: e.target.value, type: filterType, stage: filterStage, incentive: filterIncentive, messages: filterMessages, period: filterPeriod, resolution: filterResolution }); }}
+                onChange={(e) => { setFilterStatus(e.target.value); fetchAffectingPage(1, { status: e.target.value, type: filterType, stage: filterStage, incentive: filterIncentive, messages: filterMessages, period: filterPeriod, resolution: filterResolution, mediation: filterMediation }); }}
                 className="text-xs bg-[#27272a] border border-[#3f3f46] text-gray-300 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500/50"
               >
                 <option value="">Status: Todos</option>
@@ -1448,7 +1451,7 @@ export default function ReputationPage() {
 
               <select
                 value={filterType}
-                onChange={(e) => { setFilterType(e.target.value); fetchAffectingPage(1, { status: filterStatus, type: e.target.value, stage: filterStage, incentive: filterIncentive, messages: filterMessages, period: filterPeriod, resolution: filterResolution }); }}
+                onChange={(e) => { setFilterType(e.target.value); fetchAffectingPage(1, { status: filterStatus, type: e.target.value, stage: filterStage, incentive: filterIncentive, messages: filterMessages, period: filterPeriod, resolution: filterResolution, mediation: filterMediation }); }}
                 className="text-xs bg-[#27272a] border border-[#3f3f46] text-gray-300 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500/50"
               >
                 <option value="">Tipo: Todos</option>
@@ -1459,7 +1462,7 @@ export default function ReputationPage() {
 
               <select
                 value={filterStage}
-                onChange={(e) => { setFilterStage(e.target.value); fetchAffectingPage(1, { status: filterStatus, type: filterType, stage: e.target.value, incentive: filterIncentive, messages: filterMessages, period: filterPeriod, resolution: filterResolution }); }}
+                onChange={(e) => { setFilterStage(e.target.value); fetchAffectingPage(1, { status: filterStatus, type: filterType, stage: e.target.value, incentive: filterIncentive, messages: filterMessages, period: filterPeriod, resolution: filterResolution, mediation: filterMediation }); }}
                 className="text-xs bg-[#27272a] border border-[#3f3f46] text-gray-300 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500/50"
               >
                 <option value="">Etapa: Todas</option>
@@ -1470,7 +1473,7 @@ export default function ReputationPage() {
 
               <select
                 value={filterIncentive}
-                onChange={(e) => { setFilterIncentive(e.target.value); fetchAffectingPage(1, { status: filterStatus, type: filterType, stage: filterStage, incentive: e.target.value, messages: filterMessages, period: filterPeriod, resolution: filterResolution }); }}
+                onChange={(e) => { setFilterIncentive(e.target.value); fetchAffectingPage(1, { status: filterStatus, type: filterType, stage: filterStage, incentive: e.target.value, messages: filterMessages, period: filterPeriod, resolution: filterResolution, mediation: filterMediation }); }}
                 className="text-xs bg-[#27272a] border border-[#3f3f46] text-gray-300 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500/50"
               >
                 <option value="">Incentivo: Todos</option>
@@ -1480,7 +1483,7 @@ export default function ReputationPage() {
 
               <select
                 value={filterMessages}
-                onChange={(e) => { setFilterMessages(e.target.value); fetchAffectingPage(1, { status: filterStatus, type: filterType, stage: filterStage, incentive: filterIncentive, messages: e.target.value, period: filterPeriod, resolution: filterResolution }); }}
+                onChange={(e) => { setFilterMessages(e.target.value); fetchAffectingPage(1, { status: filterStatus, type: filterType, stage: filterStage, incentive: filterIncentive, messages: e.target.value, period: filterPeriod, resolution: filterResolution, mediation: filterMediation }); }}
                 className="text-xs bg-[#27272a] border border-[#3f3f46] text-gray-300 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500/50"
               >
                 <option value="">Mensagens: Todas</option>
@@ -1490,7 +1493,7 @@ export default function ReputationPage() {
 
               <select
                 value={filterPeriod}
-                onChange={(e) => { setFilterPeriod(e.target.value); fetchAffectingPage(1, { status: filterStatus, type: filterType, stage: filterStage, incentive: filterIncentive, messages: filterMessages, period: e.target.value, resolution: filterResolution }); }}
+                onChange={(e) => { setFilterPeriod(e.target.value); fetchAffectingPage(1, { status: filterStatus, type: filterType, stage: filterStage, incentive: filterIncentive, messages: filterMessages, period: e.target.value, resolution: filterResolution, mediation: filterMediation }); }}
                 className="text-xs bg-[#27272a] border border-[#3f3f46] text-gray-300 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500/50"
               >
                 <option value="">Últ. 60 dias</option>
@@ -1501,7 +1504,7 @@ export default function ReputationPage() {
 
               <select
                 value={filterResolution}
-                onChange={(e) => { setFilterResolution(e.target.value); fetchAffectingPage(1, { status: filterStatus, type: filterType, stage: filterStage, incentive: filterIncentive, messages: filterMessages, period: filterPeriod, resolution: e.target.value }); }}
+                onChange={(e) => { setFilterResolution(e.target.value); fetchAffectingPage(1, { status: filterStatus, type: filterType, stage: filterStage, incentive: filterIncentive, messages: filterMessages, period: filterPeriod, resolution: e.target.value, mediation: filterMediation }); }}
                 className="text-xs bg-[#27272a] border border-[#3f3f46] text-gray-300 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500/50"
               >
                 <option value="">Resolução: Todas</option>
@@ -1509,6 +1512,16 @@ export default function ReputationPage() {
                 <option value="buyer">Comprador</option>
                 <option value="seller">Vendedor</option>
                 <option value="none">Sem resolução</option>
+              </select>
+
+              <select
+                value={filterMediation}
+                onChange={(e) => { setFilterMediation(e.target.value); fetchAffectingPage(1, { status: filterStatus, type: filterType, stage: filterStage, incentive: filterIncentive, messages: filterMessages, period: filterPeriod, resolution: filterResolution, mediation: e.target.value }); }}
+                className="text-xs bg-[#27272a] border border-[#3f3f46] text-gray-300 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500/50"
+              >
+                <option value="">Mediação: Todas</option>
+                <option value="open">Com mediação</option>
+                <option value="no">Sem mediação</option>
               </select>
             </div>
 
