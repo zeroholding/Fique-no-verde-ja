@@ -264,14 +264,17 @@ export async function POST(request: NextRequest) {
 
     console.log(`[ML-SYNC] Total claims fetched from ML: ${allClaims.length}`);
 
-    // 2. Get existing claim IDs + last_updated from DB to skip unchanged
+    // 2. Get existing claim IDs + last_updated + order_id from DB to skip unchanged, unless missing order_id
     const existingResult = await query(
-      "SELECT id, last_updated FROM mercado_livre_claims WHERE user_id = $1 AND ml_user_id = $2",
+      "SELECT id, last_updated, order_id FROM mercado_livre_claims WHERE user_id = $1 AND ml_user_id = $2",
       [userId, mlUserId]
     );
-    const existingMap = new Map<number, string>();
+    const existingMap = new Map<number, { lastUpdated: string; hasOrderId: boolean }>();
     for (const row of existingResult.rows) {
-      existingMap.set(Number(row.id), row.last_updated || "");
+      existingMap.set(Number(row.id), { 
+        lastUpdated: row.last_updated || "", 
+        hasOrderId: !!row.order_id 
+      });
     }
 
     // 3. Process claims in batches of 5 (lighter batches for stability)
@@ -290,8 +293,9 @@ export async function POST(request: NextRequest) {
 
           const claimLastUpdated = getString(claim.last_updated) ?? "";
 
-          // Skip if unchanged
-          if (existingMap.has(claimId) && existingMap.get(claimId) === claimLastUpdated) {
+          // Skip if unchanged AND we already have the order_id (don't skip if order_id is missing, we need to try resolving it again)
+          const existingRecord = existingMap.get(claimId);
+          if (existingRecord && existingRecord.lastUpdated === claimLastUpdated && existingRecord.hasOrderId) {
             skipped++;
             return;
           }
