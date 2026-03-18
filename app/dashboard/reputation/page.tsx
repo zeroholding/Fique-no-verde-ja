@@ -183,6 +183,7 @@ type ClaimDetail = {
 type AffectingClaim = {
   id: number;
   resource_id: number | string | null;
+  order_id: string | null;
   status: string;
   type: string;
   stage: string;
@@ -1540,7 +1541,7 @@ export default function ReputationPage() {
                       </div>
                       <div className="flex flex-col">
                         <p className="text-[16px] text-white font-bold flex items-center gap-2">
-                          {claim.resource_id ? `Pedido #${String(claim.resource_id)}` : 'Venda sem Pedido'}
+                          {(claim.order_id || claim.resource_id) ? `Pedido #${String(claim.order_id || claim.resource_id)}` : 'Venda sem Pedido'}
                           <span className={`text-[11px] font-normal ${claim.message_count > 0 ? 'text-blue-300' : 'text-gray-500'}`}>
                             ({claim.message_count} {claim.message_count === 1 ? 'mensagem' : 'mensagens'})
                           </span>
@@ -1601,7 +1602,7 @@ export default function ReputationPage() {
                       </span>
                     </p>
                     <p className="text-gray-400">
-                      Recurso: <span className="text-gray-300">{translate(claim.resource, claimResourceLabels)} / {String(claim.resource_id ?? '-')}</span>
+                      Recurso: <span className="text-gray-300">{translate(claim.resource, claimResourceLabels)} / {String(claim.resource_id ?? '-')}{claim.order_id && claim.order_id !== String(claim.resource_id) ? ` → Order ${claim.order_id}` : ''}</span>
                     </p>
                     <p className="text-gray-400">
                       Data da Venda: <span className="text-gray-300">{claim.sale_date ? formatDateTime(claim.sale_date) : '-'}</span>

@@ -148,7 +148,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch paginated affected claims (with filters)
     const claimsResult = await query(
-      `SELECT id, resource_id, status, type, stage, reason_id, reason_description, product_title, product_image, sale_date, resource, 
+      `SELECT id, resource_id, order_id, status, type, stage, reason_id, reason_description, product_title, product_image, sale_date, resource, 
               date_created, last_updated, resolution_reason, resolution_closed_by,
               affects_reputation, has_incentive, due_date, message_count, synced_at
        FROM mercado_livre_claims 
@@ -193,6 +193,7 @@ export async function GET(request: NextRequest) {
       claims: claimsResult.rows.map((row: Record<string, unknown>) => ({
         id: Number(row.id),
         resource_id: row.resource_id,
+        order_id: row.order_id || null,
         status: row.status,
         type: row.type,
         stage: row.stage,

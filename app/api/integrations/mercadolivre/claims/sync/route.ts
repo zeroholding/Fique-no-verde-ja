@@ -125,12 +125,13 @@ async function ensureTable() {
     CREATE INDEX IF NOT EXISTS idx_ml_claims_user_ml
     ON mercado_livre_claims (user_id, ml_user_id, affects_reputation);
   `);
-  // Add reason_description, product_title, sale_date columns if missing (for existing tables)
+  // Add reason_description, product_title, sale_date, order_id columns if missing (for existing tables)
   try {
     await query(`ALTER TABLE mercado_livre_claims ADD COLUMN IF NOT EXISTS reason_description TEXT`);
     await query(`ALTER TABLE mercado_livre_claims ADD COLUMN IF NOT EXISTS product_title TEXT`);
     await query(`ALTER TABLE mercado_livre_claims ADD COLUMN IF NOT EXISTS product_image TEXT`);
     await query(`ALTER TABLE mercado_livre_claims ADD COLUMN IF NOT EXISTS sale_date VARCHAR(50)`);
+    await query(`ALTER TABLE mercado_livre_claims ADD COLUMN IF NOT EXISTS order_id VARCHAR(50)`);
   } catch { /* columns already exist */ }
 }
 
@@ -335,6 +336,7 @@ export async function POST(request: NextRequest) {
           let productTitle: string | null = null;
           let productImage: string | null = null;
           let saleDate: string | null = null;
+          let resolvedOrderId: string | null = null;
 
           if (affectsReputation === "affected") {
             affectedCount++;
@@ -379,7 +381,9 @@ export async function POST(request: NextRequest) {
                 orderId = resourceId;
               }
 
+              // Save the resolved order ID
               if (orderId) {
+                resolvedOrderId = String(orderId);
                 const order = await fetchMlJsonSafe(`https://api.mercadolibre.com/orders/${orderId}`, accessToken);
                 if (order) {
                   saleDate = getString(order.date_created);
@@ -411,10 +415,10 @@ export async function POST(request: NextRequest) {
             await query(
               `INSERT INTO mercado_livre_claims (
                 id, user_id, ml_user_id, resource_id, status, type, stage, reason_id, reason_description,
-                product_title, product_image, sale_date,
+                product_title, product_image, sale_date, order_id,
                 resource, date_created, last_updated, resolution_reason, resolution_closed_by,
                 affects_reputation, has_incentive, due_date, message_count, synced_at
-              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,NOW())
+              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,NOW())
               ON CONFLICT (id) DO UPDATE SET
                 status = EXCLUDED.status,
                 stage = EXCLUDED.stage,
@@ -423,6 +427,7 @@ export async function POST(request: NextRequest) {
                 product_title = COALESCE(EXCLUDED.product_title, mercado_livre_claims.product_title),
                 product_image = COALESCE(EXCLUDED.product_image, mercado_livre_claims.product_image),
                 sale_date = COALESCE(EXCLUDED.sale_date, mercado_livre_claims.sale_date),
+                order_id = COALESCE(EXCLUDED.order_id, mercado_livre_claims.order_id),
                 resolution_reason = EXCLUDED.resolution_reason,
                 resolution_closed_by = EXCLUDED.resolution_closed_by,
                 affects_reputation = EXCLUDED.affects_reputation,
@@ -444,6 +449,7 @@ export async function POST(request: NextRequest) {
                 productTitle,
                 productImage,
                 saleDate,
+                resolvedOrderId,
                 resource,
                 getString(claim.date_created) ?? "",
                 claimLastUpdated,
