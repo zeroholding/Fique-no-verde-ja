@@ -313,14 +313,14 @@ export async function POST(request: NextRequest) {
             }
           } catch { /* ignore */ }
 
-          // Fetch claim detail to get reason_description
+          // Fetch claim detail to get reason_description AND related_entities (order_id)
+          let claimDetail: Record<string, unknown> | null = null;
           try {
-            const claimDetail = await fetchMlJsonSafe(
+            claimDetail = await fetchMlJsonSafe(
               `https://api.mercadolibre.com/post-purchase/v1/claims/${claimId}`,
               accessToken
             );
             if (claimDetail) {
-              // ML returns reason_detail.description or just check for common fields
               const reasonDetail = getObject(claimDetail.reason_detail);
               reasonDescription = getString(reasonDetail.description)
                 || getString(claimDetail.reason_description)
@@ -342,46 +342,68 @@ export async function POST(request: NextRequest) {
             affectedCount++;
             messageCount = await getMessageCount(claimId, resource, resourceId, mlUserId, accessToken);
             
-            // Fetch order info
+            // ── Resolve the TRUE Order ID ──
             try {
               let orderId: string | number | null = null;
-              
-              if (resource === "shipment" && resourceId) {
-                // Strategy 1: fetch shipment directly to get order_id
+
+              // ★ STRATEGY 0 (BEST): Extract order from claim's related_entities
+              // The ML claim detail returns related_entities with type "order"
+              if (claimDetail) {
+                const relatedEntities = Array.isArray(claimDetail.related_entities) ? claimDetail.related_entities : [];
+                for (const entity of relatedEntities) {
+                  const ent = getObject(entity);
+                  const entType = getString(ent.type);
+                  const entId = getNumber(ent.id) ?? getString(ent.id);
+                  if (entType === "order" && entId) {
+                    orderId = entId;
+                    console.log(`[ML-SYNC] Claim ${claimId} → order_id=${orderId} (from related_entities)`);
+                    break;
+                  }
+                }
+
+                // Also try players or other fields that might hold order info
+                if (!orderId) {
+                  // Some claims have resource="order" in the detail even if search says "shipment"
+                  const detailResource = getString(claimDetail.resource);
+                  const detailResourceId = getNumber(claimDetail.resource_id) ?? getString(claimDetail.resource_id);
+                  if (detailResource === "order" && detailResourceId) {
+                    orderId = detailResourceId;
+                    console.log(`[ML-SYNC] Claim ${claimId} → order_id=${orderId} (from detail resource=order)`);
+                  }
+                }
+              }
+
+              // Strategy 1: fetch shipment to get order_id
+              if (!orderId && resource === "shipment" && resourceId) {
                 const shipment = await fetchMlJsonSafe(`https://api.mercadolibre.com/shipments/${resourceId}`, accessToken);
                 if (shipment) {
                   orderId = getNumber(shipment.order_id) || getString(shipment.order_id);
-                  console.log(`[ML-SYNC] Shipment ${resourceId} → order_id=${orderId}`);
-                }
-                
-                // Strategy 2: search orders by shipment ID
-                if (!orderId) {
-                  const searchOrders = await fetchMlJsonSafe(`https://api.mercadolibre.com/orders/search?seller=${mlUserId}&q=${resourceId}`, accessToken);
-                  const results = Array.isArray(searchOrders?.results) ? searchOrders.results : [];
-                  if (results.length > 0) {
-                    orderId = getNumber(results[0].id) || getString(results[0].id);
-                    console.log(`[ML-SYNC] Search found order ${orderId} for shipment ${resourceId}`);
+                  if (orderId) {
+                    console.log(`[ML-SYNC] Shipment ${resourceId} → order_id=${orderId} (from shipment API)`);
                   }
                 }
+              }
 
-                // Strategy 3: try resourceId as orderId directly (some claims use order IDs even with resource=shipment)
-                if (!orderId) {
-                  const tryOrder = await fetchMlJsonSafe(`https://api.mercadolibre.com/orders/${resourceId}`, accessToken);
-                  if (tryOrder && tryOrder.id) {
-                    orderId = resourceId;
-                    console.log(`[ML-SYNC] resourceId ${resourceId} is actually an order`);
-                  }
+              // Strategy 2: search orders by shipment
+              if (!orderId && resource === "shipment" && resourceId) {
+                const searchOrders = await fetchMlJsonSafe(`https://api.mercadolibre.com/orders/search?seller=${mlUserId}&q=${resourceId}`, accessToken);
+                const results = Array.isArray(searchOrders?.results) ? searchOrders.results : [];
+                if (results.length > 0) {
+                  orderId = getNumber(results[0].id) || getString(results[0].id);
+                  if (orderId) console.log(`[ML-SYNC] Search found order ${orderId} for shipment ${resourceId}`);
                 }
-                
-                if (!orderId) {
-                  console.log(`[ML-SYNC] Could not resolve order for shipment ${resourceId}`);
-                }
-              } else if (resourceId) {
-                // resource === "order" — use directly
+              }
+
+              // If resource is already "order", use resource_id directly
+              if (!orderId && resource === "order" && resourceId) {
                 orderId = resourceId;
               }
 
-              // Save the resolved order ID
+              if (!orderId) {
+                console.log(`[ML-SYNC] Could not resolve order for claim ${claimId} (resource=${resource}, resource_id=${resourceId})`);
+              }
+
+              // Save the resolved order ID and fetch product info
               if (orderId) {
                 resolvedOrderId = String(orderId);
                 const order = await fetchMlJsonSafe(`https://api.mercadolibre.com/orders/${orderId}`, accessToken);
@@ -394,7 +416,6 @@ export async function POST(request: NextRequest) {
                     
                     const itemId = getString(itemObj.id);
                     if (itemId) {
-                      // Fetch the item to get its thumbnail
                       const itemData = await fetchMlJsonSafe(`https://api.mercadolibre.com/items/${itemId}`, accessToken);
                       if (itemData) {
                         productImage = getString(itemData.thumbnail) || getString(itemData.secure_thumbnail);
