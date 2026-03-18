@@ -743,6 +743,16 @@ export default function ReputationPage() {
     dictionary: Record<string, string>
   ) => {
     if (!value) return "-";
+    if (dictionary[value]) return dictionary[value];
+
+    // Lógica de De-Para por prefixo (ML reasons)
+    if (dictionary === reasonIdLabels) {
+      const v = value.toUpperCase();
+      if (v.startsWith("PNR")) return "PNR: Produto Não Recebido";
+      if (v.startsWith("PDD")) return "PDD: Produto Diferente ou Defeituoso";
+      if (v.startsWith("CS")) return "CS: Compra Cancelada";
+    }
+
     return dictionary[value] || prettifyCode(value);
   };
 
@@ -805,7 +815,11 @@ export default function ReputationPage() {
     cancelled: "Cancelada",
   };
   const reasonIdLabels: Record<string, string> = {
-    // Produto
+    // Famílias Principais (De-Para solicitado)
+    "PNR": "PNR: Produto Não Recebido",
+    "PDD": "PDD: Produto Diferente ou Defeituoso",
+    "CS": "CS: Compra Cancelada",
+    // Sub-códigos específicos conhecidos
     "PDD001": "Produto com defeito",
     "PDD002": "Produto diferente do anunciado",
     "PDD003": "Produto incompleto",
@@ -821,12 +835,12 @@ export default function ReputationPage() {
     "PUR001": "Arrependimento de compra",
     "PUR002": "Compra duplicada",
     "PUR003": "Compra não reconhecida",
-    // Genéricos — ML não padroniza muito, deixar o fallback
-    SNI: "Produto não recebido",
-    PDS: "Produto diferente do descrito",
-    DFT: "Produto com defeito",
-    RET: "Devolução solicitada",
-    CBK: "Chargeback / Contestação",
+    // Fallbacks legados
+    "SNI": "Produto não recebido",
+    "PDS": "Produto diferente do descrito",
+    "DFT": "Produto com defeito",
+    "RET": "Devolução solicitada",
+    "CBK": "Chargeback / Contestação",
   };
   const playerRoleLabels: Record<string, string> = {
     complainant: "Reclamante",
@@ -1612,9 +1626,12 @@ export default function ReputationPage() {
                     </p>
                     <p className="text-gray-400">
                       Motivo: <span className="text-gray-300">
-                        {claim.reason_description 
-                          ? claim.reason_description 
-                          : translate(claim.reason_id, reasonIdLabels)}
+                        {translate(claim.reason_id, reasonIdLabels)}
+                        {claim.reason_description && claim.reason_description !== claim.reason_id && (
+                          <span className="text-gray-400 block mt-0.5 italic">
+                            {claim.reason_description}
+                          </span>
+                        )}
                       </span>
                     </p>
                     <p className="text-gray-400">
@@ -1893,7 +1910,14 @@ export default function ReputationPage() {
                 </div>
                 <div className="p-3 rounded-lg bg-white/5 border border-white/10">
                   <p className="text-xs text-gray-400">Motivo</p>
-                  <p className="text-sm text-white">{claimDetail.reason_id ? translate(claimDetail.reason_id, reasonIdLabels) : "-"}</p>
+                  <p className="text-sm text-white">
+                    {translate(claimDetail.reason_id, reasonIdLabels)}
+                    {claimDetail.reason_description && claimDetail.reason_description !== claimDetail.reason_id && (
+                      <span className="text-gray-400 block mt-1 text-xs italic">
+                        {claimDetail.reason_description}
+                      </span>
+                    )}
+                  </p>
                 </div>
                 <div className="p-3 rounded-lg bg-white/5 border border-white/10">
                   <p className="text-xs text-gray-400">Recurso</p>
