@@ -111,6 +111,7 @@ type SupportClaim = {
   last_updated: string;
   resolution_reason: string | null;
   resolution_closed_by: string | null;
+  reason_description?: string | null;
 };
 
 type SupportMessageThread = {
@@ -152,6 +153,7 @@ type ClaimDetail = {
   resource: string | null;
   resource_id: number | string | null;
   reason_id: string | null;
+  reason_description?: string | null;
   fulfilled: boolean | null;
   quantity_type: string | null;
   claimed_quantity: number | null;
@@ -1431,7 +1433,7 @@ export default function ReputationPage() {
                     ? 'bg-red-500/10 text-red-300 border-red-500/20'
                     : 'bg-green-500/10 text-green-300 border-green-500/20'
                 }`}>
-                  {affectingCount} de {affectingTotalChecked} afetam
+                  {affectingCount} {affectingCount === 1 ? 'afeta' : 'afetam'}
                 </span>
               )}
             </div>
