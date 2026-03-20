@@ -1696,11 +1696,9 @@ export default function ReputationPage() {
               <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mx-auto mb-2"></div>
               <p className="text-sm text-gray-300">Carregando histórico de mensagens...</p>
             </div>
-          ) : claimMessages.length === 0 ? (
-            <p className="text-sm text-gray-300 py-4 text-center">Nenhuma mensagem encontrada para esta reclamação.</p>
           ) : (
             <div className="space-y-4">
-              {/* TABS */}
+              {/* TABS Sempre visíveis */}
               <div className="flex border-b border-gray-700">
                 <button
                   className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${
@@ -1725,50 +1723,60 @@ export default function ReputationPage() {
               </div>
 
               <div className="max-h-[55vh] overflow-y-auto pr-1 space-y-2">
-                {claimMessages
-                  .filter((msg) => {
+                {(() => {
+                  const filteredMessages = claimMessages.filter((msg) => {
                     const isMediator = msg.sender_role === 'mediator' || msg.receiver_role === 'mediator';
                     return activeChatTab === 'ml' ? isMediator : !isMediator;
-                  })
-                  .map((message) => {
-                  const role = message.sender_role;
-                  const isSeller = role === 'seller' || role === 'respondent';
-                  const isMediator = role === 'mediator';
-                  
-                  return (
-                    <div
-                      key={message.id}
-                      className={`flex ${isMediator ? 'justify-center w-full my-4' : isSeller ? 'justify-end' : 'justify-start'}`}
-                    >
+                  });
+
+                  if (filteredMessages.length === 0) {
+                    return (
+                      <p className="text-sm text-gray-300 py-6 text-center">
+                        Nenhuma mensagem encontrada neste ambiente.
+                      </p>
+                    );
+                  }
+
+                  return filteredMessages.map((message) => {
+                    const role = message.sender_role;
+                    const isSeller = role === 'seller' || role === 'respondent';
+                    const isMediator = role === 'mediator';
+                    
+                    return (
                       <div
-                        className={`max-w-[80%] rounded-xl px-4 py-3 border ${
-                          isMediator
-                            ? 'bg-purple-900/40 border-purple-500/60 shadow-[0_0_15px_rgba(168,85,247,0.2)]'
-                            : isSeller
-                            ? 'bg-emerald-500/15 border-emerald-500/30'
-                            : 'bg-white/5 border-white/15'
-                        }`}
+                        key={message.id}
+                        className={`flex ${isMediator ? 'justify-center w-full my-4' : isSeller ? 'justify-end' : 'justify-start'}`}
                       >
-                        <p className={`text-[12px] mb-2 font-bold flex items-center gap-2 ${
-                          isMediator ? 'text-purple-300 uppercase tracking-wide' : isSeller ? 'text-emerald-300' : 'text-orange-300'
-                        }`}>
-                          {isMediator ? '🛡️ MERCADO LIVRE RESPONDEU' : isSeller ? '🏢 Vendedor (Você)' : '👤 Comprador'}
-                          <span className="text-gray-400 font-normal normal-case text-[11px]">
-                            {formatDateTime(message.date_created)}
-                          </span>
-                        </p>
-                        <p className={`whitespace-pre-wrap leading-relaxed ${isMediator ? 'text-white text-[15px]' : 'text-sm text-gray-200'}`}>
-                          {message.text || '(sem texto)'}
-                        </p>
-                        {message.attachments.length > 0 && (
-                          <p className="text-[11px] text-gray-400 mt-2 flex items-center gap-1 bg-black/20 px-2 py-1 rounded inline-block">
-                            📎 {message.attachments.length} anexo(s)
+                        <div
+                          className={`max-w-[80%] rounded-xl px-4 py-3 border ${
+                            isMediator
+                              ? 'bg-purple-900/40 border-purple-500/60 shadow-[0_0_15px_rgba(168,85,247,0.2)]'
+                              : isSeller
+                              ? 'bg-emerald-500/15 border-emerald-500/30'
+                              : 'bg-white/5 border-white/15'
+                          }`}
+                        >
+                          <p className={`text-[12px] mb-2 font-bold flex items-center gap-2 ${
+                            isMediator ? 'text-purple-300 uppercase tracking-wide' : isSeller ? 'text-emerald-300' : 'text-orange-300'
+                          }`}>
+                            {isMediator ? '🛡️ MERCADO LIVRE RESPONDEU' : isSeller ? '🏢 Vendedor (Você)' : '👤 Comprador'}
+                            <span className="text-gray-400 font-normal normal-case text-[11px]">
+                              {formatDateTime(message.date_created)}
+                            </span>
                           </p>
-                        )}
+                          <p className={`whitespace-pre-wrap leading-relaxed ${isMediator ? 'text-white text-[15px]' : 'text-sm text-gray-200'}`}>
+                            {message.text || '(sem texto)'}
+                          </p>
+                          {message.attachments.length > 0 && (
+                            <p className="text-[11px] text-gray-400 mt-2 flex items-center gap-1 bg-black/20 px-2 py-1 rounded inline-block">
+                              📎 {message.attachments.length} anexo(s)
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  });
+                })()}
               </div>
             </div>
           )}
