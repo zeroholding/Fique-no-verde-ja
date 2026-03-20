@@ -146,6 +146,13 @@ export async function GET(request: NextRequest) {
       `,
       [clientId]
     );
+    // [RESTORED] Fetch Live Package Data for Accurate Summary and Correction
+    const livePackageRes = await query(`
+        SELECT available_quantity, unit_price FROM client_packages 
+        WHERE client_id = $1
+        ORDER BY created_at DESC LIMIT 1
+    `, [clientId]);
+    const livePkg = livePackageRes.rows[0];
 
     const operationsRaw: any[] = [
       ...purchasesResult.rows.map((r: any) => ({ ...r, operation_type: "compra" })),
@@ -153,9 +160,40 @@ export async function GET(request: NextRequest) {
     ];
 
     // 1. Ordena TUDO por data ascendente para calculo de saldo
-    const opsSortedAll = [...operationsRaw].sort(
+    let opsSortedAll = [...operationsRaw].sort(
       (a, b) => new Date(a.op_date).getTime() - new Date(b.op_date).getTime()
     );
+
+    // [NEW] Injetar linha de ajuste se houver inconsistencia historica vs live
+    if (livePkg && opsSortedAll.length > 0) {
+      const targetQty = Number(livePkg.available_quantity);
+      const targetFinance = targetQty * Number(livePkg.unit_price);
+      
+      const calcQty = opsSortedAll.reduce((acc, op) => 
+        acc + (op.operation_type === "compra" ? Number(op.quantity) : -Number(op.quantity)), 0);
+      const calcFinance = opsSortedAll.reduce((acc, op) => acc + Number(op.value), 0);
+      
+      const diffQty = targetQty - calcQty;
+      const diffFinance = targetFinance - calcFinance;
+
+      if (Math.abs(diffQty) > 0.01 || Math.abs(diffFinance) > 0.01) {
+        const firstDate = opsSortedAll[0].op_date;
+        opsSortedAll.unshift({
+          id: 'initial_adjustment',
+          client_id: clientId,
+          client_name: opsSortedAll[0].client_name,
+          service_name: 'Ajuste de Saldo / Saldo Inicial',
+          sale_id: null,
+          attendant_name: 'Sistema',
+          op_date: firstDate,
+          value: diffFinance,
+          quantity: Math.abs(diffQty),
+          unit_price: diffQty !== 0 ? Math.abs(diffFinance / diffQty) : 0,
+          operation_type: diffQty >= 0 ? "compra" : "consumo",
+          is_adjustment: true
+        });
+      }
+    }
 
     // 2. Calcula saldo linha a linha (histórico completo)
     const balances: Record<string, number> = {};
@@ -186,7 +224,7 @@ export async function GET(request: NextRequest) {
         balanceAfter: nextBalance,
         balanceQuantityAfter: nextQty,
         observations: op.sale_observations || null,
-        endClientName: op.end_client_name || null, // [NEW] Nome do cliente final
+        endClientName: op.end_client_name || null,
       };
     });
 
@@ -228,6 +266,16 @@ export async function GET(request: NextRequest) {
       if (!s.lastOperation || new Date(op.date).getTime() > new Date(s.lastOperation).getTime()) {
         s.lastOperation = op.date;
       }
+    }
+
+    // 6. [RESTORED] Override Summary for 100% Accuracy in Main Widget
+    if (livePkg) {
+      Object.values(summaryMap).forEach((s: any) => {
+        if (s.clientId === clientId) {
+           s.balanceQuantityCurrent = Number(livePkg.available_quantity);
+           s.balanceCurrent = Number(livePkg.available_quantity) * Number(livePkg.unit_price);
+        }
+      });
     }
 
     return NextResponse.json(
