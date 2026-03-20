@@ -1553,41 +1553,36 @@ export default function ReputationPage() {
                   className="w-full text-left p-4 rounded-xl bg-[#202022] border border-red-900/50 hover:bg-[#2a2a2d] transition-all group shadow-sm"
                   onClick={() => loadClaimMessages(claim)}
                 >
-                  <div className="flex items-center justify-between gap-3 mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="p-1.5 bg-red-500/20 rounded">
-                        <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex items-start gap-3">
+                      {/* Imagem do Produto como Destaque Visual */}
+                      {claim.product_image ? (
+                        <a href={claim.product_link || '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="flex-shrink-0 hover:opacity-80 transition-opacity">
+                          <img src={claim.product_image} alt="Produto" className="w-[52px] h-[52px] object-cover rounded-lg border border-white/10 shadow-sm" />
+                        </a>
+                      ) : (
+                        <div className="w-[52px] h-[52px] bg-gray-800 rounded-lg border border-white/10 flex items-center justify-center flex-shrink-0 shadow-sm">
+                          <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      )}
+
                       <div className="flex flex-col">
-                        <p className="text-[16px] text-white font-bold flex items-center gap-2">
+                        <p className="text-[15px] text-white font-bold flex items-center gap-2">
                           {(claim.order_id || claim.resource_id) ? `Pedido #${String(claim.order_id || claim.resource_id)}` : 'Venda sem Pedido'}
-                          <span className={`text-[11px] font-normal ${claim.message_count > 0 ? 'text-blue-300' : 'text-gray-500'}`}>
-                            ({claim.message_count} {claim.message_count === 1 ? 'mensagem' : 'mensagens'})
+                          <span className={`text-[10px] font-normal px-1.5 py-0.5 rounded ${claim.message_count > 0 ? 'bg-blue-500/10 text-blue-300' : 'bg-gray-500/10 text-gray-500'}`}>
+                            {claim.message_count} {claim.message_count === 1 ? 'msg' : 'msgs'}
                           </span>
                         </p>
-                        <p className="text-[12px] text-gray-400 font-medium">
+                        {claim.product_title && (
+                          <a href={claim.product_link || '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-[13px] text-gray-300 mt-0.5 font-medium line-clamp-1 max-w-[350px] hover:text-white transition-colors" title={claim.product_title}>
+                            {claim.product_title}
+                          </a>
+                        )}
+                        <p className="text-[11px] text-gray-500 font-medium mt-0.5">
                           Reclamação #{claim.id}
                         </p>
-                        {claim.product_title && (
-                          <div className="flex items-center gap-3 mt-2 pr-4">
-                            {claim.product_image ? (
-                              <a href={claim.product_link || '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="flex-shrink-0 hover:opacity-80 transition-opacity">
-                                <img src={claim.product_image} alt="Produto" className="w-12 h-12 object-cover rounded-md border border-white/10" />
-                              </a>
-                            ) : (
-                              <div className="w-12 h-12 bg-gray-800 rounded-md border border-white/10 flex items-center justify-center flex-shrink-0">
-                                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                              </div>
-                            )}
-                            <a href={claim.product_link || '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-[14px] text-blue-300 mt-0.5 font-medium truncate max-w-[300px] hover:text-blue-200 hover:underline transition-colors" title={claim.product_title}>
-                              {claim.product_title}
-                            </a>
-                          </div>
-                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
