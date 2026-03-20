@@ -1605,41 +1605,47 @@ export default function ReputationPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                    <p className="text-gray-400">
-                      Tipo: <span className="text-gray-300">{translate(claim.type, claimTypeLabels)}</span>
-                    </p>
-                    <p className="text-gray-400">
-                      Etapa: <span className="text-gray-300">{translate(claim.stage, claimStageLabels)}</span>
-                    </p>
-                    <p className="text-gray-400">
-                      Motivo: <span className="text-gray-300">
-                        {translate(claim.reason_id, reasonIdLabels)}
+                  <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 mt-4 pt-3 border-t border-white/5 text-xs">
+                    {/* COLUNA ESQUERDA (3 itens) */}
+                    <div className="flex-1 space-y-2 min-w-0">
+                      <p className="text-gray-400 truncate">
+                        Tipo: <span className="text-gray-300 font-medium">{translate(claim.type, claimTypeLabels)}</span>
+                      </p>
+                      <p className="text-gray-400">
+                        Motivo: <span className="text-gray-300 font-medium">
+                          {claim.reason_id ? `${claim.reason_id} - ` : ''}{translate(claim.reason_id, reasonIdLabels)}
+                        </span>
                         {claim.reason_description && claim.reason_description !== claim.reason_id && (
-                          <span className="text-gray-400 block mt-0.5 italic">
+                          <span className="text-gray-400 block mt-0.5 italic text-[11px] leading-tight">
                             {claim.reason_description}
                           </span>
                         )}
-                      </span>
-                    </p>
-                    <p className="text-gray-400">
-                      Recurso: <span className="text-gray-300">{translate(claim.resource, claimResourceLabels)} / {String(claim.resource_id ?? '-')}{claim.order_id && claim.order_id !== String(claim.resource_id) ? ` → Order ${claim.order_id}` : ''}</span>
-                    </p>
-                    <p className="text-gray-400">
-                      Data da Venda: <span className="text-gray-300">{claim.sale_date ? formatDateTime(claim.sale_date) : '-'}</span>
-                    </p>
-                    <p className="text-gray-400">
-                      Criada (Sinc): <span className="text-gray-300">{formatDateTime(claim.date_created)}</span>
-                    </p>
-                    <p className="text-gray-400">
-                      Atualizada (Sinc): <span className="text-gray-300">{formatDateTime(claim.last_updated)}</span>
-                    </p>
-                    {claim.resolution_reason && (
-                      <p className="text-gray-400 col-span-2">
-                        Resolução: <span className="text-gray-300">{translate(claim.resolution_reason, resolutionReasonLabels)}</span>
-                        {claim.resolution_closed_by && ` (por ${translate(claim.resolution_closed_by, resolutionByLabels)})`}
                       </p>
-                    )}
+                      <p className="text-gray-400 truncate">
+                        Etapa: <span className="text-gray-300 font-medium">{translate(claim.stage, claimStageLabels)}</span>
+                      </p>
+                    </div>
+
+                    {/* COLUNA DIREITA (3 itens) */}
+                    <div className="flex-1 space-y-2 min-w-0">
+                      <p className="text-gray-400 truncate">
+                        Data da Venda: <span className="text-gray-300 font-medium">{claim.sale_date ? formatDateTime(claim.sale_date) : '-'}</span>
+                      </p>
+                      <p className="text-gray-400 truncate">
+                        Data da Reclamação: <span className="text-gray-300 font-medium">{formatDateTime(claim.date_created)}</span>
+                      </p>
+                      <p className="text-gray-400 truncate">
+                        Últ. Atualização: <span className="text-gray-300 font-medium">{formatDateTime(claim.last_updated)}</span>
+                      </p>
+
+                      {/* Resolução Opcional acoplada à direita para não quebrar o grid */}
+                      {claim.resolution_reason && (
+                        <p className="text-gray-400 pt-2 mt-2 border-t border-white/5">
+                          Resolução: <span className="text-gray-300 font-medium">{translate(claim.resolution_reason, resolutionReasonLabels)}</span>
+                          {claim.resolution_closed_by && ` (por ${translate(claim.resolution_closed_by, resolutionByLabels)})`}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   <div className="mt-2 flex items-center gap-1 text-[11px] text-blue-300 opacity-0 group-hover:opacity-100 transition-opacity">
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
