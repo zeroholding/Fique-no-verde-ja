@@ -1508,16 +1508,7 @@ export default function ReputationPage() {
                 <option value="without">Sem mensagens</option>
               </select>
 
-              <select
-                value={filterPeriod}
-                onChange={(e) => { setFilterPeriod(e.target.value); fetchAffectingPage(1, { status: filterStatus, type: filterType, stage: filterStage, incentive: filterIncentive, messages: filterMessages, period: e.target.value, resolution: filterResolution, mediation: filterMediation }); }}
-                className="text-xs bg-[#27272a] border border-[#3f3f46] text-gray-300 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500/50"
-              >
-                <option value="">Últ. 60 dias</option>
-                <option value="7">Últ. 7 dias</option>
-                <option value="15">Últ. 15 dias</option>
-                <option value="30">Últ. 30 dias</option>
-              </select>
+
 
               <select
                 value={filterResolution}
