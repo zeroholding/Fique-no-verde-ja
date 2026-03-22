@@ -29,7 +29,10 @@ export async function GET(request: NextRequest) {
     console.log("Generating ML Auth URL with App ID:", ML_APP_ID);
     
     // Determina a URL de callback usando a variável de ambiente para garantir match com o ngrok
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+    let baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+    if (baseUrl.endsWith('/')) {
+      baseUrl = baseUrl.slice(0, -1);
+    }
     const redirectUri = `${baseUrl}/api/integrations/mercadolivre/callback`;
     
     let stateParam = "";

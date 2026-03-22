@@ -44,6 +44,9 @@ export async function GET(request: NextRequest) {
     const filterResolution = searchParams.get("resolution") || "";
     const filterMediation = searchParams.get("mediation") || "";
 
+    const sortField = searchParams.get("sortField") || "date_created";
+    const sortOrder = searchParams.get("sortOrder") === "asc" ? "ASC" : "DESC";
+
     const filterPeriodFrom = searchParams.get("periodFrom") || "";
     const filterPeriodTo = searchParams.get("periodTo") || "";
 
@@ -153,6 +156,10 @@ export async function GET(request: NextRequest) {
     );
     const totalChecked = Number(totalResult.rows[0]?.total ?? 0);
 
+    // Safe interpolation of sort fields to prevent SQL injection
+    const allowedSortFields = ["date_created", "sale_date", "last_updated"];
+    const safeSortField = allowedSortFields.includes(sortField) ? sortField : "date_created";
+
     // Fetch paginated affected claims (with filters)
     const claimsResult = await query(
       `SELECT id, resource_id, order_id, status, type, stage, reason_id, reason_description, product_title, product_image, product_link, sale_date, resource, 
@@ -160,7 +167,7 @@ export async function GET(request: NextRequest) {
               affects_reputation, has_incentive, due_date, message_count, synced_at
        FROM mercado_livre_claims 
        WHERE ${whereClause}
-       ORDER BY date_created DESC
+       ORDER BY ${safeSortField} ${sortOrder} NULLS LAST
        LIMIT $${paramIndex}`,
       [...params, limit]
     );

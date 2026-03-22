@@ -279,6 +279,8 @@ export default function ReputationPage() {
   const [filterPeriod, setFilterPeriod] = useState('');
   const [filterResolution, setFilterResolution] = useState('');
   const [filterMediation, setFilterMediation] = useState('');
+  const [sortField, setSortField] = useState('date_created');
+  const [sortOrder, setSortOrder] = useState('desc');
   const [availableFilters, setAvailableFilters] = useState<{
     statuses?: string[];
     types?: string[];
@@ -373,6 +375,7 @@ export default function ReputationPage() {
   const fetchAffectingPage = async (page: number = 1, filters?: {
     status?: string; type?: string; stage?: string; incentive?: string;
     messages?: string; period?: string; resolution?: string; mediation?: string;
+    sortField?: string; sortOrder?: string;
   }) => {
     if (selectedAccount === null) return;
     setAffectingLoading(true);
@@ -382,6 +385,7 @@ export default function ReputationPage() {
         incentive: filterIncentive, messages: filterMessages,
         period: filterPeriod, resolution: filterResolution,
         mediation: filterMediation,
+        sortField: sortField, sortOrder: sortOrder,
       };
       const params = new URLSearchParams({
         ml_user_id: String(selectedAccount),
@@ -396,6 +400,8 @@ export default function ReputationPage() {
       if (f.period) params.set('period', f.period);
       if (f.resolution) params.set('resolution', f.resolution);
       if (f.mediation) params.set('mediation', f.mediation);
+      params.set('sortField', f.sortField ?? sortField);
+      params.set('sortOrder', f.sortOrder ?? sortOrder);
 
       // Exact match logic from ML Reputation
       const mlPeriodStr = typeof data?.seller_reputation?.metrics?.claims?.period === 'string' 
@@ -1530,6 +1536,25 @@ export default function ReputationPage() {
                 <option value="">Mediação: Todas</option>
                 <option value="open">Com mediação</option>
                 <option value="no">Sem mediação</option>
+              </select>
+
+              <select
+                value={sortField}
+                onChange={(e) => { setSortField(e.target.value); fetchAffectingPage(1, { sortField: e.target.value, sortOrder, status: filterStatus, type: filterType, stage: filterStage, incentive: filterIncentive, messages: filterMessages, period: filterPeriod, resolution: filterResolution, mediation: filterMediation }); }}
+                className="text-xs bg-[#27272a] border border-[#3f3f46] text-gray-300 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500/50"
+              >
+                <option value="date_created">Ord: Data da Reclamação</option>
+                <option value="sale_date">Ord: Data da Venda</option>
+                <option value="last_updated">Ord: Última Atualização</option>
+              </select>
+
+              <select
+                value={sortOrder}
+                onChange={(e) => { setSortOrder(e.target.value); fetchAffectingPage(1, { sortField, sortOrder: e.target.value, status: filterStatus, type: filterType, stage: filterStage, incentive: filterIncentive, messages: filterMessages, period: filterPeriod, resolution: filterResolution, mediation: filterMediation }); }}
+                className="text-xs bg-[#27272a] border border-[#3f3f46] text-gray-300 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500/50"
+              >
+                <option value="desc">Mais Recentes</option>
+                <option value="asc">Mais Antigas</option>
               </select>
             </div>
 
