@@ -8,9 +8,11 @@ type AdminCouponData = {
   code: string;
   discountType: "percent" | "fixed";
   discountValue: number;
+  commissionPercentage: number;
   currentUses: number;
   maxUses: number | null;
   totalSaved: number;
+  totalCommission: number;
   isActive: boolean;
   expiresAt: string | null;
   history: Array<{
@@ -160,14 +162,24 @@ export default function AdminCouponDashboardPage() {
                         </div>
 
                         {/* Receita da Empresa */}
-                        <div className="bg-gradient-to-b from-emerald-900/40 to-emerald-900/10 rounded-3xl p-6 border border-emerald-500/20 lg:col-span-2">
+                        <div className="bg-gradient-to-b from-emerald-900/40 to-emerald-900/10 rounded-3xl p-6 border border-emerald-500/20 lg:col-span-1">
                             <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center mb-4 text-emerald-400">
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                             </div>
-                            <h3 className="text-emerald-400/80 text-sm font-medium mb-1 uppercase tracking-wider">Descontos Abatidos x Receita (Custo de Vendas)</h3>
+                            <h3 className="text-emerald-400/80 text-sm font-medium mb-1 uppercase tracking-wider">Descontos Abatidos x Receita</h3>
                             <div className="flex flex-wrap items-baseline gap-2">
                                 <span className="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-emerald-100">{formatCurrency(data.totalSaved)}</span>
-                                <span className="text-emerald-500/80 font-medium">investidos em cashback ao cliente</span>
+                            </div>
+                        </div>
+
+                        {/* Repasse ao Parceiro */}
+                        <div className="bg-gradient-to-b from-indigo-900/40 to-indigo-900/10 rounded-3xl p-6 border border-indigo-500/20 lg:col-span-1">
+                            <div className="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center mb-4 text-indigo-400">
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            </div>
+                            <h3 className="text-indigo-400/80 text-sm font-medium mb-1 uppercase tracking-wider">Repasse ao Parceiro</h3>
+                            <div className="flex flex-wrap items-baseline gap-2">
+                                <span className="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-indigo-100">{formatCurrency(data.totalCommission)}</span>
                             </div>
                         </div>
                     </div>
@@ -225,7 +237,7 @@ export default function AdminCouponDashboardPage() {
                                                 <th className="px-6 py-4 font-semibold text-center">Qtde</th>
                                                 <th className="px-6 py-4 font-semibold text-right">Valor Bruto</th>
                                                 <th className="px-6 py-4 font-semibold text-right text-emerald-400">Cupom</th>
-                                                <th className="px-6 py-4 font-semibold text-right text-indigo-400">Comissão</th>
+                                                <th className="px-6 py-4 font-semibold text-right text-indigo-400">Repasse</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/5">
