@@ -153,6 +153,7 @@ export default function SalesPage() {
   // [NEW] Coupon states
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{ id: string, code: string, type: 'percent'|'fixed', value: number } | null>(null);
+  const [couponWarning, setCouponWarning] = useState<string | null>(null);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
   const [cancelTarget, setCancelTarget] = useState<Sale | null>(null);
@@ -605,17 +606,36 @@ export default function SalesPage() {
     setFormData(initialForm);
     setCouponCode("");
     setAppliedCoupon(null);
+    setCouponWarning(null);
   };
 
   const handleApplyCoupon = async () => {
     if (!couponCode) return;
     setValidatingCoupon(true);
+    setCouponWarning(null);
     try {
-      const res = await fetch(`/api/cupons/validate?code=${couponCode}`);
+      // Determinar o cliente ativo
+      let effectiveClientId = formData.clientId;
+      if ((formData.saleType === "01" || formData.saleType === "03") && !effectiveClientId && clientSearch.trim()) {
+        const exactMatch = clients.find(c => c.name.toUpperCase() === clientSearch.trim().toUpperCase());
+        if (exactMatch && exactMatch.clientType !== "package") {
+             effectiveClientId = exactMatch.id;
+        }
+      }
+
+      const queryParams = new URLSearchParams({ code: couponCode });
+      if (effectiveClientId) queryParams.set("clientId", effectiveClientId);
+
+      const res = await fetch(`/api/cupons/validate?${queryParams.toString()}`);
       const data = await res.json();
+      
       if (res.ok && data.success) {
         setAppliedCoupon(data.data);
-        success("Cupom aplicado com sucesso!");
+        if (data.warning) {
+           setCouponWarning(data.warning);
+        } else {
+           success("Cupom aplicado com sucesso!");
+        }
       } else {
         error(data.error || "Cupom inválido");
         setAppliedCoupon(null);
@@ -2325,10 +2345,27 @@ export default function SalesPage() {
                 )}
               </div>
               {appliedCoupon && (
-                <p className="text-xs text-green-400 mt-2 flex items-center gap-1">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  Cupom {appliedCoupon.code} aplicado! (-{appliedCoupon.type === 'percent' ? `${appliedCoupon.value}%` : formatCurrency(appliedCoupon.value)})
-                </p>
+                <div className="mt-2 space-y-2">
+                  <p className="text-xs text-green-400 flex items-center gap-1 font-medium">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                    Cupom {appliedCoupon.code} aplicado! (-{appliedCoupon.type === 'percent' ? `${appliedCoupon.value}%` : formatCurrency(appliedCoupon.value)})
+                  </p>
+                  
+                  {couponWarning && (
+                    <div className="p-3 bg-red-500/10 border border-red-500/40 rounded-lg shadow-inner">
+                      <p className="text-red-400 text-sm font-semibold mb-1 flex items-center gap-2">
+                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                         Atenção
+                      </p>
+                      <p className="text-red-300 text-xs mb-2">
+                         {couponWarning}
+                      </p>
+                      <p className="text-red-400/80 text-[11px] leading-tight">
+                        Deseja realmente continuar concedendo mais um desconto para este cliente com o uso desse cupom?
+                      </p>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}

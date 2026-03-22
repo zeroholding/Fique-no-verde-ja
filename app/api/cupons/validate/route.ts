@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const code = searchParams.get("code")?.toUpperCase().trim();
+    const clientId = searchParams.get("clientId")?.trim();
 
     if (!code) {
       return NextResponse.json({ error: "Código do cupom é obrigatório" }, { status: 400 });
@@ -60,9 +61,28 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Verificar se este cliente já utilizou este cupom anteriormente
+    let warning: string | null = null;
+
+    if (clientId) {
+      const pastUsageResult = await query(`
+        SELECT created_at 
+        FROM sales 
+        WHERE cupom_id = $1 AND client_id = $2 AND status != 'cancelada'
+        ORDER BY created_at DESC
+        LIMIT 1
+      `, [cupom.id, clientId]);
+
+      if (pastUsageResult.rows.length > 0) {
+        const warningDate = new Date(pastUsageResult.rows[0].created_at).toLocaleDateString("pt-BR");
+        warning = `Este cliente já utilizou o cupom ${cupom.code} no dia ${warningDate}.`;
+      }
+    }
+
     // Cupom válido! Retornar dados
     return NextResponse.json({
       success: true,
+      warning,
       data: {
         id: cupom.id,
         code: cupom.code,
