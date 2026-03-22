@@ -9,9 +9,11 @@ type CouponData = {
   code: string;
   discountType: "percent" | "fixed";
   discountValue: number;
+  commissionPercentage: number;
   currentUses: number;
   maxUses: number | null;
   totalSaved: number;
+  totalCommission: number;
   isActive: boolean;
   expiresAt: string | null;
   history: Array<{
@@ -142,6 +144,12 @@ export default function ParceiroCupomPage() {
               Desconto OFERECIDO: <strong className="text-white bg-white/10 px-2 py-0.5 rounded">{data.discountType === 'percent' ? `${data.discountValue}%` : formatCurrency(data.discountValue)}</strong>
             </span>
           </div>
+
+          <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-full border border-white/10 backdrop-blur">
+            <span className="text-sm font-medium text-gray-300">
+              Seu Repasse: <strong className="text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">{Number(data.commissionPercentage).toFixed(0)}% sobre o valor líquido</strong>
+            </span>
+          </div>
         </div>
 
         {/* Stats Grid */}
@@ -169,7 +177,7 @@ export default function ParceiroCupomPage() {
           </div>
 
           {/* Card: Total Saved */}
-          <div className="bg-gradient-to-b from-emerald-900/40 to-emerald-900/10 rounded-3xl p-6 border border-emerald-500/20 relative overflow-hidden group hover:border-emerald-500/50 transition-colors shadow-2xl lg:col-span-2">
+          <div className="bg-gradient-to-b from-emerald-900/40 to-emerald-900/10 rounded-3xl p-6 border border-emerald-500/20 relative overflow-hidden group hover:border-emerald-500/50 transition-colors shadow-2xl lg:col-span-1">
             <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl group-hover:bg-emerald-500/40 transition-colors"></div>
             <div className="relative z-10 flex flex-col h-full justify-between">
               <div className="flex justify-between items-start">
@@ -187,6 +195,28 @@ export default function ParceiroCupomPage() {
                 <h3 className="text-emerald-400/80 text-sm font-medium mb-1 uppercase tracking-wider">Desconto Total Gerado para seus seguidores</h3>
                 <div className="flex items-baseline gap-2 text-wrap break-all">
                   <span className="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-white">{formatCurrency(data.totalSaved)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Card: Total Commission */}
+          <div className="bg-gradient-to-b from-indigo-900/40 to-indigo-900/10 rounded-3xl p-6 border border-indigo-500/20 relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl lg:col-span-1">
+            <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl group-hover:bg-indigo-500/40 transition-colors"></div>
+            <div className="relative z-10 flex flex-col h-full justify-between">
+              <div className="flex justify-between items-start">
+                <div className="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center mb-4 text-indigo-400">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+                <div className="bg-indigo-500/20 px-3 py-1 rounded-full border border-indigo-500/30 flex items-center gap-1.5">
+                  <span className="text-xs font-semibold tracking-widest uppercase text-indigo-300">Ganhos</span>
+                </div>
+              </div>
+              
+              <div className="mt-4">
+                <h3 className="text-indigo-400/80 text-sm font-medium mb-1 uppercase tracking-wider">Seu Repasse Total</h3>
+                <div className="flex items-baseline gap-2 text-wrap break-all">
+                  <span className="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-white">{formatCurrency(data.totalCommission)}</span>
                 </div>
               </div>
             </div>

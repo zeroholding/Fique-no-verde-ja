@@ -10,6 +10,7 @@ interface Cupom {
   code: string;
   discount_type: 'percent' | 'fixed';
   discount_value: string | number;
+  commission_percentage: string | number;
   max_uses: number | null;
   expires_at: string | null;
   is_active: boolean;
@@ -27,8 +28,9 @@ export default function CuponsAdminPage() {
 
   // Form State
   const [newCode, setNewCode] = useState("");
-  const [newType, setNewType] = useState<'percent'|'fixed'>("percent");
+  const [newType, setNewType] = useState<"percent"|"fixed">("percent");
   const [newValue, setNewValue] = useState("");
+  const [newCommission, setNewCommission] = useState("");
   const [newMaxUses, setNewMaxUses] = useState("");
   const [newExpiresAt, setNewExpiresAt] = useState("");
   const [saving, setSaving] = useState(false);
@@ -62,6 +64,7 @@ export default function CuponsAdminPage() {
           code: newCode,
           type: newType,
           value: Number(newValue),
+          commission_percentage: newCommission ? Number(newCommission) : 0,
           max_uses: newMaxUses ? Number(newMaxUses) : null,
           expires_at: newExpiresAt ? new Date(newExpiresAt).toISOString() : null
         })
@@ -72,6 +75,7 @@ export default function CuponsAdminPage() {
         setNewCode("");
         setNewType("percent");
         setNewValue("");
+        setNewCommission("");
         setNewMaxUses("");
         setNewExpiresAt("");
         fetchCupons();
@@ -194,6 +198,11 @@ export default function CuponsAdminPage() {
                          : `R$ ${Number(cupom.discount_value).toFixed(2)} desconto`}
                      </p>
                   </div>
+                  <div className="inline-block bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 rounded-lg mb-4 ml-2">
+                     <p className="text-indigo-400 font-semibold text-sm">
+                       {Number(cupom.commission_percentage).toFixed(0)}% repasse
+                     </p>
+                  </div>
 
                   <div className="space-y-2 mt-2">
                      <div className="flex justify-between text-sm text-gray-400 border-t border-white/5 pt-3">
@@ -305,6 +314,21 @@ export default function CuponsAdminPage() {
                     onChange={e => setNewValue(e.target.value)}
                     placeholder="10.00"
                     className="w-full pl-11 pr-4 py-3 border border-white/20 rounded-xl bg-black/50 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 placeholder-gray-600 shadow-inner"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase text-gray-400 tracking-wider mb-2 font-semibold">% de Repasse (Opcional)</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-3.5 text-gray-500 font-semibold">%</span>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    value={newCommission}
+                    onChange={e => setNewCommission(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full pl-11 pr-4 py-3 border border-white/20 rounded-xl bg-black/50 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 placeholder-gray-600 shadow-inner"
                   />
                 </div>
               </div>

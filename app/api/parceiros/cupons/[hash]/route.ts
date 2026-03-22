@@ -15,9 +15,10 @@ export async function GET(request: NextRequest, context: { params: Promise<{ has
     // Buscar informações do Cupom (apenas as estatísticas)
     const result = await query(`
         SELECT 
-            c.id, c.code, c.discount_type, c.discount_value, c.is_active, c.max_uses,
+            c.id, c.code, c.discount_type, c.discount_value, c.commission_percentage, c.is_active, c.max_uses,
             COUNT(s.id) as current_uses,
-            COALESCE(SUM(s.discount_amount), 0) as total_saved
+            COALESCE(SUM(s.discount_amount), 0) as total_saved,
+            COALESCE(SUM((s.subtotal - s.discount_amount) * (c.commission_percentage / 100.0)), 0) as total_commission
         FROM cupons c
         LEFT JOIN sales s ON s.cupom_id = c.id AND s.status != 'cancelada'
         WHERE c.id = $1
@@ -68,6 +69,8 @@ export async function GET(request: NextRequest, context: { params: Promise<{ has
         LIMIT 100
     `, queryParams);
 
+    const commission_percentage = Number(cupom.commission_percentage) || 0;
+
     return NextResponse.json({
       success: true,
       data: {
@@ -75,9 +78,11 @@ export async function GET(request: NextRequest, context: { params: Promise<{ has
         code: cupom.code,
         discountType: cupom.discount_type,
         discountValue: Number(cupom.discount_value),
+        commissionPercentage: commission_percentage,
         currentUses: parseInt(cupom.current_uses, 10),
         maxUses: cupom.max_uses,
         totalSaved: Number(cupom.total_saved),
+        totalCommission: Number(cupom.total_commission),
         isActive: cupom.is_active,
         history: historyResult.rows.map((row: any) => {
           let obfuscatedName = "Cliente Não Informado";
@@ -86,15 +91,19 @@ export async function GET(request: NextRequest, context: { params: Promise<{ has
              obfuscatedName = parts.map((p: string) => p.charAt(0) + "***").join(" ");
           }
           
+          const grossValue = Number(row.subtotal);
+          const discountAmount = Number(row.discount_amount);
+          const commissionValue = (grossValue - discountAmount) * (commission_percentage / 100);
+
           return {
             id: row.id,
             saleDate: row.sale_date,
-            discountAmount: Number(row.discount_amount),
+            discountAmount,
             clientName: obfuscatedName,
             services: row.services_names || "-",
             quantity: Number(row.total_quantity),
-            grossValue: Number(row.subtotal),
-            commissionValue: Number(row.commission_amount) || 0
+            grossValue,
+            commissionValue
           };
         })
       }

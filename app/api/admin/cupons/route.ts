@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
     }
 
-    const { code, type, value, max_uses, expires_at } = await request.json();
+    const { code, type, value, max_uses, expires_at, commission_percentage = 0 } = await request.json();
 
     if (!code || !type || value === undefined) {
       return NextResponse.json({ error: "Dados inválidos: code, type e value são obrigatórios." }, { status: 400 });
@@ -70,10 +70,10 @@ export async function POST(request: NextRequest) {
 
     const result = await query(
       `INSERT INTO cupons 
-       (code, discount_type, discount_value, max_uses, expires_at) 
-       VALUES ($1, $2, $3, $4, $5) 
+       (code, discount_type, discount_value, max_uses, expires_at, commission_percentage) 
+       VALUES ($1, $2, $3, $4, $5, $6) 
        RETURNING *`,
-      [upperCode, type, value, max_uses || null, expires_at ? new Date(expires_at) : null]
+      [upperCode, type, value, max_uses || null, expires_at ? new Date(expires_at) : null, commission_percentage]
     );
 
     return NextResponse.json({
