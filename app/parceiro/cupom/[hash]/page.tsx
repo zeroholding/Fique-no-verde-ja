@@ -192,7 +192,7 @@ export default function ParceiroCupomPage() {
               </div>
               
               <div className="mt-4">
-                <h3 className="text-emerald-400/80 text-sm font-medium mb-1 uppercase tracking-wider">Desconto Total Gerado para seus seguidores</h3>
+                <h3 className="text-emerald-400/80 text-sm font-medium mb-1 uppercase tracking-wider">Descontos Concedidos</h3>
                 <div className="flex items-baseline gap-2 text-wrap break-all">
                   <span className="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-white">{formatCurrency(data.totalSaved)}</span>
                 </div>
@@ -278,7 +278,7 @@ export default function ParceiroCupomPage() {
                       <th className="px-4 py-4 font-semibold text-center whitespace-nowrap">Qtde</th>
                       <th className="px-4 py-4 font-semibold text-right whitespace-nowrap">Valor Bruto</th>
                       <th className="px-4 py-4 font-semibold text-right text-emerald-400 whitespace-nowrap">Desconto</th>
-                      <th className="px-4 py-4 font-semibold text-right text-indigo-400 whitespace-nowrap">Comissão</th>
+                      <th className="px-4 py-4 font-semibold text-right text-indigo-400 whitespace-nowrap">Repasse</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
