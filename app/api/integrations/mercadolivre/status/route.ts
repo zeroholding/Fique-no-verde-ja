@@ -4,6 +4,8 @@ import { query } from "@/lib/db";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-this";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
 

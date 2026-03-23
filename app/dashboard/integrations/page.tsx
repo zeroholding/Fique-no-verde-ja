@@ -92,7 +92,7 @@ export default function IntegrationsPage() {
 
   const fetchStatus = async () => {
     try {
-      const response = await fetch("/api/integrations/mercadolivre/status");
+      const response = await fetch(`/api/integrations/mercadolivre/status?t=${Date.now()}`);
       if (response.ok) {
         const data = await response.json();
         setAccounts(data.accounts || []);
