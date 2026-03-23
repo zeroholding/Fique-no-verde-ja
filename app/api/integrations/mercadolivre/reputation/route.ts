@@ -104,7 +104,8 @@ async function refreshAccessToken(refreshToken: string) {
   });
 
   if (!response.ok) {
-    throw new Error("Falha ao atualizar token");
+    const errorBody = await response.text();
+    throw new Error(`Falha ao atualizar: ${response.status} - ${errorBody}`);
   }
 
   return response.json();
@@ -207,8 +208,9 @@ export async function GET(request: NextRequest) {
         );
       } catch (refreshError) {
         console.error("Erro ao atualizar token:", refreshError);
+        const errorMessage = refreshError instanceof Error ? refreshError.message : String(refreshError);
         return NextResponse.json(
-          { error: "Sessao do Mercado Livre expirada. Por favor, reconecte." },
+          { error: `(DEBUG) DB_EXP: ${expires_at} | NOW: ${now.toISOString()} | ML_ERR: ${errorMessage}` },
           { status: 401 }
         );
       }
