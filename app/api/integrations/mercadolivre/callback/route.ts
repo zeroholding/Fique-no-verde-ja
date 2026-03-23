@@ -22,7 +22,6 @@ export async function GET(request: NextRequest) {
   // Estratégia de Autenticação: STATE (Link Externo) vs COOKIE (Link Interno)
   try {
     if (state) {
-      // Se tem state, tentamos decodificar para pegar o userId de quem gerou o link
       const decodedState = jwt.verify(state, JWT_SECRET) as { userId: string, type: string };
       if (decodedState && decodedState.userId) {
         userId = decodedState.userId;
@@ -30,7 +29,6 @@ export async function GET(request: NextRequest) {
       }
     } 
     
-    // Se não conseguiu pelo state, tenta pelo cookie (usuário logado)
     if (!userId && token) {
       const decodedToken = jwt.verify(token, JWT_SECRET) as { userId: string };
       userId = decodedToken.userId;
@@ -39,19 +37,21 @@ export async function GET(request: NextRequest) {
     console.error("Erro ao validar state ou token:", err);
   }
 
-  // Se não temos userId de nenhuma forma, aborta
   if (!userId) {
-    return NextResponse.redirect(`${baseUrl}/login?error=unauthorized_callback`);
+    return NextResponse.redirect(`${baseUrl}/login?error=cb_no_user_id`);
   }
 
   if (!code) {
-    return NextResponse.redirect(
-      `${baseUrl}/dashboard/integrations?error=missing_code`
-    );
+    return NextResponse.redirect(`${baseUrl}/login?error=cb_no_code`);
   }
 
   try {
     const redirectUri = `${baseUrl}/api/integrations/mercadolivre/callback`;
+
+    console.log("[ML CALLBACK DEBUG] redirectUri:", redirectUri);
+    console.log("[ML CALLBACK DEBUG] ML_APP_ID:", ML_APP_ID);
+    console.log("[ML CALLBACK DEBUG] userId:", userId);
+    console.log("[ML CALLBACK DEBUG] code:", code?.substring(0, 10) + "...");
 
     // Troca o código pelo token
     const tokenResponse = await fetch("https://api.mercadolibre.com/oauth/token", {
@@ -73,9 +73,9 @@ export async function GET(request: NextRequest) {
 
     if (!tokenResponse.ok) {
       console.error("Erro ML Auth:", tokenData);
-      return NextResponse.redirect(
-        `${baseUrl}/dashboard/integrations?error=ml_auth_failed`
-      );
+      // DEBUG: redireciona pra rota PUBLICA com erro visível
+      const errMsg = encodeURIComponent(`ml_token_fail: ${tokenResponse.status} - ${JSON.stringify(tokenData)}`);
+      return NextResponse.redirect(`${baseUrl}/login?ml_debug=${errMsg}`);
     }
 
     const { access_token, refresh_token, expires_in, user_id, token_type, scope } = tokenData;
@@ -128,13 +128,8 @@ export async function GET(request: NextRequest) {
       expiresAt.toISOString()
     ]);
 
-    // Re-gera o cookie de sessão para garantir que o middleware não bloqueie o redirect
-    // Isso resolve o problema de www vs sem-www onde o cookie se perde
-    const userResult = await query(
-      "SELECT id, email, is_admin FROM users WHERE id = $1",
-      [userId]
-    );
-    
+    console.log("[ML CALLBACK DEBUG] Salvo no banco com sucesso! ml_user_id:", user_id, "nickname:", nickname);
+
     if (isExternalLink) {
       const successUrl = new URL(`${baseUrl}/integration-success`);
       if (nickname) successUrl.searchParams.set("nickname", nickname);
@@ -146,6 +141,11 @@ export async function GET(request: NextRequest) {
       const response = NextResponse.redirect(redirectUrl);
 
       // Re-seta o cookie de sessão no redirect para o middleware não bloquear
+      const userResult = await query(
+        "SELECT id, email, is_admin FROM users WHERE id = $1",
+        [userId]
+      );
+
       if (userResult.rows.length > 0) {
         const userData = userResult.rows[0];
         const sessionToken = jwt.sign(
@@ -172,8 +172,8 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error("Erro callback ML:", error);
-    return NextResponse.redirect(
-      `${baseUrl}/dashboard/integrations?error=internal_error`
-    );
+    // DEBUG: redireciona pra rota PUBLICA com erro visível
+    const errMsg = encodeURIComponent(`cb_crash: ${error instanceof Error ? error.message : String(error)}`);
+    return NextResponse.redirect(`${baseUrl}/login?ml_debug=${errMsg}`);
   }
 }
