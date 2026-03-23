@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       const decodedState = jwt.verify(state, JWT_SECRET) as { userId: string, type: string };
       if (decodedState && decodedState.userId) {
         userId = decodedState.userId;
-        isExternalLink = true;
+        isExternalLink = decodedState.type === "external_link";
       }
     } 
     

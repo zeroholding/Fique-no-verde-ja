@@ -35,21 +35,16 @@ export async function GET(request: NextRequest) {
     }
     const redirectUri = `${baseUrl}/api/integrations/mercadolivre/callback`;
     
-    let stateParam = "";
-    
-    // Se for modo externo, geramos um state com o ID do usuário
-    if (mode === "external") {
-      const statePayload = {
-        userId: userId,
-        type: "external_link",
-        timestamp: Date.now()
-      };
-      // Assina o state para segurança (evita que alterem o ID)
-      const stateToken = jwt.sign(statePayload, JWT_SECRET, { expiresIn: "1h" });
-      stateParam = `&state=${stateToken}`;
-    }
+    // SEMPRE gerar state com userId para garantir identificação no callback,
+    // mesmo se o cookie se perder por diferença de domínio (www vs sem www)
+    const statePayload = {
+      userId: userId,
+      type: mode === "external" ? "external_link" : "internal",
+      timestamp: Date.now()
+    };
+    const stateToken = jwt.sign(statePayload, JWT_SECRET, { expiresIn: "1h" });
 
-    const authUrl = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${ML_APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}${stateParam}`;
+    const authUrl = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${ML_APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${stateToken}`;
 
     return NextResponse.json({ url: authUrl });
   } catch (error) {
