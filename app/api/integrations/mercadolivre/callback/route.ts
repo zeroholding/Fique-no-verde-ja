@@ -38,11 +38,11 @@ export async function GET(request: NextRequest) {
   }
 
   if (!userId) {
-    return NextResponse.redirect(`${baseUrl}/login?error=cb_no_user_id`);
+    return NextResponse.json({ DEBUG_ERROR: "cb_no_user_id", state: state ? "present" : "missing", cookie: token ? "present" : "missing" }, { status: 400 });
   }
 
   if (!code) {
-    return NextResponse.redirect(`${baseUrl}/login?error=cb_no_code`);
+    return NextResponse.json({ DEBUG_ERROR: "cb_no_code" }, { status: 400 });
   }
 
   try {
@@ -74,8 +74,7 @@ export async function GET(request: NextRequest) {
     if (!tokenResponse.ok) {
       console.error("Erro ML Auth:", tokenData);
       // DEBUG: redireciona pra rota PUBLICA com erro visível
-      const errMsg = encodeURIComponent(`ml_token_fail: ${tokenResponse.status} - ${JSON.stringify(tokenData)}`);
-      return NextResponse.redirect(`${baseUrl}/login?ml_debug=${errMsg}`);
+      return NextResponse.json({ DEBUG_ERROR: "ml_token_exchange_failed", status: tokenResponse.status, ml_response: tokenData, redirect_uri_used: redirectUri }, { status: 400 });
     }
 
     const { access_token, refresh_token, expires_in, user_id, token_type, scope } = tokenData;
@@ -173,7 +172,6 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Erro callback ML:", error);
     // DEBUG: redireciona pra rota PUBLICA com erro visível
-    const errMsg = encodeURIComponent(`cb_crash: ${error instanceof Error ? error.message : String(error)}`);
-    return NextResponse.redirect(`${baseUrl}/login?ml_debug=${errMsg}`);
+    return NextResponse.json({ DEBUG_ERROR: "cb_crash", message: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined }, { status: 500 });
   }
 }
