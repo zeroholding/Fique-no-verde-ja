@@ -128,6 +128,13 @@ export async function GET(request: NextRequest) {
       expiresAt.toISOString()
     ]);
 
+    // Re-gera o cookie de sessão para garantir que o middleware não bloqueie o redirect
+    // Isso resolve o problema de www vs sem-www onde o cookie se perde
+    const userResult = await query(
+      "SELECT id, email, is_admin FROM users WHERE id = $1",
+      [userId]
+    );
+    
     if (isExternalLink) {
       const successUrl = new URL(`${baseUrl}/integration-success`);
       if (nickname) successUrl.searchParams.set("nickname", nickname);
@@ -135,7 +142,32 @@ export async function GET(request: NextRequest) {
       
       return NextResponse.redirect(successUrl);
     } else {
-      return NextResponse.redirect(`${baseUrl}/dashboard/integrations?success=true`);
+      const redirectUrl = `${baseUrl}/dashboard/integrations?success=true`;
+      const response = NextResponse.redirect(redirectUrl);
+
+      // Re-seta o cookie de sessão no redirect para o middleware não bloquear
+      if (userResult.rows.length > 0) {
+        const userData = userResult.rows[0];
+        const sessionToken = jwt.sign(
+          {
+            userId: userData.id,
+            email: userData.email,
+            isAdmin: userData.is_admin,
+          },
+          JWT_SECRET,
+          { expiresIn: "7d" }
+        );
+
+        response.cookies.set("token", sessionToken, {
+          httpOnly: true,
+          sameSite: "lax",
+          secure: process.env.NODE_ENV === "production",
+          path: "/",
+          maxAge: 60 * 60 * 24 * 7,
+        });
+      }
+
+      return response;
     }
 
   } catch (error) {
