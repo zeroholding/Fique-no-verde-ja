@@ -106,32 +106,29 @@ export async function GET(request: NextRequest) {
     const expiresAt = new Date();
     expiresAt.setSeconds(expiresAt.getSeconds() + expires_in);
 
-    // Salva no banco de dados (upsert)
-    const sql = `
-      INSERT INTO mercado_livre_credentials 
-      (user_id, ml_user_id, nickname, access_token, refresh_token, token_type, scope, expires_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-      ON CONFLICT (user_id, ml_user_id) 
-      DO UPDATE SET 
-        nickname = EXCLUDED.nickname,
-        access_token = EXCLUDED.access_token,
-        refresh_token = EXCLUDED.refresh_token,
-        token_type = EXCLUDED.token_type,
-        scope = EXCLUDED.scope,
-        expires_at = EXCLUDED.expires_at,
-        updated_at = NOW()
-    `;
+    // Verifica se já existe uma entrada para esse user_id + ml_user_id
+    const existingResult = await query(
+      "SELECT id FROM mercado_livre_credentials WHERE user_id = $1 AND ml_user_id = $2",
+      [userId, user_id]
+    );
 
-    await query(sql, [
-      userId,
-      user_id,
-      nickname,
-      access_token,
-      refresh_token,
-      token_type,
-      scope,
-      expiresAt.toISOString()
-    ]);
+    if (existingResult.rows.length > 0) {
+      // Atualiza o registro existente
+      await query(
+        `UPDATE mercado_livre_credentials 
+         SET nickname = $1, access_token = $2, refresh_token = $3, token_type = $4, scope = $5, expires_at = $6, updated_at = NOW()
+         WHERE user_id = $7 AND ml_user_id = $8`,
+        [nickname, access_token, refresh_token, token_type, scope, expiresAt.toISOString(), userId, user_id]
+      );
+    } else {
+      // Insere novo registro
+      await query(
+        `INSERT INTO mercado_livre_credentials 
+         (user_id, ml_user_id, nickname, access_token, refresh_token, token_type, scope, expires_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
+        [userId, user_id, nickname, access_token, refresh_token, token_type, scope, expiresAt.toISOString()]
+      );
+    }
 
     console.log("[ML CALLBACK] Conta salva! ml_user_id:", user_id, "nickname:", nickname);
 
