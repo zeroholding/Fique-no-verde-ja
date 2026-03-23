@@ -18,14 +18,16 @@ export async function GET(request: NextRequest) {
 
   let userId: string | null = null;
   let isExternalLink = false;
+  let codeVerifier: string | null = null;
 
-  // Estratégia de Autenticação: STATE (Link Externo) vs COOKIE (Link Interno)
+  // Estratégia de Autenticação: STATE (sempre usado agora) ou COOKIE (fallback)
   try {
     if (state) {
-      const decodedState = jwt.verify(state, JWT_SECRET) as { userId: string, type: string };
+      const decodedState = jwt.verify(state, JWT_SECRET) as { userId: string; type: string; codeVerifier?: string };
       if (decodedState && decodedState.userId) {
         userId = decodedState.userId;
         isExternalLink = decodedState.type === "external_link";
+        codeVerifier = decodedState.codeVerifier || null;
       }
     } 
     
@@ -48,10 +50,21 @@ export async function GET(request: NextRequest) {
   try {
     const redirectUri = `${baseUrl}/api/integrations/mercadolivre/callback`;
 
-    console.log("[ML CALLBACK DEBUG] redirectUri:", redirectUri);
-    console.log("[ML CALLBACK DEBUG] ML_APP_ID:", ML_APP_ID);
-    console.log("[ML CALLBACK DEBUG] userId:", userId);
-    console.log("[ML CALLBACK DEBUG] code:", code?.substring(0, 10) + "...");
+    // Monta os parâmetros do token exchange
+    const tokenParams: Record<string, string> = {
+      grant_type: "authorization_code",
+      client_id: ML_APP_ID!,
+      client_secret: ML_SECRET_KEY!,
+      code: code,
+      redirect_uri: redirectUri,
+    };
+
+    // PKCE: envia code_verifier se disponível
+    if (codeVerifier) {
+      tokenParams.code_verifier = codeVerifier;
+    }
+
+    console.log("[ML CALLBACK] Trocando código por token. redirectUri:", redirectUri, "PKCE:", !!codeVerifier);
 
     // Troca o código pelo token
     const tokenResponse = await fetch("https://api.mercadolibre.com/oauth/token", {
@@ -60,21 +73,14 @@ export async function GET(request: NextRequest) {
         "Content-Type": "application/x-www-form-urlencoded",
         "Accept": "application/json"
       },
-      body: new URLSearchParams({
-        grant_type: "authorization_code",
-        client_id: ML_APP_ID!,
-        client_secret: ML_SECRET_KEY!,
-        code: code,
-        redirect_uri: redirectUri,
-      }),
+      body: new URLSearchParams(tokenParams),
     });
 
     const tokenData = await tokenResponse.json();
 
     if (!tokenResponse.ok) {
       console.error("Erro ML Auth:", tokenData);
-      // DEBUG: redireciona pra rota PUBLICA com erro visível
-      return NextResponse.json({ DEBUG_ERROR: "ml_token_exchange_failed", status: tokenResponse.status, ml_response: tokenData, redirect_uri_used: redirectUri }, { status: 400 });
+      return NextResponse.json({ DEBUG_ERROR: "ml_token_exchange_failed", status: tokenResponse.status, ml_response: tokenData, redirect_uri_used: redirectUri, pkce_used: !!codeVerifier }, { status: 400 });
     }
 
     const { access_token, refresh_token, expires_in, user_id, token_type, scope } = tokenData;
@@ -127,7 +133,7 @@ export async function GET(request: NextRequest) {
       expiresAt.toISOString()
     ]);
 
-    console.log("[ML CALLBACK DEBUG] Salvo no banco com sucesso! ml_user_id:", user_id, "nickname:", nickname);
+    console.log("[ML CALLBACK] Conta salva! ml_user_id:", user_id, "nickname:", nickname);
 
     if (isExternalLink) {
       const successUrl = new URL(`${baseUrl}/integration-success`);
@@ -171,7 +177,6 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error("Erro callback ML:", error);
-    // DEBUG: redireciona pra rota PUBLICA com erro visível
-    return NextResponse.json({ DEBUG_ERROR: "cb_crash", message: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined }, { status: 500 });
+    return NextResponse.json({ DEBUG_ERROR: "cb_crash", message: error instanceof Error ? error.message : String(error) }, { status: 500 });
   }
 }
