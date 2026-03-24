@@ -12,7 +12,9 @@ export async function GET(request: NextRequest, context: { params: Promise<{ has
       return NextResponse.json({ error: "Hash inválido" }, { status: 400 });
     }
 
-    // Buscar informações do Cupom (por slug ou ID)
+    // Buscar informações do Cupom (por slug primeiro, depois por ID se parecer UUID)
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(hash);
+    
     const result = await query(`
         SELECT 
             c.id, c.code, c.discount_type, c.discount_value, c.commission_percentage, c.is_active, c.max_uses,
@@ -21,15 +23,16 @@ export async function GET(request: NextRequest, context: { params: Promise<{ has
             COALESCE(SUM((s.subtotal - s.discount_amount) * (c.commission_percentage / 100.0)), 0) as total_commission
         FROM cupons c
         LEFT JOIN sales s ON s.cupom_id = c.id AND s.status != 'cancelada'
-        WHERE c.partner_slug = $1 OR c.id::text = $1
+        WHERE c.partner_slug = $1 ${isUUID ? 'OR c.id = $2' : ''}
         GROUP BY c.id
-    `, [hash]);
+    `, isUUID ? [hash, hash] : [hash]);
 
     if (result.rows.length === 0) {
       return NextResponse.json({ error: "Cupom não encontrado" }, { status: 404 });
     }
 
     const cupom = result.rows[0];
+    const cupomId = cupom.id; // Use resolved ID for history queries
 
     const url = new URL(request.url);
     const startDate = url.searchParams.get("startDate");
@@ -37,7 +40,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ has
     const serviceFilter = url.searchParams.get("service");
 
     let historyWhere = "s.cupom_id = $1 AND s.discount_amount > 0 AND s.status != 'cancelada'";
-    const queryParams: any[] = [hash];
+    const queryParams: any[] = [cupomId];
     
     if (startDate) {
         queryParams.push(`${startDate} 00:00:00`);
