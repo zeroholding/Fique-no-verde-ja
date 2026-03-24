@@ -16,9 +16,9 @@ function generateCodeChallenge(verifier: string): string {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { code: string } }
+  context: { params: Promise<{ code: string }> }
 ) {
-  const code = params.code;
+  const { code } = await context.params;
 
   if (!code || code.length > 10) {
     return NextResponse.json({ error: "Codigo invalido" }, { status: 400 });
