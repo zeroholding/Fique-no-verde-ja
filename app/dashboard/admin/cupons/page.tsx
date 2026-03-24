@@ -16,6 +16,7 @@ interface Cupom {
   is_active: boolean;
   current_uses: string | number;
   created_at: string;
+  partner_slug: string | null;
 }
 
 export default function CuponsAdminPage() {
@@ -33,6 +34,7 @@ export default function CuponsAdminPage() {
   const [newCommission, setNewCommission] = useState("");
   const [newMaxUses, setNewMaxUses] = useState("");
   const [newExpiresAt, setNewExpiresAt] = useState("");
+  const [newSlug, setNewSlug] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -66,7 +68,8 @@ export default function CuponsAdminPage() {
           value: Number(newValue),
           commission_percentage: newCommission ? Number(newCommission) : 0,
           max_uses: newMaxUses ? Number(newMaxUses) : null,
-          expires_at: newExpiresAt ? new Date(newExpiresAt).toISOString() : null
+          expires_at: newExpiresAt ? new Date(newExpiresAt).toISOString() : null,
+          partner_slug: newSlug || null
         })
       });
       const data = await res.json();
@@ -78,6 +81,7 @@ export default function CuponsAdminPage() {
         setNewCommission("");
         setNewMaxUses("");
         setNewExpiresAt("");
+        setNewSlug("");
         fetchCupons();
       } else {
         alert(data.error);
@@ -89,10 +93,11 @@ export default function CuponsAdminPage() {
     setSaving(false);
   };
 
-  const copyLink = (id: string) => {
-    const url = `${window.location.origin}/parceiro/cupom/${id}`;
+  const copyLink = (cupom: Cupom) => {
+    const slug = cupom.partner_slug || cupom.id;
+    const url = `${window.location.origin}/cupom/${slug}`;
     navigator.clipboard.writeText(url);
-    alert("Link do parceiro copiado para área de transferência!");
+    alert("Link do parceiro copiado!");
   };
 
   const filteredCupons = cupons.filter(c => {
@@ -240,13 +245,13 @@ export default function CuponsAdminPage() {
                     </button>
                     
                     <button 
-                      onClick={() => copyLink(cupom.id)}
+                      onClick={() => copyLink(cupom)}
                       className="text-emerald-400 hover:text-emerald-300 text-sm font-medium flex items-center gap-1.5 bg-emerald-500/10 px-3 py-1.5 rounded-lg hover:bg-emerald-500/20 transition-colors"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                       </svg>
-                      Link Parceiro
+                      {cupom.partner_slug ? `/${cupom.partner_slug}` : 'Link'}
                     </button>
                   </div>
                 </div>
@@ -353,6 +358,21 @@ export default function CuponsAdminPage() {
                   className="w-full px-4 py-3 border border-white/20 rounded-xl bg-black/50 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 shadow-inner"
                   style={{ colorScheme: 'dark' }}
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase text-gray-400 tracking-wider mb-2 font-semibold">Link Personalizado do Parceiro <span className="text-gray-600 font-normal lowercase tracking-normal pl-1">(opcional)</span></label>
+                <div className="flex items-center gap-2 w-full border border-white/20 rounded-xl bg-black/50 overflow-hidden focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500">
+                   <span className="text-gray-500 text-sm pl-4 shrink-0 select-none">.../cupom/</span>
+                   <input 
+                     type="text" 
+                     value={newSlug}
+                     onChange={e => setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9\-]/g, ''))}
+                     placeholder="ex: jhonny"
+                     className="w-full pr-4 py-3 bg-transparent text-white focus:outline-none placeholder-gray-600"
+                   />
+                </div>
+                <p className="text-xs text-gray-500 mt-1.5">Letras, números e hifens. Gera um link curto como: fiquenoverdeja.com.br/cupom/jhonny</p>
               </div>
 
               <div className="pt-6 border-t border-white/10 flex justify-end gap-3">

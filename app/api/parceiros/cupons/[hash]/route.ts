@@ -12,7 +12,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ has
       return NextResponse.json({ error: "Hash inválido" }, { status: 400 });
     }
 
-    // Buscar informações do Cupom (apenas as estatísticas)
+    // Buscar informações do Cupom (por slug ou ID)
     const result = await query(`
         SELECT 
             c.id, c.code, c.discount_type, c.discount_value, c.commission_percentage, c.is_active, c.max_uses,
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ has
             COALESCE(SUM((s.subtotal - s.discount_amount) * (c.commission_percentage / 100.0)), 0) as total_commission
         FROM cupons c
         LEFT JOIN sales s ON s.cupom_id = c.id AND s.status != 'cancelada'
-        WHERE c.id = $1
+        WHERE c.partner_slug = $1 OR c.id::text = $1
         GROUP BY c.id
     `, [hash]);
 
