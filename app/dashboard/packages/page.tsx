@@ -38,8 +38,15 @@ export default function PackagesIndexPage() {
   const [editForm, setEditForm] = useState({ balance: "", price: "" });
   const [savingEdit, setSavingEdit] = useState(false);
 
-  // [NEW] Show/hide zero-balance packages (hidden by default)
+  // [NEW] Filter out zero-balance packages unless toggled
   const [showZeroBalance, setShowZeroBalance] = useState(false);
+
+  // [NEW] Share Link Modal
+  const [slugModalOpen, setSlugModalOpen] = useState(false);
+  const [currentSlugClient, setCurrentSlugClient] = useState<PackageSummary | null>(null);
+  const [slugForm, setSlugForm] = useState("");
+  const [savingSlug, setSavingSlug] = useState(false);
+  const [loadingSlug, setLoadingSlug] = useState(false);
 
   const fetchSummaries = async () => {
     const token = localStorage.getItem("token");
@@ -93,44 +100,73 @@ export default function PackagesIndexPage() {
     [summaries, showZeroBalance]
   );
 
-  const handleGenerateShareLink = async (clientId: string) => {
+  const handleGenerateShareLink = async (pkg: PackageSummary) => {
     const token = localStorage.getItem("token");
     if (!token) {
-      error("Sessao expirada. Faca login novamente.");
+      error("Sessão expirada. Faça login novamente.");
       return;
     }
 
-    setGeneratingLinkFor(clientId);
+    setCurrentSlugClient(pkg);
+    setSlugForm("");
+    setLoadingSlug(true);
+    setSlugModalOpen(true);
+
     try {
-      const res = await fetch("/api/packages/public-link", {
+      const res = await fetch(`/api/packages/slug?clientId=${pkg.clientId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok && data.slug) {
+        setSlugForm(data.slug);
+      }
+    } catch (err) {
+      // Ignore if not found, just leave empty
+    } finally {
+      setLoadingSlug(false);
+    }
+  };
+
+  const handleSaveSlug = async () => {
+    if (!currentSlugClient) return;
+    setSavingSlug(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/packages/slug", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ clientId }),
+        body: JSON.stringify({ clientId: currentSlugClient.clientId, slug: slugForm })
       });
-
+      
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Erro ao gerar link do extrato");
-      }
-
-      const link = data.url as string;
-      setGeneratedLinks((prev) => ({ ...prev, [clientId]: link }));
-
-      const canCopy = typeof navigator !== "undefined" && !!navigator.clipboard;
-      if (canCopy && link) {
-        await navigator.clipboard.writeText(link);
-        success("Link copiado para a area de transferencia");
+      if (!res.ok) throw new Error(data.error || "Erro ao salvar URL");
+      
+      success("Link personalizado salvo!");
+      
+      if (data.slug) {
+         const origin = typeof window !== "undefined" ? window.location.origin : "";
+         const newLink = `${origin}/packages/extrato/${data.slug}`;
+         setGeneratedLinks(prev => ({ ...prev, [currentSlugClient.clientId]: newLink }));
+         if (navigator.clipboard) {
+           await navigator.clipboard.writeText(newLink);
+           success("Link copiado para a área de transferência!");
+         }
       } else {
-        success("Link gerado. Copie e envie para o responsavel.");
+         setGeneratedLinks(prev => {
+            const next = {...prev};
+            delete next[currentSlugClient.clientId];
+            return next;
+         });
       }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Erro ao gerar link do extrato";
-      error(msg);
+
+      setSlugModalOpen(false);
+    } catch (err: any) {
+      error(err.message || "Erro ao salvar URL");
     } finally {
-      setGeneratingLinkFor(null);
+      setSavingSlug(false);
     }
   };
 
@@ -319,15 +355,26 @@ export default function PackagesIndexPage() {
                   <Button
                     size="sm"
                     className="w-full rounded-xl"
-                    onClick={() => handleGenerateShareLink(s.clientId)}
-                    disabled={generatingLinkFor === s.clientId}
+                    onClick={() => handleGenerateShareLink(s)}
+                    disabled={loadingSlug && currentSlugClient?.clientId === s.clientId}
                   >
-                    {generatingLinkFor === s.clientId ? "Gerando link..." : "Gerar link compartilhavel"}
+                    {loadingSlug && currentSlugClient?.clientId === s.clientId ? "Carregando..." : "Gerar link compartilhavel"}
                   </Button>
                 </div>
                 {generatedLinks[s.clientId] && (
-                  <div className="text-xs text-blue-100 bg-blue-500/10 border border-blue-500/20 rounded-lg p-2 break-all">
-                    {generatedLinks[s.clientId]}
+                  <div className="text-xs text-blue-100 bg-blue-500/10 border border-blue-500/20 rounded-lg p-2 flex items-center justify-between gap-2 overflow-hidden">
+                    <span className="truncate">{generatedLinks[s.clientId]}</span>
+                    <button 
+                      onClick={() => {
+                        if (navigator.clipboard) {
+                          navigator.clipboard.writeText(generatedLinks[s.clientId]);
+                          success("Copiado!");
+                        }
+                      }}
+                      className="text-blue-300 hover:text-white shrink-0 font-medium bg-blue-500/20 hover:bg-blue-500/30 px-2 py-1 rounded"
+                    >
+                      Copiar
+                    </button>
                   </div>
                 )}
               </div>
@@ -394,6 +441,54 @@ export default function PackagesIndexPage() {
                           disabled={savingEdit}
                       >
                           {savingEdit ? "Salvando..." : "Salvar Alterações"}
+                      </Button>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* [NEW] Slug Configuration Modal */}
+      {slugModalOpen && currentSlugClient && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+              <div className="w-full max-w-md bg-[#1c1c1c] border border-white/10 rounded-2xl p-6 shadow-2xl">
+                  <h2 className="text-xl font-bold mb-4">Link Compartilhável do Extrato</h2>
+                  <p className="text-sm text-gray-400 mb-6">
+                      Defina um nome curto (slug) para a URL pública do cliente <strong>{currentSlugClient.clientName}</strong>. 
+                      Deixe vazio para remover o link personalizado.
+                  </p>
+                  
+                  <div className="space-y-4">
+                      <div>
+                          <label className="text-xs text-gray-300 uppercase block mb-1">URL Personalizada</label>
+                          <div className="flex items-center gap-2 w-full bg-black/30 border border-white/20 rounded-lg px-3 overflow-hidden focus-within:border-blue-500">
+                             <span className="text-gray-500 text-sm py-2 shrink-0 select-none">.../extrato/</span>
+                             <input 
+                                 type="text" 
+                                 value={slugForm} 
+                                 onChange={e => setSlugForm(e.target.value.toLowerCase().replace(/[^a-z0-9\-]/g, ''))}
+                                 placeholder="ex: pex"
+                                 className="w-full bg-transparent text-white outline-none py-2"
+                             />
+                          </div>
+                          <p className="text-xs text-gray-500 mt-2">Use apenas letras, números e hifens.</p>
+                      </div>
+                  </div>
+
+                  <div className="flex gap-3 mt-8">
+                      <Button 
+                          variant="secondary" 
+                          className="flex-1" 
+                          onClick={() => setSlugModalOpen(false)}
+                          disabled={savingSlug}
+                      >
+                          Cancelar
+                      </Button>
+                      <Button 
+                          className="flex-1 bg-blue-600 hover:bg-blue-500" 
+                          onClick={handleSaveSlug}
+                          disabled={savingSlug}
+                      >
+                          {savingSlug ? "Salvando..." : "Salvar & Copiar"}
                       </Button>
                   </div>
               </div>
