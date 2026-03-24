@@ -233,8 +233,9 @@ export async function GET(request: NextRequest) {
 
     // [RESTORED] Fetch Live Package Data for Accurate Summary
     const livePackagesRes = await query(`
-        SELECT client_id, available_quantity, unit_price, initial_quantity, consumed_quantity, total_paid 
-        FROM client_packages
+        SELECT cp.client_id, cp.available_quantity, cp.unit_price, cp.initial_quantity, cp.consumed_quantity, cp.total_paid, c.statement_slug
+        FROM client_packages cp
+        JOIN clients c ON cp.client_id = c.id
     `);
     
     // Create a map for quick lookup: clientId -> PackageRow
@@ -279,6 +280,7 @@ export async function GET(request: NextRequest) {
             s.balanceQuantityCurrent = Number(livePkg.available_quantity);
             // Balance Current (Financeiro) = Quantidade * Preço Unitário
             s.balanceCurrent = Number(livePkg.available_quantity) * Number(livePkg.unit_price);
+            s.statementSlug = livePkg.statement_slug || null;
         }
     });
 

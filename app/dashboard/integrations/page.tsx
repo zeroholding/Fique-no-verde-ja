@@ -27,7 +27,7 @@ const Tooltip = ({ text, children }: { text: string; children: React.ReactNode }
   const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setCoords({
-      top: rect.top - 12, // Ajustado para o novo estilo
+      top: rect.top - 12,
       left: rect.left + rect.width / 2
     });
     setIsVisible(true);
@@ -64,7 +64,6 @@ export default function IntegrationsPage() {
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState<number | null>(null);
   
-  // Estados para o Link de Convite
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteUrl, setInviteUrl] = useState<string>("");
   const [generatingInvite, setGeneratingInvite] = useState(false);
@@ -125,11 +124,14 @@ export default function IntegrationsPage() {
   const handleGenerateInvite = async () => {
     setGeneratingInvite(true);
     try {
-      const response = await fetch("/api/integrations/mercadolivre/auth-url?mode=external");
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/integrations/mercadolivre/invite-code", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
       const data = await response.json();
 
-      if (response.ok && data.url) {
-        setInviteUrl(data.url);
+      if (response.ok && data.shortUrl) {
+        setInviteUrl(data.shortUrl);
         setShowInviteModal(true);
       } else {
         error("Erro ao gerar link de convite.");
@@ -175,7 +177,6 @@ export default function IntegrationsPage() {
 
   return (
     <div className="min-h-screen px-4 py-6 sm:p-8 relative text-white overflow-x-hidden">
-      {/* Modal de Convite usando Componente Universal */}
       <Modal
         open={showInviteModal}
         onClose={() => setShowInviteModal(false)}
@@ -192,7 +193,7 @@ export default function IntegrationsPage() {
               variant="primary"
               onClick={() => {
                 navigator.clipboard.writeText(inviteUrl);
-                success("Link copiado para a área de transferência!");
+                success("Link copiado!");
               }}
             >
               Copiar Link
@@ -202,11 +203,11 @@ export default function IntegrationsPage() {
       >
         <div className="space-y-4">
           <p className="text-gray-300 text-sm">
-            Envie este link para seu cliente. Ao clicar, ele poderá conectar a conta do Mercado Livre dele diretamente ao seu painel, sem precisar te passar a senha.
+            Envie este link para seu cliente. Ao clicar, ele poderá conectar a conta do Mercado Livre dele diretamente ao seu painel. O link é permanente e seguro.
           </p>
           
-          <div className="bg-black/30 p-4 rounded-lg border border-white/10 break-all">
-            <code className="text-blue-400 text-xs font-mono">{inviteUrl}</code>
+          <div className="bg-black/30 p-4 rounded-lg border border-white/10 break-all text-center">
+            <code className="text-blue-400 text-base font-mono font-bold">{inviteUrl}</code>
           </div>
         </div>
       </Modal>
@@ -219,7 +220,6 @@ export default function IntegrationsPage() {
 
         <Card className="bg-white/5 border border-white/10">
           <div className="flex flex-col gap-6">
-            {/* Header do Card */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-yellow-400 rounded-lg flex items-center justify-center text-blue-900 font-bold text-xl shadow-lg">
@@ -234,7 +234,7 @@ export default function IntegrationsPage() {
               </div>
 
               <div className="flex gap-3">
-                <Tooltip text="Gerar Link para Cliente">
+                <Tooltip text="Link Curto para Cliente">
                   <Button
                     variant="secondary"
                     onClick={handleGenerateInvite}
@@ -256,7 +256,7 @@ export default function IntegrationsPage() {
                   </Button>
                 </Tooltip>
                 
-                <Tooltip text="Conectar Nova Conta">
+                <Tooltip text="Conectar Minha Conta">
                   <Button
                     variant="primary"
                     onClick={handleConnect}
@@ -280,7 +280,6 @@ export default function IntegrationsPage() {
               </div>
             </div>
 
-            {/* Lista de Contas */}
             {accounts.length > 0 && (
               <div className="border-t border-white/10 pt-4">
                 <h4 className="text-sm font-medium text-gray-400 mb-3">Contas Conectadas</h4>

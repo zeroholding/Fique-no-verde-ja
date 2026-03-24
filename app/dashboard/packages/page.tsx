@@ -13,6 +13,7 @@ type PackageSummary = {
   totalQuantityConsumed: number;
   balanceCurrent: number;
   lastOperation: string | null;
+  statementSlug: string | null;
 };
 
 const formatCurrency = (value: number) =>
@@ -107,6 +108,17 @@ export default function PackagesIndexPage() {
       return;
     }
 
+    // [MOD] If slug already exists, just copy it and notify
+    if (pkg.statementSlug) {
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const fullUrl = `${origin}/packages/extrato/${pkg.statementSlug}`;
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(fullUrl);
+        success("Link copiado com sucesso!");
+        return;
+      }
+    }
+
     setCurrentSlugClient(pkg);
     setSlugForm("");
     setLoadingSlug(true);
@@ -145,6 +157,9 @@ export default function PackagesIndexPage() {
       if (!res.ok) throw new Error(data.error || "Erro ao salvar URL");
       
       success("Link personalizado salvo!");
+      
+      // Refresh list to update statementSlug
+      fetchSummaries();
       
       if (data.slug) {
          const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -354,11 +369,16 @@ export default function PackagesIndexPage() {
                   </Link>
                   <Button
                     size="sm"
+                    variant={s.statementSlug ? "secondary" : "primary"}
                     className="w-full rounded-xl"
                     onClick={() => handleGenerateShareLink(s)}
                     disabled={loadingSlug && currentSlugClient?.clientId === s.clientId}
                   >
-                    {loadingSlug && currentSlugClient?.clientId === s.clientId ? "Carregando..." : "Gerar link compartilhavel"}
+                    {loadingSlug && currentSlugClient?.clientId === s.clientId 
+                      ? "Carregando..." 
+                      : s.statementSlug 
+                        ? "Copiar Link Compartilhável" 
+                        : "Gerar link compartilhável"}
                   </Button>
                 </div>
                 {generatedLinks[s.clientId] && (
