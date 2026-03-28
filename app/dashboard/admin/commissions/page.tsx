@@ -534,7 +534,7 @@ function CommissionsStatement() {
   const reportRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = useReactToPrint({
-      content: () => reportRef.current,
+      contentRef: reportRef,
       documentTitle: 'Relatorio_Comissoes_FNVJ',
       pageStyle: `
         @page { size: A4; margin: 10mm; }
@@ -542,7 +542,7 @@ function CommissionsStatement() {
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
       `,
-      onBeforeGetContent: () => {
+      onBeforePrint: () => {
           setIsGeneratingPDF(true);
           return Promise.resolve();
       },
@@ -550,8 +550,8 @@ function CommissionsStatement() {
           setIsGeneratingPDF(false);
           success("Janela de geração concluída!");
       },
-      onPrintError: (error) => {
-          console.error("Print Error:", error);
+      onPrintError: (errorLocation, printError) => {
+          console.error(`Print Error at ${errorLocation}:`, printError);
           error("Erro ao gerar PDF.");
           setIsGeneratingPDF(false);
       }
