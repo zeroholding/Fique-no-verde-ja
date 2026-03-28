@@ -83,3 +83,36 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
         return NextResponse.json({ error: "Erro interno no servidor ao excluir." }, { status: 500 });
     }
 }
+
+// PUT /api/evidences/[id]
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+    try {
+        await authenticateAdmin(request);
+        const { id } = await context.params;
+
+        if (!id) {
+            return NextResponse.json({ error: "ID inválido" }, { status: 400 });
+        }
+
+        const body = await request.json();
+        const description = body.description || null;
+
+        const result = await query(
+            "UPDATE evidences SET description = $1 WHERE id = $2 RETURNING *",
+            [description, id]
+        );
+
+        if (result.rowCount === 0) {
+            return NextResponse.json({ error: "Evidência não encontrada" }, { status: 404 });
+        }
+
+        return NextResponse.json({ success: true, evidence: result.rows[0] });
+
+    } catch(error: any) {
+        console.error("Update evidence error:", error);
+        if (error.message.includes("Acesso negado") || error.message.includes("autenticação")) {
+            return NextResponse.json({ error: error.message }, { status: 403 });
+        }
+        return NextResponse.json({ error: "Erro interno no servidor ao atualizar." }, { status: 500 });
+    }
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, ChangeEvent, useRef } from "react";
-import { ChevronLeft, ChevronRight, UploadCloud, FileText, Trash2, Maximize2, X, File, Image as ImageIcon, Video, CalendarDays } from "lucide-react";
+import { ChevronLeft, ChevronRight, UploadCloud, FileText, Trash2, Maximize2, X, File, Image as ImageIcon, Video, CalendarDays, Eye, Download, Edit2, Save } from "lucide-react";
 import { Modal } from "@/components/Modal";
 import { Button } from "@/components/Button";
 import { useToast } from "@/components/Toast";
@@ -44,6 +44,11 @@ export default function EvidencesCalendarPage() {
   
   // Fullscreen Media State
   const [previewMedia, setPreviewMedia] = useState<Evidence | null>(null);
+
+  // Edit State
+  const [editingEvidence, setEditingEvidence] = useState<string | null>(null);
+  const [editDescription, setEditDescription] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth();
@@ -167,6 +172,32 @@ export default function EvidencesCalendarPage() {
        }
      } catch(e) {
          error("Erro na exclusão");
+     }
+  };
+
+  const handleSaveEdit = async (ev: Evidence) => {
+     const token = localStorage.getItem("token");
+     if (!token) return;
+     
+     setIsSavingEdit(true);
+     try {
+         const res = await fetch(`/api/evidences/${ev.id}`, {
+             method: 'PUT',
+             headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+             body: JSON.stringify({ description: editDescription })
+         });
+         const data = await res.json();
+         if (res.ok) {
+             success("Descrição atualizada!");
+             setEvidences(prev => prev.map(e => e.id === ev.id ? { ...e, description: editDescription } : e));
+             setEditingEvidence(null);
+         } else {
+             throw new Error(data.error || "Erro ao atualizar");
+         }
+     } catch(e: any) {
+         error(e.message || "Erro de conexão ao salvar");
+     } finally {
+         setIsSavingEdit(false);
      }
   };
 
@@ -320,6 +351,7 @@ export default function EvidencesCalendarPage() {
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={selectedDateLocalStr ? `Evidências: ${selectedDateLocalStr.split('-').reverse().join('/')}` : "Detalhes da Data"}
+        widthClassName="max-w-4xl w-[95%] sm:w-[90%]"
       >
           <div className="space-y-6">
              {/* AREA DE UPLOAD (SO ADMIN) */}
@@ -369,20 +401,11 @@ export default function EvidencesCalendarPage() {
                        Nenhum arquivo enviado para essa data.
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                        {selectedEvidences.map(ev => (
-                            <div key={ev.id} className="group relative bg-white/5 border border-white/10 rounded-2xl p-2 flex flex-col gap-2 hover:bg-white/10 transition">
-                                {/* Delete Button Absolute (Admin Only) */}
-                                {isAdmin && (
-                                    <button 
-                                        onClick={() => deleteEvidence(ev.id)}
-                                        className="absolute top-4 right-4 z-10 p-1.5 bg-red-500/80 hover:bg-red-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition shadow-lg"
-                                        title="Excluir arquivo"
-                                    >
-                                        <Trash2 size={14}/>
-                                    </button>
-                                )}
-
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        {selectedEvidences.map(ev => {
+                            const isEditing = editingEvidence === ev.id;
+                            return (
+                            <div key={ev.id} className="group relative bg-white/5 border border-white/10 rounded-2xl p-3 flex flex-col gap-3 hover:bg-white/10 transition">
                                 {/* Preview Visual */}
                                 <div 
                                     className="cursor-pointer relative overflow-hidden rounded-xl"
@@ -394,17 +417,65 @@ export default function EvidencesCalendarPage() {
                                     </div>
                                 </div>
                                 
-                                <div className="px-2 pb-2">
+                                <div className="flex flex-col gap-2 flex-1">
                                     <p className="text-sm font-medium text-gray-200 truncate" title={ev.file_name}>
                                         {ev.file_name}
                                     </p>
-                                    <div className="flex justify-between items-center text-xs mt-1">
-                                       <span className="text-gray-500">{formatSize(ev.file_size)}</span>
-                                       {ev.description && <span className="text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded truncate max-w-[80px]" title={ev.description}>{ev.description}</span>}
-                                    </div>
+                                    
+                                    {isEditing ? (
+                                        <div className="flex flex-col gap-2">
+                                            <input 
+                                              type="text" 
+                                              value={editDescription} 
+                                              onChange={e => setEditDescription(e.target.value)}
+                                              className="w-full text-xs rounded-lg border border-white/20 bg-black/50 px-2 py-1.5 text-white focus:outline-none focus:border-blue-400 placeholder:text-gray-500"
+                                              placeholder="Nova descrição..."
+                                            />
+                                            <div className="flex gap-2">
+                                                <button disabled={isSavingEdit} onClick={() => handleSaveEdit(ev)} className="text-xs font-semibold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 px-2 py-1.5 rounded flex-1 transition">{isSavingEdit ? '...' : 'Salvar'}</button>
+                                                <button onClick={() => setEditingEvidence(null)} className="text-xs font-semibold bg-white/10 hover:bg-white/20 text-gray-300 px-2 py-1.5 rounded transition">Cancelar</button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex justify-between items-center text-xs">
+                                           <span className="text-gray-500">{formatSize(ev.file_size)}</span>
+                                           {ev.description && <span className="text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded truncate max-w-[120px]" title={ev.description}>{ev.description}</span>}
+                                        </div>
+                                    )}
                                 </div>
+
+                                {/* Ações Explícitas */}
+                                <div className="grid grid-cols-2 gap-2 mt-auto pt-3 border-t border-white/5">
+                                    <button onClick={() => setPreviewMedia(ev)} className="flex items-center justify-center gap-1.5 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg text-xs font-medium transition">
+                                        <Eye size={14}/> Ver Mídia
+                                    </button>
+                                    <a href={ev.file_url} download target="_blank" rel="noopener" className="flex items-center justify-center gap-1.5 py-2 bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg text-xs font-medium transition">
+                                        <Download size={14}/> Baixar
+                                    </a>
+                                </div>
+
+                                {/* Ações de Admin */}
+                                {isAdmin && !isEditing && (
+                                    <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 bg-black/60 backdrop-blur-md p-1.5 rounded-xl shadow-xl border border-white/10">
+                                        <button 
+                                            onClick={() => { setEditingEvidence(ev.id); setEditDescription(ev.description || ""); }}
+                                            className="p-1.5 bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white rounded-lg transition"
+                                            title="Editar descrição"
+                                        >
+                                            <Edit2 size={14}/>
+                                        </button>
+                                        <button 
+                                            onClick={() => deleteEvidence(ev.id)}
+                                            className="p-1.5 bg-red-500/20 hover:bg-red-500/40 text-red-400 rounded-lg transition"
+                                            title="Excluir arquivo permanentemente"
+                                        >
+                                            <Trash2 size={14}/>
+                                        </button>
+                                    </div>
+                                )}
                             </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
              </div>
