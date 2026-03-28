@@ -70,12 +70,15 @@ export async function GET(request: NextRequest) {
         u.last_name,
         s.id as sale_id,
         cl.name as client_name,
-        si.product_name
+        si.product_name,
+        si.sale_type,
+        h.name as holiday_name
       FROM commissions c
       JOIN users u ON c.user_id = u.id
       JOIN sales s ON c.sale_id = s.id
       JOIN clients cl ON s.client_id = cl.id
       LEFT JOIN sale_items si ON c.sale_item_id = si.id
+      LEFT JOIN holidays h ON TO_CHAR(c.reference_date AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') = TO_CHAR(h.date, 'YYYY-MM-DD') AND h.is_active = true
       WHERE 1=1
     `;
 
@@ -119,6 +122,8 @@ export async function GET(request: NextRequest) {
       saleId: row.sale_id,
       clientName: row.client_name,
       productName: row.product_name || "N/A",
+      saleType: row.sale_type || "01",
+      holidayName: row.holiday_name || null
     }));
 
     return NextResponse.json({ commissions });

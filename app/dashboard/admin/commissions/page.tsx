@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useToast } from "@/components/Toast";
 import { Button } from "@/components/Button";
 import { Select } from "@/components/Select";
+import { CommissionReportTemplate } from "@/components/CommissionReportTemplate";
+import { FileDown } from "lucide-react";
 
 // --- Tipos e Componentes para Políticas ---
 
@@ -407,6 +409,8 @@ type Commission = {
   saleId: string;
   clientName: string;
   productName: string;
+  saleType?: string;
+  holidayName?: string | null;
 };
 
 const formatCurrency = (value: number) =>
@@ -421,7 +425,7 @@ const formatDateTime = (value: string) => {
 };
 
 function CommissionsStatement() {
-  const { error } = useToast();
+  const { error, success } = useToast();
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const [attendants, setAttendants] = useState<Array<{ value: string; label: string }>>([]);
   const [loading, setLoading] = useState(false);
@@ -525,6 +529,41 @@ function CommissionsStatement() {
     return filteredCommissions.reduce((acc, curr) => acc + (curr.amount || 0), 0);
   }, [filteredCommissions]);
 
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
+
+  const handleGeneratePDF = async () => {
+      if (!reportRef.current) return;
+      
+      try {
+          setIsGeneratingPDF(true);
+          reportRef.current.style.display = 'block';
+          
+          const html2pdf = (await import('html2pdf.js')).default;
+          
+          const opt: any = {
+            margin:       10,
+            filename:     `Relatorio_Comissoes_FNVJ.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          };
+          
+          await html2pdf().set(opt).from(reportRef.current).save();
+          success("Relatório gerado com sucesso!");
+      } catch (err) {
+          console.error("PDF Generate Error:", err);
+          error("Erro ao gerar PDF.");
+      } finally {
+          setIsGeneratingPDF(false);
+          if (reportRef.current) reportRef.current.style.display = 'none';
+      }
+  };
+
+  const selectedAttendantName = useMemo(() => {
+     return attendants.find(a => a.value === attendantId)?.label || "Todos";
+  }, [attendantId, attendants]);
+
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur">
       <div className="flex flex-col gap-3 px-4 sm:px-6 py-4 border-b border-white/10">
@@ -587,22 +626,40 @@ function CommissionsStatement() {
               <span className="font-semibold text-emerald-200">{formatCurrency(totalAmount)}</span>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             <Button size="sm" variant="ghost" className="rounded-xl" onClick={clearFilters}>
               Limpar
             </Button>
             <Button
               size="sm"
               variant="secondary"
-              className="rounded-xl"
+              className="rounded-xl whitespace-nowrap"
               onClick={fetchCommissions}
               disabled={loading}
             >
               {loading ? "Atualizando..." : "Atualizar"}
             </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              className="rounded-xl whitespace-nowrap bg-blue-600 hover:bg-blue-500 font-semibold shadow-lg shadow-blue-500/20 text-white flex items-center gap-2"
+              onClick={handleGeneratePDF}
+              disabled={isGeneratingPDF || filteredCommissions.length === 0}
+            >
+              <FileDown size={16}/>
+              {isGeneratingPDF ? "Gerando..." : "Gerar PDF"}
+            </Button>
           </div>
         </div>
       </div>
+
+      <CommissionReportTemplate 
+         ref={reportRef} 
+         commissions={filteredCommissions} 
+         startDate={startDate}
+         endDate={endDate}
+         attendantFilterName={selectedAttendantName}
+      />
 
       {loading ? (
         <div className="px-4 sm:px-6 py-10 text-center text-gray-300">Carregando extrato...</div>
