@@ -1156,21 +1156,30 @@ export default function ClientsPage() {
               </div>
             )}
 
-            <div className="pt-4 border-t border-white/10 space-y-2">
-              <div className="flex justify-between text-sm">
+            <div className="pt-4 border-t border-white/10 space-y-3">
+              {viewingClient.creatorName && (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-400">Registrado por:</span>
+                  <span className="text-blue-300 bg-blue-500/10 px-2.5 py-1 rounded-md font-medium flex items-center gap-1.5 border border-blue-400/20">
+                     <User size={14}/>
+                     {viewingClient.creatorName}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-400">Cadastrado em:</span>
-                <span>
+                <span className="text-gray-200">
                   {new Date(viewingClient.createdAt).toLocaleDateString("pt-BR")}{" "}
                   às{" "}
-                  {new Date(viewingClient.createdAt).toLocaleTimeString("pt-BR")}
+                  {new Date(viewingClient.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                 </span>
               </div>
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-400">Última atualização:</span>
-                <span>
+                <span className="text-gray-200">
                   {new Date(viewingClient.updatedAt).toLocaleDateString("pt-BR")}{" "}
                   às{" "}
-                  {new Date(viewingClient.updatedAt).toLocaleTimeString("pt-BR")}
+                  {new Date(viewingClient.updatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                 </span>
               </div>
             </div>
