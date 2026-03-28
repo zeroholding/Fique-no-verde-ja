@@ -98,7 +98,7 @@ export const CommissionReportTemplate = React.forwardRef<HTMLDivElement, Props>(
             <h2 className="text-xl font-semibold text-gray-700 mt-1">Relatório de Comissões</h2>
           </div>
           <div className="text-right text-sm text-gray-500">
-            <p>Emissão: {new Date().toLocaleString('pt-BR')}</p>
+            <p suppressHydrationWarning>Emissão: {new Date().toLocaleString('pt-BR')}</p>
             <p className="mt-1">{periodStr}</p>
             <p>Atendente Filtro: <span className="font-semibold text-gray-800">{attendantFilterName || "Todos"}</span></p>
           </div>
