@@ -49,14 +49,13 @@ export default function EvidencesCalendarPage() {
   const currentMonth = currentDate.getMonth();
 
   useEffect(() => {
-     // Check if admin loosely via API or jwt (Here we check locally for UI, backend validates securely)
+     // Check admin user
      const checkUser = async () => {
          try {
-            const token = localStorage.getItem("token");
-            if (token) {
-               // Uma forma rápida de decodificar o token sem lib
-               const payload = JSON.parse(atob(token.split('.')[1]));
-               if (payload && payload.is_admin === true) {
+            const userData = localStorage.getItem("user");
+            if (userData) {
+               const payload = JSON.parse(userData);
+               if (payload && payload.isAdmin === true) {
                    setIsAdmin(true);
                }
             }
@@ -292,7 +291,7 @@ export default function EvidencesCalendarPage() {
                      <div 
                         key={dateStr}
                         onClick={() => handleDayClick(dateStr)}
-                        className="aspect-square flex flex-col items-center justify-center p-1 sm:p-2 bg-black/20 hover:bg-white/10 border border-white/5 hover:border-blue-500/50 rounded-xl cursor-pointer transition relative group"
+                        className="h-16 sm:h-20 md:h-24 flex flex-col items-center justify-center p-1 sm:p-2 bg-black/20 hover:bg-white/10 border border-white/5 hover:border-blue-500/50 rounded-xl cursor-pointer transition relative group"
                      >
                          <span className={`text-lg sm:text-xl font-medium ${
                              dateStr === new Date().toISOString().split('T')[0] ? 'text-blue-400' : 'text-gray-300'
