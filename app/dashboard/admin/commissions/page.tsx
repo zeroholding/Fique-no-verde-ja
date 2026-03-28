@@ -6,6 +6,7 @@ import { Button } from "@/components/Button";
 import { Select } from "@/components/Select";
 import { CommissionReportTemplate } from "@/components/CommissionReportTemplate";
 import { FileDown } from "lucide-react";
+import { useReactToPrint } from "react-to-print";
 
 // --- Tipos e Componentes para Políticas ---
 
@@ -532,36 +533,32 @@ function CommissionsStatement() {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
 
-  const handleGeneratePDF = async () => {
-      if (!reportRef.current) return;
-      
-      try {
+  const handlePrint = useReactToPrint({
+      content: () => reportRef.current,
+      documentTitle: 'Relatorio_Comissoes_FNVJ',
+      pageStyle: `
+        @page { size: A4; margin: 10mm; }
+        @media print {
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+      `,
+      onBeforeGetContent: () => {
           setIsGeneratingPDF(true);
-          reportRef.current.style.display = 'block';
-          
-          // Aguarda um instante para garantir que o Chrome renderizou o bloco na tela antes do Canvas tirar foto
-          await new Promise(resolve => setTimeout(resolve, 300));
-          
-          const html2pdfModule = await import('html2pdf.js');
-          const html2pdf = html2pdfModule.default ? html2pdfModule.default : html2pdfModule;
-          
-          const opt: any = {
-            margin:       10,
-            filename:     `Relatorio_Comissoes_FNVJ.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, logging: false },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-          };
-          
-          await (html2pdf as any)().set(opt).from(reportRef.current).save();
-          success("Relatório gerado com sucesso!");
-      } catch (err) {
-          console.error("PDF Generate Error:", err);
-          error("Erro ao gerar PDF.");
-      } finally {
+          return Promise.resolve();
+      },
+      onAfterPrint: () => {
           setIsGeneratingPDF(false);
-          if (reportRef.current) reportRef.current.style.display = 'none';
+          success("Janela de geração concluída!");
+      },
+      onPrintError: (error) => {
+          console.error("Print Error:", error);
+          error("Erro ao gerar PDF.");
+          setIsGeneratingPDF(false);
       }
+  });
+
+  const handleGeneratePDF = () => {
+      handlePrint();
   };
 
   const selectedAttendantName = useMemo(() => {
@@ -657,13 +654,16 @@ function CommissionsStatement() {
         </div>
       </div>
 
-      <CommissionReportTemplate 
-         ref={reportRef} 
-         commissions={filteredCommissions} 
-         startDate={startDate}
-         endDate={endDate}
-         attendantFilterName={selectedAttendantName}
-      />
+      <div style={{ display: 'none' }}>
+          <div ref={reportRef}>
+              <CommissionReportTemplate 
+                 commissions={filteredCommissions} 
+                 startDate={startDate}
+                 endDate={endDate}
+                 attendantFilterName={selectedAttendantName}
+              />
+          </div>
+      </div>
 
       {loading ? (
         <div className="px-4 sm:px-6 py-10 text-center text-gray-300">Carregando extrato...</div>

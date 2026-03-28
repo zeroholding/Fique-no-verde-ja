@@ -30,8 +30,7 @@ const formatDateTime = (value: string) => {
   return `${date.toLocaleDateString("pt-BR")}`;
 };
 
-export const CommissionReportTemplate = React.forwardRef<HTMLDivElement, Props>(
-  ({ commissions, startDate, endDate, attendantFilterName }, ref) => {
+export const CommissionReportTemplate = ({ commissions, startDate, endDate, attendantFilterName }: Props) => {
     
     // Aggregations
     const totalAmount = commissions.reduce((acc, curr) => acc + (curr.amount || 0), 0);
@@ -86,9 +85,8 @@ export const CommissionReportTemplate = React.forwardRef<HTMLDivElement, Props>(
 
     return (
       <div 
-         ref={ref} 
          className="bg-white text-black p-8 mx-auto font-sans" 
-         style={{ width: '210mm', minHeight: '297mm', padding: '20mm', display: 'none' }}
+         style={{ width: '210mm', minHeight: '297mm', padding: '20mm' }}
          id="pdf-report-container"
       >
         {/* Header */}
@@ -185,7 +183,4 @@ export const CommissionReportTemplate = React.forwardRef<HTMLDivElement, Props>(
         </div>
       </div>
     );
-  }
-);
-
-CommissionReportTemplate.displayName = "CommissionReportTemplate";
+};
