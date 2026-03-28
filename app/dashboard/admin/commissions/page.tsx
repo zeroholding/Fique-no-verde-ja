@@ -539,17 +539,21 @@ function CommissionsStatement() {
           setIsGeneratingPDF(true);
           reportRef.current.style.display = 'block';
           
-          const html2pdf = (await import('html2pdf.js')).default;
+          // Aguarda um instante para garantir que o Chrome renderizou o bloco na tela antes do Canvas tirar foto
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
+          const html2pdfModule = await import('html2pdf.js');
+          const html2pdf = html2pdfModule.default ? html2pdfModule.default : html2pdfModule;
           
           const opt: any = {
             margin:       10,
             filename:     `Relatorio_Comissoes_FNVJ.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2 },
+            html2canvas:  { scale: 2, useCORS: true, logging: false },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
           };
           
-          await html2pdf().set(opt).from(reportRef.current).save();
+          await (html2pdf as any)().set(opt).from(reportRef.current).save();
           success("Relatório gerado com sucesso!");
       } catch (err) {
           console.error("PDF Generate Error:", err);
