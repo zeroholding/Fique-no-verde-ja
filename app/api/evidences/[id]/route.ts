@@ -57,11 +57,12 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
 
         const evidence = selectResult.rows[0];
 
-        // Apaga fisicamente do servidor (sempre bom envolver isso num grande Try, porque se arquivo sumiu, ainda queremos poder limpar o DB)
+        // Apaga fisicamente do servidor
         try {
-           const relativeUrl = evidence.file_url; // ex: /uploads/evidences/xyz.png
-           if (relativeUrl.startsWith('/uploads')) {
-               const physicalPath = path.join(process.cwd(), "public", relativeUrl);
+           const fileUrl = evidence.file_url;
+           const fileName = fileUrl.split('/').pop();
+           if (fileName) {
+               const physicalPath = path.join(process.cwd(), "public", "uploads", "evidences", fileName);
                if (fs.existsSync(physicalPath)) {
                    await unlink(physicalPath);
                }

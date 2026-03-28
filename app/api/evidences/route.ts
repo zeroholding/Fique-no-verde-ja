@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
       // Escreve fisicamente
       await writeFile(physicalPath, buffer);
       
-      const fileUrl = `/uploads/evidences/${randomName}`; // Como será acessado pelo navegador (static folder)
+      const fileUrl = `/api/media/evidences/${randomName}`; // Como será acessado pelo navegador (static folder fallback bypass)
 
       // Grava no PostgreSQL
       const result = await query(
