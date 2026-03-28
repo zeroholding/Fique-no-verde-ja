@@ -8,7 +8,7 @@ import {
   ChangeEvent,
   FormEvent,
 } from "react";
-import { Edit2, Trash2, AlertTriangle } from "lucide-react";
+import { Edit2, Trash2, AlertTriangle, User } from "lucide-react";
 import { Modal } from "@/components/Modal";
 import { Button } from "@/components/Button";
 import { useToast } from "@/components/Toast";
@@ -28,6 +28,7 @@ type Client = {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  creatorName: string | null;
 };
 
 type ApiClient = {
@@ -45,6 +46,7 @@ type ApiClient = {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  creator_name?: string | null;
 };
 
 type SortField = "createdAt" | "birthDate" | null;
@@ -203,6 +205,7 @@ export default function ClientsPage() {
           isActive: client.is_active,
           createdAt: client.created_at,
           updatedAt: client.updated_at,
+          creatorName: client.creator_name || null,
         })
       );
 
@@ -776,6 +779,12 @@ export default function ClientsPage() {
                       <span className="px-3 py-1 rounded-full border border-white/20 text-gray-200">
                         {new Date(client.createdAt).toLocaleDateString("pt-BR")} {new Date(client.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                       </span>
+                      {client.creatorName && (
+                        <span className="px-3 py-1 rounded-full border border-blue-400/30 text-blue-300 bg-blue-500/10 flex items-center gap-1">
+                          <User size={10} />
+                          Cadastro por: {client.creatorName.trim()}
+                        </span>
+                      )}
                     </div>
 
                     {/* [NEW] Botoes de Acao */}

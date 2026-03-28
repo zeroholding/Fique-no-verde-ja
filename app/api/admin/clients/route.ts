@@ -175,15 +175,26 @@ export async function GET(request: NextRequest) {
         c.is_active,
         c.created_at,
         c.updated_at,
-        co.name as origin_name
+        co.name as origin_name,
+        u.first_name || ' ' || u.last_name as creator_name
        FROM clients c
        LEFT JOIN client_origins co ON c.origin_id = co.id
+       LEFT JOIN users u ON c.created_by_user_id = u.id
        ${whereClause}
        ORDER BY c.created_at DESC`,
       params
     );
 
-    return NextResponse.json({ clients: clients.rows }, { status: 200 });
+    const isAdmin = user.is_admin;
+    const finalClients = clients.rows.map(client => {
+      // Se nao for admin, limpa o nome de quem criou por seguranca
+      if (!isAdmin) {
+         delete client.creator_name;
+      }
+      return client;
+    });
+
+    return NextResponse.json({ clients: finalClients }, { status: 200 });
   } catch (error) {
     const message =
       error instanceof Error
