@@ -23,7 +23,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ has
             COALESCE(SUM((s.subtotal - s.discount_amount) * (c.commission_percentage / 100.0)), 0) as total_commission
         FROM cupons c
         LEFT JOIN sales s ON s.cupom_id = c.id AND s.status != 'cancelada'
-        WHERE c.partner_slug = $1 ${isUUID ? 'OR c.id = $2' : ''}
+        WHERE (c.partner_slug = $1 ${isUUID ? 'OR c.id = $2' : ''}) AND c.deleted_at IS NULL
         GROUP BY c.id
     `, isUUID ? [hash, hash] : [hash]);
 

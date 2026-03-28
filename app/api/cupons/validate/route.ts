@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Buscar o cupom pelo código
-    const result = await query(`SELECT * FROM cupons WHERE code = $1 LIMIT 1`, [code]);
+    const result = await query(`SELECT * FROM cupons WHERE code = $1 AND deleted_at IS NULL LIMIT 1`, [code]);
 
     if (result.rows.length === 0) {
       return NextResponse.json({ error: "Cupom inválido ou não encontrado." }, { status: 404 });

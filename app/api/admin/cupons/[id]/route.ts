@@ -32,7 +32,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
             COALESCE(SUM((s.subtotal - s.discount_amount) * (c.commission_percentage / 100.0)), 0) as total_commission
         FROM cupons c
         LEFT JOIN sales s ON s.cupom_id = c.id AND s.status != 'cancelada'
-        WHERE c.id = $1
+        WHERE c.id = $1 AND c.deleted_at IS NULL
         GROUP BY c.id
     `, [id]);
 
@@ -205,7 +205,7 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
       return NextResponse.json({ error: "ID inválido" }, { status: 400 });
     }
 
-    const result = await query("DELETE FROM cupons WHERE id = $1 RETURNING id", [id]);
+    const result = await query("UPDATE cupons SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING id", [id]);
 
     if (result.rowCount === 0) {
       return NextResponse.json({ error: "Cupom não encontrado" }, { status: 404 });
@@ -214,16 +214,8 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     return NextResponse.json({ success: true, id: id });
 
   } catch (error: any) {
-    console.error("Erro ao deletar cupom:", error);
+    console.error("Erro ao deletar cupom (soft delete):", error);
     
-    // Tratamento específico para erro de restrição de chave estrangeira (tentou exluir cupom com uso em vendas)
-    if (error.code === '23503') {
-       return NextResponse.json({ 
-          error: "Não é possível excluir este cupom porque ele já possui histórico de vendas associadas. Recomendamos desativá-lo para preservar os relatórios.",
-          isForeignKeyError: true
-       }, { status: 400 });
-    }
-
     return NextResponse.json({ error: "Erro interno no servidor" }, { status: 500 });
   }
 }
