@@ -124,3 +124,107 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     return NextResponse.json({ error: "Erro interno no servidor" }, { status: 500 });
   }
 }
+
+// PUT /api/admin/cupons/[id]
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  try {
+    const token = request.cookies.get("token")?.value;
+    if (!token) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+    const userResult = await query("SELECT is_admin FROM users WHERE id = $1", [decoded.userId]);
+    
+    if (userResult.rowCount === 0 || !userResult.rows[0].is_admin) {
+      return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
+    }
+
+    const { id } = await context.params;
+    if (!id) {
+      return NextResponse.json({ error: "ID inválido" }, { status: 400 });
+    }
+
+    const { code, type, value, max_uses, expires_at, commission_percentage, partner_slug, is_active } = await request.json();
+
+    if (!code || !type || value === undefined) {
+      return NextResponse.json({ error: "Dados inválidos: code, type e value são obrigatórios." }, { status: 400 });
+    }
+
+    const upperCode = code.toUpperCase().trim();
+    if (type !== 'percent' && type !== 'fixed') {
+      return NextResponse.json({ error: "Tipo inválido: deve ser 'percent' ou 'fixed'." }, { status: 400 });
+    }
+
+    const cleanSlug = partner_slug ? partner_slug.toLowerCase().replace(/[^a-z0-9\-]/g, '').trim() : null;
+
+    // Atualiza os dados principais. `is_active` poder ser fornecido ou mantido se omitido.
+    // Usamos COALESCE para is_active pra caso venha nulo não quebrar, mas vamos requerer que a rota mande explícito.
+    const result = await query(
+      `UPDATE cupons SET 
+          code = $1, 
+          discount_type = $2, 
+          discount_value = $3, 
+          max_uses = $4, 
+          expires_at = $5, 
+          commission_percentage = $6, 
+          partner_slug = $7,
+          is_active = COALESCE($8, is_active)
+       WHERE id = $9 RETURNING *`,
+      [upperCode, type, value, max_uses || null, expires_at ? new Date(expires_at) : null, commission_percentage || 0, cleanSlug || null, is_active, id]
+    );
+
+    if (result.rows.length === 0) {
+      return NextResponse.json({ error: "Cupom não encontrado" }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, data: result.rows[0] });
+
+  } catch (error: any) {
+    console.error("Erro atualizando cupom admin:", error);
+    if (error.code === '23505') {
+       return NextResponse.json({ error: "Já existe outro cupom com esse código ou slug personalizado." }, { status: 400 });
+    }
+    return NextResponse.json({ error: "Erro interno no servidor" }, { status: 500 });
+  }
+}
+
+// DELETE /api/admin/cupons/[id]
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  try {
+    const token = request.cookies.get("token")?.value;
+    if (!token) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+    const userResult = await query("SELECT is_admin FROM users WHERE id = $1", [decoded.userId]);
+    
+    if (userResult.rowCount === 0 || !userResult.rows[0].is_admin) {
+      return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
+    }
+
+    const { id } = await context.params;
+    if (!id) {
+      return NextResponse.json({ error: "ID inválido" }, { status: 400 });
+    }
+
+    const result = await query("DELETE FROM cupons WHERE id = $1 RETURNING id", [id]);
+
+    if (result.rowCount === 0) {
+      return NextResponse.json({ error: "Cupom não encontrado" }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, id: id });
+
+  } catch (error: any) {
+    console.error("Erro ao deletar cupom:", error);
+    
+    // Tratamento específico para erro de restrição de chave estrangeira (tentou exluir cupom com uso em vendas)
+    if (error.code === '23503') {
+       return NextResponse.json({ 
+          error: "Não é possível excluir este cupom porque ele já possui histórico de vendas associadas. Recomendamos desativá-lo para preservar os relatórios.",
+          isForeignKeyError: true
+       }, { status: 400 });
+    }
+
+    return NextResponse.json({ error: "Erro interno no servidor" }, { status: 500 });
+  }
+}
+

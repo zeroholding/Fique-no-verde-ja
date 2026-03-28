@@ -24,6 +24,7 @@ export default function CuponsAdminPage() {
   const [cupons, setCupons] = useState<Cupom[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingCupomId, setEditingCupomId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"todos" | "ativos" | "inativos">("todos");
 
@@ -55,12 +56,16 @@ export default function CuponsAdminPage() {
     setLoading(false);
   };
 
-  const handleCreateMenu = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await fetch("/api/admin/cupons", {
-        method: "POST",
+      const isEditing = !!editingCupomId;
+      const url = isEditing ? `/api/admin/cupons/${editingCupomId}` : "/api/admin/cupons";
+      const method = isEditing ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method: method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           code: newCode,
@@ -74,23 +79,83 @@ export default function CuponsAdminPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setIsModalOpen(false);
-        setNewCode("");
-        setNewType("percent");
-        setNewValue("");
-        setNewCommission("");
-        setNewMaxUses("");
-        setNewExpiresAt("");
-        setNewSlug("");
+        closeModal();
         fetchCupons();
       } else {
         alert(data.error);
       }
     } catch (error) {
       console.error(error);
-      alert("Erro ao criar cupom");
+      alert(editingCupomId ? "Erro ao atualizar cupom" : "Erro ao criar cupom");
     }
     setSaving(false);
+  };
+
+  const openNewModal = () => {
+    setEditingCupomId(null);
+    setNewCode("");
+    setNewType("percent");
+    setNewValue("");
+    setNewCommission("");
+    setNewMaxUses("");
+    setNewExpiresAt("");
+    setNewSlug("");
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (cupom: Cupom) => {
+    setEditingCupomId(cupom.id);
+    setNewCode(cupom.code);
+    setNewType(cupom.discount_type);
+    setNewValue(String(cupom.discount_value));
+    setNewCommission(String(cupom.commission_percentage));
+    setNewMaxUses(cupom.max_uses !== null ? String(cupom.max_uses) : "");
+    setNewExpiresAt(cupom.expires_at ? new Date(cupom.expires_at).toISOString().split('T')[0] : "");
+    setNewSlug(cupom.partner_slug || "");
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingCupomId(null);
+  };
+
+  const handleToggleStatus = async (cupom: Cupom) => {
+    try {
+      const res = await fetch(`/api/admin/cupons/${cupom.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: cupom.code, // required by the form parser in route, though ideally it should support partial
+          type: cupom.discount_type,
+          value: cupom.discount_value,
+          is_active: !cupom.is_active
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+         fetchCupons(); // Refresh the list
+      } else {
+         alert(data.error);
+      }
+    } catch (err) {
+      alert("Erro ao alterar status do cupom");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Tem certeza que deseja excluir esse cupom? Essa ação não pode ser desfeita.")) return;
+    try {
+      const res = await fetch(`/api/admin/cupons/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        fetchCupons();
+      } else {
+        alert(data.error);
+      }
+    } catch (err) {
+      alert("Erro ao excluir cupom. Verifique sua conexão.");
+    }
   };
 
   const copyLink = (cupom: Cupom) => {
@@ -159,7 +224,7 @@ export default function CuponsAdminPage() {
               </div>
 
               <button
-                onClick={() => setIsModalOpen(true)}
+                onClick={openNewModal}
                 className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-3 rounded-xl flex items-center gap-2 font-semibold transition-colors shrink-0 whitespace-nowrap"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/></svg>
@@ -191,9 +256,14 @@ export default function CuponsAdminPage() {
                 <div className="relative z-10">
                   <div className="flex justify-between items-start mb-3">
                     <h3 className="font-bold text-white text-xl uppercase tracking-wider font-mono">{cupom.code}</h3>
-                    <span className={`px-2 py-0.5 text-[10px] font-bold rounded uppercase tracking-wider border ${cupom.is_active ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}>
-                      {cupom.is_active ? 'Ativo' : 'Inativo'}
-                    </span>
+                    <div className="flex flex-col items-end gap-2">
+                       <button 
+                         onClick={() => handleToggleStatus(cupom)}
+                         title={cupom.is_active ? "Desativar cupom" : "Ativar cupom"}
+                         className={`px-2 py-0.5 text-[10px] font-bold rounded uppercase tracking-wider border transition-colors hover:opacity-80 ${cupom.is_active ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30' : 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-emerald-500/20 hover:text-emerald-400 hover:border-emerald-500/30'}`}>
+                         {cupom.is_active ? 'Ativo' : 'Inativo'}
+                       </button>
+                    </div>
                   </div>
                   
                   <div className="inline-block bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg mb-4">
@@ -253,6 +323,21 @@ export default function CuponsAdminPage() {
                       </svg>
                       {cupom.partner_slug ? `/${cupom.partner_slug}` : 'Link'}
                     </button>
+                    <button 
+                      onClick={() => openEditModal(cupom)}
+                      title="Editar"
+                      className="text-white hover:text-white flex items-center justify-center bg-white/5 w-8 h-8 rounded-lg hover:bg-white/10 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                    </button>
+
+                    <button 
+                      onClick={() => handleDelete(cupom.id)}
+                      title="Excluir"
+                      className="text-red-400 hover:text-red-300 flex items-center justify-center bg-red-500/10 w-8 h-8 rounded-lg hover:bg-red-500/20 transition-colors ml-1"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -266,13 +351,13 @@ export default function CuponsAdminPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="bg-[#111111] border border-white/10 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between p-6 border-b border-white/10 bg-white/5">
-              <h2 className="text-xl font-bold text-white">Criar Novo Cupom</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white transition-colors bg-white/5 p-1 rounded-lg">
+              <h2 className="text-xl font-bold text-white">{editingCupomId ? "Editar Cupom" : "Criar Novo Cupom"}</h2>
+              <button onClick={closeModal} className="text-gray-400 hover:text-white transition-colors bg-white/5 p-1 rounded-lg">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
             
-            <form onSubmit={handleCreateMenu} className="p-6 space-y-5">
+            <form onSubmit={handleSubmit} className="p-6 space-y-5">
               <div>
                 <label className="block text-xs uppercase text-gray-400 tracking-wider mb-2 font-semibold">Código do Cupom</label>
                 <input 
@@ -378,7 +463,7 @@ export default function CuponsAdminPage() {
               <div className="pt-6 border-t border-white/10 flex justify-end gap-3">
                 <button 
                   type="button" 
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={closeModal}
                   className="px-6 py-2.5 bg-transparent border border-white/20 text-gray-300 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-colors"
                 >
                   Cancelar
@@ -388,7 +473,7 @@ export default function CuponsAdminPage() {
                   disabled={saving}
                   className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium disabled:opacity-50 transition-colors shadow-lg shadow-emerald-600/20"
                 >
-                  {saving ? 'Criando...' : 'Confirmar e Criar'}
+                  {saving ? 'Salvando...' : editingCupomId ? 'Salvar Alterações' : 'Confirmar e Criar'}
                 </button>
               </div>
             </form>
