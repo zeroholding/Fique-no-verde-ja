@@ -436,6 +436,8 @@ function CommissionsStatement() {
   const [endDate, setEndDate] = useState("");
   const [attendantId, setAttendantId] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [dayType, setDayType] = useState<"" | "weekday" | "non_working">("");
+  const [saleType, setSaleType] = useState("");
 
   const fetchAttendants = async () => {
     const token = localStorage.getItem("token");
@@ -515,15 +517,38 @@ function CommissionsStatement() {
       if (end !== null && refTs > end) return false;
       if (attendantId && comm.attendantId !== attendantId) return false;
       if (statusFilter && comm.status !== statusFilter) return false;
+      if (!statusFilter && comm.status === 'cancelado') return false;
+
+      if (dayType) {
+        let isNonWorking = false;
+        if (comm.holidayName) {
+            isNonWorking = true;
+        } else {
+            const tempDate = new Date(comm.referenceDate);
+            const dow = tempDate.getDay();
+            if (dow === 0 || dow === 6) isNonWorking = true;
+        }
+
+        if (dayType === "weekday" && isNonWorking) return false;
+        if (dayType === "non_working" && !isNonWorking) return false;
+      }
+
+      if (saleType) {
+          if (saleType === "03" && comm.saleType !== "03") return false;
+          if (saleType === "01" && comm.saleType === "03") return false;
+      }
+
       return true;
     });
-  }, [commissions, startDate, endDate, attendantId, statusFilter]);
+  }, [commissions, startDate, endDate, attendantId, statusFilter, dayType, saleType]);
 
   const clearFilters = () => {
     setStartDate("");
     setEndDate("");
     setAttendantId("");
     setStatusFilter("");
+    setDayType("");
+    setSaleType("");
   };
 
   const totalAmount = useMemo(() => {
@@ -569,7 +594,7 @@ function CommissionsStatement() {
     <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur">
       <div className="flex flex-col gap-3 px-4 sm:px-6 py-4 border-b border-white/10">
         {/* Filtros */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
           <div className="flex flex-col gap-1">
             <label className="text-xs uppercase text-gray-400">Data inicial</label>
             <input
@@ -599,22 +624,52 @@ function CommissionsStatement() {
               className="py-2 text-sm"
             />
           </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs uppercase text-gray-400">Status</label>
-            <Select
-              value={statusFilter}
-              onChange={(e: any) => setStatusFilter(e.target.value)}
-              options={[
-                { value: "", label: "Todos" },
-                { value: "a_pagar", label: "A Pagar" },
-                { value: "pago", label: "Pago" },
-                { value: "cancelado", label: "Cancelado" },
-              ]}
-              placeholder="Todos"
-              containerClassName="h-[42px]"
-              className="py-2 text-sm"
-            />
-          </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs uppercase text-gray-400">Status</label>
+              <Select
+                value={statusFilter}
+                onChange={(e: any) => setStatusFilter(e.target.value)}
+                options={[
+                  { value: "", label: "Todos" },
+                  { value: "a_pagar", label: "A Pagar" },
+                  { value: "pago", label: "Pago" },
+                  { value: "cancelado", label: "Cancelado" },
+                ]}
+                placeholder="Todos"
+                containerClassName="h-[42px]"
+                className="py-2 text-sm"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs uppercase text-gray-400">Tipo de dia</label>
+              <Select
+                value={dayType}
+                onChange={(e: any) => setDayType(e.target.value)}
+                options={[
+                  { value: "", label: "Todos" },
+                  { value: "weekday", label: "Dia útil" },
+                  { value: "non_working", label: "Dia não útil" },
+                ]}
+                placeholder="Todos"
+                containerClassName="h-[42px]"
+                className="py-2 text-sm"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs uppercase text-gray-400">Tipo de Venda</label>
+              <Select
+                value={saleType}
+                onChange={(e: any) => setSaleType(e.target.value)}
+                options={[
+                  { value: "", label: "Todos" },
+                  { value: "01", label: "Venda Comum" },
+                  { value: "03", label: "Consumo de Pacote" },
+                ]}
+                placeholder="Todos"
+                containerClassName="h-[42px]"
+                className="py-2 text-sm"
+              />
+            </div>
         </div>
 
         <div className="flex items-center justify-between mt-2 flex-wrap gap-3">

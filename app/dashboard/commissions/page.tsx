@@ -190,12 +190,14 @@ export default function CommissionsPage() {
     return commissions.filter((comm) => {
       // Data filtering is handled by backend now
       if (statusFilter && comm.status !== statusFilter) return false;
+      if (!statusFilter && comm.status === 'cancelado') return false;
       if (attendantId && comm.attendantId !== attendantId) return false;
       if (!isAdmin && currentUserId && comm.attendantId !== currentUserId) return false;
       if (dayType && comm.dayType !== dayType) return false;
+      if (saleType && comm.saleType !== saleType) return false;
       return true;
     });
-  }, [attendantId, commissions, currentUserId, dayType, isAdmin, statusFilter]);
+  }, [attendantId, commissions, currentUserId, dayType, saleType, isAdmin, statusFilter]);
 
   const totalAmount = useMemo(() => {
     const sum = filteredCommissions.reduce((acc, curr) => acc + (curr.amount || 0), 0);
