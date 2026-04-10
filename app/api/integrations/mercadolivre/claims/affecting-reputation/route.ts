@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
 
     // Exact period match (from ML reputation payload)
     if (filterPeriodFrom && filterPeriodTo) {
-      conditions.push(`date_created >= $${paramIndex} AND date_created <= $${paramIndex + 1}`);
+      conditions.push(`sale_date >= $${paramIndex} AND sale_date <= $${paramIndex + 1}`);
       params.push(filterPeriodFrom, filterPeriodTo);
       paramIndex += 2;
     } 
@@ -125,7 +125,7 @@ export async function GET(request: NextRequest) {
     else if (filterPeriod && ["7", "15", "30", "60"].includes(filterPeriod)) {
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - Number(filterPeriod));
-      conditions.push(`date_created >= $${paramIndex}`);
+      conditions.push(`sale_date >= $${paramIndex}`);
       params.push(daysAgo.toISOString());
       paramIndex++;
     }

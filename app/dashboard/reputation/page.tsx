@@ -276,7 +276,7 @@ export default function ReputationPage() {
   const [filterStage, setFilterStage] = useState('');
   const [filterIncentive, setFilterIncentive] = useState('');
   const [filterMessages, setFilterMessages] = useState('');
-  const [filterPeriod, setFilterPeriod] = useState('');
+  const [filterPeriod, setFilterPeriod] = useState('60');
   const [filterResolution, setFilterResolution] = useState('');
   const [filterMediation, setFilterMediation] = useState('');
   const [sortField, setSortField] = useState('date_created');
