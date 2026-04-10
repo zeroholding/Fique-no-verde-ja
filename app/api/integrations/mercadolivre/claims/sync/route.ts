@@ -250,8 +250,26 @@ export async function POST(request: NextRequest) {
 
       console.log(`[ML-SYNC] Page offset=${offset}: got ${rows.length} claims, total=${total}`);
 
+      let reachedOldClaims = false;
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
       for (const row of rows) {
-        allClaims.push(getObject(row));
+        const lastUpdatedStr = getString(row.last_updated);
+        if (lastUpdatedStr) {
+           const d = new Date(lastUpdatedStr);
+           if (d < ninetyDaysAgo) {
+             reachedOldClaims = true;
+           }
+        }
+        if (!reachedOldClaims) {
+           allClaims.push(getObject(row));
+        }
+      }
+
+      if (reachedOldClaims) {
+        console.log(`[ML-SYNC] Reached claims not updated in over 90 days. Stopping pagination early.`);
+        break;
       }
 
       const currentLimit = getNumber(paging.limit) ?? pageLimit;
