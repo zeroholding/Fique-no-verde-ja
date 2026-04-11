@@ -1594,20 +1594,50 @@ export default function ReputationPage() {
                       )}
 
                       <div className="flex flex-col">
-                        <p className="text-[15px] text-white font-bold flex items-center gap-2">
-                          {(claim.order_id || claim.resource_id) ? `Pedido #${String(claim.order_id || claim.resource_id)}` : 'Venda sem Pedido'}
-                          <span className={`text-[10px] font-normal px-1.5 py-0.5 rounded ${claim.message_count > 0 ? 'bg-blue-500/10 text-blue-300' : 'bg-gray-500/10 text-gray-500'}`}>
-                            {claim.message_count} {claim.message_count === 1 ? 'msg' : 'msgs'}
-                          </span>
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-[15px] text-white font-bold flex items-center gap-2">
+                            {(claim.order_id || claim.resource_id) ? `Pedido #${String(claim.order_id || claim.resource_id)}` : 'Venda sem Pedido'}
+                            <span className={`text-[10px] font-normal px-1.5 py-0.5 rounded ${claim.message_count > 0 ? 'bg-blue-500/10 text-blue-300' : 'bg-gray-500/10 text-gray-500'}`}>
+                              {claim.message_count} {claim.message_count === 1 ? 'msg' : 'msgs'}
+                            </span>
+                          </p>
+                          {(claim.order_id || claim.resource_id) && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigator.clipboard.writeText(String(claim.order_id || claim.resource_id));
+                              }}
+                              className="p-1 rounded bg-white/5 hover:bg-white/10 transition-colors group cursor-pointer"
+                              title="Copiar Pedido"
+                            >
+                              <svg className="w-3.5 h-3.5 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
                         {claim.product_title && (
                           <a href={claim.product_link || '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-[13px] text-gray-300 mt-0.5 font-medium line-clamp-1 max-w-[350px] hover:text-white transition-colors" title={claim.product_title}>
                             {claim.product_title}
                           </a>
                         )}
-                        <p className="text-[11px] text-gray-500 font-medium mt-0.5">
-                          Reclamação #{claim.id}
-                        </p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <p className="text-[11px] text-gray-500 font-medium">
+                            Reclamação #{claim.id}
+                          </p>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(String(claim.id));
+                            }}
+                            className="p-[3px] rounded hover:bg-white/5 transition-colors group cursor-pointer"
+                            title="Copiar Reclamação"
+                          >
+                            <svg className="w-3 h-3 text-gray-500 group-hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
