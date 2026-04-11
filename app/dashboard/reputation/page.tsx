@@ -230,7 +230,7 @@ type MLAccount = {
 };
 
 export default function ReputationPage() {
-  const { error } = useToast();
+  const { error, success } = useToast();
   const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<ReputationData | null>(null);
@@ -1606,6 +1606,7 @@ export default function ReputationPage() {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 navigator.clipboard.writeText(String(claim.order_id || claim.resource_id));
+                                success("Número do Pedido copiado!");
                               }}
                               className="p-1 rounded bg-white/5 hover:bg-white/10 transition-colors group cursor-pointer"
                               title="Copiar Pedido"
@@ -1629,6 +1630,7 @@ export default function ReputationPage() {
                             onClick={(e) => {
                               e.stopPropagation();
                               navigator.clipboard.writeText(String(claim.id));
+                              success("Número da Reclamação copiado!");
                             }}
                             className="p-[3px] rounded hover:bg-white/5 transition-colors group cursor-pointer"
                             title="Copiar Reclamação"
