@@ -217,10 +217,8 @@ type ClaimMessage = {
   last_updated: string | null;
   status: string | null;
   attachments: Array<{
+    id: string | null;
     filename: string | null;
-    original_filename: string | null;
-    type: string | null;
-    size: number | null;
   }>;
 };
 
@@ -1817,9 +1815,36 @@ export default function ReputationPage() {
                             {message.text || '(sem texto)'}
                           </p>
                           {message.attachments.length > 0 && (
-                            <p className="text-[11px] text-gray-400 mt-2 flex items-center gap-1 bg-black/20 px-2 py-1 rounded inline-block">
-                              📎 {message.attachments.length} anexo(s)
-                            </p>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {message.attachments.map((att) => (
+                                <div key={att.id} className="relative group">
+                                  <a 
+                                    href={`/api/integrations/mercadolivre/messages/attachment?ml_user_id=${selectedAccount}&id=${att.id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block relative overflow-hidden rounded-lg border border-white/10 hover:border-white/20 transition-all"
+                                  >
+                                    <img 
+                                      src={`/api/integrations/mercadolivre/messages/attachment?ml_user_id=${selectedAccount}&id=${att.id}`}
+                                      alt={att.filename || "Anexo"}
+                                      className="max-w-[200px] max-h-[200px] object-contain bg-black/40"
+                                      loading="lazy"
+                                    />
+                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
+                                      <svg className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                      </svg>
+                                    </div>
+                                  </a>
+                                  {att.filename && (
+                                    <p className="text-[10px] text-gray-500 mt-1 truncate max-w-[200px]">
+                                      {att.filename}
+                                    </p>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
                           )}
                         </div>
                       </div>

@@ -33,6 +33,7 @@ type ParsedMessage = {
   moderation_status: string | null;
   moderation_reason: string | null;
   attachments_count: number;
+  attachments: { id: string | null, filename: string | null }[];
 };
 
 function getNumber(value: unknown): number | null {
@@ -76,6 +77,13 @@ function parseMessage(raw: unknown): ParsedMessage {
     moderation_status: getString(moderation.status),
     moderation_reason: getString(moderation.reason),
     attachments_count: attachments.length,
+    attachments: attachments.map(a => {
+      const ao = getObject(a);
+      return { 
+        id: getString(ao.id) || getString(ao.attachment_id), 
+        filename: getString(ao.filename) || getString(ao.original_filename) 
+      };
+    })
   };
 }
 
