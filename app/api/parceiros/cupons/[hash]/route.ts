@@ -17,14 +17,9 @@ export async function GET(request: NextRequest, context: { params: Promise<{ has
     
     const result = await query(`
         SELECT 
-            c.id, c.code, c.discount_type, c.discount_value, c.commission_percentage, c.is_active, c.max_uses,
-            COUNT(s.id) as current_uses,
-            COALESCE(SUM(s.discount_amount), 0) as total_saved,
-            COALESCE(SUM((s.subtotal - s.discount_amount) * (c.commission_percentage / 100.0)), 0) as total_commission
-        FROM cupons c
-        LEFT JOIN sales s ON s.cupom_id = c.id AND s.status != 'cancelada'
-        WHERE (c.partner_slug = $1 ${isUUID ? 'OR c.id = $2' : ''}) AND c.deleted_at IS NULL
-        GROUP BY c.id
+            id, code, discount_type, discount_value, commission_percentage, is_active, max_uses
+        FROM cupons
+        WHERE (partner_slug = $1 ${isUUID ? 'OR id = $2' : ''}) AND deleted_at IS NULL
     `, isUUID ? [hash, hash] : [hash]);
 
     if (result.rows.length === 0) {
@@ -74,6 +69,18 @@ export async function GET(request: NextRequest, context: { params: Promise<{ has
 
     const commission_percentage = Number(cupom.commission_percentage) || 0;
 
+    // Buscar as estatísticas totais usando as mesmas regras do filtro
+    const statsResult = await query(`
+        SELECT 
+            COUNT(s.id) as current_uses,
+            COALESCE(SUM(s.discount_amount), 0) as total_saved,
+            COALESCE(SUM((s.subtotal - s.discount_amount) * (${commission_percentage} / 100.0)), 0) as total_commission
+        FROM sales s
+        WHERE ${historyWhere}
+    `, queryParams);
+
+    const stats = statsResult.rows[0] || { current_uses: 0, total_saved: 0, total_commission: 0 };
+
     return NextResponse.json({
       success: true,
       data: {
@@ -82,10 +89,10 @@ export async function GET(request: NextRequest, context: { params: Promise<{ has
         discountType: cupom.discount_type,
         discountValue: Number(cupom.discount_value),
         commissionPercentage: commission_percentage,
-        currentUses: parseInt(cupom.current_uses, 10),
+        currentUses: parseInt(stats.current_uses, 10),
         maxUses: cupom.max_uses,
-        totalSaved: Number(cupom.total_saved),
-        totalCommission: Number(cupom.total_commission),
+        totalSaved: Number(stats.total_saved),
+        totalCommission: Number(stats.total_commission),
         isActive: cupom.is_active,
         history: historyResult.rows.map((row: any) => {
           let obfuscatedName = "Cliente Não Informado";
