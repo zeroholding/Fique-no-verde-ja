@@ -346,74 +346,112 @@ export async function GET(request: NextRequest) {
       console.warn("Claim messages fetch failed:", err);
     }
 
-    // If no claim messages, try via pack/order
-    if (allMessages.length === 0) {
-      messageSource = "pack";
+    // ALWAYS also fetch pack/order messages (they carry attachment data that claim API omits)
+    let packMessages: NormalizedMessage[] = [];
+    try {
+      const claimData = await fetchMlJsonSafe(
+        `https://api.mercadolibre.com/post-purchase/v1/claims/${claimId}`,
+        accessToken
+      );
 
-      try {
-        const claimData = await fetchMlJsonSafe(
-          `https://api.mercadolibre.com/post-purchase/v1/claims/${claimId}`,
-          accessToken
-        );
+      if (claimData) {
+        const resource = getString(claimData.resource);
+        const resourceId = getNumber(claimData.resource_id) ?? getString(claimData.resource_id);
 
-        if (claimData) {
-          const resource = getString(claimData.resource);
-          const resourceId = getNumber(claimData.resource_id) ?? getString(claimData.resource_id);
+        let packId: string | null = null;
 
-          let packId: string | null = null;
-
-          if (resource === "shipment" && resourceId) {
-            const shipmentData = await fetchMlJsonSafe(
-              `https://api.mercadolibre.com/shipments/${resourceId}`,
-              accessToken
-            );
-            if (shipmentData) {
-              packId = getString(shipmentData.pack_id) || String(getNumber(shipmentData.order_id) ?? "");
-            }
-          } else if (resource === "order" && resourceId) {
-            const orderData = await fetchMlJsonSafe(
-              `https://api.mercadolibre.com/orders/${resourceId}`,
-              accessToken
-            );
-            if (orderData) {
-              packId = getString(orderData.pack_id) || String(resourceId);
-            }
+        if (resource === "shipment" && resourceId) {
+          const shipmentData = await fetchMlJsonSafe(
+            `https://api.mercadolibre.com/shipments/${resourceId}`,
+            accessToken
+          );
+          if (shipmentData) {
+            packId = getString(shipmentData.pack_id) || String(getNumber(shipmentData.order_id) ?? "");
           }
-
-          if (packId) {
-            let currentOffset = 0;
-            const limit = 50;
-            let pageCount = 0;
-
-            while (true) {
-              const threadData = await fetchMlJsonSafe(
-                `https://api.mercadolibre.com/messages/packs/${packId}/sellers/${mlUserId}?tag=post_sale&limit=${limit}&offset=${currentOffset}`,
-                accessToken
-              );
-
-              if (!threadData) break;
-
-              const rawMessages = Array.isArray(threadData.messages) ? threadData.messages : [];
-              if (rawMessages.length === 0) break;
-
-              allMessages = allMessages.concat(rawMessages.map((m: unknown) => parsePackMessage(m, mlUserIdNum)));
-
-              const paging = getObject(threadData.paging);
-              const pageLimit = getNumber(paging.limit) ?? limit;
-              const pageOffset = getNumber(paging.offset) ?? currentOffset;
-              const total = getNumber(paging.total) ?? 0;
-              const nextOffset = pageOffset + pageLimit;
-
-              if (nextOffset >= total) break;
-              currentOffset = nextOffset;
-              pageCount++;
-              if (pageCount >= 40) break;
-            }
+        } else if (resource === "order" && resourceId) {
+          const orderData = await fetchMlJsonSafe(
+            `https://api.mercadolibre.com/orders/${resourceId}`,
+            accessToken
+          );
+          if (orderData) {
+            packId = getString(orderData.pack_id) || String(resourceId);
           }
         }
-      } catch (err) {
-        console.warn("Pack messages fallback failed:", err);
+
+        if (packId) {
+          let currentOffset = 0;
+          const limit = 50;
+          let pageCount = 0;
+
+          while (true) {
+            const threadData = await fetchMlJsonSafe(
+              `https://api.mercadolibre.com/messages/packs/${packId}/sellers/${mlUserId}?tag=post_sale&limit=${limit}&offset=${currentOffset}`,
+              accessToken
+            );
+
+            if (!threadData) break;
+
+            const rawMessages = Array.isArray(threadData.messages) ? threadData.messages : [];
+            if (rawMessages.length === 0) break;
+
+            packMessages = packMessages.concat(rawMessages.map((m: unknown) => parsePackMessage(m, mlUserIdNum)));
+
+            const paging = getObject(threadData.paging);
+            const pageLimit = getNumber(paging.limit) ?? limit;
+            const pageOffset = getNumber(paging.offset) ?? currentOffset;
+            const total = getNumber(paging.total) ?? 0;
+            const nextOffset = pageOffset + pageLimit;
+
+            if (nextOffset >= total) break;
+            currentOffset = nextOffset;
+            pageCount++;
+            if (pageCount >= 40) break;
+          }
+        }
       }
+    } catch (err) {
+      console.warn("Pack messages fetch failed:", err);
+    }
+
+    // Merge: if we have claim messages, enrich them with pack message attachments
+    if (allMessages.length > 0 && packMessages.length > 0) {
+      // For each claim message without attachments, try to find a matching pack message by timestamp
+      for (const claimMsg of allMessages) {
+        if (claimMsg.attachments.length === 0 && !claimMsg.text) {
+          // Find pack message from same sender around the same time (within 60 seconds)
+          const claimTime = Date.parse(claimMsg.date_created || "");
+          if (Number.isNaN(claimTime)) continue;
+          
+          const match = packMessages.find((pm) => {
+            const packTime = Date.parse(pm.date_created || "");
+            if (Number.isNaN(packTime)) return false;
+            return Math.abs(claimTime - packTime) < 60000 && pm.attachments.length > 0;
+          });
+          
+          if (match) {
+            claimMsg.attachments = match.attachments;
+            if (!claimMsg.text && match.text) claimMsg.text = match.text;
+          }
+        }
+      }
+      // Also add pack messages that have attachments and weren't matched to any claim message
+      for (const pm of packMessages) {
+        if (pm.attachments.length > 0) {
+          const pmTime = Date.parse(pm.date_created || "");
+          const alreadyMatched = allMessages.some((cm) => {
+            const cmTime = Date.parse(cm.date_created || "");
+            return !Number.isNaN(cmTime) && !Number.isNaN(pmTime) && Math.abs(cmTime - pmTime) < 60000;
+          });
+          if (!alreadyMatched) {
+            allMessages.push(pm);
+          }
+        }
+      }
+      messageSource = "merged";
+    } else if (allMessages.length === 0 && packMessages.length > 0) {
+      // No claim messages at all, use pack messages directly
+      allMessages = packMessages;
+      messageSource = "pack";
     }
 
     // Sort chronologically (oldest first)
