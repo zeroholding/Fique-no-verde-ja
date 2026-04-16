@@ -469,7 +469,7 @@ export default function ReputationPage() {
     setClaimMessagesLoading(true);
     try {
       const response = await fetch(
-        `/api/integrations/mercadolivre/claim-messages?ml_user_id=${selectedAccount}&claim_id=${claim.id}`
+        `/api/integrations/mercadolivre/claim-messages?ml_user_id=${selectedAccount}&claim_id=${claim.id}&refresh=true`
       );
       if (!response.ok) {
         const result = await response.json();
@@ -1812,7 +1812,7 @@ export default function ReputationPage() {
                             </span>
                           </p>
                           <p className={`whitespace-pre-wrap leading-relaxed ${isMediator ? 'text-white text-[15px]' : 'text-sm text-gray-200'}`}>
-                            {message.text || '(sem texto)'}
+                            {message.text || (message.attachments.length > 0 ? '' : '(sem texto)')}
                           </p>
                           {message.attachments.length > 0 && (
                             <div className="mt-3 flex flex-wrap gap-2">

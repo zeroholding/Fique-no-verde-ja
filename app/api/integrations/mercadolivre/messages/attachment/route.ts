@@ -31,27 +31,32 @@ export async function GET(request: NextRequest) {
 
     const { access_token } = result.rows[0];
 
-    const response = await fetch(`https://api.mercadolibre.com/messages/attachments/${attachmentId}`, {
-      headers: {
-        Authorization: `Bearer ${access_token}`
-      }
-    });
+    // Try multiple ML attachment endpoints (pack messages vs claim messages use different URLs)
+    const endpoints = [
+      `https://api.mercadolibre.com/messages/attachments/${attachmentId}`,
+      `https://api.mercadolibre.com/post-purchase/v1/claims/attachments/${attachmentId}`,
+    ];
 
-    if (!response.ok) {
-      const text = await response.text();
-      console.error(`Status ${response.status} na imagem do ML:`, text);
-      return new NextResponse("Falha ao baixar imagem do Mercado Livre", { status: response.status });
+    for (const url of endpoints) {
+      try {
+        const response = await fetch(url, {
+          headers: { Authorization: `Bearer ${access_token}` },
+        });
+
+        if (response.ok) {
+          const contentType = response.headers.get("content-type") || "image/jpeg";
+          const headers = new Headers();
+          headers.set("Content-Type", contentType);
+          headers.set("Cache-Control", "public, max-age=86400");
+
+          return new NextResponse(response.body, { status: 200, headers });
+        }
+      } catch {
+        // Try next endpoint
+      }
     }
 
-    // Stream the image directly back to the client
-    const headers = new Headers();
-    headers.set("Content-Type", response.headers.get("content-type") || "image/jpeg");
-    headers.set("Cache-Control", "public, max-age=86400"); // Cache for 1 day
-
-    return new NextResponse(response.body, {
-      status: 200,
-      headers
-    });
+    return new NextResponse("Falha ao baixar imagem do Mercado Livre", { status: 404 });
   } catch (error) {
     console.error("Erro ao buscar imagem do anexo:", error);
     return new NextResponse("Erro interno", { status: 500 });
