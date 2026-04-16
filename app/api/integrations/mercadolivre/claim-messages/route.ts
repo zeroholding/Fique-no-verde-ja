@@ -110,6 +110,7 @@ type NormalizedMessage = {
   status: string | null;
   source: "claim" | "pack";
   attachments: Array<{
+    id: string | null;
     filename: string | null;
     original_filename: string | null;
     type: string | null;
@@ -149,6 +150,7 @@ function parseClaimMessage(raw: unknown): NormalizedMessage {
     attachments: attachments.map((att: unknown) => {
       const a = getObject(att);
       return {
+        id: getString(a.id) || getString(a.attachment_id),
         filename: getString(a.filename),
         original_filename: getString(a.original_filename),
         type: getString(a.type),
@@ -199,6 +201,7 @@ function parsePackMessage(raw: unknown, mlUserIdNum: number): NormalizedMessage 
     attachments: attachments.map((att: unknown) => {
       const a = getObject(att);
       return {
+        id: getString(a.id) || getString(a.attachment_id),
         filename: getString(a.filename),
         original_filename: getString(a.original_filename),
         type: getString(a.type),
