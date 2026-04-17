@@ -143,12 +143,9 @@ export async function POST(req: NextRequest) {
             const shippedDateStr = getString(getObject(shipData.status_history).date_shipped) || getString(shipData.date_shipped);
             
             // If the item hasn't been shipped yet, we won't be able to calculate total delay, except currently accumulated delay
-            // Let's use `order.shipping.estimated_handling_limit` which ML gives inside shipments or orders sometimes
-            limitDateStr = limitDateStr || getString(getObject(getObject(order.shipping).estimated_limit).date) || getString(order.last_updated);
+            limitDateStr = limitDateStr || getString(getObject(getObject(order.shipping).estimated_limit).date) || getString(order.date_created);
 
-            if (!limitDateStr) continue;
-
-            const limitDate = new Date(limitDateStr);
+            const limitDate = limitDateStr ? new Date(limitDateStr) : new Date(String(order.date_created));
             let shippedDate: Date | null = null;
 
             if (shippedDateStr) {
@@ -168,15 +165,28 @@ export async function POST(req: NextRequest) {
                user_id: decoded.userId,
                product_name: productName,
                shipping_mode: getString(shipData.mode) || "unknown",
-               logistic_type: logisticType,
-               limit_date: limitDateStr,
-               shipped_date: shippedDateStr ? realShippedDate.toISOString() : null,
+               logistic_type: logisticType || "",
+               limit_date: limitDate.toISOString(),
+               shipped_date: shippedDate ? shippedDate.toISOString() : null,
                delay_hours: delayHours,
                delay_range: delayRange,
                status: shippingStatus
             });
-         } catch (e) {
+         } catch (e: any) {
             // failed to fetch individual shipment
+            itemsToSave.push({
+               id: orderId,
+               ml_user_id: String(mlUserId),
+               user_id: decoded.userId,
+               product_name: productName,
+               shipping_mode: "error",
+               logistic_type: "",
+               limit_date: new Date(String(order.date_created)).toISOString(),
+               shipped_date: null,
+               delay_hours: 0,
+               delay_range: "no_delay",
+               status: "fetch_error"
+            });
          }
       }
 
