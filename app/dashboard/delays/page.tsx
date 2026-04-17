@@ -61,7 +61,7 @@ export default function DelaysDashboard() {
 
   // Load Accounts
   useEffect(() => {
-    fetch("/api/integrations/mercadolivre/auth/status")
+    fetch("/api/integrations/mercadolivre/status")
       .then(res => res.json())
       .then(json => {
          if (json.accounts) {
