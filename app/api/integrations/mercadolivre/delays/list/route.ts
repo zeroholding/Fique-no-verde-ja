@@ -23,6 +23,25 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "No accounts provided" }, { status: 400 });
     }
 
+    // Prevent 'relation does not exist' if they load page before first sync
+    await query(`
+      CREATE TABLE IF NOT EXISTS mercadolivre_delays (
+        id VARCHAR(50) NOT NULL,
+        ml_user_id VARCHAR(50) NOT NULL,
+        user_id VARCHAR(255),
+        product_name TEXT,
+        shipping_mode VARCHAR(50),
+        limit_date TIMESTAMP WITH TIME ZONE,
+        shipped_date TIMESTAMP WITH TIME ZONE,
+        delay_hours FLOAT,
+        delay_range VARCHAR(50),
+        status VARCHAR(50),
+        logistic_type VARCHAR(50),
+        synced_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id)
+      );
+    `);
+
     const accounts = accountsStr.split(",");
     
     // Base WHERE
