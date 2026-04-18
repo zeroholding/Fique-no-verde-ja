@@ -59,6 +59,18 @@ export default function DelaysDashboard() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
 
+  // Modal / Copiar IDs
+  const [selectedSale, setSelectedSale] = useState<DelayItem | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopy = (e: React.MouseEvent, text: string) => {
+     e.stopPropagation();
+     navigator.clipboard.writeText(text);
+     setCopiedId(text);
+     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+
   // Load Accounts
   useEffect(() => {
     fetch("/api/integrations/mercadolivre/status")
@@ -278,12 +290,34 @@ export default function DelaysDashboard() {
                 </tr>
               ) : (
                 data.map((item) => (
-                  <tr key={item.id} className="hover:bg-white/5 transition group">
-                    <td className="px-4 py-3 text-white font-mono">{item.id}</td>
+                  <tr 
+                    key={item.id} 
+                    className="hover:bg-white/10 transition group cursor-pointer"
+                    onClick={() => setSelectedSale(item)}
+                  >
+                    <td className="px-4 py-3 text-white font-mono flex items-center gap-2">
+                      {item.id}
+                      <button onClick={(e) => handleCopy(e, item.id)} className="text-gray-500 hover:text-white" title="Copiar ID da Venda">
+                        {copiedId === item.id ? (
+                          <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        ) : (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                        )}
+                      </button>
+                    </td>
                     <td className="px-4 py-3">
-                       <span className="bg-white/10 text-gray-300 px-2 py-0.5 rounded text-xs border border-white/5">
-                          {accounts.find(a => String(a.ml_user_id) === String(item.ml_user_id))?.name || item.ml_user_id}
-                       </span>
+                       <div className="flex items-center gap-2">
+                         <span className="bg-white/10 text-gray-300 px-2 py-0.5 rounded text-xs border border-white/5">
+                            {accounts.find(a => String(a.ml_user_id) === String(item.ml_user_id))?.name || item.ml_user_id}
+                         </span>
+                         <button onClick={(e) => handleCopy(e, item.ml_user_id)} className="text-gray-500 hover:text-white" title="Copiar ID da Conta">
+                           {copiedId === item.ml_user_id ? (
+                             <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                           ) : (
+                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                           )}
+                         </button>
+                       </div>
                     </td>
                     <td className="px-4 py-3 text-gray-300 truncate max-w-[200px]" title={item.product_name}>
                       {item.product_name}
@@ -316,6 +350,77 @@ export default function DelaysDashboard() {
           </table>
         </div>
       </div>
+      {/* Modal / Resumo da Venda */}
+      {selectedSale && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+           <div className="bg-[#1C2036] border border-white/10 rounded-xl max-w-lg w-full p-6 shadow-2xl relative">
+              <button 
+                 onClick={() => setSelectedSale(null)} 
+                 className="absolute top-4 right-4 text-gray-400 hover:text-white"
+              >
+                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+              
+              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">Resumo da Venda</h3>
+              <div className="space-y-4">
+                 <div className="bg-black/30 p-3 rounded-lg border border-white/5">
+                    <p className="text-xs text-gray-400 uppercase">Produto</p>
+                    <p className="font-semibold text-sm mt-1">{selectedSale.product_name}</p>
+                 </div>
+                 
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-black/30 p-3 rounded-lg border border-white/5">
+                       <p className="text-xs text-gray-400 uppercase">ID da Venda</p>
+                       <p className="font-mono mt-1 flex items-center justify-between">
+                         {selectedSale.id}
+                         <button onClick={(e) => handleCopy(e, selectedSale.id)} className="text-gray-500 hover:text-white" title="Copiar ID">
+                           {copiedId === selectedSale.id ? (
+                              <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                           ) : (
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                           )}
+                         </button>
+                       </p>
+                    </div>
+                    <div className="bg-black/30 p-3 rounded-lg border border-white/5">
+                       <p className="text-xs text-gray-400 uppercase">Conta</p>
+                       <p className="font-mono mt-1 flex items-center justify-between">
+                         <span className="max-w-[120px] truncate">{accounts.find(a => String(a.ml_user_id) === String(selectedSale.ml_user_id))?.name || selectedSale.ml_user_id}</span>
+                         <button onClick={(e) => handleCopy(e, selectedSale.ml_user_id)} className="text-gray-500 hover:text-white" title="Copiar Conta">
+                           {copiedId === selectedSale.ml_user_id ? (
+                              <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                           ) : (
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                           )}
+                         </button>
+                       </p>
+                    </div>
+                    <div className="bg-black/30 p-3 rounded-lg border border-white/5">
+                       <p className="text-xs text-gray-400 uppercase">Prazo Limite</p>
+                       <p className="mt-1 text-sm">{selectedSale.limit_date ? format(new Date(selectedSale.limit_date), "dd/MM/yyyy HH:mm") : '-'}</p>
+                    </div>
+                    <div className="bg-black/30 p-3 rounded-lg border border-white/5">
+                       <p className="text-xs text-gray-400 uppercase">Data Real (Envio)</p>
+                       <p className="mt-1 text-sm">{selectedSale.shipped_date ? format(new Date(selectedSale.shipped_date), "dd/MM/yyyy HH:mm") : 'Aguardando'}</p>
+                    </div>
+                    <div className="col-span-2 bg-black/30 p-3 rounded-lg border border-white/5 flex items-center justify-between">
+                       <div>
+                          <p className="text-xs text-gray-400 uppercase">Impacto do Atraso</p>
+                          <div className="mt-1 flex items-center gap-2">
+                             <RangeBadge range={selectedSale.delay_range} />
+                             {selectedSale.delay_hours > 0 && <span className="text-red-400 font-mono text-sm">+{Math.floor(selectedSale.delay_hours)}h</span>}
+                          </div>
+                       </div>
+                       <div className="text-right">
+                          <p className="text-xs text-gray-400 uppercase">Logística</p>
+                          <p className="mt-1 text-sm text-gray-300">{selectedSale.shipping_mode} {selectedSale.logistic_type !== 'unknown' && `(${selectedSale.logistic_type})`}</p>
+                       </div>
+                    </div>
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 }
