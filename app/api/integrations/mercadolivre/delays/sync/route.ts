@@ -95,8 +95,8 @@ export async function POST(req: NextRequest) {
     // "total vendas" KPI requires a fixed reference window (e.g. 60 days) to match the official reputation metrics.
     const dateFrom = new Date();
     dateFrom.setDate(dateFrom.getDate() - 60);
-    const dateFromStr = dateFrom.toISOString().split(".")[0] + ".000-00:00"; // format matching ML
-
+    const dateFromStr = encodeURIComponent(dateFrom.toISOString()); 
+    
     let offset = 0;
     const limit = 50;
     let processedOrders = 0;
@@ -108,14 +108,15 @@ export async function POST(req: NextRequest) {
       const ordersData = await fetchWithToken(
         `https://api.mercadolibre.com/orders/search?seller=${mlUserId}&order.date_created.from=${dateFromStr}&sort=date_desc&limit=${limit}&offset=${offset}`,
         accessToken
-      ).catch(() => null);
+      ).catch((err) => {
+         console.error("ML FETCH ERROR inside sync:", err);
+         return null;
+      });
 
       if (!ordersData || !ordersData.results || ordersData.results.length === 0) break;
 
       const orders = ordersData.results;
       for (const order of orders) {
-         if (order.status !== 'paid' && order.status !== 'fulfilled') continue;
-
          const orderId = getString(order.id) || String(getNumber(order.id) || "");
          const orderItems = Array.isArray(order.order_items) ? order.order_items : [];
          const productName = orderItems.length > 0 ? getString(getObject(orderItems[0].item).title) || "Produto Diversos" : "Sem Nome";
