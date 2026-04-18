@@ -81,15 +81,49 @@ export async function POST(req: NextRequest) {
 
     await ensureTable();
 
-    // 1. Get Access Token
+    // 1. Get Access Token and Refresh if Expired
     const authRes = await query(
-      "SELECT access_token FROM mercado_livre_credentials WHERE user_id = $1 AND ml_user_id = $2 LIMIT 1",
+      "SELECT access_token, refresh_token, expires_at FROM mercado_livre_credentials WHERE user_id = $1 AND ml_user_id = $2 LIMIT 1",
       [decoded.userId, mlUserId]
     );
     if (authRes.rows.length === 0) {
       return NextResponse.json({ error: "Account not connected" }, { status: 404 });
     }
-    const accessToken = authRes.rows[0].access_token;
+    
+    let accessToken = authRes.rows[0].access_token;
+    const refreshToken = authRes.rows[0].refresh_token;
+    const expiresAt = authRes.rows[0].expires_at;
+
+    const expirationDate = new Date(expiresAt);
+    const now = new Date();
+    
+    if (now.getTime() + 5 * 60 * 1000 > expirationDate.getTime()) {
+      const resp = await fetch("https://api.mercadolibre.com/oauth/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+        body: new URLSearchParams({
+          grant_type: "refresh_token",
+          client_id: process.env.MERCADO_LIVRE_APP_ID!,
+          client_secret: process.env.MERCADO_LIVRE_SECRET_KEY!,
+          refresh_token: refreshToken,
+        }),
+      });
+
+      if (!resp.ok) {
+         return NextResponse.json({ error: "Failed to refresh token: " + (await resp.text()) }, { status: 401 });
+      }
+
+      const newTokenData = await resp.json();
+      accessToken = newTokenData.access_token;
+      
+      const newExpiresAt = new Date();
+      newExpiresAt.setSeconds(newExpiresAt.getSeconds() + newTokenData.expires_in);
+
+      await query(
+        `UPDATE mercado_livre_credentials SET access_token = $1, refresh_token = $2, expires_at = $3, updated_at = NOW() WHERE user_id = $4 AND ml_user_id = $5`,
+        [accessToken, newTokenData.refresh_token, newExpiresAt.toISOString(), decoded.userId, mlUserId]
+      );
+    }
 
     // 2. Fetch orders within the last 60 days
     // "total vendas" KPI requires a fixed reference window (e.g. 60 days) to match the official reputation metrics.
