@@ -24,7 +24,7 @@ async function ensureTable() {
     CREATE TABLE IF NOT EXISTS mercadolivre_delays (
       id VARCHAR(50) NOT NULL,
       ml_user_id VARCHAR(50) NOT NULL,
-      user_id BIGINT,
+      user_id VARCHAR(255),
       product_name TEXT,
       shipping_mode VARCHAR(50),
       limit_date TIMESTAMP WITH TIME ZONE,
