@@ -174,17 +174,24 @@ export async function POST(req: NextRequest) {
             });
          } catch (e: any) {
             // failed to fetch individual shipment
+            const limitStr = getString(getObject(getObject(order.shipping).estimated_limit).date) || getString(order.date_created);
+            const limitDate = limitStr ? new Date(limitStr) : new Date(String(order.date_created));
+            const realShippedDate = new Date();
+            const delayMs = realShippedDate.getTime() - limitDate.getTime();
+            const delayHours = delayMs / (1000 * 60 * 60);
+            const delayRange = calculateDelayRange(limitDate, realShippedDate, delayHours);
+
             itemsToSave.push({
                id: orderId,
                ml_user_id: String(mlUserId),
                user_id: decoded.userId,
                product_name: productName,
-               shipping_mode: "error",
-               logistic_type: "",
-               limit_date: new Date(String(order.date_created)).toISOString(),
+               shipping_mode: "unknown",
+               logistic_type: "error",
+               limit_date: limitDate.toISOString(),
                shipped_date: null,
-               delay_hours: 0,
-               delay_range: "no_delay",
+               delay_hours: delayHours,
+               delay_range: delayRange,
                status: "fetch_error"
             });
          }
