@@ -145,12 +145,16 @@ export async function POST(req: NextRequest) {
             // If the item hasn't been shipped yet, we won't be able to calculate total delay, except currently accumulated delay
             limitDateStr = limitDateStr || getString(getObject(getObject(order.shipping).estimated_limit).date) || getString(order.date_created);
 
-            const limitDate = limitDateStr ? new Date(limitDateStr) : new Date(String(order.date_created));
-            let shippedDate: Date | null = null;
+            // Helper to parse dates safely without crashing
+            const safeDate = (dateStr: string | null | undefined, fallback: Date = new Date()) => {
+               if (!dateStr) return fallback;
+               try { const d = new Date(dateStr); return isNaN(d.getTime()) ? fallback : d; } 
+               catch { return fallback; }
+            };
 
-            if (shippedDateStr) {
-               shippedDate = new Date(shippedDateStr);
-            }
+            const limitStr = limitDateStr || getString(getObject(getObject(order.shipping).estimated_limit).date) || getString(order.date_created);
+            const limitDate = safeDate(limitStr);
+            const shippedDate = safeDate(shippedDateStr, null as any);
 
             // Only track if we have shipped date or if it's already delayed (using current date)
             const realShippedDate = shippedDate || new Date();
@@ -173,25 +177,29 @@ export async function POST(req: NextRequest) {
                status: shippingStatus
             });
          } catch (e: any) {
-            // failed to fetch individual shipment
-            const limitStr = getString(getObject(getObject(order.shipping).estimated_limit).date) || getString(order.date_created);
-            const limitDate = limitStr ? new Date(limitStr) : new Date(String(order.date_created));
+            // failed to fetch individual shipment or invalid date threw inside try
+            const limitStr = getString(order?.date_created);
+            const safeFallbackDate = () => {
+               if (!limitStr) return new Date();
+               const d = new Date(limitStr);
+               return isNaN(d.getTime()) ? new Date() : d;
+            };
+            const limitDate = safeFallbackDate();
             const realShippedDate = new Date();
             const delayMs = realShippedDate.getTime() - limitDate.getTime();
             const delayHours = delayMs / (1000 * 60 * 60);
-            const delayRange = calculateDelayRange(limitDate, realShippedDate, delayHours);
 
             itemsToSave.push({
                id: orderId,
                ml_user_id: String(mlUserId),
                user_id: decoded.userId,
-               product_name: productName,
+               product_name: productName || "unknown",
                shipping_mode: "unknown",
                logistic_type: "error",
                limit_date: limitDate.toISOString(),
                shipped_date: null,
                delay_hours: delayHours,
-               delay_range: delayRange,
+               delay_range: calculateDelayRange(limitDate, realShippedDate, delayHours),
                status: "fetch_error"
             });
          }
