@@ -41,7 +41,6 @@ function RangeBadge({ range }: { range: string }) {
     </span>
   );
 }
-}
 
 function translateLogistic(mode: string, type: string) {
   const t = (type || "").toLowerCase();
