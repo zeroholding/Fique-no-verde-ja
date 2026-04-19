@@ -151,6 +151,8 @@ export async function POST(req: NextRequest) {
 
       const orders = ordersData.results;
       for (const order of orders) {
+         if (order.status !== 'paid' && order.status !== 'fulfilled') continue;
+
          const orderId = getString(order.id) || String(getNumber(order.id) || "");
          const orderItems = Array.isArray(order.order_items) ? order.order_items : [];
          const productName = orderItems.length > 0 ? getString(getObject(orderItems[0].item).title) || "Produto Diversos" : "Sem Nome";
