@@ -41,6 +41,20 @@ function RangeBadge({ range }: { range: string }) {
     </span>
   );
 }
+}
+
+function translateLogistic(mode: string, type: string) {
+  const t = (type || "").toLowerCase();
+  if (t === 'self_service') return "Agência (Drop-off)";
+  if (t === 'cross_docking') return "Coleta Mercado Livre";
+  if (t === 'fulfillment') return "Mercado Livre Full";
+  if (t === 'xd_drop_off') return "Agência (XD Drop-off)";
+  if (t === 'drop_off') return "Agência Parceira";
+  if (t === 'custom') return "Entrega Flex / À Combinar";
+  
+  if (mode && type && type !== 'unknown') return `${mode} (${type})`;
+  return mode || "Desconhecido";
+}
 
 export default function DelaysDashboard() {
   const [data, setData] = useState<DelayItem[]>([]);
@@ -336,7 +350,7 @@ export default function DelaysDashboard() {
                       {item.product_name}
                     </td>
                     <td className="px-4 py-3 text-gray-400 text-xs">
-                      {item.shipping_mode} {(item.logistic_type && item.logistic_type !== 'unknown') ? `(${item.logistic_type})` : ''}
+                      {translateLogistic(item.shipping_mode, item.logistic_type)}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-gray-400 text-xs">
                       {item.limit_date ? format(new Date(item.limit_date), "dd/MM/yy HH:mm", { locale: ptBR }) : '-'}
@@ -425,8 +439,8 @@ export default function DelaysDashboard() {
                           </div>
                        </div>
                        <div className="text-right">
-                          <p className="text-xs text-gray-400 uppercase">Logística</p>
-                          <p className="mt-1 text-sm text-gray-300">{selectedSale.shipping_mode} {selectedSale.logistic_type !== 'unknown' && `(${selectedSale.logistic_type})`}</p>
+                          <p className="text-xs text-gray-400 uppercase">Envio</p>
+                          <p className="mt-1 text-sm text-gray-300">{translateLogistic(selectedSale.shipping_mode, selectedSale.logistic_type)}</p>
                        </div>
                     </div>
                  </div>
