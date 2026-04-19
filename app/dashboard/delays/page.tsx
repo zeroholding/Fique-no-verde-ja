@@ -283,7 +283,7 @@ export default function DelaysDashboard() {
                 <th className="px-4 py-3 font-semibold whitespace-nowrap">ID Venda</th>
                 <th className="px-4 py-3 font-semibold">Conta</th>
                 <th className="px-4 py-3 font-semibold">Produto</th>
-                <th className="px-4 py-3 font-semibold">Logística</th>
+                <th className="px-4 py-3 font-semibold">Envio</th>
                 <th className="px-4 py-3 font-semibold whitespace-nowrap">Prazo Limite</th>
                 <th className="px-4 py-3 font-semibold whitespace-nowrap">Enviado Em</th>
                 <th className="px-4 py-3 font-semibold whitespace-nowrap">Faixa</th>
