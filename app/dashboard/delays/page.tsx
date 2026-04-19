@@ -52,9 +52,10 @@ export default function DelaysDashboard() {
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
 
   // Filters
-  const [onlyDelayed, setOnlyDelayed] = useState(true);
   const [delayRange, setDelayRange] = useState("all");
+  const [onlyDelayed, setOnlyDelayed] = useState(true);
   const [sortParam, setSortParam] = useState("recent");
+  const [filterAccount, setFilterAccount] = useState("all");
   
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -91,7 +92,8 @@ export default function DelaysDashboard() {
     if (selectedAccounts.length === 0) return;
     setLoading(true);
     try {
-      const url = `/api/integrations/mercadolivre/delays/list?accounts=${selectedAccounts.join(",")}&only_delayed=${onlyDelayed}&delay_range=${delayRange}&sort=${sortParam}`;
+      const queryAccounts = filterAccount === "all" ? selectedAccounts.join(",") : filterAccount;
+      const url = `/api/integrations/mercadolivre/delays/list?accounts=${queryAccounts}&only_delayed=${onlyDelayed}&delay_range=${delayRange}&sort=${sortParam}`;
       const res = await fetch(url);
       const json = await res.json();
       if (json.success) {
@@ -107,7 +109,7 @@ export default function DelaysDashboard() {
 
   useEffect(() => {
     loadData();
-  }, [selectedAccounts, onlyDelayed, delayRange, sortParam]);
+  }, [selectedAccounts, onlyDelayed, delayRange, sortParam, filterAccount]);
 
   // Sync Data
   const handleSync = async () => {
@@ -218,36 +220,47 @@ export default function DelaysDashboard() {
       <div className="bg-black/30 border border-white/5 rounded-xl p-4 flex flex-wrap gap-4 items-center justify-between">
          <div className="flex flex-wrap gap-3">
             <select 
-               className="bg-white/5 border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-emerald-500"
-               value={onlyDelayed ? "delayed" : "all"}
-               onChange={e => setOnlyDelayed(e.target.value === "delayed")}
+               className="bg-[#1C2036] border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-emerald-500"
+               value={filterAccount}
+               onChange={e => setFilterAccount(e.target.value)}
             >
-               <option value="delayed">Mostrar Somente Atrasados</option>
-               <option value="all">Mostrar Todas as Vendas</option>
+               <option className="bg-[#1C2036] text-white" value="all">Filtro: Todas as Contas</option>
+               {accounts.map(a => (
+                 <option className="bg-[#1C2036] text-white" key={a.ml_user_id} value={a.ml_user_id}>{a.name || a.ml_user_id}</option>
+               ))}
             </select>
 
             <select 
-               className="bg-white/5 border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-emerald-500"
+               className="bg-[#1C2036] border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-emerald-500"
+               value={onlyDelayed ? "delayed" : "all"}
+               onChange={e => setOnlyDelayed(e.target.value === "delayed")}
+            >
+               <option className="bg-[#1C2036] text-white" value="delayed">Mostrar Somente Atrasados</option>
+               <option className="bg-[#1C2036] text-white" value="all">Mostrar Todas as Vendas</option>
+            </select>
+
+            <select 
+               className="bg-[#1C2036] border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-emerald-500"
                value={delayRange}
                onChange={e => setDelayRange(e.target.value)}
                disabled={!onlyDelayed}
             >
-               <option value="all">Filtro: Todas as Faixas</option>
-               <option value="same_day">Mesmo dia (fora de hora)</option>
-               <option value="0-24h">Até 24h depois</option>
-               <option value="24-48h">Entre 24h e 48h</option>
-               <option value="48-72h">Entre 48h e 72h</option>
-               <option value="+72h">Mais de 72h (Crítico)</option>
+               <option className="bg-[#1C2036] text-white" value="all">Filtro: Todas as Faixas</option>
+               <option className="bg-[#1C2036] text-white" value="same_day">Mesmo dia (fora de hora)</option>
+               <option className="bg-[#1C2036] text-white" value="0-24h">Até 24h depois</option>
+               <option className="bg-[#1C2036] text-white" value="24-48h">Entre 24h e 48h</option>
+               <option className="bg-[#1C2036] text-white" value="48-72h">Entre 48h e 72h</option>
+               <option className="bg-[#1C2036] text-white" value="+72h">Mais de 72h (Crítico)</option>
             </select>
 
             <select 
-               className="bg-white/5 border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-emerald-500"
+               className="bg-[#1C2036] border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-emerald-500"
                value={sortParam}
                onChange={e => setSortParam(e.target.value)}
             >
-               <option value="recent">Ordenar: Data Prazo Mais Recente</option>
-               <option value="max_delay">Ordenar: Maior Atraso (Horas)</option>
-               <option value="account">Ordenar: Por Conta</option>
+               <option className="bg-[#1C2036] text-white" value="recent">Ordenar: Data Prazo Mais Recente</option>
+               <option className="bg-[#1C2036] text-white" value="max_delay">Ordenar: Maior Atraso (Horas)</option>
+               <option className="bg-[#1C2036] text-white" value="account">Ordenar: Por Conta</option>
             </select>
          </div>
 
