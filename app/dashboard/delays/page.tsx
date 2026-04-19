@@ -226,7 +226,7 @@ export default function DelaysDashboard() {
             >
                <option className="bg-[#1C2036] text-white" value="all">Filtro: Todas as Contas</option>
                {accounts.map(a => (
-                 <option className="bg-[#1C2036] text-white" key={a.ml_user_id} value={a.ml_user_id}>{a.name || a.ml_user_id}</option>
+                 <option className="bg-[#1C2036] text-white" key={a.ml_user_id} value={a.ml_user_id}>{a.nickname || a.ml_user_id}</option>
                ))}
             </select>
 
@@ -321,7 +321,7 @@ export default function DelaysDashboard() {
                     <td className="px-4 py-3">
                        <div className="flex items-center gap-2">
                          <span className="bg-white/10 text-gray-300 px-2 py-0.5 rounded text-xs border border-white/5">
-                            {accounts.find(a => String(a.ml_user_id) === String(item.ml_user_id))?.name || item.ml_user_id}
+                            {accounts.find(a => String(a.ml_user_id) === String(item.ml_user_id))?.nickname || item.ml_user_id}
                          </span>
                          <button onClick={(e) => handleCopy(e, item.ml_user_id)} className="text-gray-500 hover:text-white" title="Copiar ID da Conta">
                            {copiedId === item.ml_user_id ? (
@@ -398,7 +398,7 @@ export default function DelaysDashboard() {
                     <div className="bg-black/30 p-3 rounded-lg border border-white/5">
                        <p className="text-xs text-gray-400 uppercase">Conta</p>
                        <p className="font-mono mt-1 flex items-center justify-between">
-                         <span className="max-w-[120px] truncate">{accounts.find(a => String(a.ml_user_id) === String(selectedSale.ml_user_id))?.name || selectedSale.ml_user_id}</span>
+                         <span className="max-w-[120px] truncate">{accounts.find(a => String(a.ml_user_id) === String(selectedSale.ml_user_id))?.nickname || selectedSale.ml_user_id}</span>
                          <button onClick={(e) => handleCopy(e, selectedSale.ml_user_id)} className="text-gray-500 hover:text-white" title="Copiar Conta">
                            {copiedId === selectedSale.ml_user_id ? (
                               <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
