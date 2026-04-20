@@ -146,7 +146,7 @@ export async function GET(req: NextRequest) {
        kpis: {
          totalSynced,
          totalDelayed,
-         delayedPercentage,
+         delayedPercentage: 100,
          ranges
        }
     });
