@@ -69,6 +69,8 @@ export default function DelaysDashboard() {
   const [onlyDelayed, setOnlyDelayed] = useState(true);
   const [sortParam, setSortParam] = useState("recent");
   const [filterAccount, setFilterAccount] = useState("all");
+  const [shippingMode, setShippingMode] = useState("all");
+  const [shippingStatus, setShippingStatus] = useState("all");
   
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -106,7 +108,7 @@ export default function DelaysDashboard() {
     setLoading(true);
     try {
       const queryAccounts = filterAccount === "all" ? selectedAccounts.join(",") : filterAccount;
-      const url = `/api/integrations/mercadolivre/delays/list?accounts=${queryAccounts}&only_delayed=${onlyDelayed}&delay_range=${delayRange}&sort=${sortParam}`;
+      const url = `/api/integrations/mercadolivre/delays/list?accounts=${queryAccounts}&only_delayed=${onlyDelayed}&delay_range=${delayRange}&sort=${sortParam}&shipping_mode=${shippingMode}&shipping_status=${shippingStatus}`;
       const res = await fetch(url);
       const json = await res.json();
       if (json.success) {
@@ -122,7 +124,7 @@ export default function DelaysDashboard() {
 
   useEffect(() => {
     loadData();
-  }, [selectedAccounts, onlyDelayed, delayRange, sortParam, filterAccount]);
+  }, [selectedAccounts, onlyDelayed, delayRange, sortParam, filterAccount, shippingMode, shippingStatus]);
 
   // Sync Data
   const handleSync = async () => {
@@ -264,6 +266,28 @@ export default function DelaysDashboard() {
                <option className="bg-[#1C2036] text-white" value="24-48h">Entre 24h e 48h</option>
                <option className="bg-[#1C2036] text-white" value="48-72h">Entre 48h e 72h</option>
                <option className="bg-[#1C2036] text-white" value="+72h">Mais de 72h (Crítico)</option>
+            </select>
+
+            <select 
+               className="bg-[#1C2036] border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-emerald-500"
+               value={shippingMode}
+               onChange={e => setShippingMode(e.target.value)}
+            >
+               <option className="bg-[#1C2036] text-white" value="all">Modo: Todos os Envios</option>
+               <option className="bg-[#1C2036] text-white" value="self_service">Agência (Drop-off)</option>
+               <option className="bg-[#1C2036] text-white" value="cross_docking">Coleta Mercado Livre</option>
+               <option className="bg-[#1C2036] text-white" value="fulfillment">Mercado Livre Full</option>
+               <option className="bg-[#1C2036] text-white" value="custom">Entrega Flex / À Combinar</option>
+            </select>
+
+            <select 
+               className="bg-[#1C2036] border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-emerald-500"
+               value={shippingStatus}
+               onChange={e => setShippingStatus(e.target.value)}
+            >
+               <option className="bg-[#1C2036] text-white" value="all">Status: Todos</option>
+               <option className="bg-[#1C2036] text-white" value="shipped">Já Enviado/Despachado</option>
+               <option className="bg-[#1C2036] text-white" value="pending">Aguardando Envio</option>
             </select>
 
             <select 

@@ -18,6 +18,8 @@ export async function GET(req: NextRequest) {
     const delayRangeFilter = searchParams.get("delay_range"); // specific range
     const onlyDelayed = searchParams.get("only_delayed") === 'true'; // boolean
     const sortParams = searchParams.get("sort") || "recent"; // recent | max_delay | account
+    const shippingMode = searchParams.get("shipping_mode") || "all"; // self_service, cross_docking, etc
+    const shippingStatus = searchParams.get("shipping_status") || "all"; // shipped, pending
 
     if (!accountsStr) {
       return NextResponse.json({ error: "No accounts provided" }, { status: 400 });
@@ -65,6 +67,19 @@ export async function GET(req: NextRequest) {
     if (delayRangeFilter && delayRangeFilter !== "all") {
        whereConditions.push(`delay_range = $${queryParams.length + 1}`);
        queryParams.push(delayRangeFilter);
+    }
+
+    // Shipping Mode filter
+    if (shippingMode && shippingMode !== "all") {
+       whereConditions.push(`logistic_type = $${queryParams.length + 1}`);
+       queryParams.push(shippingMode);
+    }
+
+    // Shipping Status filter
+    if (shippingStatus === "shipped") {
+       whereConditions.push(`shipped_date IS NOT NULL`);
+    } else if (shippingStatus === "pending") {
+       whereConditions.push(`shipped_date IS NULL`);
     }
 
     // Build Order By
