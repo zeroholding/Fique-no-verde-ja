@@ -202,16 +202,20 @@ export async function POST(req: NextRequest) {
                catch { return fallback; }
             };
 
-            const limitStr = limitDateStr || getString(getObject(getObject(order.shipping).estimated_limit).date) || getString(order.date_created);
-            const limitDate = safeDate(limitStr);
+            const limitStr = limitDateStr || "";
+            const limitDate = safeDate(limitStr, new Date(order.date_created)); // Fallback seguro
             const shippedDate = safeDate(shippedDateStr, null as any);
 
-            // Only track if we have shipped date or if it's already delayed (using current date)
-            const realShippedDate = shippedDate || new Date();
-            const delayMs = realShippedDate.getTime() - limitDate.getTime();
-            const delayHours = delayMs / (1000 * 60 * 60);
+            // A Métrica Oficial de Reputação do ML não contabiliza o item como penalidade final
+            // até que o despacho ocorra. Vendas "pending" com `shippedDate` nulo não devem inflar as 'Atrasadas'.
+            let delayHours = 0;
+            let delayRange = "no_delay";
 
-            const delayRange = calculateDelayRange(limitDate, realShippedDate, delayHours);
+            if (shippedDate) {
+               const delayMs = shippedDate.getTime() - limitDate.getTime();
+               delayHours = delayMs / (1000 * 60 * 60);
+               delayRange = calculateDelayRange(limitDate, shippedDate, delayHours);
+            }
 
             itemsToSave.push({
                id: orderId,
@@ -229,15 +233,9 @@ export async function POST(req: NextRequest) {
          } catch (e: any) {
             // failed to fetch individual shipment or invalid date threw inside try
             const limitStr = getString(order?.date_created);
-            const safeFallbackDate = () => {
-               if (!limitStr) return new Date();
-               const d = new Date(limitStr);
-               return isNaN(d.getTime()) ? new Date() : d;
-            };
-            const limitDate = safeFallbackDate();
-            const realShippedDate = new Date();
-            const delayMs = realShippedDate.getTime() - limitDate.getTime();
-            const delayHours = delayMs / (1000 * 60 * 60);
+            const limitDate = safeDate(limitStr, new Date());
+            const delayHours = 0;
+            const delayRange = "no_delay";
 
             itemsToSave.push({
                id: orderId,
