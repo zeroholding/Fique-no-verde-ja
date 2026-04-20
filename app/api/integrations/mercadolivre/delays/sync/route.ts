@@ -162,25 +162,38 @@ export async function POST(req: NextRequest) {
          
          if (!shippingId) continue;
 
-         // Need to fetch shipment details for actual ship date
+         const shippingModeRaw = getString(shipping.mode) || "unknown";
+         const logisticTypeRaw = getString(shipping.logistic_type) || "unknown";
+
+         // -> CAMINHO A (REPUTAÇÃO ML ESTRITA) <-
+         // 1. A Reputação só penaliza envios do modo 'me2' (Mercado Envios convencional: Agências e Coletas)
+         if (shippingModeRaw !== 'me2') continue; 
+         // 2. O ML assume a responsabilidade de envios Fulfillment (Full) e isenta o selo de despacho
+         if (logisticTypeRaw === 'fulfillment') continue;
+         // 3. Envios do tipo 'custom' (Flex) têm métrica apartada e não entram no termômetro geral
+         if (logisticTypeRaw === 'custom') continue;
+
+         // Need to fetch shipment details for actual ship date and rigid SLA time
          try {
             const shipData = await fetchWithToken(
               `https://api.mercadolibre.com/shipments/${shippingId}`,
               accessToken
             );
 
-            // Fetch the proper SLA limits from shipment endpoint
-            let limitDateStr = getString(getObject(shipData.shipping_option).list_cost) || 
-                               getString(getObject(getObject(shipData.shipping_option).handling_time).limit) || 
-                               getString(shipData.date_first_printed) || // Usually limit revolves around this
-                               ""; // Actually, let's use the explicit ML metrics
-            
             const shippingStatus = getString(shipData.status);
-            const logisticType = getString(shipData.logistic_type) || "unknown";
-            const shippedDateStr = getString(getObject(shipData.status_history).date_shipped) || getString(shipData.date_shipped);
+            const logisticType = getString(shipData.logistic_type) || logisticTypeRaw;
+            const shippingMode = getString(shipData.mode) || shippingModeRaw;
             
-            // If the item hasn't been shipped yet, we won't be able to calculate total delay, except currently accumulated delay
-            limitDateStr = limitDateStr || getString(getObject(getObject(order.shipping).estimated_limit).date) || getString(order.date_created);
+            const shippedDateStr = getString(getObject(shipData.status_history).date_shipped) || getString(shipData.date_shipped);
+
+            // RIGOR NO DEADLINE OFICIAL:
+            let limitDateStr = getString(getObject(getObject(shipData.shipping_option).handling_time).limit);
+            if (!limitDateStr && shipData.shipping_option && shipData.shipping_option.estimated_handling_limit) { 
+                 limitDateStr = String(shipData.shipping_option.estimated_handling_limit.date);
+            }
+            if (!limitDateStr) {
+               limitDateStr = getString(shipData.date_first_printed) || getString(order.date_created); // Fallback extremo
+            }
 
             // Helper to parse dates safely without crashing
             const safeDate = (dateStr: string | null | undefined, fallback: Date = new Date()) => {

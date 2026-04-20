@@ -58,6 +58,10 @@ export async function GET(req: NextRequest) {
     // Only within last 60 days to match Reputação timeframe
     whereConditions.push(`limit_date >= NOW() - INTERVAL '60 days'`);
 
+    // Hard filters to align with Reputation (exclude Full and Custom/Flex, only ME2)
+    whereConditions.push(`shipping_mode = 'me2'`);
+    whereConditions.push(`logistic_type NOT IN ('fulfillment', 'custom')`);
+
     // Only Delayed filter
     if (onlyDelayed) {
       whereConditions.push(`delay_range != 'no_delay'`);
