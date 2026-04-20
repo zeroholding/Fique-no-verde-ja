@@ -125,7 +125,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Fetch orders within the last 60 days
+    // 2. PURGE old data for this account before re-syncing
+    // This ensures stale data computed with old logic is wiped clean.
+    await query(
+      `DELETE FROM mercadolivre_delays WHERE ml_user_id = $1 AND user_id = $2`,
+      [String(mlUserId), decoded.userId]
+    );
+
+    // 3. Fetch orders within the last 60 days
     // "total vendas" KPI requires a fixed reference window (e.g. 60 days) to match the official reputation metrics.
     const dateFrom = new Date();
     dateFrom.setDate(dateFrom.getDate() - 60);
@@ -136,9 +143,8 @@ export async function POST(req: NextRequest) {
     let processedOrders = 0;
     const itemsToSave: any[] = [];
     
-    // Limits loop for performance in Vercel/VPS function timeout (e.g., maximum 5 pages = 250 orders per sync batch)
-    // In production, we assume this is called frequently or covers enough orders.
-    while (offset < 500) {
+    // Paginate through ALL orders in the 60-day window to match reputation metrics exactly
+    while (offset < 10000) {
       const ordersData = await fetchWithToken(
         `https://api.mercadolibre.com/orders/search?seller=${mlUserId}&order.date_created.from=${dateFromStr}&sort=date_desc&limit=${limit}&offset=${offset}`,
         accessToken
