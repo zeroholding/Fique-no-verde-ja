@@ -53,7 +53,6 @@ async function fetchWithToken(url: string, token: string) {
 function calculateDelayRange(limitDate: Date, shippedDate: Date, delayHours: number): string {
   if (delayHours <= 0) return "no_delay";
 
-  // Check if sent on the exact same date (ignoring time) but later hours
   const lDate = limitDate.toISOString().split("T")[0];
   const sDate = shippedDate.toISOString().split("T")[0];
 
@@ -65,6 +64,12 @@ function calculateDelayRange(limitDate: Date, shippedDate: Date, delayHours: num
   if (delayHours > 48 && delayHours <= 72) return "48-72h";
   return "+72h";
 }
+
+const safeDate = (dateStr: string | null | undefined, fallback: Date = new Date()) => {
+  if (!dateStr) return fallback;
+  try { const d = new Date(dateStr); return isNaN(d.getTime()) ? fallback : d; } 
+  catch { return fallback; }
+};
 
 export async function POST(req: NextRequest) {
   try {
@@ -126,144 +131,156 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. PURGE old data for this account before re-syncing
-    // This ensures stale data computed with old logic is wiped clean.
     await query(
       `DELETE FROM mercadolivre_delays WHERE ml_user_id = $1 AND user_id = $2`,
       [String(mlUserId), decoded.userId]
     );
 
-    // 3. Fetch orders within the last 60 days
-    // "total vendas" KPI requires a fixed reference window (e.g. 60 days) to match the official reputation metrics.
+    // ========================================================================
+    // CAMINHO A — REPUTAÇÃO ML OFICIAL
+    // Em vez de varrer TODAS as vendas e calcular atraso na mão,
+    // buscamos apenas os pedidos que o ML oficialmente marcou como atrasados.
+    // 
+    // Passo 1: GET /users/{id} → seller_reputation.transactions.delayed_handling_time.value = contagem oficial
+    // Passo 2: GET /orders/search?seller={id}&tags=delayed → lista EXATA dos pedidos penalizados
+    // Passo 3: Para cada pedido atrasado, buscar shipment para detalhes de data
+    // ========================================================================
+
+    // Passo 1: Pegar contagem oficial para registro
+    let officialDelayCount = 0;
+    let totalSales60d = 0;
+    try {
+      const userData = await fetchWithToken(
+        `https://api.mercadolibre.com/users/${mlUserId}`,
+        accessToken
+      );
+      const transactions = getObject(getObject(userData.seller_reputation).transactions);
+      const delayedMetric = getObject(transactions.delayed_handling_time);
+      officialDelayCount = getNumber(delayedMetric.value) || 0;
+
+      // Also grab total sales for KPI
+      const completedShipping = getObject(transactions.completed);
+      totalSales60d = getNumber(completedShipping.total) || 0;
+    } catch (e) {
+      console.warn("Could not fetch user reputation data:", e);
+    }
+
+    // Passo 2: Buscar APENAS os pedidos que o ML marcou com tag "delayed"
     const dateFrom = new Date();
     dateFrom.setDate(dateFrom.getDate() - 60);
-    const dateFromStr = encodeURIComponent(dateFrom.toISOString()); 
-    
+    const dateFromStr = encodeURIComponent(dateFrom.toISOString());
+
     let offset = 0;
     const limit = 50;
-    let processedOrders = 0;
     const itemsToSave: any[] = [];
-    
-    // Paginate through ALL orders in the 60-day window to match reputation metrics exactly
-    while (offset < 10000) {
+    let processedOrders = 0;
+
+    while (offset < 2000) {
       const ordersData = await fetchWithToken(
-        `https://api.mercadolibre.com/orders/search?seller=${mlUserId}&order.date_created.from=${dateFromStr}&sort=date_desc&limit=${limit}&offset=${offset}`,
+        `https://api.mercadolibre.com/orders/search?seller=${mlUserId}&order.date_created.from=${dateFromStr}&sort=date_desc&limit=${limit}&offset=${offset}&tags=delayed`,
         accessToken
       ).catch((err) => {
-         console.error("ML FETCH ERROR inside sync:", err);
-         return null;
+        console.error("ML FETCH ERROR (delayed orders):", err);
+        return null;
       });
 
       if (!ordersData || !ordersData.results || ordersData.results.length === 0) break;
 
       const orders = ordersData.results;
       for (const order of orders) {
-         if (order.status !== 'paid' && order.status !== 'fulfilled') continue;
+        const orderId = getString(order.id) || String(getNumber(order.id) || "");
+        const orderItems = Array.isArray(order.order_items) ? order.order_items : [];
+        const productName = orderItems.length > 0 ? getString(getObject(orderItems[0].item).title) || "Produto Diversos" : "Sem Nome";
 
-         const orderId = getString(order.id) || String(getNumber(order.id) || "");
-         const orderItems = Array.isArray(order.order_items) ? order.order_items : [];
-         const productName = orderItems.length > 0 ? getString(getObject(orderItems[0].item).title) || "Produto Diversos" : "Sem Nome";
-         
-         const shipping = getObject(order.shipping);
-         const shippingId = getNumber(shipping.id) || getString(shipping.id);
-         
-         if (!shippingId) continue;
+        const shipping = getObject(order.shipping);
+        const shippingId = getNumber(shipping.id) || getString(shipping.id);
 
-         const shippingModeRaw = getString(shipping.mode) || "unknown";
-         const logisticTypeRaw = getString(shipping.logistic_type) || "unknown";
+        if (!shippingId) continue;
 
-         // -> CAMINHO A (REPUTAÇÃO ML ESTRITA) <-
-         // 1. A Reputação só penaliza envios do modo 'me2' (Mercado Envios convencional: Agências e Coletas)
-         if (shippingModeRaw !== 'me2') continue; 
-         // 2. O ML assume a responsabilidade de envios Fulfillment (Full) e isenta o selo de despacho
-         if (logisticTypeRaw === 'fulfillment') continue;
-         // 3. Envios do tipo 'custom' (Flex) têm métrica apartada e não entram no termômetro geral
-         if (logisticTypeRaw === 'custom') continue;
+        try {
+          const shipData = await fetchWithToken(
+            `https://api.mercadolibre.com/shipments/${shippingId}`,
+            accessToken
+          );
 
-         // Need to fetch shipment details for actual ship date and rigid SLA time
-         try {
-            const shipData = await fetchWithToken(
-              `https://api.mercadolibre.com/shipments/${shippingId}`,
-              accessToken
-            );
+          const shippingStatus = getString(shipData.status) || "unknown";
+          const logisticType = getString(shipData.logistic_type) || "unknown";
+          const shippingMode = getString(shipData.mode) || "unknown";
 
-            const shippingStatus = getString(shipData.status);
-            const logisticType = getString(shipData.logistic_type) || logisticTypeRaw;
-            const shippingMode = getString(shipData.mode) || shippingModeRaw;
-            
-            const shippedDateStr = getString(getObject(shipData.status_history).date_shipped) || getString(shipData.date_shipped);
+          const shippedDateStr = getString(getObject(shipData.status_history).date_shipped) || getString(shipData.date_shipped);
 
-            // RIGOR NO DEADLINE OFICIAL:
-            let limitDateStr = getString(getObject(getObject(shipData.shipping_option).handling_time).limit);
-            if (!limitDateStr && shipData.shipping_option && shipData.shipping_option.estimated_handling_limit) { 
-                 limitDateStr = String(shipData.shipping_option.estimated_handling_limit.date);
-            }
-            if (!limitDateStr) {
-               limitDateStr = getString(shipData.date_first_printed) || getString(order.date_created); // Fallback extremo
-            }
+          // Get the official SLA limit date
+          let limitDateStr = getString(getObject(getObject(shipData.shipping_option).handling_time).limit);
+          if (!limitDateStr && shipData.shipping_option && shipData.shipping_option.estimated_handling_limit) {
+            limitDateStr = String(shipData.shipping_option.estimated_handling_limit.date);
+          }
+          if (!limitDateStr) {
+            limitDateStr = getString(shipData.date_first_printed) || getString(order.date_created);
+          }
 
-            // Helper to parse dates safely without crashing
-            const safeDate = (dateStr: string | null | undefined, fallback: Date = new Date()) => {
-               if (!dateStr) return fallback;
-               try { const d = new Date(dateStr); return isNaN(d.getTime()) ? fallback : d; } 
-               catch { return fallback; }
-            };
+          const limitDate = safeDate(limitDateStr, new Date(order.date_created));
+          const shippedDate = safeDate(shippedDateStr, null as any);
 
-            const limitStr = limitDateStr || "";
-            const limitDate = safeDate(limitStr, new Date(order.date_created)); // Fallback seguro
-            const shippedDate = safeDate(shippedDateStr, null as any);
+          // Calculate delay only if shipped
+          let delayHours = 0;
+          let delayRange = "0-24h"; // Default for delayed orders (ML already confirmed they are late)
 
-            // A Métrica Oficial de Reputação do ML não contabiliza o item como penalidade final
-            // até que o despacho ocorra. Vendas "pending" com `shippedDate` nulo não devem inflar as 'Atrasadas'.
-            let delayHours = 0;
-            let delayRange = "no_delay";
+          if (shippedDate) {
+            const delayMs = shippedDate.getTime() - limitDate.getTime();
+            delayHours = delayMs / (1000 * 60 * 60);
+            delayRange = calculateDelayRange(limitDate, shippedDate, delayHours);
+            // If ML says it's delayed but our math says no_delay, trust ML
+            if (delayRange === "no_delay") delayRange = "same_day";
+          } else {
+            // Not shipped yet but ML already marked as delayed
+            const delayMs = new Date().getTime() - limitDate.getTime();
+            delayHours = delayMs / (1000 * 60 * 60);
+            delayRange = calculateDelayRange(limitDate, new Date(), delayHours);
+            if (delayRange === "no_delay") delayRange = "same_day";
+          }
 
-            if (shippedDate) {
-               const delayMs = shippedDate.getTime() - limitDate.getTime();
-               delayHours = delayMs / (1000 * 60 * 60);
-               delayRange = calculateDelayRange(limitDate, shippedDate, delayHours);
-            }
+          itemsToSave.push({
+            id: orderId,
+            ml_user_id: String(mlUserId),
+            user_id: decoded.userId,
+            product_name: productName,
+            shipping_mode: shippingMode,
+            logistic_type: logisticType,
+            limit_date: limitDate.toISOString(),
+            shipped_date: shippedDate ? shippedDate.toISOString() : null,
+            delay_hours: Math.max(0, delayHours),
+            delay_range: delayRange,
+            status: shippingStatus
+          });
+        } catch (e: any) {
+          // Shipment fetch failed — still save as delayed since ML tagged it
+          const limitDate = safeDate(getString(order?.date_created), new Date());
 
-            itemsToSave.push({
-               id: orderId,
-               ml_user_id: String(mlUserId),
-               user_id: decoded.userId,
-               product_name: productName,
-               shipping_mode: getString(shipData.mode) || "unknown",
-               logistic_type: logisticType || "",
-               limit_date: limitDate.toISOString(),
-               shipped_date: shippedDate ? shippedDate.toISOString() : null,
-               delay_hours: delayHours,
-               delay_range: delayRange,
-               status: shippingStatus
-            });
-         } catch (e: any) {
-            // failed to fetch individual shipment or invalid date threw inside try
-            const limitStr = getString(order?.date_created);
-            const limitDate = safeDate(limitStr, new Date());
-            const delayHours = 0;
-            const delayRange = "no_delay";
-
-            itemsToSave.push({
-               id: orderId,
-               ml_user_id: String(mlUserId),
-               user_id: decoded.userId,
-               product_name: productName || "unknown",
-               shipping_mode: "unknown",
-               logistic_type: "error",
-               limit_date: limitDate.toISOString(),
-               shipped_date: null,
-               delay_hours: delayHours,
-               delay_range: calculateDelayRange(limitDate, realShippedDate, delayHours),
-               status: "fetch_error"
-            });
-         }
+          itemsToSave.push({
+            id: orderId,
+            ml_user_id: String(mlUserId),
+            user_id: decoded.userId,
+            product_name: productName || "unknown",
+            shipping_mode: "unknown",
+            logistic_type: "unknown",
+            limit_date: limitDate.toISOString(),
+            shipped_date: null,
+            delay_hours: 0,
+            delay_range: "same_day",
+            status: "fetch_error"
+          });
+        }
       }
 
       processedOrders += orders.length;
       offset += limit;
+
+      // Safety: if total is known and we've passed it, stop
+      const total = getNumber(ordersData?.paging?.total) || 0;
+      if (total > 0 && offset >= total) break;
     }
 
-    // Bulk upsert into DB
+    // 3. Bulk upsert into DB — these are ONLY the officially delayed orders
     for (const item of itemsToSave) {
         await query(
             `INSERT INTO mercadolivre_delays (
@@ -286,7 +303,9 @@ export async function POST(req: NextRequest) {
         success: true,
         message: "Sincronização concluída",
         processed: processedOrders,
-        saved: itemsToSave.length
+        saved: itemsToSave.length,
+        official_delay_count: officialDelayCount,
+        total_sales_60d: totalSales60d,
     });
 
   } catch (error: any) {

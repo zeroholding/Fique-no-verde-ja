@@ -58,11 +58,11 @@ export async function GET(req: NextRequest) {
     // Only within last 60 days to match Reputação timeframe
     whereConditions.push(`limit_date >= NOW() - INTERVAL '60 days'`);
 
-    // Hard filters to align with Reputation (exclude Full and Custom/Flex, only ME2)
-    whereConditions.push(`shipping_mode = 'me2'`);
-    whereConditions.push(`logistic_type NOT IN ('fulfillment', 'custom')`);
+    // NOTE: No hard filters needed here anymore.
+    // The sync route now only imports orders tagged as "delayed" by ML's official API.
+    // Every record in the DB is an officially penalized delay.
 
-    // Only Delayed filter
+    // Only Delayed filter (kept for UI toggle, but all records are already delayed)
     if (onlyDelayed) {
       whereConditions.push(`delay_range != 'no_delay'`);
     }
@@ -117,8 +117,7 @@ export async function GET(req: NextRequest) {
       GROUP BY delay_range
     `, kpiParams);
 
-    // Parse KPIs
-    let totalSynced = 0;
+    // Parse KPIs — Now every record in DB is an officially delayed order
     let totalDelayed = 0;
     const ranges = {
       "no_delay": 0,
@@ -131,10 +130,7 @@ export async function GET(req: NextRequest) {
 
     kpiRes.rows.forEach(r => {
        const count = parseInt(r.count, 10);
-       totalSynced += count;
-       if (r.delay_range !== 'no_delay') {
-          totalDelayed += count;
-       }
+       totalDelayed += count;
        // @ts-ignore
        if (ranges[r.delay_range] !== undefined) {
           // @ts-ignore
@@ -142,7 +138,7 @@ export async function GET(req: NextRequest) {
        }
     });
 
-    const delayedPercentage = totalSynced > 0 ? (totalDelayed / totalSynced) * 100 : 0;
+    const totalSynced = totalDelayed; // All synced records ARE delayed
 
     return NextResponse.json({
        success: true,
