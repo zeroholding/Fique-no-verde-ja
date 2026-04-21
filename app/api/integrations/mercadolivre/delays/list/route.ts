@@ -90,9 +90,11 @@ export async function GET(req: NextRequest) {
         );
         if (!mlData) continue;
 
-        const transactions = getObject(getObject(mlData.seller_reputation).transactions);
-        const delayedMetric = getObject(transactions.delayed_handling_time);
-        const completedCount = getNumber(transactions.completed) || 0;
+        const metrics = getObject(getObject(mlData.seller_reputation).metrics);
+        const salesMetrics = getObject(metrics.sales);
+        const delayedMetric = getObject(metrics.delayed_handling_time);
+
+        const completedCount = getNumber(salesMetrics.completed) || 0;
         const delayedCount = getNumber(delayedMetric.value) || 0;
 
         officialTotalSales += completedCount;
@@ -115,6 +117,10 @@ export async function GET(req: NextRequest) {
 
     // Only within last 60 days
     whereConditions.push(`limit_date >= NOW() - INTERVAL '60 days'`);
+
+    // Hard filters to align with Reputation (exclude Full and Flex, only ME2 impacts handling time reputation)
+    whereConditions.push(`shipping_mode = 'me2'`);
+    whereConditions.push(`logistic_type NOT IN ('fulfillment', 'custom')`);
 
     // Only Delayed filter
     if (onlyDelayed) {
@@ -161,7 +167,7 @@ export async function GET(req: NextRequest) {
     const data = listRes.rows;
 
     // Ranges from DB (for the breakdown card on the right)
-    const kpiWhere = `user_id = $1 AND ml_user_id IN (${accountPlaceholders.join(",")}) AND limit_date >= NOW() - INTERVAL '60 days'`;
+    const kpiWhere = `user_id = $1 AND ml_user_id IN (${accountPlaceholders.join(",")}) AND limit_date >= NOW() - INTERVAL '60 days' AND shipping_mode = 'me2' AND logistic_type NOT IN ('fulfillment', 'custom')`;
     const kpiParams = [decoded.userId, ...accounts];
 
     const kpiRes = await query(`
