@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
 
     await ensureTable();
 
-    // 1. Get Access Token and Refresh if Expired
+    // 1. Get Access Token — mesma lógica do módulo Reputação
     const authRes = await query(
       "SELECT access_token, refresh_token, expires_at FROM mercado_livre_credentials WHERE user_id = $1 AND ml_user_id = $2 LIMIT 1",
       [decoded.userId, mlUserId]
@@ -92,6 +92,7 @@ export async function POST(req: NextRequest) {
     const refreshToken = authRes.rows[0].refresh_token;
     const expiresAt = authRes.rows[0].expires_at;
 
+    // Refresh token se expirado — mesma lógica do módulo Reputação
     const expirationDate = new Date(expiresAt);
     const now = new Date();
 
@@ -123,15 +124,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. PURGE old data for this account before re-syncing fully
+    // 2. PURGE old data for this account before re-syncing
     await query(
       `DELETE FROM mercadolivre_delays WHERE ml_user_id = $1 AND user_id = $2`,
       [String(mlUserId), decoded.userId]
     );
 
-    // 3. Scan ALL orders in the last 60 days
-    const dateFrom = new Date();
-    dateFrom.setDate(dateFrom.getDate() - 60);
+    // 3. Buscar vendas dos últimos 60 dias — mesma lógica de data do módulo Reputação
+    const baseDate = new Date();
+    baseDate.setDate(baseDate.getDate() - 1);
+    const dateFrom = new Date(baseDate);
+    dateFrom.setDate(baseDate.getDate() - 59);
+    dateFrom.setHours(0, 0, 0, 0);
     const dateFromStr = encodeURIComponent(dateFrom.toISOString());
 
     let offset = 0;
@@ -153,7 +157,7 @@ export async function POST(req: NextRequest) {
       const orders = ordersData.results;
 
       for (const order of orders) {
-        // Only paid/fulfilled orders matter
+        // Mesma regra: apenas pedidos paid/fulfilled
         if (order.status !== 'paid' && order.status !== 'fulfilled') continue;
 
         const orderId = getString(order.id) || String(getNumber(order.id) || "");
@@ -166,7 +170,7 @@ export async function POST(req: NextRequest) {
         const shippingId = getNumber(shipping.id) || getString(shipping.id);
         if (!shippingId) continue;
 
-        // Fetch shipment details to get exact timing
+        // Buscar detalhes do envio — mesma lógica de fetch do módulo Reputação
         try {
           const shipData = await fetchWithToken(
             `https://api.mercadolibre.com/shipments/${shippingId}`,
@@ -177,7 +181,7 @@ export async function POST(req: NextRequest) {
           const logisticType = getString(shipData.logistic_type) || "unknown";
           const shippingStatus = getString(shipData.status) || "unknown";
 
-          // Get the official SLA limit date from the shipment
+          // Extrair prazo limite (SLA) — com múltiplos fallbacks pra não perder nenhuma conta
           let limitDateStr = getString(getObject(getObject(shipData.shipping_option).handling_time).limit);
           if (!limitDateStr && shipData.shipping_option?.estimated_handling_limit) {
             limitDateStr = String(shipData.shipping_option.estimated_handling_limit.date);
@@ -185,28 +189,33 @@ export async function POST(req: NextRequest) {
           if (!limitDateStr) {
             limitDateStr = getString(shipData.date_first_printed);
           }
+          if (!limitDateStr) {
+            // Fallback: estimated_delivery ou date_created do pedido
+            const estimatedDelivery = getObject(shipData.shipping_option || {});
+            limitDateStr = getString(estimatedDelivery.estimated_delivery_final) || getString(order.date_created);
+          }
 
-          const limitDate = safeDate(limitDateStr);
-          if (!limitDate) continue; // No SLA date = can't calculate delay
+          const limitDate = safeDate(limitDateStr) || safeDate(getString(order.date_created));
+          if (!limitDate) continue;
 
-          // Get the actual ship date
-          const shippedDateStr = getString(getObject(shipData.status_history).date_shipped) || getString(shipData.date_shipped);
+          // Data de despacho real
+          const shippedDateStr =
+            getString(getObject(shipData.status_history || {}).date_shipped) ||
+            getString(shipData.date_shipped) ||
+            getString(getObject(shipData.status_history || {}).date_handling);
           const shippedDate = safeDate(shippedDateStr);
 
-          // ============================================================
-          // REGRA OFICIAL DE ATRASO DO MERCADO LIVRE:
-          // Um pedido só conta como ATRASO se foi despachado DEPOIS do prazo.
-          // Se não foi despachado ainda, não entra na conta de reputação.
-          // ============================================================
-          if (!shippedDate) continue; // Não despachado = não é atraso oficial
+          // Calcular atraso
+          let delayHours = 0;
+          let delayRange = "no_delay";
 
-          const delayMs = shippedDate.getTime() - limitDate.getTime();
-          const delayHours = delayMs / (1000 * 60 * 60);
+          if (shippedDate) {
+            const delayMs = shippedDate.getTime() - limitDate.getTime();
+            delayHours = delayMs / (1000 * 60 * 60);
+            delayRange = calculateDelayRange(delayHours);
+          }
 
-          // Se despachou dentro do prazo, não é atraso
-          if (delayHours <= 0) continue;
-
-          // É ATRASO REAL — salvar
+          // SALVAR TODAS as vendas (com e sem atraso) — o filtro fica no list/route
           itemsToSave.push({
             id: orderId,
             ml_user_id: String(mlUserId),
@@ -215,26 +224,39 @@ export async function POST(req: NextRequest) {
             shipping_mode: shippingMode,
             logistic_type: logisticType,
             limit_date: limitDate.toISOString(),
-            shipped_date: shippedDate.toISOString(),
+            shipped_date: shippedDate ? shippedDate.toISOString() : null,
             delay_hours: delayHours,
-            delay_range: calculateDelayRange(delayHours),
+            delay_range: delayRange,
             status: shippingStatus
           });
         } catch (e: any) {
-          // Shipment fetch failed, skip this order
-          continue;
+          // Fetch do shipment falhou — salvar com dados mínimos
+          const fallbackDate = safeDate(getString(order.date_created)) || new Date();
+          itemsToSave.push({
+            id: orderId,
+            ml_user_id: String(mlUserId),
+            user_id: decoded.userId,
+            product_name: productName,
+            shipping_mode: "unknown",
+            logistic_type: "unknown",
+            limit_date: fallbackDate.toISOString(),
+            shipped_date: null,
+            delay_hours: 0,
+            delay_range: "no_delay",
+            status: "fetch_error"
+          });
         }
       }
 
       processedOrders += orders.length;
       offset += limit;
 
-      // Stop if we've reached the total
+      // Parar quando alcançar o total
       const total = getNumber(ordersData?.paging?.total) || 0;
       if (total > 0 && offset >= total) break;
     }
 
-    // 4. Bulk insert into DB — only truly delayed orders
+    // 4. Bulk insert/update no DB
     for (const item of itemsToSave) {
       await query(
         `INSERT INTO mercadolivre_delays (
@@ -246,6 +268,8 @@ export async function POST(req: NextRequest) {
            delay_hours = EXCLUDED.delay_hours,
            delay_range = EXCLUDED.delay_range,
            status = EXCLUDED.status,
+           logistic_type = EXCLUDED.logistic_type,
+           shipping_mode = EXCLUDED.shipping_mode,
            synced_at = CURRENT_TIMESTAMP`,
         [
           item.id, item.ml_user_id, item.user_id, item.product_name,
