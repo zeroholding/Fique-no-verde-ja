@@ -78,12 +78,45 @@ export async function GET(req: NextRequest) {
     for (const mlUserId of accounts) {
       try {
         const credRes = await query(
-          "SELECT access_token FROM mercado_livre_credentials WHERE user_id = $1 AND ml_user_id = $2 LIMIT 1",
+          "SELECT access_token, refresh_token, expires_at FROM mercado_livre_credentials WHERE user_id = $1 AND ml_user_id = $2 LIMIT 1",
           [decoded.userId, mlUserId]
         );
         if (credRes.rows.length === 0) continue;
 
-        const accessToken = credRes.rows[0].access_token;
+        let accessToken = credRes.rows[0].access_token;
+        const refreshToken = credRes.rows[0].refresh_token;
+        const expiresAt = credRes.rows[0].expires_at;
+
+        // Refresh token se expirado — mesma lógica do módulo Reputação
+        const expirationDate = new Date(expiresAt);
+        const now = new Date();
+        if (now.getTime() + 5 * 60 * 1000 > expirationDate.getTime()) {
+          try {
+            const resp = await fetch("https://api.mercadolibre.com/oauth/token", {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+              body: new URLSearchParams({
+                grant_type: "refresh_token",
+                client_id: process.env.MERCADO_LIVRE_APP_ID!,
+                client_secret: process.env.MERCADO_LIVRE_SECRET_KEY!,
+                refresh_token: refreshToken,
+              }),
+            });
+            if (resp.ok) {
+              const newTokenData = await resp.json();
+              accessToken = newTokenData.access_token;
+              const newExpiresAt = new Date();
+              newExpiresAt.setSeconds(newExpiresAt.getSeconds() + newTokenData.expires_in);
+              await query(
+                `UPDATE mercado_livre_credentials SET access_token = $1, refresh_token = $2, expires_at = $3, updated_at = NOW() WHERE user_id = $4 AND ml_user_id = $5`,
+                [accessToken, newTokenData.refresh_token, newExpiresAt.toISOString(), decoded.userId, mlUserId]
+              );
+            }
+          } catch (refreshErr) {
+            console.warn(`Token refresh failed for ${mlUserId}:`, refreshErr);
+          }
+        }
+
         const mlData = await fetchMlJson(
           `https://api.mercadolibre.com/users/${mlUserId}`,
           accessToken

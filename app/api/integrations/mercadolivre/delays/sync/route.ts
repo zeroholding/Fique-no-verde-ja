@@ -182,20 +182,24 @@ export async function POST(req: NextRequest) {
           const shippingStatus = getString(shipData.status) || "unknown";
 
           // Extrair prazo limite (SLA) — com múltiplos fallbacks pra não perder nenhuma conta
+          // Prioridade: handling_time.limit > estimated_handling_limit > pay_before > date_first_printed > date_created
           let limitDateStr = getString(getObject(getObject(shipData.shipping_option).handling_time).limit);
-          if (!limitDateStr && shipData.shipping_option?.estimated_handling_limit) {
+          if (!limitDateStr && shipData.shipping_option?.estimated_handling_limit?.date) {
             limitDateStr = String(shipData.shipping_option.estimated_handling_limit.date);
+          }
+          if (!limitDateStr) {
+            // pay_before = prazo real de despacho pra Flex/Self-service
+            const estDeliveryTime = getObject(getObject(shipData.shipping_option).estimated_delivery_time);
+            limitDateStr = getString(estDeliveryTime.pay_before);
           }
           if (!limitDateStr) {
             limitDateStr = getString(shipData.date_first_printed);
           }
           if (!limitDateStr) {
-            // Fallback: estimated_delivery ou date_created do pedido
-            const estimatedDelivery = getObject(shipData.shipping_option || {});
-            limitDateStr = getString(estimatedDelivery.estimated_delivery_final) || getString(order.date_created);
+            limitDateStr = getString(order.date_created);
           }
 
-          const limitDate = safeDate(limitDateStr) || safeDate(getString(order.date_created));
+          const limitDate = safeDate(limitDateStr);
           if (!limitDate) continue;
 
           // Data de despacho real
