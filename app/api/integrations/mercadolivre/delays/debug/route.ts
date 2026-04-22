@@ -4,7 +4,7 @@ import { query } from "@/lib/db";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-this";
 
-// TEMPORARY DEBUG ENDPOINT - Remove after investigation
+// TEMPORARY DEBUG ENDPOINT
 export async function GET(req: NextRequest) {
   try {
     const token = req.cookies.get("token")?.value;
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     const refreshToken = authRes.rows[0].refresh_token;
     const expiresAt = authRes.rows[0].expires_at;
 
-    // Refresh if expired — mesma lógica do módulo Reputação
+    // Refresh if expired
     const expirationDate = new Date(expiresAt);
     const now = new Date();
     if (now.getTime() + 5 * 60 * 1000 > expirationDate.getTime()) {
@@ -59,19 +59,47 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Fetch Order
-    const orderRes = await fetch(`https://api.mercadolibre.com/orders/${orderId}`, {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    });
+    const headers = { Authorization: `Bearer ${accessToken}` };
+
+    // Try as Order first
+    const orderRes = await fetch(`https://api.mercadolibre.com/orders/${orderId}`, { headers });
     const orderData = await orderRes.json();
+
+    // If order not found, try as pack_id via orders/search
+    let packOrders = null;
+    if (orderData.error === "order_not_found") {
+      const packSearchRes = await fetch(
+        `https://api.mercadolibre.com/orders/search?seller=${mlUserId}&q=${orderId}&limit=5`,
+        { headers }
+      );
+      const packSearchData = await packSearchRes.json();
+      packOrders = packSearchData;
+
+      // Also try the pack endpoint directly
+      const packRes = await fetch(`https://api.mercadolibre.com/packs/${orderId}`, { headers });
+      const packData = await packRes.json();
+
+      // If pack found, get the shipment from it
+      let packShipment = null;
+      if (packData.shipment?.id) {
+        const shipRes = await fetch(`https://api.mercadolibre.com/shipments/${packData.shipment.id}`, { headers });
+        packShipment = await shipRes.json();
+      }
+
+      return NextResponse.json({
+        note: "Order not found directly - tried as pack",
+        order_attempt: orderData,
+        pack_data: packData,
+        pack_shipment: packShipment,
+        pack_search: packOrders,
+      });
+    }
 
     // Fetch Shipment
     let shipmentData = null;
     const shippingId = orderData?.shipping?.id;
     if (shippingId) {
-      const shipRes = await fetch(`https://api.mercadolibre.com/shipments/${shippingId}`, {
-        headers: { Authorization: `Bearer ${accessToken}` }
-      });
+      const shipRes = await fetch(`https://api.mercadolibre.com/shipments/${shippingId}`, { headers });
       shipmentData = await shipRes.json();
     }
 
