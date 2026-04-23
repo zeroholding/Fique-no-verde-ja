@@ -61,7 +61,7 @@ export default function DelaysDashboard() {
   
   // State from User's Global Context (Simulated here since this module is standalone, but you would normally import `useContext(SellerContext)`)
   // We will fetch credentials to get available accounts.
-  const [accounts, setAccounts] = useState<{ml_user_id: string, name: string}[]>([]);
+  const [accounts, setAccounts] = useState<{ml_user_id: string, nickname: string}[]>([]);
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
 
   // Filters
@@ -145,7 +145,7 @@ export default function DelaysDashboard() {
     try {
       for (let idx = 0; idx < selectedAccounts.length; idx++) {
         const account = selectedAccounts[idx];
-        const accountName = accounts.find(a => a.ml_user_id === account)?.name || account;
+        const accountName = accounts.find(a => a.ml_user_id === account)?.nickname || account;
 
         setSyncProgress({
           accountName,
@@ -220,7 +220,7 @@ export default function DelaysDashboard() {
     // Group by account
     const grouped: Record<string, string[]> = {};
     data.forEach(item => {
-       const accName = accounts.find(a => String(a.ml_user_id) === String(item.ml_user_id))?.name || item.ml_user_id;
+       const accName = accounts.find(a => String(a.ml_user_id) === String(item.ml_user_id))?.nickname || item.ml_user_id;
        if (!grouped[accName]) grouped[accName] = [];
        grouped[accName].push(`${item.id}`);
     });
