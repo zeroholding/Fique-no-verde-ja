@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { query } from "@/lib/db";
 
+// Allow up to 5 minutes for sync of large accounts
+export const maxDuration = 300;
+export const dynamic = "force-dynamic";
+
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-this";
 
 type JwtPayload = { userId: string };
@@ -137,6 +141,7 @@ export async function POST(req: NextRequest) {
     let processedOrders = 0;
     const itemsToSave: any[] = [];
     let fetchErrors = 0;
+    let skippedFulfillment = 0;
 
     while (offset < 10000) {
       let ordersData: any = null;
@@ -184,18 +189,24 @@ export async function POST(req: NextRequest) {
             accessToken
           );
 
-          const shippingMode = getString(shipData.mode) || "unknown";
           const logisticType = getString(shipData.logistic_type) || "unknown";
+
+          // PULA fulfillment — ML Full não impacta reputação do vendedor
+          if (logisticType === 'fulfillment') {
+            skippedFulfillment++;
+            continue;
+          }
+
+          const shippingMode = getString(shipData.mode) || "unknown";
           const shippingStatus = getString(shipData.status) || "unknown";
 
-          // Extrair prazo limite (SLA) — com múltiplos fallbacks pra não perder nenhuma conta
+          // Extrair prazo limite (SLA)
           // Prioridade: handling_time.limit > estimated_handling_limit > pay_before > date_first_printed > date_created
           let limitDateStr = getString(getObject(getObject(shipData.shipping_option).handling_time).limit);
           if (!limitDateStr && shipData.shipping_option?.estimated_handling_limit?.date) {
             limitDateStr = String(shipData.shipping_option.estimated_handling_limit.date);
           }
           if (!limitDateStr) {
-            // pay_before = prazo real de despacho pra Flex/Self-service
             const estDeliveryTime = getObject(getObject(shipData.shipping_option).estimated_delivery_time);
             limitDateStr = getString(estDeliveryTime.pay_before);
           }
@@ -226,7 +237,9 @@ export async function POST(req: NextRequest) {
             delayRange = calculateDelayRange(delayHours);
           }
 
-          // SALVAR TODAS as vendas (com e sem atraso) — o filtro fica no list/route
+          // SÓ salva se teve atraso — vendas sem atraso são inúteis na tabela
+          if (delayRange === "no_delay") continue;
+
           itemsToSave.push({
             id: orderId,
             ml_user_id: String(mlUserId),
@@ -242,21 +255,7 @@ export async function POST(req: NextRequest) {
           });
         } catch (e: any) {
           fetchErrors++;
-          // Fetch do shipment falhou — salvar com dados mínimos
-          const fallbackDate = safeDate(getString(order.date_created)) || new Date();
-          itemsToSave.push({
-            id: orderId,
-            ml_user_id: String(mlUserId),
-            user_id: decoded.userId,
-            product_name: productName,
-            shipping_mode: "unknown",
-            logistic_type: "unknown",
-            limit_date: fallbackDate.toISOString(),
-            shipped_date: null,
-            delay_hours: 0,
-            delay_range: "no_delay",
-            status: "fetch_error"
-          });
+          // Shipment fetch falhou — pula, não salva lixo
         }
       }
 
@@ -308,6 +307,7 @@ export async function POST(req: NextRequest) {
       message: "Sincronização concluída",
       processed: processedOrders,
       saved: itemsToSave.length,
+      skipped_fulfillment: skippedFulfillment,
       fetch_errors: fetchErrors,
     });
 
