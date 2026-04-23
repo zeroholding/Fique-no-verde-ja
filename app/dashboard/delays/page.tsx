@@ -74,6 +74,16 @@ export default function DelaysDashboard() {
   
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [syncProgress, setSyncProgress] = useState<{
+    accountName: string;
+    accountIndex: number;
+    accountTotal: number;
+    percent: number;
+    processed: number;
+    total: number;
+    delayedFound: number;
+    message: string;
+  } | null>(null);
 
   // Modal / Copiar IDs
   const [selectedSale, setSelectedSale] = useState<DelayItem | null>(null);
@@ -126,24 +136,80 @@ export default function DelaysDashboard() {
     loadData();
   }, [selectedAccounts, onlyDelayed, delayRange, sortParam, filterAccount, shippingMode, shippingStatus]);
 
-  // Sync Data
+  // Sync Data com progresso via SSE
   const handleSync = async () => {
     if (selectedAccounts.length === 0) return;
     setSyncing(true);
+    setSyncProgress(null);
+
     try {
-      // Sync each account
-      for (const account of selectedAccounts) {
-         await fetch("/api/integrations/mercadolivre/delays/sync", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ml_user_id: account })
-         });
+      for (let idx = 0; idx < selectedAccounts.length; idx++) {
+        const account = selectedAccounts[idx];
+        const accountName = accounts.find(a => a.ml_user_id === account)?.name || account;
+
+        setSyncProgress({
+          accountName,
+          accountIndex: idx + 1,
+          accountTotal: selectedAccounts.length,
+          percent: 0,
+          processed: 0,
+          total: 0,
+          delayedFound: 0,
+          message: `Iniciando ${accountName}...`,
+        });
+
+        const res = await fetch("/api/integrations/mercadolivre/delays/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ml_user_id: account, account_name: accountName }),
+        });
+
+        if (res.body) {
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                try {
+                  const event = JSON.parse(line.slice(6));
+                  if (event.error) {
+                    console.error(`Sync error for ${accountName}:`, event.error);
+                  } else if (event.phase === "syncing" || event.phase === "saving" || event.phase === "done") {
+                    setSyncProgress(prev => prev ? {
+                      ...prev,
+                      percent: event.percent || prev.percent,
+                      processed: event.processed || prev.processed,
+                      total: event.total || prev.total,
+                      delayedFound: event.delayed_found ?? event.saved ?? prev.delayedFound,
+                      message: event.message || prev.message,
+                    } : null);
+                  } else if (event.phase === "counting" || event.phase === "token") {
+                    setSyncProgress(prev => prev ? {
+                      ...prev,
+                      message: event.message || prev.message,
+                    } : null);
+                  }
+                } catch { /* ignore parse errors */ }
+              }
+            }
+          }
+        }
       }
       await loadData();
     } catch (e) {
       console.error(e);
     } finally {
       setSyncing(false);
+      setSyncProgress(null);
     }
   };
 
@@ -196,9 +262,36 @@ export default function DelaysDashboard() {
           ) : (
              <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
           )}
-          {syncing ? "Sincronizando SLA..." : "Sincronizar Atualizações"}
+          {syncing ? "Sincronizando..." : "Sincronizar Atualizações"}
         </button>
       </div>
+
+      {/* ══════ BARRA DE PROGRESSO DA SINCRONIZAÇÃO ══════ */}
+      {syncing && syncProgress && (
+        <div className="bg-[#18181b] border border-[#27272a] rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+              <span className="text-sm font-medium text-white">
+                Conta {syncProgress.accountIndex}/{syncProgress.accountTotal}: <span className="text-emerald-400">{syncProgress.accountName}</span>
+              </span>
+            </div>
+            <span className="text-sm font-bold text-emerald-400">{syncProgress.percent}%</span>
+          </div>
+          <div className="w-full bg-white/5 rounded-full h-2.5 overflow-hidden">
+            <div
+              className="bg-gradient-to-r from-emerald-600 to-emerald-400 h-full rounded-full transition-all duration-300 ease-out"
+              style={{ width: `${syncProgress.percent}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-between text-xs text-gray-400">
+            <span>{syncProgress.message}</span>
+            <span className="text-yellow-400 font-medium">
+              {syncProgress.delayedFound} atrasos encontrados
+            </span>
+          </div>
+        </div>
+      )}
 
       {kpis && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
