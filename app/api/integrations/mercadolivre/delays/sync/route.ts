@@ -153,7 +153,6 @@ export async function POST(req: NextRequest) {
       } catch (err: any) {
         console.error(`ML orders fetch error at offset ${offset}:`, err.message);
         fetchErrors++;
-        // Se falhou na primeira página, não temos nada — retorna erro sem apagar dados existentes
         if (offset === 0) {
           return NextResponse.json({
             success: false,
@@ -161,108 +160,110 @@ export async function POST(req: NextRequest) {
             hint: "Dados existentes foram preservados. Tente novamente."
           }, { status: 502 });
         }
-        break; // Se falhou em páginas posteriores, salva o que já coletou
+        break;
       }
 
       if (!ordersData || !ordersData.results || ordersData.results.length === 0) break;
 
       const orders = ordersData.results;
 
-      for (const order of orders) {
-        // Mesma regra: apenas pedidos paid/fulfilled
-        if (order.status !== 'paid' && order.status !== 'fulfilled') continue;
+      // Preparar ordens válidas com shipping ID
+      const validOrders = orders
+        .filter((o: any) => o.status === 'paid' || o.status === 'fulfilled')
+        .map((order: any) => {
+          const orderId = getString(order.id) || String(getNumber(order.id) || "");
+          const orderItems = Array.isArray(order.order_items) ? order.order_items : [];
+          const productName = orderItems.length > 0
+            ? getString(getObject(orderItems[0].item).title) || "Produto Diversos"
+            : "Sem Nome";
+          const shipping = getObject(order.shipping);
+          const shippingId = getNumber(shipping.id) || getString(shipping.id);
+          return { orderId, productName, shippingId, dateCreated: order.date_created };
+        })
+        .filter((o: any) => o.shippingId);
 
-        const orderId = getString(order.id) || String(getNumber(order.id) || "");
-        const orderItems = Array.isArray(order.order_items) ? order.order_items : [];
-        const productName = orderItems.length > 0
-          ? getString(getObject(orderItems[0].item).title) || "Produto Diversos"
-          : "Sem Nome";
+      // Processar shipments em paralelo — 10 simultâneas
+      const CONCURRENCY = 10;
+      for (let i = 0; i < validOrders.length; i += CONCURRENCY) {
+        const batch = validOrders.slice(i, i + CONCURRENCY);
+        const results = await Promise.allSettled(
+          batch.map(async (orderInfo: any) => {
+            const shipData = await fetchWithToken(
+              `https://api.mercadolibre.com/shipments/${orderInfo.shippingId}`,
+              accessToken
+            );
 
-        const shipping = getObject(order.shipping);
-        const shippingId = getNumber(shipping.id) || getString(shipping.id);
-        if (!shippingId) continue;
+            const logisticType = getString(shipData.logistic_type) || "unknown";
+            if (logisticType === 'fulfillment') {
+              skippedFulfillment++;
+              return null;
+            }
 
-        // Buscar detalhes do envio — mesma lógica de fetch do módulo Reputação
-        try {
-          const shipData = await fetchWithToken(
-            `https://api.mercadolibre.com/shipments/${shippingId}`,
-            accessToken
-          );
+            const shippingMode = getString(shipData.mode) || "unknown";
+            const shippingStatus = getString(shipData.status) || "unknown";
 
-          const logisticType = getString(shipData.logistic_type) || "unknown";
+            let limitDateStr = getString(getObject(getObject(shipData.shipping_option).handling_time).limit);
+            if (!limitDateStr && shipData.shipping_option?.estimated_handling_limit?.date) {
+              limitDateStr = String(shipData.shipping_option.estimated_handling_limit.date);
+            }
+            if (!limitDateStr) {
+              const estDeliveryTime = getObject(getObject(shipData.shipping_option).estimated_delivery_time);
+              limitDateStr = getString(estDeliveryTime.pay_before);
+            }
+            if (!limitDateStr) {
+              limitDateStr = getString(shipData.date_first_printed);
+            }
+            if (!limitDateStr) {
+              limitDateStr = getString(orderInfo.dateCreated);
+            }
 
-          // PULA fulfillment — ML Full não impacta reputação do vendedor
-          if (logisticType === 'fulfillment') {
-            skippedFulfillment++;
-            continue;
+            const limitDate = safeDate(limitDateStr);
+            if (!limitDate) return null;
+
+            const shippedDateStr =
+              getString(getObject(shipData.status_history || {}).date_shipped) ||
+              getString(shipData.date_shipped) ||
+              getString(getObject(shipData.status_history || {}).date_handling);
+            const shippedDate = safeDate(shippedDateStr);
+
+            let delayHours = 0;
+            let delayRange = "no_delay";
+            if (shippedDate) {
+              const delayMs = shippedDate.getTime() - limitDate.getTime();
+              delayHours = delayMs / (1000 * 60 * 60);
+              delayRange = calculateDelayRange(delayHours);
+            }
+
+            if (delayRange === "no_delay") return null;
+
+            return {
+              id: orderInfo.orderId,
+              ml_user_id: String(mlUserId),
+              user_id: decoded.userId,
+              product_name: orderInfo.productName,
+              shipping_mode: shippingMode,
+              logistic_type: logisticType,
+              limit_date: limitDate.toISOString(),
+              shipped_date: shippedDate ? shippedDate.toISOString() : null,
+              delay_hours: delayHours,
+              delay_range: delayRange,
+              status: shippingStatus
+            };
+          })
+        );
+
+        for (const result of results) {
+          if (result.status === 'fulfilled' && result.value) {
+            itemsToSave.push(result.value);
+          } else if (result.status === 'rejected') {
+            fetchErrors++;
           }
-
-          const shippingMode = getString(shipData.mode) || "unknown";
-          const shippingStatus = getString(shipData.status) || "unknown";
-
-          // Extrair prazo limite (SLA)
-          // Prioridade: handling_time.limit > estimated_handling_limit > pay_before > date_first_printed > date_created
-          let limitDateStr = getString(getObject(getObject(shipData.shipping_option).handling_time).limit);
-          if (!limitDateStr && shipData.shipping_option?.estimated_handling_limit?.date) {
-            limitDateStr = String(shipData.shipping_option.estimated_handling_limit.date);
-          }
-          if (!limitDateStr) {
-            const estDeliveryTime = getObject(getObject(shipData.shipping_option).estimated_delivery_time);
-            limitDateStr = getString(estDeliveryTime.pay_before);
-          }
-          if (!limitDateStr) {
-            limitDateStr = getString(shipData.date_first_printed);
-          }
-          if (!limitDateStr) {
-            limitDateStr = getString(order.date_created);
-          }
-
-          const limitDate = safeDate(limitDateStr);
-          if (!limitDate) continue;
-
-          // Data de despacho real
-          const shippedDateStr =
-            getString(getObject(shipData.status_history || {}).date_shipped) ||
-            getString(shipData.date_shipped) ||
-            getString(getObject(shipData.status_history || {}).date_handling);
-          const shippedDate = safeDate(shippedDateStr);
-
-          // Calcular atraso
-          let delayHours = 0;
-          let delayRange = "no_delay";
-
-          if (shippedDate) {
-            const delayMs = shippedDate.getTime() - limitDate.getTime();
-            delayHours = delayMs / (1000 * 60 * 60);
-            delayRange = calculateDelayRange(delayHours);
-          }
-
-          // SÓ salva se teve atraso — vendas sem atraso são inúteis na tabela
-          if (delayRange === "no_delay") continue;
-
-          itemsToSave.push({
-            id: orderId,
-            ml_user_id: String(mlUserId),
-            user_id: decoded.userId,
-            product_name: productName,
-            shipping_mode: shippingMode,
-            logistic_type: logisticType,
-            limit_date: limitDate.toISOString(),
-            shipped_date: shippedDate ? shippedDate.toISOString() : null,
-            delay_hours: delayHours,
-            delay_range: delayRange,
-            status: shippingStatus
-          });
-        } catch (e: any) {
-          fetchErrors++;
-          // Shipment fetch falhou — pula, não salva lixo
         }
       }
 
       processedOrders += orders.length;
       offset += limit;
 
-      // Parar quando alcançar o total
       const total = getNumber(ordersData?.paging?.total) || 0;
       if (total > 0 && offset >= total) break;
     }
