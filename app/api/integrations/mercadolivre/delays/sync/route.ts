@@ -124,13 +124,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. PURGE old data for this account before re-syncing
-    await query(
-      `DELETE FROM mercadolivre_delays WHERE ml_user_id = $1 AND user_id = $2`,
-      [String(mlUserId), decoded.userId]
-    );
-
-    // 3. Buscar vendas dos últimos 60 dias — mesma lógica de data do módulo Reputação
+    // 2. Buscar vendas dos últimos 60 dias — mesma lógica de data do módulo Reputação
     const baseDate = new Date();
     baseDate.setDate(baseDate.getDate() - 1);
     const dateFrom = new Date(baseDate);
@@ -142,15 +136,28 @@ export async function POST(req: NextRequest) {
     const limit = 50;
     let processedOrders = 0;
     const itemsToSave: any[] = [];
+    let fetchErrors = 0;
 
     while (offset < 10000) {
-      const ordersData = await fetchWithToken(
-        `https://api.mercadolibre.com/orders/search?seller=${mlUserId}&order.date_created.from=${dateFromStr}&sort=date_desc&limit=${limit}&offset=${offset}`,
-        accessToken
-      ).catch((err) => {
-        console.error("ML FETCH ERROR:", err);
-        return null;
-      });
+      let ordersData: any = null;
+      try {
+        ordersData = await fetchWithToken(
+          `https://api.mercadolibre.com/orders/search?seller=${mlUserId}&order.date_created.from=${dateFromStr}&sort=date_desc&limit=${limit}&offset=${offset}`,
+          accessToken
+        );
+      } catch (err: any) {
+        console.error(`ML orders fetch error at offset ${offset}:`, err.message);
+        fetchErrors++;
+        // Se falhou na primeira página, não temos nada — retorna erro sem apagar dados existentes
+        if (offset === 0) {
+          return NextResponse.json({
+            success: false,
+            error: `Falha ao buscar vendas do ML: ${err.message}`,
+            hint: "Dados existentes foram preservados. Tente novamente."
+          }, { status: 502 });
+        }
+        break; // Se falhou em páginas posteriores, salva o que já coletou
+      }
 
       if (!ordersData || !ordersData.results || ordersData.results.length === 0) break;
 
@@ -234,6 +241,7 @@ export async function POST(req: NextRequest) {
             status: shippingStatus
           });
         } catch (e: any) {
+          fetchErrors++;
           // Fetch do shipment falhou — salvar com dados mínimos
           const fallbackDate = safeDate(getString(order.date_created)) || new Date();
           itemsToSave.push({
@@ -260,27 +268,39 @@ export async function POST(req: NextRequest) {
       if (total > 0 && offset >= total) break;
     }
 
-    // 4. Bulk insert/update no DB
-    for (const item of itemsToSave) {
+    // 3. SÓ AGORA apaga dados antigos e insere os novos — dados preservados se a busca falhar
+    if (itemsToSave.length > 0) {
       await query(
-        `INSERT INTO mercadolivre_delays (
-           id, ml_user_id, user_id, product_name, shipping_mode, logistic_type,
-           limit_date, shipped_date, delay_hours, delay_range, status, synced_at
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
-         ON CONFLICT (id) DO UPDATE SET
-           shipped_date = EXCLUDED.shipped_date,
-           delay_hours = EXCLUDED.delay_hours,
-           delay_range = EXCLUDED.delay_range,
-           status = EXCLUDED.status,
-           logistic_type = EXCLUDED.logistic_type,
-           shipping_mode = EXCLUDED.shipping_mode,
-           synced_at = CURRENT_TIMESTAMP`,
-        [
-          item.id, item.ml_user_id, item.user_id, item.product_name,
-          item.shipping_mode, item.logistic_type, item.limit_date,
-          item.shipped_date, item.delay_hours, item.delay_range, item.status
-        ]
+        `DELETE FROM mercadolivre_delays WHERE ml_user_id = $1 AND user_id = $2`,
+        [String(mlUserId), decoded.userId]
       );
+
+      // Bulk insert em batches de 50 pra não estourar o banco
+      const BATCH_SIZE = 50;
+      for (let i = 0; i < itemsToSave.length; i += BATCH_SIZE) {
+        const batch = itemsToSave.slice(i, i + BATCH_SIZE);
+        for (const item of batch) {
+          await query(
+            `INSERT INTO mercadolivre_delays (
+               id, ml_user_id, user_id, product_name, shipping_mode, logistic_type,
+               limit_date, shipped_date, delay_hours, delay_range, status, synced_at
+             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
+             ON CONFLICT (id) DO UPDATE SET
+               shipped_date = EXCLUDED.shipped_date,
+               delay_hours = EXCLUDED.delay_hours,
+               delay_range = EXCLUDED.delay_range,
+               status = EXCLUDED.status,
+               logistic_type = EXCLUDED.logistic_type,
+               shipping_mode = EXCLUDED.shipping_mode,
+               synced_at = CURRENT_TIMESTAMP`,
+            [
+              item.id, item.ml_user_id, item.user_id, item.product_name,
+              item.shipping_mode, item.logistic_type, item.limit_date,
+              item.shipped_date, item.delay_hours, item.delay_range, item.status
+            ]
+          );
+        }
+      }
     }
 
     return NextResponse.json({
@@ -288,6 +308,7 @@ export async function POST(req: NextRequest) {
       message: "Sincronização concluída",
       processed: processedOrders,
       saved: itemsToSave.length,
+      fetch_errors: fetchErrors,
     });
 
   } catch (error: any) {
@@ -295,3 +316,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
   }
 }
+
