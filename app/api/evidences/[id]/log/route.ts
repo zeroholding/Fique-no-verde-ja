@@ -89,8 +89,8 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
          l.user_id,
          COALESCE(u.first_name || ' ' || u.last_name, 'Desconhecido') as user_name
        FROM evidence_logs l
-       LEFT JOIN users u ON l.user_id = u.id
-       WHERE l.evidence_id = $1
+       LEFT JOIN users u ON l.user_id = u.id::text
+       WHERE l.evidence_id::text = $1
        ORDER BY l.created_at DESC
     `, [evidenceId]);
 
