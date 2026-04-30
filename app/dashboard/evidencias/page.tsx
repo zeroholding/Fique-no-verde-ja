@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, ChangeEvent, useRef } from "react";
-import { ChevronLeft, ChevronRight, UploadCloud, FileText, Trash2, Maximize2, X, File, Image as ImageIcon, Video, CalendarDays, Eye, Download, Edit2, Save } from "lucide-react";
+import { ChevronLeft, ChevronRight, UploadCloud, FileText, Trash2, Maximize2, X, File, Image as ImageIcon, Video, CalendarDays, Eye, Download, Edit2, Save, History, Clock } from "lucide-react";
 import { Modal } from "@/components/Modal";
 import { Button } from "@/components/Button";
 import { useToast } from "@/components/Toast";
@@ -49,6 +49,12 @@ export default function EvidencesCalendarPage() {
   const [editingEvidence, setEditingEvidence] = useState<string | null>(null);
   const [editDescription, setEditDescription] = useState("");
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  // Logs State
+  const [logsModalOpen, setLogsModalOpen] = useState(false);
+  const [currentLogs, setCurrentLogs] = useState<any[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [selectedLogEvidence, setSelectedLogEvidence] = useState<Evidence | null>(null);
 
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth();
@@ -199,6 +205,36 @@ export default function EvidencesCalendarPage() {
      } finally {
          setIsSavingEdit(false);
      }
+  };
+
+  const fetchLogs = async (ev: Evidence) => {
+     setSelectedLogEvidence(ev);
+     setLogsLoading(true);
+     setLogsModalOpen(true);
+     try {
+         const token = localStorage.getItem("token");
+         const res = await fetch(`/api/evidences/${ev.id}/log`, {
+             headers: { Authorization: `Bearer ${token}` }
+         });
+         const data = await res.json();
+         if (res.ok) setCurrentLogs(data.logs || []);
+         else error(data.error || "Erro ao buscar histórico");
+     } catch(e) {
+         error("Erro ao buscar logs");
+     } finally {
+         setLogsLoading(false);
+     }
+  };
+
+  const logEvidenceAction = async (evId: string, action: 'view'|'download') => {
+      try {
+         const token = localStorage.getItem("token") || "";
+         await fetch(`/api/evidences/${evId}/log`, {
+             method: 'POST',
+             headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+             body: JSON.stringify({ action })
+         });
+      } catch(e) {}
   };
 
   // Construcao do Grid do Calendario
@@ -409,7 +445,7 @@ export default function EvidencesCalendarPage() {
                                 {/* Preview Visual */}
                                 <div 
                                     className="cursor-pointer relative overflow-hidden rounded-xl"
-                                    onClick={() => setPreviewMedia(ev)}
+                                    onClick={() => { logEvidenceAction(ev.id, 'view'); setPreviewMedia(ev); }}
                                 >
                                     {renderMediaPreview(ev)}
                                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
@@ -446,10 +482,10 @@ export default function EvidencesCalendarPage() {
 
                                 {/* Ações Explícitas */}
                                 <div className="grid grid-cols-2 gap-2 mt-auto pt-3 border-t border-white/5">
-                                    <button onClick={() => setPreviewMedia(ev)} className="flex items-center justify-center gap-1.5 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg text-xs font-medium transition">
+                                    <button onClick={() => { logEvidenceAction(ev.id, 'view'); setPreviewMedia(ev); }} className="flex items-center justify-center gap-1.5 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg text-xs font-medium transition">
                                         <Eye size={14}/> Ver Mídia
                                     </button>
-                                    <a href={ev.file_url} download target="_blank" rel="noopener" className="flex items-center justify-center gap-1.5 py-2 bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg text-xs font-medium transition">
+                                    <a href={ev.file_url} download target="_blank" rel="noopener" onClick={() => logEvidenceAction(ev.id, 'download')} className="flex items-center justify-center gap-1.5 py-2 bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg text-xs font-medium transition">
                                         <Download size={14}/> Baixar
                                     </a>
                                 </div>
@@ -457,6 +493,13 @@ export default function EvidencesCalendarPage() {
                                 {/* Ações de Admin */}
                                 {isAdmin && !isEditing && (
                                     <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 bg-black/60 backdrop-blur-md p-1.5 rounded-xl shadow-xl border border-white/10">
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); fetchLogs(ev); }}
+                                            className="p-1.5 bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 rounded-lg transition"
+                                            title="Ver histórico de acessos"
+                                        >
+                                            <History size={14}/>
+                                        </button>
                                         <button 
                                             onClick={() => { setEditingEvidence(ev.id); setEditDescription(ev.description || ""); }}
                                             className="p-1.5 bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white rounded-lg transition"
@@ -492,7 +535,7 @@ export default function EvidencesCalendarPage() {
                   </div>
                   <div className="flex items-center gap-4">
                       {/* Baixar */}
-                      <a href={previewMedia.file_url} download target="_blank" rel="noopener" className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition">
+                      <a href={previewMedia.file_url} download target="_blank" rel="noopener" onClick={() => logEvidenceAction(previewMedia.id, 'download')} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition">
                           Baixar Original
                       </a>
                       <button onClick={() => setPreviewMedia(null)} className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition">
@@ -509,7 +552,7 @@ export default function EvidencesCalendarPage() {
                       <div className="flex flex-col items-center gap-4">
                           <FileText size={80} className="text-purple-400" />
                           <p className="text-gray-300">Pré-visualização não disponível para este formato.</p>
-                          <a href={previewMedia.file_url} target="_blank" className="text-blue-400 hover:underline">
+                          <a href={previewMedia.file_url} target="_blank" onClick={() => logEvidenceAction(previewMedia.id, 'download')} className="text-blue-400 hover:underline">
                               Clique para abrir externamente
                           </a>
                       </div>
@@ -517,6 +560,58 @@ export default function EvidencesCalendarPage() {
               </div>
           </div>
       )}
+
+      {/* MODAL DE HISTÓRICO / LOGS */}
+      <Modal
+         open={logsModalOpen}
+         onClose={() => setLogsModalOpen(false)}
+         title="Histórico de Acessos"
+         widthClassName="max-w-2xl w-[95%]"
+      >
+         <div className="space-y-4">
+            <div className="bg-white/5 border border-white/10 p-4 rounded-xl flex items-center gap-3">
+               <FileText className="text-blue-400" size={24}/>
+               <div>
+                  <p className="font-semibold text-white">{selectedLogEvidence?.file_name}</p>
+                  <p className="text-xs text-gray-400">Total de {currentLogs.length} interações registradas</p>
+               </div>
+            </div>
+
+            {logsLoading ? (
+               <div className="py-10 text-center text-emerald-400">Carregando histórico...</div>
+            ) : currentLogs.length === 0 ? (
+               <div className="py-10 text-center text-gray-500 border border-white/5 rounded-xl border-dashed">
+                  Nenhum registro de acesso ainda.
+               </div>
+            ) : (
+               <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                  {currentLogs.map(log => (
+                      <div key={log.id} className="flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl transition">
+                          <div className="flex items-center gap-3">
+                              <div className={`p-2 rounded-lg ${log.action === 'download' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                                  {log.action === 'download' ? <Download size={16}/> : <Eye size={16}/>}
+                              </div>
+                              <div>
+                                  <p className="text-sm font-medium text-gray-200">
+                                      {log.action === 'download' ? 'Baixou o arquivo' : 'Visualizou o arquivo'}
+                                  </p>
+                                  <p className="text-xs text-gray-400">
+                                      Usuário: <span className="text-gray-300 font-medium">{log.user_id === 'public' ? 'Acesso Público (Link Direto)' : log.user_name}</span>
+                                  </p>
+                              </div>
+                          </div>
+                          <div className="text-right flex flex-col items-end gap-1">
+                              <div className="flex items-center gap-1 text-xs text-gray-400">
+                                  <Clock size={12}/>
+                                  {new Date(log.created_at).toLocaleString('pt-BR')}
+                              </div>
+                          </div>
+                      </div>
+                  ))}
+               </div>
+            )}
+         </div>
+      </Modal>
 
     </div>
   );
