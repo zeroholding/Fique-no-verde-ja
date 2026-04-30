@@ -474,7 +474,9 @@ export default function EvidencesCalendarPage() {
                                         </div>
                                     ) : (
                                         <div className="flex justify-between items-center text-xs">
-                                           <span className="text-gray-500">{formatSize(ev.file_size)}</span>
+                                           <span className="text-gray-500 truncate mr-2" title={ev.creator_name || 'Desconhecido'}>
+                                              {formatSize(ev.file_size)} • {ev.creator_name || 'Desconhecido'}
+                                           </span>
                                            {ev.description && <span className="text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded truncate max-w-[120px]" title={ev.description}>{ev.description}</span>}
                                         </div>
                                     )}
@@ -531,7 +533,7 @@ export default function EvidencesCalendarPage() {
               <div className="flex items-center justify-between p-4 sm:p-6 text-white border-b border-white/10">
                   <div>
                       <h3 className="font-semibold text-lg">{previewMedia.file_name}</h3>
-                      <p className="text-xs text-gray-400">{selectedDateLocalStr?.split('-').reverse().join('/')} • {previewMedia.description || "Sem descrição"}</p>
+                      <p className="text-xs text-gray-400">{selectedDateLocalStr?.split('-').reverse().join('/')} • {previewMedia.description || "Sem descrição"} • {previewMedia.creator_name || "Desconhecido"}</p>
                   </div>
                   <div className="flex items-center gap-4">
                       {/* Baixar */}
