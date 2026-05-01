@@ -581,10 +581,6 @@ export default function EvidencesCalendarPage() {
 
             {logsLoading ? (
                <div className="py-10 text-center text-emerald-400">Carregando histórico...</div>
-            ) : currentLogs.length === 0 ? (
-               <div className="py-10 text-center text-gray-500 border border-white/5 rounded-xl border-dashed">
-                  Nenhum registro de acesso ainda.
-               </div>
             ) : (
                <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                   {currentLogs.map(log => (
@@ -610,6 +606,29 @@ export default function EvidencesCalendarPage() {
                           </div>
                       </div>
                   ))}
+
+                  {/* LOG DE CRIAÇÃO (SEMPRE POR ÚLTIMO) */}
+                  {selectedLogEvidence && (
+                      <div className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-xl transition opacity-80">
+                          <div className="flex items-center gap-3">
+                              <div className="p-2 rounded-lg bg-purple-500/20 text-purple-400">
+                                  <UploadCloud size={16}/>
+                              </div>
+                              <div>
+                                  <p className="text-sm font-medium text-gray-200">Fez o upload do arquivo</p>
+                                  <p className="text-xs text-gray-400">
+                                      Usuário: <span className="text-gray-300 font-medium">{selectedLogEvidence.creator_name || 'Desconhecido'}</span>
+                                  </p>
+                              </div>
+                          </div>
+                          <div className="text-right flex flex-col items-end gap-1">
+                              <div className="flex items-center gap-1 text-xs text-gray-400">
+                                  <Clock size={12}/>
+                                  {new Date(selectedLogEvidence.created_at).toLocaleString('pt-BR')}
+                              </div>
+                          </div>
+                      </div>
+                  )}
                </div>
             )}
          </div>
