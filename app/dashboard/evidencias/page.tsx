@@ -207,6 +207,27 @@ export default function EvidencesCalendarPage() {
      }
   };
 
+  const handleDownload = async (ev: Evidence | null) => {
+      if (!ev) return;
+      try {
+          const res = await fetch(ev.file_url, { method: 'HEAD' });
+          if (!res.ok) {
+              error("Arquivo não encontrado no servidor. (Ele pode ter sido removido durante um deploy).");
+              return;
+          }
+          logEvidenceAction(ev.id, 'download');
+          const link = document.createElement('a');
+          link.href = ev.file_url;
+          link.download = ev.file_name;
+          link.target = '_blank';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+      } catch (e) {
+          error("Erro de conexão ao tentar baixar.");
+      }
+  };
+
   const fetchLogs = async (ev: Evidence) => {
      setSelectedLogEvidence(ev);
      setLogsLoading(true);
@@ -291,9 +312,12 @@ export default function EvidencesCalendarPage() {
      }
      if (isVid) {
          return (
-             <div className="w-full h-32 bg-black/50 border border-white/10 flex items-center justify-center rounded-xl relative overflow-hidden group">
-                <Video size={40} className="text-gray-500 group-hover:scale-110 transition-transform"/>
-                <span className="absolute bottom-2 right-2 bg-black/70 px-2 py-1 text-[10px] rounded text-white">Vídeo</span>
+             <div className="w-full h-32 bg-black/50 border border-white/10 rounded-xl relative overflow-hidden group">
+                <video src={`${ev.file_url}#t=0.1`} className="w-full h-full object-cover" preload="metadata" muted playsInline />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-transparent transition-colors">
+                    <Video size={32} className="text-white/70 shadow-black drop-shadow-md"/>
+                </div>
+                <span className="absolute bottom-2 right-2 bg-black/70 px-2 py-1 text-[10px] rounded text-white z-10">Vídeo</span>
              </div>
          )
      }
@@ -487,9 +511,9 @@ export default function EvidencesCalendarPage() {
                                     <button onClick={() => { logEvidenceAction(ev.id, 'view'); setPreviewMedia(ev); }} className="flex items-center justify-center gap-1.5 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg text-xs font-medium transition">
                                         <Eye size={14}/> Ver Mídia
                                     </button>
-                                    <a href={ev.file_url} download target="_blank" rel="noopener" onClick={() => logEvidenceAction(ev.id, 'download')} className="flex items-center justify-center gap-1.5 py-2 bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg text-xs font-medium transition">
+                                    <button onClick={() => handleDownload(ev)} className="flex items-center justify-center gap-1.5 py-2 bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg text-xs font-medium transition">
                                         <Download size={14}/> Baixar
-                                    </a>
+                                    </button>
                                 </div>
 
                                 {/* Ações de Admin */}
@@ -537,9 +561,9 @@ export default function EvidencesCalendarPage() {
                   </div>
                   <div className="flex items-center gap-4">
                       {/* Baixar */}
-                      <a href={previewMedia.file_url} download target="_blank" rel="noopener" onClick={() => logEvidenceAction(previewMedia.id, 'download')} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition">
-                          Baixar Original
-                      </a>
+                      <button onClick={() => handleDownload(previewMedia)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition flex items-center gap-2">
+                          <Download size={16}/> Baixar Original
+                      </button>
                       <button onClick={() => setPreviewMedia(null)} className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition">
                           <X size={24}/>
                       </button>
@@ -549,14 +573,16 @@ export default function EvidencesCalendarPage() {
                   {previewMedia.file_type.startsWith('image/') ? (
                       <img src={previewMedia.file_url} className="max-w-full max-h-full object-contain" alt="Preview"/>
                   ) : previewMedia.file_type.startsWith('video/') ? (
-                      <video src={previewMedia.file_url} controls autoPlay className="max-w-full max-h-[80vh] outline-none shadow-2xl rounded-xl" />
+                      <video src={previewMedia.file_url} controls autoPlay className="max-w-full max-h-[80vh] outline-none shadow-2xl rounded-xl bg-black" />
+                  ) : previewMedia.file_type === 'application/pdf' ? (
+                      <iframe src={previewMedia.file_url} className="w-full h-[85vh] rounded-xl shadow-2xl bg-white" />
                   ) : (
                       <div className="flex flex-col items-center gap-4">
                           <FileText size={80} className="text-purple-400" />
                           <p className="text-gray-300">Pré-visualização não disponível para este formato.</p>
-                          <a href={previewMedia.file_url} target="_blank" onClick={() => logEvidenceAction(previewMedia.id, 'download')} className="text-blue-400 hover:underline">
-                              Clique para abrir externamente
-                          </a>
+                          <button onClick={() => handleDownload(previewMedia)} className="text-blue-400 hover:underline">
+                              Baixar arquivo para abrir externamente
+                          </button>
                       </div>
                   )}
               </div>
