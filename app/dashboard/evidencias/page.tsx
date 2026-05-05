@@ -716,7 +716,6 @@ export default function EvidencesCalendarPage() {
                </div>
             )}
          </div>
-         </div>
       </Modal>
 
       {/* PAINEL DE PROGRESSO DE UPLOAD NO CANTO INFERIOR DIREITO */}
