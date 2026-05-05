@@ -132,26 +132,32 @@ export default function EvidencesCalendarPage() {
       setUploading(true);
       try {
           const dateStr = selectedDate.toISOString().split('T')[0];
-          const formData = new FormData();
-          formData.append("date", dateStr);
-          formData.append("description", uploadDescription);
-          filesToUpload.forEach(f => formData.append("files", f));
+          let uploadedCount = 0;
 
-          const res = await fetch(`/api/evidences`, {
-              method: 'POST',
-              headers: { Authorization: `Bearer ${token}` }, // nao passar Content-Type, o browser faz isso para formdata
-              body: formData
-          });
+          // Enviar um por um para evitar estourar limites de payload do servidor/proxy
+          for (const f of filesToUpload) {
+              const formData = new FormData();
+              formData.append("date", dateStr);
+              formData.append("description", uploadDescription);
+              formData.append("files", f);
 
-          const data = await res.json();
-          if (res.ok) {
-             success(`${data.uploadedItems?.length || filesToUpload.length} arquivos salvos!`);
-             setFilesToUpload([]);
-             setUploadDescription("");
-             await fetchEvidences(currentYear, currentMonth); // refresh dados
-          } else {
-             throw new Error(data.error);
+              const res = await fetch(`/api/evidences`, {
+                  method: 'POST',
+                  headers: { Authorization: `Bearer ${token}` },
+                  body: formData
+              });
+
+              const data = await res.json();
+              if (!res.ok) {
+                 throw new Error(`Falha ao enviar ${f.name}: ` + (data.error || "Erro desconhecido"));
+              }
+              uploadedCount += (data.uploadedItems?.length || 1);
           }
+
+          success(`${uploadedCount} arquivo(s) salvo(s) com sucesso!`);
+          setFilesToUpload([]);
+          setUploadDescription("");
+          await fetchEvidences(currentYear, currentMonth); // refresh dados
       } catch (err: any) {
           error(err.message || "Erro ao processar uploads");
       } finally {
