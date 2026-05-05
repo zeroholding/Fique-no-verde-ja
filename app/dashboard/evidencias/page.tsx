@@ -18,6 +18,13 @@ type Evidence = {
   created_at: string;
 };
 
+type UploadProgress = {
+  fileName: string;
+  progress: number;
+  status: 'pending' | 'uploading' | 'success' | 'error';
+  error?: string;
+};
+
 // Utilitario para dias do mês
 const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
 const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay(); // 0 = Sunday
@@ -41,6 +48,8 @@ export default function EvidencesCalendarPage() {
   const [filesToUpload, setFilesToUpload] = useState<File[]>([]);
   const [uploadDescription, setUploadDescription] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [uploadQueue, setUploadQueue] = useState<UploadProgress[]>([]);
+  const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
   
   // Fullscreen Media State
   const [previewMedia, setPreviewMedia] = useState<Evidence | null>(null);
@@ -130,38 +139,81 @@ export default function EvidencesCalendarPage() {
       if (!token) return error("Sessão expirada");
 
       setUploading(true);
+      setIsUploadPanelOpen(true);
+      
+      const initialQueue: UploadProgress[] = filesToUpload.map(f => ({
+          fileName: f.name,
+          progress: 0,
+          status: 'pending'
+      }));
+      setUploadQueue(initialQueue);
+
       try {
           const dateStr = selectedDate.toISOString().split('T')[0];
           let uploadedCount = 0;
 
-          // Enviar um por um para evitar estourar limites de payload do servidor/proxy
-          for (const f of filesToUpload) {
+          // Enviar um por um usando XMLHttpRequest para poder medir o progresso (%)
+          for (let i = 0; i < filesToUpload.length; i++) {
+              const f = filesToUpload[i];
+              
+              setUploadQueue(prev => prev.map((item, idx) => idx === i ? { ...item, status: 'uploading' } : item));
+
               const formData = new FormData();
               formData.append("date", dateStr);
               formData.append("description", uploadDescription);
               formData.append("files", f);
 
-              const res = await fetch(`/api/evidences`, {
-                  method: 'POST',
-                  headers: { Authorization: `Bearer ${token}` },
-                  body: formData
-              });
+              try {
+                  const data = await new Promise<any>((resolve, reject) => {
+                      const xhr = new XMLHttpRequest();
+                      xhr.open('POST', '/api/evidences');
+                      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+                      
+                      xhr.upload.onprogress = (event) => {
+                          if (event.lengthComputable) {
+                              const percentComplete = Math.round((event.loaded / event.total) * 100);
+                              setUploadQueue(prev => prev.map((item, idx) => idx === i ? { ...item, progress: percentComplete } : item));
+                          }
+                      };
 
-              const data = await res.json();
-              if (!res.ok) {
-                 throw new Error(`Falha ao enviar ${f.name}: ` + (data.error || "Erro desconhecido"));
+                      xhr.onload = () => {
+                          if (xhr.status >= 200 && xhr.status < 300) {
+                              try { resolve(JSON.parse(xhr.responseText)); } catch(e) { resolve({}); }
+                          } else {
+                              try { reject(new Error(JSON.parse(xhr.responseText).error)); } catch(e) { reject(new Error("Erro no upload")); }
+                          }
+                      };
+
+                      xhr.onerror = () => reject(new Error("Erro de rede"));
+                      xhr.send(formData);
+                  });
+
+                  setUploadQueue(prev => prev.map((item, idx) => idx === i ? { ...item, status: 'success', progress: 100 } : item));
+                  uploadedCount += (data.uploadedItems?.length || 1);
+              } catch (err: any) {
+                  setUploadQueue(prev => prev.map((item, idx) => idx === i ? { ...item, status: 'error', error: err.message } : item));
               }
-              uploadedCount += (data.uploadedItems?.length || 1);
           }
 
-          success(`${uploadedCount} arquivo(s) salvo(s) com sucesso!`);
-          setFilesToUpload([]);
-          setUploadDescription("");
-          await fetchEvidences(currentYear, currentMonth); // refresh dados
+          if (uploadedCount > 0) {
+              success(`${uploadedCount} arquivo(s) salvo(s) com sucesso!`);
+              setFilesToUpload([]);
+              setUploadDescription("");
+              await fetchEvidences(currentYear, currentMonth); // refresh dados
+          }
       } catch (err: any) {
           error(err.message || "Erro ao processar uploads");
       } finally {
           setUploading(false);
+          // Fecha o painel automaticamente após alguns segundos se tudo der certo
+          setTimeout(() => {
+              setUploadQueue(prev => {
+                  if (prev.every(p => p.status === 'success')) {
+                      setIsUploadPanelOpen(false);
+                  }
+                  return prev;
+              });
+          }, 4000);
       }
   };
 
@@ -664,7 +716,49 @@ export default function EvidencesCalendarPage() {
                </div>
             )}
          </div>
+         </div>
       </Modal>
+
+      {/* PAINEL DE PROGRESSO DE UPLOAD NO CANTO INFERIOR DIREITO */}
+      {isUploadPanelOpen && uploadQueue.length > 0 && (
+          <div className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 w-80 sm:w-96 bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] overflow-hidden z-[99999] flex flex-col">
+              <div className="bg-white/5 border-b border-white/10 p-3 sm:p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                      <UploadCloud size={18} className="text-emerald-400" />
+                      <h3 className="font-semibold text-sm sm:text-base text-gray-200">Enviando arquivos ({uploadQueue.filter(q => q.status === 'success').length}/{uploadQueue.length})</h3>
+                  </div>
+                  {!uploading && (
+                      <button onClick={() => setIsUploadPanelOpen(false)} className="text-gray-400 hover:text-white transition">
+                          <X size={18}/>
+                      </button>
+                  )}
+              </div>
+              <div className="p-3 sm:p-4 space-y-3 max-h-[40vh] overflow-y-auto custom-scrollbar">
+                  {uploadQueue.map((item, idx) => (
+                      <div key={idx} className="bg-white/5 border border-white/5 rounded-xl p-3 flex flex-col gap-2">
+                          <div className="flex justify-between items-center gap-2">
+                              <span className="text-xs text-gray-300 font-medium truncate flex-1" title={item.fileName}>{item.fileName}</span>
+                              <span className="text-xs font-mono text-gray-400 min-w-[35px] text-right">
+                                  {item.status === 'success' ? 'OK' : item.status === 'error' ? 'Erro' : `${item.progress}%`}
+                              </span>
+                          </div>
+                          
+                          {/* Barra de Progresso */}
+                          <div className="h-1.5 w-full bg-black/50 rounded-full overflow-hidden">
+                              <div 
+                                  className={`h-full transition-all duration-300 ${item.status === 'error' ? 'bg-red-500' : item.status === 'success' ? 'bg-emerald-500' : 'bg-emerald-500'}`}
+                                  style={{ width: `${item.status === 'error' ? 100 : item.progress}%` }}
+                              />
+                          </div>
+
+                          {item.status === 'error' && (
+                              <p className="text-[10px] text-red-400 mt-1">{item.error}</p>
+                          )}
+                      </div>
+                  ))}
+              </div>
+          </div>
+      )}
 
     </div>
   );
