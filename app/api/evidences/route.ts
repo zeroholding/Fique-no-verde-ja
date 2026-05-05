@@ -107,62 +107,72 @@ export async function POST(request: NextRequest) {
   try {
     const user = await authenticateAdmin(request); // Apenas admins fazem upload
 
-    const formData = await request.formData();
-    const date = formData.get("date") as string;
-    const description = formData.get("description") as string || null;
-    const files = formData.getAll("files") as File[];
-
-    if (!date) {
-      return NextResponse.json({ error: "Data não fornecida." }, { status: 400 });
-    }
-
-    if (!files || files.length === 0) {
-      return NextResponse.json({ error: "Nenhum arquivo enviado." }, { status: 400 });
-    }
-
     const uploadDir = path.join(process.cwd(), "public", "uploads", "evidences");
-    
-    // Garante que o diretório exista silenciosamente
     if (!fs.existsSync(uploadDir)) {
       await mkdir(uploadDir, { recursive: true });
     }
 
     const savedRecords = [];
+    const uploadType = request.headers.get("x-upload-type");
 
-    // Processa cada arquivo individualmente para insert no DB
-    for (const file of files) {
-      if (!(file instanceof File)) continue;
-      
-      const fileExt = path.extname(file.name).toLowerCase();
-      // Anti colisão
-      const randomName = crypto.randomUUID() + fileExt;
-      const physicalPath = path.join(uploadDir, randomName);
-      
-      // Converte o arquivo em buffer nativo do node
-      const buffer = Buffer.from(await file.arrayBuffer());
-      
-      // Escreve fisicamente
-      await writeFile(physicalPath, buffer);
-      
-      const fileUrl = `/api/media/evidences/${randomName}`; // Como será acessado pelo navegador (static folder fallback bypass)
+    if (uploadType === "raw") {
+        const fileNameHeader = request.headers.get("x-file-name") || "upload.bin";
+        const fileName = decodeURIComponent(fileNameHeader);
+        const date = request.headers.get("x-file-date");
+        const descHeader = request.headers.get("x-file-description");
+        const description = descHeader ? decodeURIComponent(descHeader) : null;
+        const fileType = request.headers.get("content-type") || "application/octet-stream";
+        const fileSizeHeader = request.headers.get("content-length") || "0";
+        const fileSize = parseInt(fileSizeHeader, 10);
 
-      // Grava no PostgreSQL
-      const result = await query(
-         `INSERT INTO evidences (date, file_name, file_url, file_type, file_size, description, created_by_user_id)
-          VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-         [
-            date,
-            file.name.substring(0, 250),
-            fileUrl,
-            file.type,
-            file.size,
-            description,
-            user.id
-         ]
-      );
+        if (!date) return NextResponse.json({ error: "Data não fornecida." }, { status: 400 });
+        if (!request.body) return NextResponse.json({ error: "Arquivo vazio." }, { status: 400 });
 
-      savedRecords.push(result.rows[0]);
+        const fileExt = path.extname(fileName).toLowerCase();
+        const randomName = crypto.randomUUID() + fileExt;
+        const physicalPath = path.join(uploadDir, randomName);
+        const fileUrl = `/api/media/evidences/${randomName}`;
+
+        // Salvar via Buffer direto (bypassa limite do parser de FormData do Nextjs)
+        const arrayBuffer = await request.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        await writeFile(physicalPath, buffer);
+
+        const result = await query(
+           `INSERT INTO evidences (date, file_name, file_url, file_type, file_size, description, created_by_user_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+           [date, fileName.substring(0, 250), fileUrl, fileType, fileSize, description, user.id]
+        );
+        savedRecords.push(result.rows[0]);
+
+    } else {
+        // Fallback p/ FormData legado
+        const formData = await request.formData();
+        const date = formData.get("date") as string;
+        const description = formData.get("description") as string || null;
+        const files = formData.getAll("files") as File[];
+
+        if (!date) return NextResponse.json({ error: "Data não fornecida." }, { status: 400 });
+        if (!files || files.length === 0) return NextResponse.json({ error: "Nenhum arquivo enviado." }, { status: 400 });
+
+        for (const file of files) {
+          if (!(file instanceof File)) continue;
+          const fileExt = path.extname(file.name).toLowerCase();
+          const randomName = crypto.randomUUID() + fileExt;
+          const physicalPath = path.join(uploadDir, randomName);
+          const buffer = Buffer.from(await file.arrayBuffer());
+          await writeFile(physicalPath, buffer);
+          const fileUrl = `/api/media/evidences/${randomName}`;
+          const result = await query(
+             `INSERT INTO evidences (date, file_name, file_url, file_type, file_size, description, created_by_user_id)
+              VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+             [date, file.name.substring(0, 250), fileUrl, file.type, file.size, description, user.id]
+          );
+          savedRecords.push(result.rows[0]);
+        }
     }
+
+
 
     return NextResponse.json({ success: true, uploadedItems: savedRecords }, { status: 201 });
 

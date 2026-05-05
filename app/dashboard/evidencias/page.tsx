@@ -158,16 +158,20 @@ export default function EvidencesCalendarPage() {
               
               setUploadQueue(prev => prev.map((item, idx) => idx === i ? { ...item, status: 'uploading' } : item));
 
-              const formData = new FormData();
-              formData.append("date", dateStr);
-              formData.append("description", uploadDescription);
-              formData.append("files", f);
-
               try {
                   const data = await new Promise<any>((resolve, reject) => {
                       const xhr = new XMLHttpRequest();
                       xhr.open('POST', '/api/evidences');
                       xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+                      
+                      // Configurações para envio bruto (bypassa FormData limit)
+                      xhr.setRequestHeader('X-Upload-Type', 'raw');
+                      xhr.setRequestHeader('X-File-Name', encodeURIComponent(f.name));
+                      xhr.setRequestHeader('X-File-Date', dateStr);
+                      if (uploadDescription) {
+                          xhr.setRequestHeader('X-File-Description', encodeURIComponent(uploadDescription));
+                      }
+                      xhr.setRequestHeader('Content-Type', f.type || 'application/octet-stream');
                       
                       xhr.upload.onprogress = (event) => {
                           if (event.lengthComputable) {
@@ -185,7 +189,7 @@ export default function EvidencesCalendarPage() {
                       };
 
                       xhr.onerror = () => reject(new Error("Erro de rede"));
-                      xhr.send(formData);
+                      xhr.send(f); // Envia o arquivo puro direto (Stream)
                   });
 
                   setUploadQueue(prev => prev.map((item, idx) => idx === i ? { ...item, status: 'success', progress: 100 } : item));
