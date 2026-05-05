@@ -91,6 +91,17 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Aumenta o limite de body da requisição (padrão Next.js é 4MB)
+export const config = {
+  api: {
+    bodyParser: false, // FormData gerencia internamente
+    responseLimit: false,
+  },
+};
+
+// Next.js App Router: define o tamanho máximo permitido para uploads
+export const maxDuration = 60; // segundos
+
 // POST: Realiza Upload Multipart
 export async function POST(request: NextRequest) {
   try {
