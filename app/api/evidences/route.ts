@@ -171,6 +171,6 @@ export async function POST(request: NextRequest) {
     if (error.message.includes("Acesso negado") || error.message.includes("autenticação")) {
         return NextResponse.json({ error: error.message }, { status: 403 });
     }
-    return NextResponse.json({ error: "Erro interno no servidor ao enviar arquivos." }, { status: 500 });
+    return NextResponse.json({ error: "Erro interno no servidor ao enviar arquivos. Detalhe: " + (error.message || String(error)) }, { status: 500 });
   }
 }
