@@ -44,5 +44,5 @@ export function middleware(request: NextRequest) {
 
 // Aplicar middleware a rotas específicas
 export const config = {
-  matcher: ['/', '/login', '/dashboard/:path*', '/api/:path*'],
+  matcher: ['/', '/login', '/dashboard/:path*', '/api/((?!evidences).)*'],
 };
