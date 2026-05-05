@@ -635,7 +635,12 @@ export default function EvidencesCalendarPage() {
                   {previewMedia.file_type.startsWith('image/') ? (
                       <img src={previewMedia.file_url} className="max-w-full max-h-full object-contain" alt="Preview"/>
                   ) : previewMedia.file_type.startsWith('video/') ? (
-                      <video src={previewMedia.file_url} controls autoPlay className="max-w-full max-h-[80vh] outline-none shadow-2xl rounded-xl bg-black" />
+                      <video 
+                          src={previewMedia.file_url} 
+                          controls 
+                          autoPlay 
+                          className="w-full max-w-6xl h-[85vh] object-contain outline-none shadow-[0_20px_60px_rgba(0,0,0,0.8)] rounded-2xl bg-black/90 ring-1 ring-white/10" 
+                      />
                   ) : previewMedia.file_type === 'application/pdf' ? (
                       <iframe src={previewMedia.file_url} className="w-full h-[85vh] rounded-xl shadow-2xl bg-white" />
                   ) : (
