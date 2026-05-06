@@ -94,7 +94,7 @@ export default function EvidencesCalendarPage() {
           const end = new Date(year, month + 1, 0).toISOString().split('T')[0];
 
           const token = localStorage.getItem("token");
-          const res = await fetch(`/api/evidences?start=${start}&end=${end}`, {
+          const res = await fetch(`/api/evidences?start=${start}&end=${end}&t=${Date.now()}`, {
              headers: { Authorization: `Bearer ${token}` }
           });
           const data = await res.json();
@@ -194,6 +194,12 @@ export default function EvidencesCalendarPage() {
                   });
 
                   setUploadQueue(prev => prev.map((item, idx) => idx === i ? { ...item, status: 'success', progress: 100 } : item));
+                  
+                  // Atualiza a interface instantaneamente sem precisar dar reload
+                  if (data.uploadedItems && data.uploadedItems.length > 0) {
+                      setEvidences(prev => [...prev, ...data.uploadedItems]);
+                  }
+
                   uploadedCount += (data.uploadedItems?.length || 1);
               } catch (err: any) {
                   setUploadQueue(prev => prev.map((item, idx) => idx === i ? { ...item, status: 'error', error: err.message } : item));
@@ -204,7 +210,7 @@ export default function EvidencesCalendarPage() {
               success(`${uploadedCount} arquivo(s) salvo(s) com sucesso!`);
               setFilesToUpload([]);
               setUploadDescription("");
-              await fetchEvidences(currentYear, currentMonth); // refresh dados
+              fetchEvidences(currentYear, currentMonth); // refresh secundário e silencioso no background
           }
       } catch (err: any) {
           error(err.message || "Erro ao processar uploads");
