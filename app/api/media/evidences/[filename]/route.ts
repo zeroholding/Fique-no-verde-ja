@@ -35,12 +35,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ fil
         let mimeType = basicMimeMap[ext];
         
         if (!mimeType) {
-            try {
-               const mimeLib = await import("mime");
-               mimeType = mimeLib.default.getType(ext) || "application/octet-stream";
-            } catch {
-               mimeType = "application/octet-stream";
-            }
+            mimeType = "application/octet-stream";
         }
 
         const fileSize = statInfo.size;

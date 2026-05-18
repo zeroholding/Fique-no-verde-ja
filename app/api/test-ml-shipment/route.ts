@@ -49,6 +49,7 @@ export async function GET() {
                new_billing_endpoint: billing_info
             });
             if (results.length >= 2) break;
+        }
     }
 
     return NextResponse.json(results);
