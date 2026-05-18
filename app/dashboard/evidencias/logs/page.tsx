@@ -169,12 +169,12 @@ export default function GlobalEvidenceLogsPage() {
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 whitespace-nowrap text-gray-300">
-                                                {log.evidence_date ? log.evidence_date.split('-').reverse().join('/') : "Desconhecida"}
+                                                {log.evidence_date ? new Date(log.evidence_date).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : "Desconhecida"}
                                             </td>
-                                            <td className="px-4 py-3 max-w-[200px] sm:max-w-[300px] truncate" title={log.file_name || "N/A"}>
-                                                {log.file_name || <span className="text-gray-500 italic">Arquivo Excluído ou N/A</span>}
+                                            <td className="px-4 py-3 max-w-[200px] sm:max-w-[300px] truncate font-medium text-gray-200" title={log.file_name || "N/A"}>
+                                                {log.file_name || <span className="text-gray-500 italic font-normal">Arquivo Excluído ou N/A</span>}
                                             </td>
-                                            <td className="px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">
+                                            <td className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                                 {log.file_type ? log.file_type.split('/')[1] || log.file_type : "N/A"}
                                             </td>
                                         </tr>

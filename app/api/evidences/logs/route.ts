@@ -59,11 +59,12 @@ export async function GET(request: NextRequest) {
          l.user_id,
          COALESCE(u.first_name || ' ' || u.last_name, 'Desconhecido') as user_name,
          l.evidence_id,
-         l.file_name,
-         l.file_type,
-         l.evidence_date
+         COALESCE(l.file_name, e.file_name) as file_name,
+         COALESCE(l.file_type, e.file_type) as file_type,
+         COALESCE(l.evidence_date, e.date) as evidence_date
        FROM evidence_logs l
        LEFT JOIN users u ON l.user_id = u.id::text
+       LEFT JOIN evidences e ON l.evidence_id = e.id
        ${whereClause}
        ORDER BY l.created_at DESC
        LIMIT ${limit}
