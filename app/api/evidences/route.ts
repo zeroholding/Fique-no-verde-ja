@@ -143,7 +143,26 @@ export async function POST(request: NextRequest) {
             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
            [date, fileName.substring(0, 250), fileUrl, fileType, fileSize, description, user.id]
         );
-        savedRecords.push(result.rows[0]);
+        const savedEvidence = result.rows[0];
+        savedRecords.push(savedEvidence);
+
+        // Auto-Migration garantida para logs (fallback)
+        try {
+           await query(`CREATE TABLE IF NOT EXISTS evidence_logs (id SERIAL PRIMARY KEY, evidence_id UUID NOT NULL, user_id VARCHAR(255) NOT NULL, action VARCHAR(50) NOT NULL, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP)`);
+           await query(`ALTER TABLE evidence_logs ADD COLUMN IF NOT EXISTS file_name VARCHAR(255)`);
+           await query(`ALTER TABLE evidence_logs ADD COLUMN IF NOT EXISTS file_type VARCHAR(100)`);
+           await query(`ALTER TABLE evidence_logs ADD COLUMN IF NOT EXISTS evidence_date DATE`);
+        } catch(e) {}
+
+        // Log the upload action
+        try {
+            await query(
+                `INSERT INTO evidence_logs (evidence_id, user_id, action, file_name, file_type, evidence_date) VALUES ($1, $2, $3, $4, $5, $6)`,
+                [savedEvidence.id, user.id, 'upload', savedEvidence.file_name, savedEvidence.file_type, savedEvidence.date]
+            );
+        } catch(e) {
+            console.error("Erro ao gerar log de upload:", e);
+        }
 
     } else {
         // Fallback p/ FormData legado

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useMemo, ChangeEvent, useRef } from "react";
-import { ChevronLeft, ChevronRight, UploadCloud, FileText, Trash2, Maximize2, X, File, Image as ImageIcon, Video, CalendarDays, Eye, Download, Edit2, Save, History, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, UploadCloud, FileText, Trash2, Maximize2, X, File, Image as ImageIcon, Video, CalendarDays, Eye, Download, Edit2, Save, History, Clock, ShieldAlert } from "lucide-react";
+import Link from "next/link";
 import { Modal } from "@/components/Modal";
 import { Button } from "@/components/Button";
 import { useToast } from "@/components/Toast";
@@ -402,17 +403,29 @@ export default function EvidencesCalendarPage() {
   return (
     <div className="px-4 py-6 sm:p-8 space-y-6 text-white min-h-[calc(100vh-100px)]">
       <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-3">
-            <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl">
-               <CalendarDays size={24} />
+        <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-3">
+                <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl">
+                   <CalendarDays size={24} />
+                </div>
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">Calendário de Evidências</h1>
+                    <p className="text-sm text-gray-400">
+                    Acompanhe e salve arquivos visuais (comprovantes, mídias) vinculados a cada dia.
+                    </p>
+                </div>
             </div>
-            <div>
-                <h1 className="text-2xl font-bold tracking-tight">Calendário de Evidências</h1>
-                <p className="text-sm text-gray-400">
-                Acompanhe e salve arquivos visuais (comprovantes, mídias) vinculados a cada dia.
-                </p>
-            </div>
+            {isAdmin && (
+                <Link href="/dashboard/evidencias/logs" className="hidden sm:flex items-center gap-2 px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 rounded-lg transition text-sm font-medium">
+                    <ShieldAlert size={16} /> Auditoria Completa
+                </Link>
+            )}
         </div>
+        {isAdmin && (
+            <Link href="/dashboard/evidencias/logs" className="sm:hidden flex w-max items-center gap-2 px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 rounded-lg transition text-sm font-medium mt-2">
+                <ShieldAlert size={16} /> Auditoria Completa
+            </Link>
+        )}
       </div>
 
       <div className="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-6 backdrop-blur">

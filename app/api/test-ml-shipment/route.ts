@@ -25,9 +25,30 @@ export async function GET() {
               headers: { Authorization: `Bearer ${token}` }
             });
             const ship = await shipReq.json();
-            results.push(ship);
+            
+            // New Endpoints:
+            const costsReq = await fetch(`https://api.mercadolibre.com/shipments/${order.shipping.id}/costs`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            const costs = costsReq.ok ? await costsReq.json() : { error: costsReq.status };
+
+            const billingReq = await fetch(`https://api.mercadolibre.com/shipments/${order.shipping.id}/billing_info`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            const billing_info = billingReq.ok ? await billingReq.json() : { error: billingReq.status };
+
+            results.push({
+               order_id: order.id,
+               shipping_id: order.shipping.id,
+               logistic_type: ship.logistic_type,
+               base_cost: ship.base_cost,
+               cost: ship.cost,
+               shipping_option_list_cost: ship.shipping_option?.list_cost,
+               shipping_option_cost: ship.shipping_option?.cost,
+               new_costs_endpoint: costs,
+               new_billing_endpoint: billing_info
+            });
             if (results.length >= 2) break;
-        }
     }
 
     return NextResponse.json(results);

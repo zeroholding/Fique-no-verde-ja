@@ -34,7 +34,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
        return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
 
-    // Garante que a tabela exista
+    // Garante que a tabela exista e tenha as novas colunas
     await query(`
       CREATE TABLE IF NOT EXISTS evidence_logs (
         id SERIAL PRIMARY KEY,
@@ -44,11 +44,33 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    
+    // Adiciona colunas novas de forma segura caso não existam (Auto-Migration)
+    try {
+       await query(`ALTER TABLE evidence_logs ADD COLUMN IF NOT EXISTS file_name VARCHAR(255);`);
+       await query(`ALTER TABLE evidence_logs ADD COLUMN IF NOT EXISTS file_type VARCHAR(100);`);
+       await query(`ALTER TABLE evidence_logs ADD COLUMN IF NOT EXISTS evidence_date DATE;`);
+    } catch(e) {
+       console.error("Erro ao rodar auto-migration do evidence_logs:", e);
+    }
+
+    // Fetch evidence details
+    let fileName = null;
+    let fileType = null;
+    let evidenceDate = null;
+    try {
+        const evRes = await query("SELECT file_name, file_type, date FROM evidences WHERE id = $1", [evidenceId]);
+        if (evRes.rowCount > 0) {
+            fileName = evRes.rows[0].file_name;
+            fileType = evRes.rows[0].file_type;
+            evidenceDate = evRes.rows[0].date;
+        }
+    } catch(e) {}
 
     // Insere o log
     await query(
-       `INSERT INTO evidence_logs (evidence_id, user_id, action) VALUES ($1, $2, $3)`,
-       [evidenceId, userId, action]
+       `INSERT INTO evidence_logs (evidence_id, user_id, action, file_name, file_type, evidence_date) VALUES ($1, $2, $3, $4, $5, $6)`,
+       [evidenceId, userId, action, fileName, fileType, evidenceDate]
     );
 
     return NextResponse.json({ success: true });

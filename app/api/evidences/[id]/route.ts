@@ -41,7 +41,7 @@ const authenticateAdmin = async (request: NextRequest) => {
 // DELETE /api/evidences/[id]
 export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
-        await authenticateAdmin(request);
+        const user = await authenticateAdmin(request);
         const { id } = await context.params;
 
         if (!id) {
@@ -49,7 +49,7 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
         }
 
         // Recupera o nome do arquivo/url antes de apagar
-        const selectResult = await query("SELECT file_url FROM evidences WHERE id = $1", [id]);
+        const selectResult = await query("SELECT file_url, file_name, file_type, date FROM evidences WHERE id = $1", [id]);
         
         if (selectResult.rowCount === 0) {
             return NextResponse.json({ error: "Evidência não encontrada" }, { status: 404 });
@@ -74,6 +74,14 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
         // Apaga do Banco
         const result = await query("DELETE FROM evidences WHERE id = $1 RETURNING id", [id]);
 
+        // Log the delete action (even though it's deleted, we have the file name and date in the log)
+        try {
+            await query(
+                `INSERT INTO evidence_logs (evidence_id, user_id, action, file_name, file_type, evidence_date) VALUES ($1, $2, $3, $4, $5, $6)`,
+                [id, user.id, 'delete', evidence.file_name, evidence.file_type, evidence.date]
+            );
+        } catch(e) {}
+
         return NextResponse.json({ success: true, id: result.rows[0].id });
 
     } catch(error: any) {
@@ -88,7 +96,7 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
 // PUT /api/evidences/[id]
 export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
-        await authenticateAdmin(request);
+        const user = await authenticateAdmin(request);
         const { id } = await context.params;
 
         if (!id) {
@@ -106,8 +114,18 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
         if (result.rowCount === 0) {
             return NextResponse.json({ error: "Evidência não encontrada" }, { status: 404 });
         }
+        
+        const evidence = result.rows[0];
 
-        return NextResponse.json({ success: true, evidence: result.rows[0] });
+        // Log the edit action
+        try {
+            await query(
+                `INSERT INTO evidence_logs (evidence_id, user_id, action, file_name, file_type, evidence_date) VALUES ($1, $2, $3, $4, $5, $6)`,
+                [evidence.id, user.id, 'edit', evidence.file_name, evidence.file_type, evidence.date]
+            );
+        } catch(e) {}
+
+        return NextResponse.json({ success: true, evidence });
 
     } catch(error: any) {
         console.error("Update evidence error:", error);
