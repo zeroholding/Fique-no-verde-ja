@@ -42,6 +42,14 @@ export async function GET(request: NextRequest) {
        whereClause += ` AND COALESCE(u.first_name || ' ' || u.last_name, 'Desconhecido') ILIKE $${params.length}`;
     }
 
+    // Auto-Migration garantida para a tabela evidence_logs
+    try {
+        await query(`CREATE TABLE IF NOT EXISTS evidence_logs (id SERIAL PRIMARY KEY, evidence_id UUID NOT NULL, user_id VARCHAR(255) NOT NULL, action VARCHAR(50) NOT NULL, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP)`);
+        await query(`ALTER TABLE evidence_logs ADD COLUMN IF NOT EXISTS file_name VARCHAR(255)`);
+        await query(`ALTER TABLE evidence_logs ADD COLUMN IF NOT EXISTS file_type VARCHAR(100)`);
+        await query(`ALTER TABLE evidence_logs ADD COLUMN IF NOT EXISTS evidence_date DATE`);
+    } catch(e) {}
+
     // Busca o log global
     const result = await query(`
        SELECT 
