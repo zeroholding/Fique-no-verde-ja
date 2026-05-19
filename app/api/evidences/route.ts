@@ -152,10 +152,10 @@ export async function POST(request: NextRequest) {
         try {
             await query(
                 `INSERT INTO evidence_logs (evidence_id, user_id, action, file_name, file_type, evidence_date) VALUES ($1, $2, $3, $4, $5, $6)`,
-                [savedEvidence.id, user.id, 'upload', savedEvidence.file_name, savedEvidence.file_type, savedEvidence.date]
+                [savedEvidence.id, String(user.id), 'upload', savedEvidence.file_name, savedEvidence.file_type, savedEvidence.date]
             );
         } catch(e) {
-            console.error("Erro ao gerar log de upload:", e);
+            console.error("Erro ao gerar log de upload (raw):", e);
         }
 
     } else {
@@ -181,11 +181,20 @@ export async function POST(request: NextRequest) {
               VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
              [date, file.name.substring(0, 250), fileUrl, file.type, file.size, description, user.id]
           );
-          savedRecords.push(result.rows[0]);
+          const savedEv = result.rows[0];
+          savedRecords.push(savedEv);
+
+          // Log do upload (path FormData)
+          try {
+            await query(
+              `INSERT INTO evidence_logs (evidence_id, user_id, action, file_name, file_type, evidence_date) VALUES ($1, $2, $3, $4, $5, $6)`,
+              [savedEv.id, String(user.id), 'upload', savedEv.file_name, savedEv.file_type, savedEv.date]
+            );
+          } catch(e) {
+            console.error("Erro ao gerar log de upload (formdata):", e);
+          }
         }
     }
-
-
 
     return NextResponse.json({ success: true, uploadedItems: savedRecords }, { status: 201 });
 
