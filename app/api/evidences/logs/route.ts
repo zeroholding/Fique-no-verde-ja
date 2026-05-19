@@ -18,7 +18,6 @@ async function authenticateAdmin(request: NextRequest) {
   return decoded.userId;
 }
 
-// Auto-migration silenciosa
 async function ensureTable() {
   try {
     await query(`CREATE TABLE IF NOT EXISTS evidence_logs (id SERIAL PRIMARY KEY, evidence_id UUID NOT NULL, user_id VARCHAR(255) NOT NULL, action VARCHAR(50) NOT NULL, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP)`);
@@ -28,8 +27,6 @@ async function ensureTable() {
   } catch(e) {}
 }
 
-// GET /api/evidences/logs  — lista logs globais
-// GET /api/evidences/logs?users=1 — retorna lista de usuários distintos que apareceram nos logs
 export async function GET(request: NextRequest) {
   try {
     await authenticateAdmin(request);
@@ -37,54 +34,111 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
 
-    // Modo especial: buscar lista de usuários distintos para o filtro
+    // Modo especial: lista de usuários distintos (logs + quem fez uploads)
     if (searchParams.get("users") === "1") {
       const usersRes = await query(`
-        SELECT DISTINCT
-          l.user_id,
-          COALESCE(u.first_name || ' ' || u.last_name, 'Desconhecido') as user_name
-        FROM evidence_logs l
-        LEFT JOIN users u ON l.user_id = u.id::text
+        SELECT DISTINCT user_id, user_name FROM (
+          SELECT l.user_id, COALESCE(u.first_name || ' ' || u.last_name, 'Desconhecido') as user_name
+          FROM evidence_logs l
+          LEFT JOIN users u ON l.user_id = u.id::text
+          UNION
+          SELECT ev.created_by_user_id::text as user_id,
+                 COALESCE(u.first_name || ' ' || u.last_name, 'Desconhecido') as user_name
+          FROM evidences ev
+          LEFT JOIN users u ON ev.created_by_user_id = u.id
+        ) combined
         ORDER BY user_name ASC
       `);
       return NextResponse.json({ users: usersRes.rows });
     }
 
-    const limit = parseInt(searchParams.get("limit") || "1000", 10);
-    const actionFilter = searchParams.get("action");
-    const userIdFilter = searchParams.get("userId"); // filtra por user_id exato
+    const limit = parseInt(searchParams.get("limit") || "2000", 10);
+    const actionFilter = searchParams.get("action") || ""; // ex: "upload", "view", ""
+    const userIdFilter = searchParams.get("userId") || "";
 
-    let whereClause = "WHERE 1=1";
-    const params: any[] = [];
+    // ----- PARTE 1: logs reais da tabela evidence_logs -----
+    // Só inclui se o filtro de ação for vazio OU diferente de "upload" (uploads reais da tabela)
+    // OU se o filtro for "upload" (também aparece lá caso já tenha sido logado)
+    const logParams: any[] = [];
+    let logWhere = "WHERE 1=1";
 
     if (actionFilter) {
-      params.push(actionFilter);
-      whereClause += ` AND l.action = $${params.length}`;
+      logParams.push(actionFilter);
+      logWhere += ` AND l.action = $${logParams.length}`;
     }
+    if (userIdFilter) {
+      logParams.push(userIdFilter);
+      logWhere += ` AND l.user_id = $${logParams.length}`;
+    }
+
+    // ----- PARTE 2: uploads históricos da tabela evidences -----
+    // Apenas exibidos quando o filtro de ação é "" (todos) ou "upload"
+    const showUploads = actionFilter === "" || actionFilter === "upload";
+
+    const evParams: any[] = [];
+    let evWhere = `WHERE NOT EXISTS (
+      SELECT 1 FROM evidence_logs ul
+      WHERE ul.evidence_id = ev.id AND ul.action = 'upload'
+    )`;
 
     if (userIdFilter) {
-      params.push(userIdFilter);
-      whereClause += ` AND l.user_id = $${params.length}`;
+      evParams.push(userIdFilter);
+      evWhere += ` AND ev.created_by_user_id::text = $${evParams.length}`;
     }
 
-    const result = await query(`
+    // Monta a query
+    const logsSql = `
       SELECT
-        l.id,
+        l.id::text                                             AS id,
         l.action,
         l.created_at,
         l.user_id,
-        COALESCE(u.first_name || ' ' || u.last_name, 'Desconhecido') as user_name,
-        l.evidence_id,
-        COALESCE(NULLIF(l.file_name, ''), e.file_name)     as file_name,
-        COALESCE(NULLIF(l.file_type, ''), e.file_type)     as file_type,
-        COALESCE(l.evidence_date, e.date)                   as evidence_date
+        COALESCE(u.first_name || ' ' || u.last_name, 'Desconhecido') AS user_name,
+        l.evidence_id::text                                   AS evidence_id,
+        COALESCE(NULLIF(l.file_name, ''), e.file_name)        AS file_name,
+        COALESCE(NULLIF(l.file_type, ''), e.file_type)        AS file_type,
+        COALESCE(l.evidence_date, e.date)                     AS evidence_date
       FROM evidence_logs l
-      LEFT JOIN users u ON l.user_id = u.id::text
-      LEFT JOIN evidences e ON l.evidence_id = e.id
-      ${whereClause}
-      ORDER BY l.created_at DESC
+      LEFT JOIN users     u  ON l.user_id      = u.id::text
+      LEFT JOIN evidences e  ON l.evidence_id  = e.id
+      ${logWhere}
+    `;
+
+    const uploadsSql = showUploads ? `
+      UNION ALL
+      SELECT
+        ('ev-' || ev.id::text)               AS id,
+        'upload'                              AS action,
+        ev.created_at,
+        ev.created_by_user_id::text           AS user_id,
+        COALESCE(pu.first_name || ' ' || pu.last_name, 'Desconhecido') AS user_name,
+        ev.id::text                           AS evidence_id,
+        ev.file_name,
+        ev.file_type,
+        ev.date                               AS evidence_date
+      FROM evidences ev
+      LEFT JOIN users pu ON ev.created_by_user_id = pu.id
+      ${evWhere}
+    ` : "";
+
+    // Para o UNION precisamos indexar os params da segunda query a partir do índice correto
+    // Como são queries separadas com params próprios não há conflito de $1/$2
+    // Mas pg não suporta múltiplos conjuntos de params — precisamos juntar
+    const allParams = [...logParams, ...evParams];
+
+    // Reindexar evParams dentro do uploadsSql (offset = logParams.length)
+    const reindexedUploadsSql = uploadsSql.replace(/\$(\d+)/g, (_, n) => `$${parseInt(n) + logParams.length}`);
+
+    const finalSql = `
+      SELECT * FROM (
+        ${logsSql}
+        ${reindexedUploadsSql}
+      ) combined
+      ORDER BY created_at DESC
       LIMIT ${limit}
-    `, params);
+    `;
+
+    const result = await query(finalSql, allParams);
 
     return NextResponse.json({ logs: result.rows });
   } catch (error: any) {
