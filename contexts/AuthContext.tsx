@@ -74,6 +74,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error("Erro ao carregar usuário:", error);
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+      // Chama o endpoint de logout para forçar a limpeza do cookie HttpOnly
+      try {
+        await fetch("/api/auth/logout", { method: "POST" });
+      } catch (e) {}
     } finally {
       setLoading(false);
     }
