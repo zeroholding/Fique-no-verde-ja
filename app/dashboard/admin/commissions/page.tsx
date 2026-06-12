@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useToast } from "@/components/Toast";
 import { Button } from "@/components/Button";
@@ -7,6 +9,8 @@ import { Select } from "@/components/Select";
 import { CommissionReportTemplate } from "@/components/CommissionReportTemplate";
 import { FileDown } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
+import { CommissionHolidays } from "@/components/admin/CommissionHolidays";
+import { CommissionSettlements } from "@/components/admin/CommissionSettlements";
 
 // --- Tipos e Componentes para Políticas ---
 
@@ -54,7 +58,7 @@ function CommissionsPolicies() {
     description: "",
   });
 
-  const fetchPolicies = async () => {
+  const fetchPolicies = useCallback(async () => {
     const token = localStorage.getItem("token");
     if (!token) return;
 
@@ -71,11 +75,11 @@ function CommissionsPolicies() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [error]);
 
   useEffect(() => {
     fetchPolicies();
-  }, []);
+  }, [fetchPolicies]);
 
   // Handlers
   const handleOpenCreate = () => {
@@ -792,7 +796,9 @@ function CommissionsStatement() {
 // --- Página Principal ---
 
 export default function AdminCommissionsPage() {
-  const [activeTab, setActiveTab] = useState<"statement" | "policies">("statement");
+  const [activeTab, setActiveTab] = useState<
+    "statement" | "policies" | "settlements" | "holidays"
+  >("statement");
 
   return (
     <div className="px-4 py-6 sm:p-8 space-y-6 text-white overflow-x-hidden">
@@ -828,7 +834,33 @@ export default function AdminCommissionsPage() {
         </div>
       </div>
 
-      {activeTab === "statement" ? <CommissionsStatement /> : <CommissionsPolicies />}
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => setActiveTab("settlements")}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            activeTab === "settlements"
+              ? "bg-blue-500 text-white shadow-lg shadow-blue-500/20"
+              : "border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10"
+          }`}
+        >
+          Ajustes/Pagamentos
+        </button>
+        <button
+          onClick={() => setActiveTab("holidays")}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            activeTab === "holidays"
+              ? "bg-blue-500 text-white shadow-lg shadow-blue-500/20"
+              : "border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10"
+          }`}
+        >
+          Feriados
+        </button>
+      </div>
+
+      {activeTab === "statement" && <CommissionsStatement />}
+      {activeTab === "policies" && <CommissionsPolicies />}
+      {activeTab === "settlements" && <CommissionSettlements />}
+      {activeTab === "holidays" && <CommissionHolidays />}
     </div>
   );
 }

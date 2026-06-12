@@ -16,6 +16,39 @@ type AuthenticatedUser = {
   is_admin: boolean;
 };
 
+type DbError = Error & {
+  code?: string;
+  detail?: string;
+  constraint?: string;
+  table?: string;
+};
+
+type SaleItemRow = {
+  id: string;
+  product_id: string | null;
+  product_name: string;
+  quantity: number;
+  unit_price: string | number;
+  discount_type: string | null;
+  discount_value: string | number | null;
+  subtotal: string | number;
+  discount_amount: string | number;
+  total: string | number;
+  created_at: string;
+  service_id?: string | null;
+};
+
+type SaleRefundRow = {
+  id: string;
+  amount: string | number;
+  reason: string | null;
+  created_by: string | null;
+  created_at: string;
+};
+
+const getErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : "";
+
 const getTokenFromRequest = (request: NextRequest) => {
   const cookieToken = request.cookies.get("token")?.value;
   if (cookieToken) {
@@ -99,8 +132,8 @@ export async function GET(
          WHERE s.id = $1`,
         [saleId]
       );
-    } catch (err: any) {
-      const msg = err?.message || "";
+    } catch (err) {
+      const msg = getErrorMessage(err);
       if (msg.includes("refund_total") || msg.includes("sale_refunds")) {
         hasRefundSupport = false;
         saleResult = await query(
@@ -173,7 +206,7 @@ export async function GET(
       [saleId]
     );
 
-    let refundsResult: any = { rows: [] };
+    let refundsResult: { rows: SaleRefundRow[] } = { rows: [] };
     if (hasRefundSupport) {
       try {
         refundsResult = await query(
@@ -188,8 +221,8 @@ export async function GET(
            ORDER BY created_at DESC`,
           [saleId]
         );
-      } catch (err: any) {
-        const msg = err?.message || "";
+      } catch (err) {
+        const msg = getErrorMessage(err);
         if (msg.includes("sale_refunds")) {
           hasRefundSupport = false;
           refundsResult = { rows: [] };
@@ -222,23 +255,23 @@ export async function GET(
       cancelledAt: sale.cancelled_at,
       createdAt: sale.created_at,
       updatedAt: sale.updated_at,
-      items: itemsResult.rows.map((item: any) => ({
+      items: itemsResult.rows.map((item: SaleItemRow) => ({
         id: item.id,
         productId: item.product_id,
         productName: item.product_name,
         quantity: item.quantity,
-        unitPrice: parseFloat(item.unit_price),
+        unitPrice: Number(item.unit_price),
         discountType: item.discount_type,
-        discountValue: parseFloat(item.discount_value || 0),
-        subtotal: parseFloat(item.subtotal),
-        discountAmount: parseFloat(item.discount_amount),
-        total: parseFloat(item.total),
+        discountValue: Number(item.discount_value || 0),
+        subtotal: Number(item.subtotal),
+        discountAmount: Number(item.discount_amount),
+        total: Number(item.total),
         createdAt: item.created_at,
       })),
       refunds: hasRefundSupport
-        ? refundsResult.rows.map((ref: any) => ({
+        ? refundsResult.rows.map((ref: SaleRefundRow) => ({
             id: ref.id,
-            amount: parseFloat(ref.amount),
+            amount: Number(ref.amount),
             reason: ref.reason,
             createdBy: ref.created_by,
             createdAt: ref.created_at,
@@ -292,9 +325,28 @@ export async function DELETE(
 
       const saleData = saleResult.rows[0];
 
+      const paidCommissionResult = await query(
+        `SELECT 1
+         FROM commissions
+         WHERE sale_id = $1
+           AND status = 'pago'
+         LIMIT 1`,
+        [saleId],
+      );
+      if (paidCommissionResult.rowCount > 0) {
+        await query("ROLLBACK");
+        return NextResponse.json(
+          {
+            error:
+              "Venda com comissao paga nao pode ser excluida. Use o cancelamento para gerar o ajuste financeiro.",
+          },
+          { status: 409 },
+        );
+      }
+
       // 1b. Get Items (Simple Query)
       const itemsResult = await query(
-        `SELECT si.quantity, si.product_id 
+        `SELECT si.quantity, si.product_id, si.service_id
          FROM sale_items si
          WHERE si.sale_id = $1`,
         [saleId]
@@ -330,7 +382,7 @@ export async function DELETE(
           
           for (const item of items) {
               // Safe check as service_id might be missing from query now
-              const serviceId = (item as any).service_id;
+              const serviceId = item.service_id;
               if (serviceId) {
                   const qty = Number(item.quantity || 0);
                   creditsByService[serviceId] = (creditsByService[serviceId] || 0) + qty;
@@ -399,21 +451,28 @@ export async function DELETE(
       }
 
       // 3. Delete Dependencies (Speculative Cleanup for hidden constraints)
-      const potentialTables = ['financial_transactions', 'notifications', 'invoices', 'commission_payments', 'logs'];
-      for (const table of potentialTables) {
-          try {
-              // Try to delete if table exists (blind shot)
-              await query(`DELETE FROM ${table} WHERE sale_id = $1`, [saleId]);
-          } catch (ignored) {
-              // Table likely doesn't exist or no column sale_id
-          }
+      const potentialTables = ['financial_transactions', 'notifications', 'invoices', 'logs'];
+      const dependentTables = await query(
+        `SELECT table_name
+         FROM information_schema.columns
+         WHERE table_schema = 'public'
+           AND column_name = 'sale_id'
+           AND table_name = ANY($1::text[])`,
+        [potentialTables],
+      );
+      for (const row of dependentTables.rows) {
+          const table = String(row.table_name);
+          await query(`DELETE FROM "${table}" WHERE sale_id = $1`, [saleId]);
       }
 
       await query("DELETE FROM commissions WHERE sale_id = $1", [saleId]);
-      
-      try {
+
+      const refundsTable = await query(
+        `SELECT to_regclass('public.sale_refunds') AS table_name`,
+      );
+      if (refundsTable.rows[0]?.table_name) {
         await query("DELETE FROM sale_refunds WHERE sale_id = $1", [saleId]);
-      } catch (e) { /* ignore */ }
+      }
       
       await query("DELETE FROM sale_items WHERE sale_id = $1", [saleId]);
 
@@ -426,22 +485,23 @@ export async function DELETE(
         { message: "Venda excluida permanentemente" },
         { status: 200 }
       );
-    } catch (error: any) {
+    } catch (error) {
       await query("ROLLBACK");
+      const dbError = error as DbError;
       console.error("DELETE TRANSACTION ERROR:", {
-          message: error.message,
-          code: error.code,
-          detail: error.detail,
-          constraint: error.constraint,
-          stack: error.stack
+          message: dbError.message,
+          code: dbError.code,
+          detail: dbError.detail,
+          constraint: dbError.constraint,
+          stack: dbError.stack
       });
 
       // Construct a detailed error message for the frontend
-      const message = error.message || "Erro ao excluir venda";
+      const message = dbError.message || "Erro ao excluir venda";
       const details = [
-          error.detail,
-          error.constraint ? `Constraint: ${error.constraint}` : null,
-          error.table ? `Table: ${error.table}` : null
+          dbError.detail,
+          dbError.constraint ? `Constraint: ${dbError.constraint}` : null,
+          dbError.table ? `Table: ${dbError.table}` : null
       ].filter(Boolean).join(" | ");
 
       const status = message.includes("autenticacao") ? 401 : 500;

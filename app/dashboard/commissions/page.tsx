@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useToast } from "@/components/Toast";
 import { Button } from "@/components/Button";
@@ -21,6 +23,7 @@ type Commission = {
   saleNetTotal: number | null;
   refundTotal: number | null;
   dayType: "weekday" | "non_working";
+  holidayName: string | null;
   clientName: string;
   productName: string;
   itemQuantity: number | null;
@@ -372,6 +375,9 @@ export default function CommissionsPage() {
                   <tr key={comm.id} className="hover:bg-white/5 transition-colors">
                     <td className="px-6 py-3 text-gray-200">
                       {formatDateTime(comm.referenceDate)}
+                      {comm.holidayName && (
+                        <p className="text-xs text-orange-300">{comm.holidayName}</p>
+                      )}
                     </td>
                     <td className="px-6 py-3">
                       <a

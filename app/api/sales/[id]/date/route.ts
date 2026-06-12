@@ -1,191 +1,261 @@
-
 import { NextRequest, NextResponse } from "next/server";
-import { query } from "@/lib/db";
-import { getTokenFromRequest, verifyToken } from "@/lib/auth";
+import { pool } from "@/lib/db";
+import {
+  isAccountingIntegrityError,
+  isCompetenceClosed,
+  isValidDate,
+  roundMoney,
+} from "@/lib/commission-accounting";
+import { getAuthErrorStatus, requireAdmin } from "@/lib/server-auth";
 
-// PUT /api/sales/[id]/date
 // PUT /api/sales/[id]/date
 export async function PUT(
   request: NextRequest,
-  props: { params: Promise<{ id: string }> }
+  props: { params: Promise<{ id: string }> },
 ) {
-  const params = await props.params;
+  const client = await pool.connect();
+
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    
-    const payload = await verifyToken(token);
-    if (!payload) {
-        return NextResponse.json({ error: "Invalid Token" }, { status: 401 });
-    }
-
-    // 1. Verify Admin
-    if (!payload.isAdmin) {
-      return NextResponse.json(
-        { error: "Apenas administradores podem alterar a data da venda" },
-        { status: 403 }
-      );
-    }
-
-    const saleId = params.id;
+    await requireAdmin(request);
+    const { id: saleId } = await props.params;
     const body = await request.json();
-    const { saleDate } = body;
+    const saleDate = String(body.saleDate || "");
 
-    if (!saleDate) {
+    if (!isValidDate(saleDate)) {
+      return NextResponse.json({ error: "Data invalida" }, { status: 400 });
+    }
+
+    await client.query("BEGIN");
+    const saleResult = await client.query(
+      `SELECT id, attendant_id, sale_date, status
+       FROM sales
+       WHERE id = $1
+       FOR UPDATE`,
+      [saleId],
+    );
+
+    if (saleResult.rowCount === 0) {
+      await client.query("ROLLBACK");
       return NextResponse.json(
-        { error: "Nova data é obrigatória" },
-        { status: 400 }
+        { error: "Venda nao encontrada" },
+        { status: 404 },
       );
     }
 
-    // 1.5 Fetch current sale to preserve time
-    const originalResult = await query("SELECT sale_date FROM sales WHERE id = $1", [saleId]);
-    const originalDate = originalResult.rows[0]?.sale_date ? new Date(originalResult.rows[0].sale_date) : new Date();
-    
-    const [y, m, d] = saleDate.split("-").map(Number);
-    const newDate = new Date(originalDate);
-    newDate.setFullYear(y, m - 1, d);
-
-    if (isNaN(newDate.getTime())) {
+    const sale = saleResult.rows[0];
+    if (sale.status === "cancelada") {
+      await client.query("ROLLBACK");
       return NextResponse.json(
-        { error: "Data inválida" },
-        { status: 400 }
+        { error: "Nao e possivel alterar a data de uma venda cancelada" },
+        { status: 400 },
       );
     }
 
-    console.log(`[UPDATE SALE DATE] Sale: ${saleId}, New Date: ${saleDate}, User: ${payload.userId}`);
+    const protectedHistory = await client.query(
+      `SELECT
+         EXISTS (
+           SELECT 1
+           FROM commissions
+           WHERE sale_id = $1
+             AND status = 'pago'
+         ) AS has_paid_commission,
+         EXISTS (
+           SELECT 1
+           FROM commission_adjustments
+           WHERE sale_id = $1
+             AND status != 'cancelled'
+         ) AS has_adjustment`,
+      [saleId],
+    );
 
-    // Start Transaction
-    await query("BEGIN");
-
-    try {
-      // 2. Update Sale Date
-      await query(
-        `UPDATE sales SET sale_date = $1 WHERE id = $2`,
-        [newDate, saleId]
+    if (
+      protectedHistory.rows[0]?.has_paid_commission ||
+      protectedHistory.rows[0]?.has_adjustment
+    ) {
+      await client.query("ROLLBACK");
+      return NextResponse.json(
+        {
+          error:
+            "A data nao pode ser alterada porque a venda possui historico de comissao paga ou ajuste",
+        },
+        { status: 409 },
       );
+    }
 
-      // 3. Delete old commissions for this sale
-      await query(
-        `DELETE FROM commissions WHERE sale_id = $1`,
-        [saleId]
+    if (
+      await isCompetenceClosed(
+        client,
+        String(sale.attendant_id),
+        `${saleDate}T12:00:00-03:00`,
+      )
+    ) {
+      await client.query("ROLLBACK");
+      return NextResponse.json(
+        {
+          error:
+            "A data escolhida pertence a uma competencia de comissao ja paga",
+        },
+        { status: 409 },
       );
+    }
 
-      // 4. Recalculate Commissions
-      // Fetch Sale Items
-      const salesResult = await query(
-        `SELECT 
-            s.id as sale_id, 
-            s.attendant_id,
-            s.created_at, 
-            si.id as item_id,
-            si.product_id,
-            si.quantity,
-            si.sale_type,
-            si.total,
-            si.subtotal
-         FROM sales s
-         JOIN sale_items si ON s.id = si.sale_id
-         WHERE s.id = $1
-           AND si.sale_type IN ('01', '03')
-           AND s.status != 'cancelada'
-        `,
-        [saleId]
+    const updatedSale = await client.query(
+      `UPDATE sales
+       SET sale_date = (
+         $1::date +
+         (sale_date AT TIME ZONE 'America/Sao_Paulo')::time
+       ) AT TIME ZONE 'America/Sao_Paulo',
+       updated_at = CURRENT_TIMESTAMP
+       WHERE id = $2
+       RETURNING sale_date`,
+      [saleDate, saleId],
+    );
+    const newSaleDate = updatedSale.rows[0].sale_date;
+
+    await client.query(
+      `DELETE FROM commissions
+       WHERE sale_id = $1
+         AND status != 'pago'`,
+      [saleId],
+    );
+
+    const itemsResult = await client.query(
+      `SELECT
+         s.attendant_id,
+         si.id AS item_id,
+         si.product_id,
+         si.quantity,
+         si.sale_type,
+         si.total,
+         si.subtotal
+       FROM sales s
+       JOIN sale_items si ON si.sale_id = s.id
+       WHERE s.id = $1
+         AND si.sale_type IN ('01', '03')`,
+      [saleId],
+    );
+
+    let totalCommission = 0;
+    let firstPolicyId: string | null = null;
+
+    for (const item of itemsResult.rows) {
+      const baseAmount = Number(
+        item.sale_type === "03" ? item.subtotal : item.total,
       );
+      const policyResult = await client.query(
+        `SELECT get_applicable_commission_policy(
+           $1,
+           $2,
+           $3::date,
+           $4
+         ) AS policy_id`,
+        [
+          item.attendant_id,
+          item.product_id || null,
+          saleDate,
+          item.sale_type,
+        ],
+      );
+      const policyId = policyResult.rows[0]?.policy_id || null;
+      let commissionType = "percentage";
+      let commissionRate = 5;
+      let commissionAmount = baseAmount * 0.05;
 
-      console.log(`[UPDATE SALE DATE] Recalculating ${salesResult.rows.length} items.`);
-
-      let totalCommission = 0; // [NEW] Accumulator
-
-      for (const item of salesResult.rows) {
-          const attendantId = item.attendant_id;
-          // Determine Base Value
-          // Type 03 (Consume) => Subtotal (Gross)
-          // Type 01 (Common) => Total (Net)
-          const baseValue = parseFloat(item.sale_type === '03' ? item.subtotal : item.total);
-
-          let itemCommission = 0;
-          let itemCommissionType = 'percentage';
-          let itemCommissionRate = 5.00; // Default fallback
-
-          // Policy Lookup
-          const policyResult = await query(
-              `SELECT get_applicable_commission_policy($1, $2, $3, $4) as policy_id`,
-              [attendantId, item.product_id || null, newDate, item.sale_type] // USE NEW DATE
-          );
-
-          if (policyResult.rows.length > 0 && policyResult.rows[0].policy_id) {
-              const policyId = policyResult.rows[0].policy_id;
-              const policyDetails = await query(`SELECT * FROM commission_policies WHERE id = $1`, [policyId]);
-              
-              if (policyDetails.rows.length > 0) {
-                  const p = policyDetails.rows[0];
-                  // Handling commission type variants (type vs commission_type)
-                  itemCommissionType = p.type || p.commission_type || 'percentage'; 
-                  itemCommissionRate = parseFloat(p.value || p.commission_value || 0);
-
-                  if (itemCommissionType === 'fixed_per_unit') {
-                      itemCommission = itemCommissionRate * item.quantity;
-                  } else {
-                      itemCommission = baseValue * (itemCommissionRate / 100);
-                  }
-              }
-          } else {
-              // Fallback 5%
-              itemCommission = baseValue * 0.05;
-          }
-
-          // [NEW] Accumulate
-          totalCommission += itemCommission;
-
-          // INSERT New Commission
-          await query(
-              `INSERT INTO commissions (
-                  sale_id,
-                  sale_item_id,
-                  user_id,
-                  base_amount,
-                  commission_type,
-                  commission_rate,
-                  commission_amount,
-                  reference_date,
-                  status,
-                  created_at 
-              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'a_pagar', NOW())`,
-              [
-                  saleId,
-                  item.item_id,
-                  attendantId,
-                  baseValue,
-                  itemCommissionType,
-                  itemCommissionRate,
-                  itemCommission,
-                  newDate // Use new date
-              ]
-          );
+      if (policyId) {
+        const policyDetails = await client.query(
+          `SELECT type, value
+           FROM commission_policies
+           WHERE id = $1`,
+          [policyId],
+        );
+        const policy = policyDetails.rows[0];
+        if (policy) {
+          commissionType = policy.type;
+          commissionRate = Number(policy.value);
+          commissionAmount =
+            policy.type === "fixed_per_unit"
+              ? Number(item.quantity || 0) * commissionRate
+              : baseAmount * (commissionRate / 100);
+          firstPolicyId = firstPolicyId || String(policyId);
+        }
       }
 
-      // [NEW] Update Sale Commission Total
-      await query(
-          `UPDATE sales SET commission_amount = $1 WHERE id = $2`,
-          [totalCommission, saleId]
+      commissionAmount = roundMoney(commissionAmount);
+      totalCommission = roundMoney(totalCommission + commissionAmount);
+
+      await client.query(
+        `INSERT INTO commissions (
+           sale_id,
+           sale_item_id,
+           user_id,
+           base_amount,
+           commission_type,
+           commission_rate,
+           commission_amount,
+           reference_date,
+           status,
+           commission_policy_id
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'a_pagar', $9)`,
+        [
+          saleId,
+          item.item_id,
+          item.attendant_id,
+          roundMoney(baseAmount),
+          commissionType,
+          commissionRate,
+          commissionAmount,
+          newSaleDate,
+          policyId,
+        ],
       );
-
-      await query("COMMIT");
-      return NextResponse.json({ success: true, message: "Date updated and commissions recalculated" });
-
-    } catch (err) {
-      await query("ROLLBACK");
-      throw err;
     }
 
-  } catch (error: any) {
-    console.error("[UPDATE SALE DATE ERROR]", error);
-    return NextResponse.json(
-      { error: error.message || "Erro ao atualizar data" },
-      { status: 500 }
+    await client.query(
+      `UPDATE sales
+       SET commission_amount = $1,
+           commission_policy_id = $2,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $3`,
+      [totalCommission, firstPolicyId, saleId],
     );
+
+    await client.query("COMMIT");
+    return NextResponse.json({
+      success: true,
+      message: "Data atualizada e comissoes pendentes recalculadas",
+      commissionAmount: totalCommission,
+    });
+  } catch (error) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      // Ignore rollback errors.
+    }
+
+    const message =
+      error instanceof Error ? error.message : "Erro ao atualizar data";
+    const missingMigration =
+      message.includes("commission_adjustments") ||
+      message.includes("commission_payments") ||
+      message.includes("commission_policy_id") ||
+      message.includes("does not exist");
+    return NextResponse.json(
+      {
+        error: missingMigration
+          ? "A migracao 017 de comissoes ainda nao foi aplicada"
+          : isAccountingIntegrityError(error)
+            ? "A operacao alteraria uma competencia fechada ou comissao paga"
+            : message,
+      },
+      {
+        status: missingMigration
+          ? 503
+          : isAccountingIntegrityError(error)
+            ? 409
+            : getAuthErrorStatus(error),
+      },
+    );
+  } finally {
+    client.release();
   }
 }

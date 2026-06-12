@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Modal } from "@/components/Modal";
 import { Button } from "@/components/Button";
@@ -141,7 +143,7 @@ export default function SalesPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [clientPackages, setClientPackages] = useState<ClientPackage[]>([]);
   const [loading, setLoading] = useState(false);
-  const [isRegistering, setIsRegistering] = useState(false);
+  const [, setIsRegistering] = useState(false);
   const [showClientList, setShowClientList] = useState(false);
   const [clientSearch, setClientSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -640,7 +642,7 @@ export default function SalesPage() {
         error(data.error || "Cupom inválido");
         setAppliedCoupon(null);
       }
-    } catch (err) {
+    } catch {
       error("Erro ao validar cupom");
     } finally {
       setValidatingCoupon(false);
@@ -665,11 +667,6 @@ export default function SalesPage() {
 
   const carriers = useMemo(
     () => clients.filter((client) => client.clientType === "package"),
-    [clients]
-  );
-
-  const commonClients = useMemo(
-    () => clients.filter((client) => client.clientType !== "package"),
     [clients]
   );
 
@@ -912,7 +909,7 @@ export default function SalesPage() {
       // Calculate the specific coupon discount amount for the payload
       let couponDiscountAmountForPayload = 0;
       if (formData.saleType === "01" && appliedCoupon) {
-         let subtotalAfterManualDiscount = Math.max(0, calculatedSubtotal - (formData.discountType === "percentage" ? calculatedSubtotal * (formData.discountValue / 100) : formData.discountValue));
+         const subtotalAfterManualDiscount = Math.max(0, calculatedSubtotal - (formData.discountType === "percentage" ? calculatedSubtotal * (formData.discountValue / 100) : formData.discountValue));
          if (appliedCoupon.type === 'percent') {
             couponDiscountAmountForPayload = subtotalAfterManualDiscount * (appliedCoupon.value / 100);
          } else {
@@ -1236,7 +1233,7 @@ export default function SalesPage() {
       } else {
         error(data.error || "Erro ao cadastrar.");
       }
-    } catch (err) {
+    } catch {
       error("Erro ao conectar.");
     } finally {
       setIsRegistering(false);
@@ -1247,7 +1244,7 @@ export default function SalesPage() {
     if (!editingDateSale || !newSaleDate) return;
     
     // Safety check with user
-    if (!confirm(`Tem certeza? Alterar DATA de ${formatDateTime(editingDateSale.saleDate)} para ${formatDateTime(newSaleDate)} vai recalcular comissões!`)) return;
+    if (!confirm(`Tem certeza? Alterar DATA de ${formatDateTime(editingDateSale.saleDate)} para ${formatDateTime(newSaleDate)} vai recalcular apenas comissoes pendentes. Vendas com comissao paga nao podem ter a data alterada.`)) return;
 
     setUpdatingDate(true);
     try {
@@ -1543,7 +1540,6 @@ export default function SalesPage() {
         ) : (
           <div className="divide-y divide-white/10">
             {paginatedSales.map((sale) => {
-              const statusColor = statusColors[sale.status];
               return (
                 <div
                   key={sale.id}
@@ -2738,7 +2734,9 @@ export default function SalesPage() {
       >
         <div className="space-y-4">
              <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-200 text-sm">
-                ⚠️ Ao alterar a data, as comissões desta venda serão <strong>apagadas e recalculadas</strong> com base nas regras do novo dia (ex: dia útil vs fim de semana).
+                As comissões pendentes serão <strong>recalculadas</strong> com
+                base nas regras do novo dia. Vendas com comissão paga ou ajuste
+                registrado não podem ter a data alterada.
              </div>
              
              <div className="space-y-2">

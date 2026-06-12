@@ -5,13 +5,17 @@ import { query } from "@/lib/db";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-this";
 
+type DecodedToken = {
+  userId: string;
+};
+
 export async function POST(request: NextRequest) {
   try {
     // 1. Auth Check
     const token = request.headers.get("authorization")?.split(" ")[1];
     if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const decoded = jwt.verify(token, JWT_SECRET) as DecodedToken;
     if (!decoded.userId) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
 
     // Verify Admin
@@ -99,8 +103,9 @@ export async function POST(request: NextRequest) {
                     commission_rate,
                     commission_amount,
                     reference_date,
-                    status
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'a_pagar')`,
+                    status,
+                    commission_policy_id
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'a_pagar', $9)`,
                 [
                     item.sale_id,
                     item.item_id,
@@ -109,7 +114,8 @@ export async function POST(request: NextRequest) {
                     itemCommissionType,
                     itemCommissionRate,
                     itemCommission,
-                    item.sale_date
+                    item.sale_date,
+                    policyResult.rows[0]?.policy_id || null
                 ]
             );
             results.created++;
@@ -126,8 +132,9 @@ export async function POST(request: NextRequest) {
         remaining: itemsToProcess.length === 100 ? "More items might exist" : "All done"
     });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error("Regeneration API Error:", error);
-    return NextResponse.json({ error: error.message || "Internal Error" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Internal Error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

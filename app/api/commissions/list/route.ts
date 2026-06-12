@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
-import { query, supabaseAdmin } from "@/lib/db";
+import { query } from "@/lib/db";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-this";
 
@@ -13,6 +13,45 @@ type AuthenticatedUser = {
   first_name: string;
   last_name: string;
   is_admin: boolean;
+};
+
+type UserData = {
+  first_name: string;
+  last_name: string;
+};
+
+type ClientData = {
+  name: string;
+};
+
+type SaleData = {
+  sale_number: number | null;
+  subtotal: number | string | null;
+  total_discount: number | string | null;
+  total: number | string | null;
+  refund_total: number | string | null;
+  clients: ClientData | ClientData[] | null;
+};
+
+type SaleItemData = {
+  product_name: string | null;
+  quantity: number | string | null;
+  sale_type: string | null;
+};
+
+type CommissionQueryRow = {
+  id: string;
+  reference_date: string;
+  commission_amount: number | string;
+  status: string;
+  created_at: string;
+  user_id: string;
+  sale_id: string;
+  holiday_name: string | null;
+  day_type: "weekday" | "non_working";
+  users: UserData | UserData[];
+  sales: SaleData | SaleData[];
+  sale_items: SaleItemData | SaleItemData[] | null;
 };
 
 const getTokenFromRequest = (request: NextRequest) => {
@@ -78,8 +117,8 @@ export async function GET(request: NextRequest) {
 
     // Usar Supabase para buscar comissões com relacionamentos
     // Implementação com SQL raw para substituir o Supabase query builder que não suporta JOINs no mock
-    let whereClauses: string[] = ["1=1"];
-    let params: any[] = [];
+    const whereClauses: string[] = ["1=1"];
+    const params: string[] = [];
     let paramIndex = 1;
 
     let sql = `
@@ -92,6 +131,15 @@ export async function GET(request: NextRequest) {
         c.user_id,
         c.sale_id,
         c.sale_item_id,
+        h.name as holiday_name,
+        CASE
+          WHEN h.id IS NOT NULL
+            OR EXTRACT(
+              DOW FROM c.reference_date AT TIME ZONE 'America/Sao_Paulo'
+            ) IN (0, 6)
+          THEN 'non_working'
+          ELSE 'weekday'
+        END AS day_type,
         json_build_object(
           'id', u.id, 
           'first_name', u.first_name, 
@@ -117,6 +165,10 @@ export async function GET(request: NextRequest) {
       INNER JOIN sales s ON c.sale_id = s.id
       INNER JOIN clients cl ON s.client_id = cl.id
       INNER JOIN sale_items si ON c.sale_item_id = si.id
+      LEFT JOIN holidays h
+        ON h.date =
+          (c.reference_date AT TIME ZONE 'America/Sao_Paulo')::date
+       AND h.is_active = true
     `;
 
     // GARANTIA: Nunca mostrar tipo 02 (Pacote)
@@ -154,17 +206,13 @@ export async function GET(request: NextRequest) {
     sql += ` WHERE ${whereClauses.join(' AND ')}`;
     sql += ` ORDER BY c.reference_date DESC, c.created_at DESC`;
 
-    const { rows: commissionsData } = await query(sql, params);
+    const { rows: commissionsData } = await query<CommissionQueryRow>(sql, params);
     // Erro de comissao removido pois query() lança erro se falhar
 
     console.log("[COMMISSIONS LIST] Commissions fetched:", commissionsData?.length || 0);
 
     // Processar dados e calcular day_type
-    const commissions = (commissionsData || []).map((row: any) => {
-      const refDate = new Date(row.reference_date);
-      const dayOfWeek = refDate.getDay();
-      const isDayType = dayOfWeek === 0 || dayOfWeek === 6 ? "non_working" : "weekday";
-
+    const commissions = (commissionsData || []).map((row) => {
       const userData = Array.isArray(row.users) ? row.users[0] : row.users;
       const saleData = Array.isArray(row.sales) ? row.sales[0] : row.sales;
       const clientData = saleData?.clients ? (Array.isArray(saleData.clients) ? saleData.clients[0] : saleData.clients) : null;
@@ -186,9 +234,10 @@ export async function GET(request: NextRequest) {
         refundTotal: saleData?.refund_total !== undefined ? Number(saleData.refund_total) : null,
         saleNetTotal:
           saleData?.total !== undefined
-            ? Number(saleData.total) - Number(saleData.refund_total ?? 0)
+            ? Number(saleData.total)
             : null,
-        dayType: isDayType,
+        dayType: row.day_type,
+        holidayName: row.holiday_name || null,
         clientName: clientData?.name || "N/A",
         productName: saleItemData?.product_name || "N/A",
         itemQuantity: saleItemData?.quantity !== undefined ? Number(saleItemData.quantity) : null,
@@ -198,7 +247,7 @@ export async function GET(request: NextRequest) {
 
     // Filtrar por dayType se especificado (não é possível filtrar diretamente no SQL)
     const filteredCommissions = dayType
-      ? commissions.filter((c: any) => c.dayType === dayType)
+      ? commissions.filter((commission) => commission.dayType === dayType)
       : commissions;
 
     console.log("[COMMISSIONS LIST] Returning commissions:", filteredCommissions.length);

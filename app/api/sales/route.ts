@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { query } from "@/lib/db";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-this";
@@ -239,7 +240,6 @@ export async function GET(request: NextRequest) {
     const saleIds = sales.rows.map((s: any) => s.id);
     let allItems: any[] = [];
     let allRefunds: any[] = [];
-    let allCommissions: any[] = [];
 
     if (saleIds.length > 0) {
       // 1. Batch Fetch Items
@@ -292,19 +292,6 @@ export async function GET(request: NextRequest) {
         }
       }
       
-      // 3. Batch Fetch Commissions
-      try {
-        const commissionResult = await query(
-          `SELECT sale_id, commission_amount 
-           FROM commissions 
-           WHERE sale_id = ANY($1::uuid[])`,
-          [saleIds]
-        );
-        allCommissions = commissionResult.rows;
-      } catch (e) {
-          console.error("Error fetching commissions:", e);
-          allCommissions = [];
-      }
     }
 
     // Grouping Helpers
@@ -320,18 +307,9 @@ export async function GET(request: NextRequest) {
       return acc;
     }, {});
     
-    // Group Commissions
-    const commissionsBySaleId = allCommissions.reduce((acc: any, comm: any) => {
-        if (!acc[comm.sale_id]) acc[comm.sale_id] = 0;
-        acc[comm.sale_id] += parseFloat(comm.commission_amount || 0);
-        return acc;
-    }, {});
-
     const formattedSales = sales.rows.map((sale: any) => {
       const items = itemsBySaleId[sale.id] || [];
       const refunds = refundsBySaleId[sale.id] || [];
-      const commissionVal = commissionsBySaleId[sale.id] || 0;
-
       return {
           id: sale.id,
           clientId: sale.client_id,
@@ -805,8 +783,6 @@ export async function POST(request: NextRequest) {
       const expectedCouponDiscount = couponDiscountAmount || 0;
       const finalTotal = totalSubtotal - totalDiscountAmount - generalDiscountAmount - expectedCouponDiscount;
 
-      const totalDiscountGiven = totalDiscountAmount + generalDiscountAmount + expectedCouponDiscount;
-
       const netAmount = finalTotal; // Valor líquido (após descontos)
 
 
@@ -851,7 +827,7 @@ export async function POST(request: NextRequest) {
             // Buscar policy via DB
             const policyResult = await query(
               `SELECT get_applicable_commission_policy($1, $2, $3, $4) as policy_id`,
-              [user.id, item.product_id || null, saleDate, itemSaleType]
+              [finalAttendantId, item.product_id || null, saleDate, itemSaleType]
             );
 
             if (policyResult.rows.length > 0 && policyResult.rows[0].policy_id) {
@@ -889,8 +865,9 @@ export async function POST(request: NextRequest) {
                 commission_rate,
                 commission_amount,
                 reference_date,
-                status
-              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'a_pagar')`,
+                status,
+                commission_policy_id
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'a_pagar', $9)`,
               [
                 saleId,
                 item.id,
@@ -899,13 +876,19 @@ export async function POST(request: NextRequest) {
                 itemCommissionType,
                 itemCommissionRate,
                 itemCommission,
-                saleDate
+                saleDate,
+                itemPolicyId
               ]
             );
           }
       } catch (commErr) {
           console.error("CRITICAL COMMISSION ERROR:", commErr);
-          // Nao relancar erro para nao cancelar a venda. Comissao sera 0.
+          const commissionError =
+            commErr instanceof Error ? commErr.message : String(commErr);
+          if (commissionError.includes("COMMISSION_COMPETENCE_CLOSED")) {
+            throw commErr;
+          }
+          // Outros erros antigos de comissao continuam sem cancelar a venda.
       }
 
       console.log("DEBUG - Comissao calculada e gravada:", {
@@ -939,14 +922,16 @@ export async function POST(request: NextRequest) {
              total_discount = $2,
              total = $3,
              discount_amount = $4,
-             commission_amount = $5
-         WHERE id = $6`,
+             commission_amount = $5,
+             commission_policy_id = $6
+         WHERE id = $7`,
         [
           totalSubtotal,
           FinalDiscountGiven,
           FinalTotalSales,
           expectedCouponDiscountForRecalc, // Mantém a coluna discount_amount restrita apenas ao desconto do Cupom, se existir
           commissionAmount,
+          commissionPolicyId,
           saleId
         ]
       );
@@ -997,7 +982,7 @@ export async function POST(request: NextRequest) {
            
            let newInitial = Number(wallet.initial_quantity) + totalQuantity;
            let newTotalPaid = Number(wallet.total_paid) + totalPaid;
-           let newAvailable = Number(wallet.available_quantity) + totalQuantity;
+           const newAvailable = Number(wallet.available_quantity) + totalQuantity;
            
            // Standard Logic: Accumulate everything.
            // Logic to fix:
