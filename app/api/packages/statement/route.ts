@@ -179,9 +179,59 @@ export async function GET(request: NextRequest) {
       (a, b) => new Date(a.op_date).getTime() - new Date(b.op_date).getTime()
     );
 
-    // 2. Calcula saldo linha a linha (histórico completo)
+    // 1b. Fonte de verdade do saldo atual: valor vivo em client_packages.
+    // Agregamos por cliente (soma de todas as carteiras/serviços do cliente).
+    const livePackagesRes = await query(`
+        SELECT cp.client_id, cp.available_quantity, cp.unit_price, c.statement_slug
+        FROM client_packages cp
+        JOIN clients c ON cp.client_id = c.id
+    `);
+
+    const liveByClient = new Map<
+      string,
+      { qty: number; financial: number; slug: string | null }
+    >();
+    for (const pkg of livePackagesRes.rows as any[]) {
+      const qty = Number(pkg.available_quantity) || 0;
+      const price = Number(pkg.unit_price) || 0;
+      const cur =
+        liveByClient.get(pkg.client_id) || { qty: 0, financial: 0, slug: null };
+      cur.qty += qty;
+      cur.financial += qty * price;
+      if (pkg.statement_slug && !cur.slug) cur.slug = pkg.statement_slug;
+      liveByClient.set(pkg.client_id, cur);
+    }
+
+    // 1c. Soma total dos deltas do historico visivel, por cliente.
+    // Serve para calcular um "saldo de abertura" que faz a coluna Saldo
+    // fechar exatamente no saldo real (o do card), sem ficar negativa.
+    const totalDeltaQty: Record<string, number> = {};
+    const totalDeltaValue: Record<string, number> = {};
+    for (const op of opsSortedAll) {
+      const dq =
+        op.operation_type === "compra"
+          ? Number(op.quantity)
+          : -Number(op.quantity);
+      totalDeltaQty[op.client_id] = (totalDeltaQty[op.client_id] ?? 0) + dq;
+      totalDeltaValue[op.client_id] =
+        (totalDeltaValue[op.client_id] ?? 0) + Number(op.value);
+    }
+
+    // 2. Calcula saldo linha a linha (histórico completo), ancorado no saldo real.
+    // Saldo de abertura = saldo real - soma dos deltas visiveis.
+    // Assim a ultima operacao de cada cliente termina no saldo real (card).
     const balances: Record<string, number> = {};
     const qtyBalances: Record<string, number> = {};
+    for (const clientId of Object.keys(totalDeltaQty)) {
+      const live = liveByClient.get(clientId);
+      if (live) {
+        qtyBalances[clientId] = live.qty - totalDeltaQty[clientId];
+        balances[clientId] = live.financial - totalDeltaValue[clientId];
+      } else {
+        qtyBalances[clientId] = 0;
+        balances[clientId] = 0;
+      }
+    }
 
     const opsWithBalance = opsSortedAll.map((op) => {
       const current = balances[op.client_id] ?? 0;
@@ -231,19 +281,6 @@ export async function GET(request: NextRequest) {
     // Resumo por cliente (baseado no filtro)
     const summaryMap: Record<string, any> = {};
 
-    // [RESTORED] Fetch Live Package Data for Accurate Summary
-    const livePackagesRes = await query(`
-        SELECT cp.client_id, cp.available_quantity, cp.unit_price, cp.initial_quantity, cp.consumed_quantity, cp.total_paid, c.statement_slug
-        FROM client_packages cp
-        JOIN clients c ON cp.client_id = c.id
-    `);
-    
-    // Create a map for quick lookup: clientId -> PackageRow
-    const livePackageMap = new Map();
-    livePackagesRes.rows.forEach(pkg => {
-        livePackageMap.set(pkg.client_id, pkg);
-    });
-
     for (const op of filteredOps) {
       const s = (summaryMap[op.clientId] ??= {
         clientId: op.clientId,
@@ -273,14 +310,15 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // [RESTORED] Override Balance with Live DB Data
+    // Override do saldo atual com o valor real vivo do banco (fonte de verdade).
+    // A coluna Saldo (linha a linha) tambem foi ancorada nesse mesmo valor,
+    // entao card e ultima linha do extrato batem exatamente.
     Object.values(summaryMap).forEach((s: any) => {
-        const livePkg = livePackageMap.get(s.clientId);
-        if (livePkg) {
-            s.balanceQuantityCurrent = Number(livePkg.available_quantity);
-            // Balance Current (Financeiro) = Quantidade * Preço Unitário
-            s.balanceCurrent = Number(livePkg.available_quantity) * Number(livePkg.unit_price);
-            s.statementSlug = livePkg.statement_slug || null;
+        const live = liveByClient.get(s.clientId);
+        if (live) {
+            s.balanceQuantityCurrent = live.qty;
+            s.balanceCurrent = live.financial;
+            s.statementSlug = live.slug;
         }
     });
 

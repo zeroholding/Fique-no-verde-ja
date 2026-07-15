@@ -344,9 +344,9 @@ export async function DELETE(
         );
       }
 
-      // 1b. Get Items (Simple Query)
+      // 1b. Get Items (inclui sale_type para identificar recargas Tipo 02)
       const itemsResult = await query(
-        `SELECT si.quantity, si.product_id, si.service_id
+        `SELECT si.quantity, si.product_id, si.service_id, si.sale_type
          FROM sale_items si
          WHERE si.sale_id = $1`,
         [saleId]
@@ -374,36 +374,96 @@ export async function DELETE(
 
 
       // 2. Handle Unified Wallet Reversal
-      if (isType02) {
-          // TYPE 02: Package Purchase (Top-up) logic infered
-          console.log("Infered Type 02 (Package Purchase) - Reversing Credits");
-          
-          const creditsByService: Record<string, number> = {};
-          
-          for (const item of items) {
-              // Safe check as service_id might be missing from query now
-              const serviceId = item.service_id;
-              if (serviceId) {
-                  const qty = Number(item.quantity || 0);
-                  creditsByService[serviceId] = (creditsByService[serviceId] || 0) + qty;
-              }
-          }
+      // A carteira e unificada por cliente+servico. A venda "genese" cria a linha
+      // em client_packages e as RECARGAS Tipo 02 seguintes apenas acumulam nela.
+      // Por isso a reversao NAO pode depender de genesisPackageResult (que so
+      // enxerga a genese) -- precisa reverter os creditos de qualquer venda Tipo 02,
+      // inclusive recarga, para o saldo (available) nao ficar inflado.
+      const type02Items = items.filter(
+        (item) => String(item.sale_type) === "02",
+      );
+
+      if (type02Items.length > 0) {
+          console.log("Tipo 02 detectado - revertendo creditos da carteira");
 
           const carrierId = saleData.client_id;
 
-          for (const [serviceId, totalCredits] of Object.entries(creditsByService)) {
-              if (totalCredits > 0) {
-                 // Decrement Wallet for this Service
-                 // USER RULE: Negative balances are NOT allowed on deletion. We cap at 0.
-                 console.log(`Decreasing wallet for client ${carrierId}, service ${serviceId} by ${totalCredits} (Capped at 0)`);
-                 await query(
-                     `UPDATE client_packages 
-                      SET available_quantity = GREATEST(0, available_quantity - $1),
-                          initial_quantity = GREATEST(0, initial_quantity - $1),
-                          updated_at = NOW()
-                      WHERE client_id = $2 AND service_id = $3 AND is_active = true`,
-                     [totalCredits, carrierId, serviceId]
-                 );
+          // Agrupa os creditos desta venda por servico (service_id pode ser nulo)
+          const creditsByService = new Map<string | null, number>();
+          for (const item of type02Items) {
+              const key = (item.service_id as string | null) || null;
+              creditsByService.set(
+                  key,
+                  (creditsByService.get(key) || 0) + Number(item.quantity || 0),
+              );
+          }
+
+          for (const [serviceId, credits] of creditsByService) {
+              if (credits <= 0) continue;
+
+              // Busca as carteiras candidatas do cliente (por servico quando houver)
+              const walletRes = serviceId
+                ? await query(
+                    `SELECT id, initial_quantity, consumed_quantity, available_quantity, unit_price
+                     FROM client_packages
+                     WHERE client_id = $1 AND service_id = $2
+                     ORDER BY is_active DESC, created_at DESC`,
+                    [carrierId, serviceId],
+                  )
+                : await query(
+                    `SELECT id, initial_quantity, consumed_quantity, available_quantity, unit_price
+                     FROM client_packages
+                     WHERE client_id = $1
+                     ORDER BY is_active DESC, created_at DESC`,
+                    [carrierId],
+                  );
+
+              // Reverte os creditos, respeitando o piso 0 (sem saldo negativo)
+              // e mantendo a invariante available = initial - consumed.
+              let remaining = credits;
+              for (const wallet of walletRes.rows) {
+                  if (remaining <= 0) break;
+
+                  const available = Number(wallet.available_quantity) || 0;
+                  const consumed = Number(wallet.consumed_quantity) || 0;
+                  const initial = Number(wallet.initial_quantity) || 0;
+                  const unitPrice = Number(wallet.unit_price) || 0;
+
+                  // So da para remover ate o que ainda esta disponivel
+                  const removed = Math.min(remaining, available);
+                  if (removed <= 0) continue;
+
+                  const newAvailable = available - removed;
+                  const newInitial = initial - removed;
+                  remaining -= removed;
+
+                  if (newInitial <= 0 && consumed <= 0) {
+                      // Carteira zerada e sem consumo: pode remover a linha inteira
+                      console.log(`Carteira ${wallet.id} zerada sem consumo. Removendo.`);
+                      await query(`DELETE FROM client_packages WHERE id = $1`, [
+                          wallet.id,
+                      ]);
+                  } else {
+                      const newTotalPaid = Math.max(
+                          0.01,
+                          Math.round(newInitial * unitPrice * 100) / 100,
+                      );
+                      await query(
+                          `UPDATE client_packages
+                           SET available_quantity = $1,
+                               initial_quantity = $2,
+                               total_paid = $3,
+                               updated_at = NOW()
+                           WHERE id = $4`,
+                          [newAvailable, newInitial, newTotalPaid, wallet.id],
+                      );
+                  }
+              }
+
+              if (remaining > 0) {
+                  console.log(
+                      `Aviso: ${remaining} creditos da venda ${saleId} nao puderam ser revertidos (ja consumidos).`,
+                  );
               }
           }
       } 

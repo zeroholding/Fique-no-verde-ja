@@ -146,13 +146,20 @@ export async function GET(request: NextRequest) {
       `,
       [clientId]
     );
-    // [RESTORED] Fetch Live Package Data for Accurate Summary and Correction
-    const livePackageRes = await query(`
-        SELECT available_quantity, unit_price FROM client_packages 
-        WHERE client_id = $1
-        ORDER BY created_at DESC LIMIT 1
-    `, [clientId]);
-    const livePkg = livePackageRes.rows[0];
+    // Fonte de verdade do saldo atual: soma das carteiras vivas do cliente.
+    const liveAggRes = await query(
+      `SELECT
+         COUNT(*)::int AS n,
+         COALESCE(SUM(available_quantity), 0) AS qty,
+         COALESCE(SUM(available_quantity * unit_price), 0) AS financial
+       FROM client_packages
+       WHERE client_id = $1`,
+      [clientId],
+    );
+    const liveAgg = liveAggRes.rows[0];
+    const hasLive = Number(liveAgg?.n) > 0;
+    const targetQty = Number(liveAgg?.qty) || 0;
+    const targetFinance = Number(liveAgg?.financial) || 0;
 
     const operationsRaw: any[] = [
       ...purchasesResult.rows.map((r: any) => ({ ...r, operation_type: "compra" })),
@@ -160,44 +167,32 @@ export async function GET(request: NextRequest) {
     ];
 
     // 1. Ordena TUDO por data ascendente para calculo de saldo
-    let opsSortedAll = [...operationsRaw].sort(
+    const opsSortedAll = [...operationsRaw].sort(
       (a, b) => new Date(a.op_date).getTime() - new Date(b.op_date).getTime()
     );
 
-    // [NEW] Injetar linha de ajuste se houver inconsistencia historica vs live
-    if (livePkg && opsSortedAll.length > 0) {
-      const targetQty = Number(livePkg.available_quantity);
-      const targetFinance = targetQty * Number(livePkg.unit_price);
-      
-      const calcQty = opsSortedAll.reduce((acc, op) => 
-        acc + (op.operation_type === "compra" ? Number(op.quantity) : -Number(op.quantity)), 0);
-      const calcFinance = opsSortedAll.reduce((acc, op) => acc + Number(op.value), 0);
-      
-      const diffQty = targetQty - calcQty;
-      const diffFinance = targetFinance - calcFinance;
+    // Saldo de abertura embutido (sem linha visivel de "ajuste"): faz a coluna
+    // Saldo fechar exatamente no saldo real, sem assustar o cliente com um
+    // lancamento de ajuste no meio do extrato.
+    const calcQty = opsSortedAll.reduce(
+      (acc, op) =>
+        acc +
+        (op.operation_type === "compra"
+          ? Number(op.quantity)
+          : -Number(op.quantity)),
+      0,
+    );
+    const calcFinance = opsSortedAll.reduce(
+      (acc, op) => acc + Number(op.value),
+      0,
+    );
 
-      if (Math.abs(diffQty) > 0.01 || Math.abs(diffFinance) > 0.01) {
-        const firstDate = opsSortedAll[0].op_date;
-        opsSortedAll.unshift({
-          id: 'initial_adjustment',
-          client_id: clientId,
-          client_name: opsSortedAll[0].client_name,
-          service_name: 'Ajuste de Saldo / Saldo Inicial',
-          sale_id: null,
-          attendant_name: 'Sistema',
-          op_date: firstDate,
-          value: diffFinance,
-          quantity: Math.abs(diffQty),
-          unit_price: diffQty !== 0 ? Math.abs(diffFinance / diffQty) : 0,
-          operation_type: diffQty >= 0 ? "compra" : "consumo",
-          is_adjustment: true
-        });
-      }
-    }
+    const openingQty = hasLive ? targetQty - calcQty : 0;
+    const openingFinance = hasLive ? targetFinance - calcFinance : 0;
 
-    // 2. Calcula saldo linha a linha (histórico completo)
-    const balances: Record<string, number> = {};
-    const qtyBalances: Record<string, number> = {};
+    // 2. Calcula saldo linha a linha (histórico completo), ancorado no saldo real
+    const balances: Record<string, number> = { [clientId]: openingFinance };
+    const qtyBalances: Record<string, number> = { [clientId]: openingQty };
 
     const opsWithBalance = opsSortedAll.map((op) => {
       const current = balances[op.client_id] ?? 0;
@@ -268,12 +263,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 6. [RESTORED] Override Summary for 100% Accuracy in Main Widget
-    if (livePkg) {
+    // 6. Override do saldo atual do widget com o valor real vivo do banco
+    if (hasLive) {
       Object.values(summaryMap).forEach((s: any) => {
         if (s.clientId === clientId) {
-           s.balanceQuantityCurrent = Number(livePkg.available_quantity);
-           s.balanceCurrent = Number(livePkg.available_quantity) * Number(livePkg.unit_price);
+           s.balanceQuantityCurrent = targetQty;
+           s.balanceCurrent = targetFinance;
         }
       });
     }
