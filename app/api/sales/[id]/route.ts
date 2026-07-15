@@ -345,8 +345,9 @@ export async function DELETE(
       }
 
       // 1b. Get Items (inclui sale_type para identificar recargas Tipo 02)
+      // Obs: sale_items NAO possui service_id em producao, entao nao referenciamos.
       const itemsResult = await query(
-        `SELECT si.quantity, si.product_id, si.service_id, si.sale_type
+        `SELECT si.quantity, si.product_id, si.sale_type
          FROM sale_items si
          WHERE si.sale_id = $1`,
         [saleId]
@@ -387,40 +388,25 @@ export async function DELETE(
           console.log("Tipo 02 detectado - revertendo creditos da carteira");
 
           const carrierId = saleData.client_id;
+          const totalCredits = type02Items.reduce(
+            (acc, item) => acc + Number(item.quantity || 0),
+            0,
+          );
 
-          // Agrupa os creditos desta venda por servico (service_id pode ser nulo)
-          const creditsByService = new Map<string | null, number>();
-          for (const item of type02Items) {
-              const key = (item.service_id as string | null) || null;
-              creditsByService.set(
-                  key,
-                  (creditsByService.get(key) || 0) + Number(item.quantity || 0),
-              );
-          }
-
-          for (const [serviceId, credits] of creditsByService) {
-              if (credits <= 0) continue;
-
-              // Busca as carteiras candidatas do cliente (por servico quando houver)
-              const walletRes = serviceId
-                ? await query(
-                    `SELECT id, initial_quantity, consumed_quantity, available_quantity, unit_price
-                     FROM client_packages
-                     WHERE client_id = $1 AND service_id = $2
-                     ORDER BY is_active DESC, created_at DESC`,
-                    [carrierId, serviceId],
-                  )
-                : await query(
-                    `SELECT id, initial_quantity, consumed_quantity, available_quantity, unit_price
-                     FROM client_packages
-                     WHERE client_id = $1
-                     ORDER BY is_active DESC, created_at DESC`,
-                    [carrierId],
-                  );
-
-              // Reverte os creditos, respeitando o piso 0 (sem saldo negativo)
+          if (totalCredits > 0) {
+              // Carteira unificada por cliente. Como sale_items nao tem service_id,
+              // revertemos os creditos nas carteiras do cliente (ativas primeiro,
+              // mais recentes primeiro), respeitando o piso 0 (sem saldo negativo)
               // e mantendo a invariante available = initial - consumed.
-              let remaining = credits;
+              const walletRes = await query(
+                  `SELECT id, initial_quantity, consumed_quantity, available_quantity, unit_price
+                   FROM client_packages
+                   WHERE client_id = $1
+                   ORDER BY is_active DESC, created_at DESC`,
+                  [carrierId],
+              );
+
+              let remaining = totalCredits;
               for (const wallet of walletRes.rows) {
                   if (remaining <= 0) break;
 
