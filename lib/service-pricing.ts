@@ -86,15 +86,26 @@ export function calculateServiceSubtotal(
   }
 
   if (isProgressiveService(serviceName)) {
-    const firstRange = applicableRanges.find(
-      (r) => r.minQuantity === 1 || r.minQuantity <= 10,
+    // A 1a faixa e a primeira cadastrada (a lista esta ordenada por
+    // minQuantity). A 2a e a proxima faixa acima dela.
+    const firstRange = applicableRanges[0];
+    const secondRange = applicableRanges.find(
+      (r) => r.minQuantity > firstRange.minQuantity,
     );
-    const secondRange = applicableRanges.find((r) => r.minQuantity >= 11);
 
-    // O limite da 1a faixa vem do cadastro; 10 e apenas o fallback historico.
-    const threshold = firstRange?.maxQuantity ?? 10;
-    const firstRangePrice = firstRange?.unitPrice ?? 40;
-    const secondRangePrice = secondRange?.unitPrice ?? 15;
+    // IMPORTANTE: nao inventar precos. Se o cadastro nao tiver a 2a faixa,
+    // o excedente e cobrado pelo preco da 1a (comportamento linear), em vez
+    // de aplicar um valor fixo que nao existe no cadastro.
+    // A versao anterior usava 40/15 como fallback, o que podia cobrar um
+    // valor que o administrador nunca cadastrou.
+    const firstRangePrice = firstRange.unitPrice;
+    const secondRangePrice = secondRange?.unitPrice ?? firstRangePrice;
+
+    // Limite da 1a faixa vem do cadastro. Se for aberta (max nulo), nao ha
+    // excedente: tudo e cobrado pelo preco da 1a faixa.
+    const threshold =
+      firstRange.maxQuantity ??
+      (secondRange ? secondRange.minQuantity - 1 : Number.POSITIVE_INFINITY);
 
     if (qty <= threshold) {
       return qty * firstRangePrice;

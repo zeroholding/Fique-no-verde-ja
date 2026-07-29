@@ -347,7 +347,7 @@ export async function DELETE(
       // 1b. Get Items (inclui sale_type para identificar recargas Tipo 02)
       // Obs: sale_items NAO possui service_id em producao, entao nao referenciamos.
       const itemsResult = await query(
-        `SELECT si.quantity, si.product_id, si.sale_type
+        `SELECT si.quantity, si.product_id, si.product_name, si.sale_type
          FROM sale_items si
          WHERE si.sale_id = $1`,
         [saleId]
@@ -394,17 +394,56 @@ export async function DELETE(
           );
 
           if (totalCredits > 0) {
-              // Carteira unificada por cliente. Como sale_items nao tem service_id,
-              // revertemos os creditos nas carteiras do cliente (ativas primeiro,
-              // mais recentes primeiro), respeitando o piso 0 (sem saldo negativo)
-              // e mantendo a invariante available = initial - consumed.
-              const walletRes = await query(
-                  `SELECT id, initial_quantity, consumed_quantity, available_quantity, unit_price
-                   FROM client_packages
-                   WHERE client_id = $1
-                   ORDER BY is_active DESC, created_at DESC`,
-                  [carrierId],
+              // A carteira e por cliente + servico. Como `sale_items` NAO possui
+              // service_id em producao, resolvemos o servico pelo `product_name`
+              // do item (que guarda o nome do servico no momento da venda).
+              // Sem isso, um cliente com mais de uma carteira (ex.: Atrasos e
+              // Cancelados) poderia ter os creditos debitados da carteira errada.
+              const serviceNames = Array.from(
+                new Set(
+                  type02Items
+                    .map((item) => String(item.product_name || "").trim())
+                    .filter((name) => name.length > 0),
+                ),
               );
+
+              let resolvedServiceIds: string[] = [];
+              if (serviceNames.length > 0) {
+                const serviceRes = await query(
+                  `SELECT id FROM services WHERE LOWER(TRIM(name)) = ANY($1::text[])`,
+                  [serviceNames.map((name) => name.toLowerCase())],
+                );
+                resolvedServiceIds = serviceRes.rows.map((row: any) =>
+                  String(row.id),
+                );
+              }
+
+              // Se conseguimos identificar o servico, restringimos a carteira
+              // correspondente. Caso contrario, mantemos o comportamento
+              // anterior (qualquer carteira do cliente) para nao travar a
+              // exclusao em dados legados sem nome de servico correspondente.
+              const walletRes = resolvedServiceIds.length > 0
+                ? await query(
+                    `SELECT id, initial_quantity, consumed_quantity, available_quantity, unit_price
+                     FROM client_packages
+                     WHERE client_id = $1
+                       AND service_id = ANY($2::uuid[])
+                     ORDER BY is_active DESC, created_at DESC`,
+                    [carrierId, resolvedServiceIds],
+                  )
+                : await query(
+                    `SELECT id, initial_quantity, consumed_quantity, available_quantity, unit_price
+                     FROM client_packages
+                     WHERE client_id = $1
+                     ORDER BY is_active DESC, created_at DESC`,
+                    [carrierId],
+                  );
+
+              if (walletRes.rowCount === 0 && resolvedServiceIds.length > 0) {
+                console.log(
+                  `Nenhuma carteira encontrada para o servico da venda ${saleId}. Creditos nao revertidos.`,
+                );
+              }
 
               let remaining = totalCredits;
               for (const wallet of walletRes.rows) {
