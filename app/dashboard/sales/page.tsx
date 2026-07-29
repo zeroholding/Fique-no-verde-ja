@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Modal } from "@/components/Modal";
 import { Button } from "@/components/Button";
 import { useToast } from "@/components/Toast";
+import { calculateServiceSubtotal } from "@/lib/service-pricing";
 
 type SaleStatus = "aberta" | "confirmada" | "cancelada";
 type DiscountType = "percentage" | "fixed";
@@ -690,47 +691,12 @@ export default function SalesPage() {
     return clientPackages.find((p) => p.id === formData.packageId);
   }, [clientPackages, formData.saleType, formData.packageId]);
 
+  // Regra centralizada em lib/service-pricing.ts para que este modal e a tela
+  // /dashboard/sales/new calculem exatamente igual.
+  // Progressivos: Reclamacao e Cancelados. Faixa simples: Atrasos e demais.
   const calculateProgressivePrice = useCallback(
     (qty: number, serviceName: string, ranges: Array<{saleType: "01" | "02"; minQuantity: number; maxQuantity: number | null; unitPrice: number}>): number => {
-      const saleType = formData.saleType;
-      let applicableRanges = ranges
-        .filter((r) => r.saleType === saleType)
-        .sort((a, b) => a.minQuantity - b.minQuantity);
-
-      if (applicableRanges.length === 0) {
-        applicableRanges = ranges
-          .filter((r) => r.saleType === "01")
-          .sort((a, b) => a.minQuantity - b.minQuantity);
-      }
-
-      if (applicableRanges.length === 0) {
-        return 0;
-      }
-
-      const normalizedName = serviceName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      const isReclamacao = normalizedName.includes("reclamacao");
-
-      if (isReclamacao) {
-        const firstRange = applicableRanges.find(r => r.minQuantity === 1 || r.minQuantity <= 10);
-        const secondRange = applicableRanges.find(r => r.minQuantity >= 11);
-
-        const firstRangePrice = firstRange?.unitPrice || 40;
-        const secondRangePrice = secondRange?.unitPrice || 15;
-
-        if (qty <= 10) {
-          return qty * firstRangePrice;
-        } else {
-          return (qty - 10) * secondRangePrice + (10 * firstRangePrice);
-        }
-      } else {
-        const range = applicableRanges.find(
-          (r) =>
-            qty >= r.minQuantity &&
-            (r.maxQuantity === null || qty <= r.maxQuantity)
-        );
-
-        return range ? qty * range.unitPrice : 0;
-      }
+      return calculateServiceSubtotal(qty, serviceName, ranges, formData.saleType);
     },
     [formData.saleType]
   );

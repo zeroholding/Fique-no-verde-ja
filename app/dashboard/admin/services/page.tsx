@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useAdminGuard } from "@/hooks/useAdminGuard";
 import { useToast } from "@/components/Toast";
+import { isProgressiveService } from "@/lib/service-pricing";
 import { Button } from "@/components/Button";
 import { Modal } from "@/components/Modal";
 import { Select } from "@/components/Select";
@@ -511,7 +512,10 @@ export default function AdminServicesPage() {
                     {service.priceRanges
                       .sort((a, b) => a.minQuantity - b.minQuantity)
                       .map((range, index, array) => {
-                        const isReclamacao = service.name.toLowerCase().includes('reclamacao');
+                        // Progressivo: Reclamacao e Cancelados (mesma regra).
+                        // Corrigido: antes comparava sem acento e nunca casava
+                        // com o nome real "Reclamação".
+                        const isReclamacao = isProgressiveService(service.name);
                         const isFirstRange = index === 0;
                         const isSecondRange = index === 1;
                         

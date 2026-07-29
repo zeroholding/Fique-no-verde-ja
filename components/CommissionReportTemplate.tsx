@@ -46,6 +46,7 @@ export const CommissionReportTemplate = ({ commissions, startDate, endDate, atte
     // Tipo de Servico
     let sumAtraso = 0;
     let sumReclamacao = 0;
+    let sumCancelados = 0;
     let sumOutros = 0;
 
     commissions.forEach(c => {
@@ -69,11 +70,18 @@ export const CommissionReportTemplate = ({ commissions, startDate, endDate, atte
         }
 
         // --- Tipo de Serviço ---
-        const pName = (c.productName || "").toLowerCase();
+        // Normaliza acentos para nao depender de como o nome foi gravado
+        // na venda ("Reclamação" vs "Reclamacao").
+        const pName = (c.productName || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase();
         if (pName.includes("atraso")) {
             sumAtraso += c.amount;
-        } else if (pName.includes("reclamação") || pName.includes("reclamacao")) {
+        } else if (pName.includes("reclamac")) {
             sumReclamacao += c.amount;
+        } else if (pName.includes("cancelado")) {
+            sumCancelados += c.amount;
         } else {
             sumOutros += c.amount;
         }
@@ -135,6 +143,7 @@ export const CommissionReportTemplate = ({ commissions, startDate, endDate, atte
                 <div className="flex flex-col mt-1 gap-1 text-sm">
                    <div className="flex justify-between"><span>Atrasos:</span> <strong className="text-gray-800">{formatCurrency(sumAtraso)}</strong></div>
                    <div className="flex justify-between"><span>Reclamações:</span> <strong className="text-gray-800">{formatCurrency(sumReclamacao)}</strong></div>
+                   {sumCancelados > 0 && <div className="flex justify-between"><span>Cancelados:</span> <strong className="text-gray-800">{formatCurrency(sumCancelados)}</strong></div>}
                    {sumOutros > 0 && <div className="flex justify-between"><span>Outros:</span> <strong className="text-gray-800">{formatCurrency(sumOutros)}</strong></div>}
                 </div>
             </div>

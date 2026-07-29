@@ -18,6 +18,7 @@ import {
   Area,
   Cell,
 } from "recharts";
+import { formatServiceLabel as formatServiceLabelShared } from "@/lib/service-pricing";
 
 type PeriodTotals = {
   salesCount: number;
@@ -33,6 +34,11 @@ type PeriodTotals = {
   atrasosConsumos: number;
   atrasosRevenue: number;         // [NEW]
   atrasosSalesCount: number;      // [NEW]
+  canceladosUnits: number;
+  canceladosVendas: number;
+  canceladosConsumos: number;
+  canceladosRevenue: number;
+  canceladosSalesCount: number;
   totalCommission: number;
   totalDiscount: number;
   refundTotal: number;
@@ -131,21 +137,10 @@ const formatDate = (dateString: string) => {
   return `${dateStr} ${timeStr}`;
 };
 
-const formatServiceLabel = (value: string) => {
-  if (!value) return "—";
-  const normalized = value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-
-  if (normalized.includes("reclamacao")) {
-    return "Reclamações";
-  }
-  if (normalized.includes("atraso")) {
-    return "Atrasos";
-  }
-  return value;
-};
+// Rotulo padronizado por servico. Centralizado em lib/service-pricing.ts
+// para que Reclamacoes, Atrasos e Cancelados sejam exibidos de forma
+// consistente em todas as telas.
+const formatServiceLabel = formatServiceLabelShared;
 
 export default function Dashboard() {
   const { error } = useToast();
@@ -412,6 +407,14 @@ export default function Dashboard() {
   const avgDelayUnits = atrasosSalesCount ? atrasosUnits / atrasosSalesCount : 0;
   // Média de valor unitário por item removido
   const avgDelayUnitValue = atrasosUnits > 0 ? atrasosRevenue / atrasosUnits : 0;
+
+  // [CANCELADOS] 3o servico. Segue exatamente o mesmo padrao de metricas
+  // derivadas dos outros dois, sem alterar o comportamento deles.
+  const canceladosRevenue = periodTotals?.canceladosRevenue ?? 0;
+  const canceladosUnits = periodTotals?.canceladosUnits ?? 0;
+  const canceladosSalesCount = periodTotals?.canceladosSalesCount ?? 0;
+  const avgCanceledUnits = canceladosSalesCount ? canceladosUnits / canceladosSalesCount : 0;
+  const avgCanceledUnitValue = canceladosUnits > 0 ? canceladosRevenue / canceladosUnits : 0;
 
   const analysisRange = metrics?.analysisRange;
   const analysisPeriodDays =
@@ -954,7 +957,7 @@ export default function Dashboard() {
                 </p>
                 <p className="text-sm text-blue-300 mt-1">{periodDescription}</p>
                 {/* Médias de Valor Unitário por Item Removido */}
-                <div className="mt-3 pt-3 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="mt-3 pt-3 border-t border-white/10 grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <p className="text-[10px] text-gray-500 uppercase">Valor Unit. Atraso</p>
                     <p className="text-sm font-semibold text-amber-300">
@@ -965,6 +968,13 @@ export default function Dashboard() {
                     <p className="text-[10px] text-gray-500 uppercase">Valor Unit. Reclamação</p>
                     <p className="text-sm font-semibold text-orange-300">
                       {formatCurrency(avgComplaintUnitValue)}
+                    </p>
+                  </div>
+                  {/* [CANCELADOS] 3o servico */}
+                  <div>
+                    <p className="text-[10px] text-gray-500 uppercase">Valor Unit. Cancelado</p>
+                    <p className="text-sm font-semibold text-rose-300">
+                      {formatCurrency(avgCanceledUnitValue)}
                     </p>
                   </div>
                 </div>
@@ -982,11 +992,11 @@ export default function Dashboard() {
             </div>
           </Card>
 
-          {/* RECLAMAÇÕES & ATRASOS - CARD UNIFICADO */}
+          {/* RECLAMAÇÕES & ATRASOS & CANCELADOS - CARD UNIFICADO */}
           <Card className="bg-gradient-to-br from-orange-500/10 to-amber-600/5 border-orange-500/20">
             <div className="flex items-center gap-4 sm:justify-between">
               <div className="flex-1 text-left">
-                <p className="text-sm text-gray-400 mb-2">Reclamações & Atrasos</p>
+                <p className="text-sm text-gray-400 mb-2">Reclamações, Atrasos & Cancelados</p>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                   <div>
                     <p className="text-xl sm:text-2xl font-bold text-orange-300">
@@ -1014,6 +1024,22 @@ export default function Dashboard() {
                         </p>
                         <p className="text-[10px] text-amber-200/80 font-medium">
                            Média: {avgDelayUnits.toFixed(1)} un/atendimento
+                        </p>
+                    </div>
+                  </div>
+                  <div className="hidden sm:block h-14 w-px bg-white/20"></div>
+                  {/* [CANCELADOS] 3o servico */}
+                  <div>
+                    <p className="text-xl sm:text-2xl font-bold text-rose-300">
+                      {periodTotals?.canceladosUnits ?? 0}
+                    </p>
+                    <p className="text-xs text-gray-400">Cancelados</p>
+                    <div className="flex flex-col gap-0.5">
+                        <p className="text-[10px] text-gray-500">
+                        {periodTotals?.canceladosVendas ?? 0} vend. + {periodTotals?.canceladosConsumos ?? 0} cons.
+                        </p>
+                        <p className="text-[10px] text-rose-200/80 font-medium">
+                           Média: {avgCanceledUnits.toFixed(1)} un/atendimento
                         </p>
                     </div>
                   </div>

@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useToast } from "@/components/Toast";
+import {
+  isProgressiveService,
+  normalizeServiceName,
+} from "@/lib/service-pricing";
 
 type ServiceRange = {
   id: string;
@@ -149,8 +153,10 @@ export default function ServicesPage() {
                     {service.priceRanges
                       .sort((a, b) => a.minQuantity - b.minQuantity)
                       .map((range, index, array) => {
-                        const isReclamacao = service.name.toLowerCase().includes('reclamação');
-                        const isAtrasos = service.name.toLowerCase().includes('atrasos');
+                        // Progressivo: Reclamacao e Cancelados (mesma regra).
+                        // Normalizado para nao depender de acento.
+                        const isReclamacao = isProgressiveService(service.name);
+                        const isAtrasos = normalizeServiceName(service.name).includes('atraso');
                         const isFirstRange = index === 0;
                         const isThirdRange = index === 2; // 11+ unidades (terceira faixa)
 

@@ -294,7 +294,13 @@ export async function GET(request: NextRequest) {
         COALESCE(SUM(CASE WHEN sale_type = '01' AND normalized_service LIKE '%atras%' THEN quantity ELSE 0 END), 0)::int AS atrasos_vendas,
         COALESCE(SUM(CASE WHEN sale_type = '03' AND normalized_service LIKE '%atras%' THEN quantity ELSE 0 END), 0)::int AS atrasos_consumos,
         COALESCE(SUM(CASE WHEN normalized_service LIKE '%atras%' THEN net_item_value ELSE 0 END), 0)::numeric AS atrasos_revenue,
-        COUNT(DISTINCT CASE WHEN normalized_service LIKE '%atras%' THEN sale_id END)::int AS atrasos_sales_count
+        COUNT(DISTINCT CASE WHEN normalized_service LIKE '%atras%' THEN sale_id END)::int AS atrasos_sales_count,
+
+        COALESCE(SUM(CASE WHEN normalized_service LIKE '%cancelad%' THEN quantity ELSE 0 END), 0)::int AS cancelados_units,
+        COALESCE(SUM(CASE WHEN sale_type = '01' AND normalized_service LIKE '%cancelad%' THEN quantity ELSE 0 END), 0)::int AS cancelados_vendas,
+        COALESCE(SUM(CASE WHEN sale_type = '03' AND normalized_service LIKE '%cancelad%' THEN quantity ELSE 0 END), 0)::int AS cancelados_consumos,
+        COALESCE(SUM(CASE WHEN normalized_service LIKE '%cancelad%' THEN net_item_value ELSE 0 END), 0)::numeric AS cancelados_revenue,
+        COUNT(DISTINCT CASE WHEN normalized_service LIKE '%cancelad%' THEN sale_id END)::int AS cancelados_sales_count
       FROM items
     `;
 
@@ -407,7 +413,7 @@ export async function GET(request: NextRequest) {
         ${baseFilters.clause}
       GROUP BY serv.id, si.product_name
       ORDER BY total_value DESC
-      LIMIT 6
+      LIMIT 10
     `;
 
     const clientSpendingQuery = `
@@ -600,6 +606,11 @@ export async function GET(request: NextRequest) {
         atrasosConsumos: Number(periodTotalsRow.atrasos_consumos ?? 0),
         atrasosRevenue: Number(periodTotalsRow.atrasos_revenue ?? 0),
         atrasosSalesCount: Number(periodTotalsRow.atrasos_sales_count ?? 0),
+        canceladosUnits: Number(periodTotalsRow.cancelados_units ?? 0),
+        canceladosVendas: Number(periodTotalsRow.cancelados_vendas ?? 0),
+        canceladosConsumos: Number(periodTotalsRow.cancelados_consumos ?? 0),
+        canceladosRevenue: Number(periodTotalsRow.cancelados_revenue ?? 0),
+        canceladosSalesCount: Number(periodTotalsRow.cancelados_sales_count ?? 0),
         totalCommission: Number(salesAggRow.total_commission ?? 0),
         totalDiscount: Number(salesAggRow.total_discount ?? 0),
       },

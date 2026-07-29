@@ -12,6 +12,10 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/Button";
 import { useToast } from "@/components/Toast";
 import { Select } from "@/components/Select";
+import {
+  calculateServiceSubtotal,
+  isProgressiveService,
+} from "@/lib/service-pricing";
 
 type DiscountType = "percentage" | "fixed";
 type PaymentMethod =
@@ -386,41 +390,16 @@ export default function NewSalePage() {
       return 0;
     }
 
-    // User feedback: "Atraso" follows standard table (volume discount), only "Reclamacao" is progressive
-    const useProgressivePricing = selectedServiceDefinition.name.toLowerCase().includes("reclamacao");
-
-    if (useProgressivePricing) {
-      const ranges = selectedServiceDefinition.priceRanges
-        .filter((range) => range.saleType === saleType)
-        .sort((a, b) => a.minQuantity - b.minQuantity);
-
-      if (ranges.length === 0) return 0;
-
-      // Buscar a faixa de 1-10 unidades
-      const firstRange = ranges.find(r => r.minQuantity === 1 || r.minQuantity <= 10);
-      // Buscar a faixa de 11+ unidades
-      const secondRange = ranges.find(r => r.minQuantity >= 11);
-
-      const firstRangePrice = firstRange?.unitPrice || 40;
-      const secondRangePrice = secondRange?.unitPrice || 15;
-
-      // Fórmula progressiva (como IR):
-      // Primeiros 10: qty × firstRangePrice
-      // A partir do 11º: (qty - 10) × secondRangePrice + (10 × firstRangePrice)
-      if (quantity <= 10) {
-        return quantity * firstRangePrice;
-      } else {
-        return (quantity - 10) * secondRangePrice + (10 * firstRangePrice);
-      }
-    }
-
-    // Standard calculation for other services (including Atraso)
-    if (!applicablePriceRange) {
-      return 0;
-    }
-
-    return quantity * applicablePriceRange.unitPrice;
-  }, [applicablePriceRange, quantity, selectedServiceDefinition, saleType]);
+    // Regra centralizada em lib/service-pricing.ts para que esta tela e o
+    // modal rapido de /dashboard/sales calculem exatamente igual.
+    // Progressivos: Reclamacao e Cancelados. Faixa simples: Atrasos e demais.
+    return calculateServiceSubtotal(
+      quantity,
+      selectedServiceDefinition.name,
+      selectedServiceDefinition.priceRanges,
+      saleType,
+    );
+  }, [quantity, selectedServiceDefinition, saleType]);
 
   const generalDiscountAmount = useMemo(() => {
     if (!formData.generalDiscountValue || subtotal <= 0) {
@@ -597,7 +576,7 @@ export default function NewSalePage() {
       return null;
     }
 
-    const isProgressive = selectedServiceDefinition.name.toLowerCase().includes("reclamacao");
+    const isProgressive = isProgressiveService(selectedServiceDefinition.name);
     return (
       <div className="md:col-span-2 rounded-2xl border border-white/10 bg-black/20 p-4 space-y-3">
         <p className="text-xs uppercase text-gray-400">Faixas cadastradas</p>
