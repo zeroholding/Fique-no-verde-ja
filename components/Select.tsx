@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
 interface SelectOption {
@@ -50,6 +51,70 @@ export const Select = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // [FIX] O dropdown passou a ser renderizado via portal no document.body.
+  // Motivo: os cards das telas usam `backdrop-blur`, que cria um novo
+  // contexto de empilhamento. Dentro dele o `z-50` do dropdown ficava
+  // limitado ao proprio card, e o card seguinte (posterior no DOM) era
+  // pintado por cima -- a lista abria "atras" da secao de baixo.
+  // Com portal + position fixed, o dropdown escapa de todos os contextos.
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+  const [dropdownStyle, setDropdownStyle] = useState<{
+    top: number;
+    left: number;
+    width: number;
+    openUpwards: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const updateDropdownPosition = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+
+    const rect = trigger.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const estimatedHeight = 280; // altura maxima aproximada da lista
+    const openUpwards = spaceBelow < estimatedHeight && rect.top > spaceBelow;
+
+    setDropdownStyle({
+      top: openUpwards ? rect.top : rect.bottom,
+      left: rect.left,
+      width: rect.width,
+      openUpwards,
+    });
+  }, []);
+
+  // Mantem a posicao correta durante scroll/resize enquanto estiver aberto.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    updateDropdownPosition();
+
+    const handler = () => updateDropdownPosition();
+    window.addEventListener("resize", handler);
+    // capture: true para pegar scroll de containers internos tambem
+    window.addEventListener("scroll", handler, true);
+
+    return () => {
+      window.removeEventListener("resize", handler);
+      window.removeEventListener("scroll", handler, true);
+    };
+  }, [isOpen, updateDropdownPosition]);
+
+  // Fecha com a tecla Escape
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isOpen]);
+
   useEffect(() => {
     if (!nativeOnMobile) return;
     if (typeof window === "undefined") return;
@@ -68,12 +133,15 @@ export const Select = ({
   }, [nativeOnMobile]);
 
   // Close on click outside
+  // Como o dropdown agora vive em um portal (fora do containerRef), o clique
+  // dentro dele tambem precisa ser considerado "dentro".
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
+      const target = event.target as Node;
+      const insideContainer = containerRef.current?.contains(target);
+      const insideDropdown = dropdownRef.current?.contains(target);
+
+      if (!insideContainer && !insideDropdown) {
         setIsOpen(false);
       }
     };
@@ -196,7 +264,12 @@ export const Select = ({
 
       {/* Trigger Button */}
       <div
-        onClick={() => !disabled && setIsOpen(!isOpen)}
+        ref={triggerRef}
+        onClick={() => {
+          if (disabled) return;
+          if (!isOpen) updateDropdownPosition();
+          setIsOpen(!isOpen);
+        }}
         className={cn(
           "w-full px-4 py-3 rounded-xl transition-all duration-200 flex items-center justify-between",
           "bg-white/5 backdrop-blur-sm border border-white/10",
@@ -245,9 +318,25 @@ export const Select = ({
         <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-orange-500/0 via-orange-500/0 to-orange-500/0 opacity-0 hover:opacity-5 transition-opacity duration-300 pointer-events-none -z-10" />
       </div>
 
-      {/* Dropdown Menu */}
-      {isOpen && (
-        <div className="absolute z-50 w-full mt-2 overflow-hidden rounded-xl border border-white/10 bg-[#111]/95 backdrop-blur-xl shadow-2xl shadow-black/50 ring-1 ring-white/5 animate-in fade-in zoom-in-95 duration-100 origin-top">
+      {/* Dropdown Menu (em portal, para nao ficar atras de outros cards) */}
+      {isOpen && mounted && dropdownStyle && createPortal(
+        <div
+          ref={dropdownRef}
+          style={{
+            position: "fixed",
+            top: dropdownStyle.openUpwards ? undefined : dropdownStyle.top + 8,
+            bottom: dropdownStyle.openUpwards
+              ? window.innerHeight - dropdownStyle.top + 8
+              : undefined,
+            left: dropdownStyle.left,
+            width: dropdownStyle.width,
+            zIndex: 9999,
+          }}
+          className={cn(
+            "overflow-hidden rounded-xl border border-white/10 bg-[#111]/95 backdrop-blur-xl shadow-2xl shadow-black/50 ring-1 ring-white/5 animate-in fade-in zoom-in-95 duration-100",
+            dropdownStyle.openUpwards ? "origin-bottom" : "origin-top"
+          )}
+        >
           {searchable && (
             <div className="p-2 border-b border-white/10 sticky top-0 bg-[#111]/95 z-20">
               <div className="relative">
@@ -331,7 +420,8 @@ export const Select = ({
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {error && (
