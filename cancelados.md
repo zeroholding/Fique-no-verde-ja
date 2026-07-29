@@ -236,6 +236,78 @@ Detalhe: o limite da 1a faixa deixou de ser fixo em 10. Agora vem de
   - textos explicativos das faixas passaram a usar `isProgressiveService()`,
     cobrindo CANCELADOS e corrigindo o bug de acento na tela admin.
 
+## Correcoes na tela /dashboard/sales/new
+
+Durante o teste do CANCELADOS o cliente reportou que a tela
+`/dashboard/sales/new` estava muito problematica. Diagnostico e correcoes:
+
+### Bug 1 (grave): Tipo 03 era impossivel de selecionar
+
+Um `useEffect` comparava o tipo de venda escolhido com os tipos que possuem
+faixa em `service_price_ranges`. Como o tipo `03` (consumo de pacote) **nao
+possui faixa** (existem apenas '01' e '02'), ao selecionar '03' o efeito
+forcava o valor de volta para '01' imediatamente.
+
+Resultado: a opcao aparecia no select, mas era impossivel de manter
+selecionada. Consumo de pacote nao funcionava nesta tela.
+
+Correcao: o efeito agora preserva explicitamente o tipo '03'.
+
+### Bug 2: campo de desconto inacessivel
+
+A tela tinha toda a logica de desconto implementada
+(`generalDiscountType`, `generalDiscountValue`, `handleDiscountValueChange`,
+calculo de `generalDiscountAmount` e exibicao no resumo), mas **o campo nunca
+era renderizado**. Nao havia como aplicar desconto.
+
+Correcao: adicionados os campos "Tipo de desconto" (% ou R$) e "Desconto",
+ocultos no tipo 03.
+
+### Bug 3: data da venda travada e nunca enviada
+
+`const [saleDate] = useState(() => new Date())` — sem setter, input
+`disabled`, e **o payload nao enviava `saleDate`**. Toda venda gravava a data
+atual, sem possibilidade de lancamento retroativo (que o modal rapido permite).
+
+Correcao: campo `type="date"` editavel, limitado a hoje (`max`), e enviado no
+payload.
+
+### Bug 4: nao permitia atribuir a venda a outro atendente
+
+O modal rapido tem "Atribuir venda ao atendente" para admin. Esta tela nao
+tinha, e o payload nao enviava `attendantId`.
+
+Correcao: carrega `/api/auth/me` e, se admin, `/api/admin/users?active=true`;
+adicionado o campo de atribuicao (padrao "Eu mesmo"). A API ja aceitava
+`attendantId`, nenhuma mudanca de backend foi necessaria.
+
+### Bug 5: quantidade aceitava valor fracionado
+
+`step="0.01"` + `parseFloat` permitiam quantidades quebradas (ex.: 2,5
+unidades de atendimento).
+
+Correcao: `step="1"`, `min="1"` e `parseInt`.
+
+### Bug 6: "Valor unitario" enganoso em servico progressivo
+
+Exibia apenas o preco da faixa. Para 30 unidades de Reclamacao mostrava
+R$ 15,00, quando o valor medio real pago era R$ 23,33 (R$ 700 / 30).
+
+Correcao: em servicos progressivos o texto passou a exibir tambem o valor
+medio real por unidade.
+
+### Melhoria adicional
+
+O campo "Observacoes" nao era renderizado apesar de existir em `formData`.
+Adicionado.
+
+### Nao implementado nesta rodada
+
+**Cupom de desconto.** O modal rapido tem aplicacao de cupom; esta tela nao.
+Nao foi adicionado porque envolve a API de validacao de cupom e o calculo de
+`couponDiscountAmount`, com impacto em comissao. Fica registrado como
+proximo passo, se o cliente quiser paridade total.
+
 ## Pendencias / decisoes do cliente
 
 1. **Tipo 03 (consumo de pacote) forca "Atrasos".**

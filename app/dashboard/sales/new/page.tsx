@@ -70,12 +70,29 @@ type FormState = {
   generalDiscountValue: number;
 };
 
+type AttendantOption = {
+  value: string;
+  label: string;
+};
+
 const initialForm: FormState = {
   clientId: "",
   observations: "",
   paymentMethod: "pix",
   generalDiscountType: "percentage",
   generalDiscountValue: 0,
+};
+
+/** Data de hoje no formato yyyy-MM-dd, no fuso de Sao Paulo. */
+const getTodayInputValue = () => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const v = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+  return `${v.year}-${v.month}-${v.day}`;
 };
 
 const paymentMethodLabels: Record<PaymentMethod, string> = {
@@ -135,11 +152,21 @@ export default function NewSalePage() {
   const [quantity, setQuantity] = useState(1);
   const [saving, setSaving] = useState(false);
   const [collaboratorName, setCollaboratorName] = useState("Carregando...");
-  const [saleDate] = useState(() => new Date());
   const [clientSearch, setClientSearch] = useState("");
   const [packages, setPackages] = useState<any[]>([]);
   const [selectedPackageId, setSelectedPackageId] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
+
+  // [FIX] Data da venda passou a ser editavel (retroativo para admin).
+  // Antes era um useState sem setter e nem era enviada no payload, entao
+  // toda venda gravava a data atual.
+  const [saleDateInput, setSaleDateInput] = useState<string>(getTodayInputValue());
+
+  // [FIX] Atribuicao a outro atendente (paridade com o modal rapido).
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [attendants, setAttendants] = useState<AttendantOption[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [selectedAttendantId, setSelectedAttendantId] = useState<string>("");
 
   const handleQuickRegister = async (nameToRegister: string) => {
     if (!nameToRegister.trim()) return;
@@ -231,6 +258,16 @@ export default function NewSalePage() {
       return;
     }
 
+    // [FIX] O tipo 03 (consumo de pacote) NAO possui faixa em
+    // service_price_ranges (as faixas so existem para '01' e '02').
+    // Antes este efeito comparava o tipo escolhido com os tipos que possuem
+    // faixa e, ao selecionar '03', forcava o valor de volta para '01'
+    // imediatamente -- tornando o consumo de pacote impossivel nesta tela.
+    // Agora o '03' e explicitamente preservado.
+    if (saleType === "03") {
+      return;
+    }
+
     const availableTypes = Array.from(
       new Set(
         selectedServiceDefinition.priceRanges.map((range) => range.saleType),
@@ -249,6 +286,51 @@ export default function NewSalePage() {
       setServiceValue(0);
     }
   }, [applicablePriceRange]);
+
+  // [FIX] Carrega o usuario atual e, se for admin, a lista de atendentes,
+  // para permitir atribuir a venda a outra pessoa (paridade com o modal).
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    let active = true;
+
+    const load = async () => {
+      try {
+        const meRes = await fetch("/api/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const meData = await meRes.json();
+        if (!active || !meRes.ok || !meData.user) return;
+
+        const adminFlag = Boolean(meData.user.is_admin);
+        setIsAdmin(adminFlag);
+        setCurrentUserId(meData.user.id || "");
+
+        if (!adminFlag) return;
+
+        const usersRes = await fetch("/api/admin/users?active=true", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const usersData = await usersRes.json();
+        if (!active || !usersRes.ok || !Array.isArray(usersData.users)) return;
+
+        setAttendants(
+          usersData.users.map((u: any) => ({
+            value: u.id,
+            label: `${u.first_name ?? ""} ${u.last_name ?? ""}`.trim() || u.email,
+          })),
+        );
+      } catch (err) {
+        console.error("Erro ao carregar usuario/atendentes:", err);
+      }
+    };
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const fetchServices = useCallback(async () => {
     const token = localStorage.getItem("token");
@@ -376,9 +458,8 @@ export default function NewSalePage() {
   const formattedSaleDate = useMemo(() => {
     return new Intl.DateTimeFormat("pt-BR", {
       dateStyle: "medium",
-      timeStyle: "short",
-    }).format(saleDate);
-  }, [saleDate]);
+    }).format(new Date(`${getTodayInputValue()}T12:00:00`));
+  }, []);
 
   const subtotal = useMemo(() => {
     // 03 - Consumo de Pacote (Preco Zero na Venda, abate do pacote)
@@ -432,7 +513,9 @@ export default function NewSalePage() {
   };
 
   const handleQuantityChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const nextValue = parseFloat(event.target.value);
+    // [FIX] Unidades de atendimento sao inteiras. Antes usava parseFloat e
+    // permitia quantidade fracionada.
+    const nextValue = parseInt(event.target.value, 10);
     setQuantity(Number.isNaN(nextValue) ? 0 : Math.max(nextValue, 0));
   };
 
@@ -526,6 +609,12 @@ export default function NewSalePage() {
         ],
         serviceId: selectedServiceDefinition?.id,
         saleType,
+        // [FIX] Data da venda agora e enviada (permite retroativo).
+        // Antes o campo era somente leitura e nao ia no payload, entao o
+        // backend sempre gravava a data atual.
+        saleDate: saleDateInput,
+        // [FIX] Atribuicao a outro atendente (somente admin).
+        attendantId: isAdmin && selectedAttendantId ? selectedAttendantId : undefined,
         packageId: saleType === "03" ? selectedPackageId : undefined,
         carrierId: saleType === "03" ? formData.clientId : undefined // For Type 03, clientId IS carrierId
       };
@@ -654,17 +743,43 @@ export default function NewSalePage() {
                 className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white"
               />
             </div>
+            {/* [FIX] Data da venda agora e editavel (retroativo). */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Data da venda
+                Data da venda {isAdmin && <span className="text-purple-300 text-xs">(retroativo)</span>}
               </label>
               <input
-                type="text"
-                value={formattedSaleDate}
-                disabled
-                className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white"
+                type="date"
+                value={saleDateInput}
+                max={getTodayInputValue()}
+                onChange={(event) => setSaleDateInput(event.target.value)}
+                className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-white focus:border-white focus:outline-none"
               />
+              <p className="text-xs text-gray-400 mt-1">
+                Padrao: hoje ({formattedSaleDate}).
+              </p>
             </div>
+
+            {/* [FIX] Atribuir venda a outro atendente (apenas admin). */}
+            {isAdmin && attendants.length > 0 && (
+              <div className="md:col-span-2 rounded-xl bg-orange-500/10 border border-orange-500/30 p-3">
+                <Select
+                  label="Atribuir venda ao atendente"
+                  value={selectedAttendantId}
+                  onChange={(event: any) => setSelectedAttendantId(event.target.value)}
+                  options={[
+                    { value: "", label: "Eu mesmo (padrao)" },
+                    ...attendants.map((att) => ({
+                      value: att.value,
+                      label: att.value === currentUserId ? `${att.label} (Eu)` : att.label,
+                    })),
+                  ]}
+                />
+                <p className="text-xs text-orange-200/80 mt-1">
+                  A comissao sera gerada para o atendente selecionado.
+                </p>
+              </div>
+            )}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-300">
                 Cliente *
@@ -790,23 +905,83 @@ export default function NewSalePage() {
                 className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none"
                 placeholder="0,00"
               />
+              {/* [FIX] Em servico progressivo o preco da faixa nao representa
+                  o valor pago por unidade. Antes exibia so a faixa (ex.:
+                  R$ 15,00 para 30 un de Reclamacao), o que confundia, ja que
+                  o valor medio real era R$ 23,33. Agora o medio e explicitado. */}
               <p className="text-xs text-gray-400 mt-1">
-                {saleType === "03" ? "Sem custo (debito de saldo)" : "Valor calculado automaticamente."}
+                {saleType === "03"
+                  ? "Sem custo (debito de saldo)"
+                  : isProgressiveService(selectedServiceDefinition?.name) && quantity > 0 && subtotal > 0
+                    ? `Faixa atual. Medio real: ${currencyFormatter.format(subtotal / quantity)} / un.`
+                    : "Valor calculado automaticamente."}
               </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Quantidade *
               </label>
+              {/* [FIX] Quantidade passou a ser inteira. Antes aceitava
+                  fracionado (step 0.01), o que gerava unidades quebradas. */}
               <input
                 type="number"
                 value={quantity}
                 onChange={handleQuantityChange}
-                min="0.01"
-                step="0.01"
+                min="1"
+                step="1"
                 required
                 className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none"
                 placeholder="0"
+              />
+            </div>
+
+            {/* [FIX] Campo de desconto. A logica de desconto ja existia
+                (generalDiscountType/Value e handleDiscountValueChange), mas o
+                campo nunca era renderizado -- o desconto era inacessivel
+                nesta tela. */}
+            {saleType !== "03" && (
+              <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Select
+                    label="Tipo de desconto"
+                    name="generalDiscountType"
+                    value={formData.generalDiscountType}
+                    onChange={handleChange}
+                    options={[
+                      { value: "percentage", label: "% (percentual)" },
+                      { value: "fixed", label: "R$ (valor fixo)" },
+                    ]}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Desconto
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.generalDiscountValue}
+                    onChange={handleDiscountValueChange}
+                    min="0"
+                    step="0.01"
+                    className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Observacoes */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Observacoes (opcional)
+              </label>
+              <textarea
+                name="observations"
+                value={formData.observations}
+                onChange={handleChange}
+                rows={3}
+                className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none"
+                placeholder="Observacoes sobre a venda"
               />
             </div>
           </div>
