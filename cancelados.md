@@ -351,17 +351,35 @@ Esperado: faixas de CANCELADOS identicas as de RECLAMACAO.
   como progressivo.
 - Build e teste da matematica de preco aprovados.
 
+### Implantacao concluida
+
+Codigo publicado na branch `coolify-deploy` (commit `1bb0448`).
+
+Migracao 018 aplicada ao PostgreSQL da VPS com sucesso:
+
+- `CREATE FUNCTION` - helper `fnvj_normalize_text` criado;
+- `INSERT 0 1` - servico "Cancelados" criado;
+- `INSERT 0 4` - as 4 faixas da Reclamacao replicadas.
+
+Resultado verificado no banco de producao:
+
+| Servico | sale_type | min | max | unit_price |
+|---------|-----------|-----|-----|-----------|
+| Cancelados | 01 | 1 | 10 | 40 |
+| Cancelados | 01 | 11 | (nulo) | 15 |
+| Cancelados | 02 | 1 | 10 | 40 |
+| Cancelados | 02 | 11 | (nulo) | 15 |
+| Reclamação | 01 | 1 | 10 | 40 |
+| Reclamação | 01 | 11 | (nulo) | 15 |
+| Reclamação | 02 | 1 | 10 | 40 |
+| Reclamação | 02 | 11 | (nulo) | 15 |
+
+Precificacao **identica** confirmada, conforme o pedido. O nome real da
+reclamacao em producao e "Reclamação" (com acento), o que confirma o
+diagnostico do bug de acento descrito acima.
+
 ### Estado atual
 
-Implementacao concluida no workspace e aprovada nas validacoes locais.
-
-Ainda nao implantado:
-
-- a migracao 018 nao foi aplicada ao PostgreSQL da VPS;
-- nenhum commit/push foi realizado para esta demanda;
-- o Coolify ainda nao recebeu este codigo;
-- enquanto a migracao nao rodar, CANCELADOS nao aparece nas telas (sem quebrar
-  nada: as listas simplesmente nao trazem o servico e os contadores ficam em
-  zero).
-
-Proximo passo: aplicar a migracao 018 na VPS, depois publicar o codigo.
+Demanda implementada, migrada e publicada. Pendente apenas a validacao
+funcional na interface e as duas decisoes de negocio sobre pacote (ver
+"Pendencias / decisoes do cliente").
