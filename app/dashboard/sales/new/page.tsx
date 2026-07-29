@@ -229,10 +229,30 @@ export default function NewSalePage() {
   const filteredClients = useMemo(() => {
     const term = clientSearch.trim().toLowerCase();
     if (!term) return clients;
-    return clients.filter((client) =>
+
+    const matches = clients.filter((client) =>
       client.name.toLowerCase().includes(term),
     );
-  }, [clientSearch, clients]);
+
+    // [FIX] Mantem o cliente ja selecionado sempre presente nas opcoes.
+    // Antes, se o usuario selecionasse um cliente e depois digitasse algo na
+    // busca que nao casasse com ele, o cliente saia da lista de opcoes e o
+    // campo passava a exibir "Selecione uma opcao" -- dando a impressao de
+    // que a selecao havia sido perdida, mesmo com o clientId preenchido.
+    if (
+      formData.clientId &&
+      !matches.some((client) => client.id === formData.clientId)
+    ) {
+      const selected = clients.find(
+        (client) => client.id === formData.clientId,
+      );
+      if (selected) {
+        return [selected, ...matches];
+      }
+    }
+
+    return matches;
+  }, [clientSearch, clients, formData.clientId]);
 
   const applicablePriceRange = useMemo(() => {
     if (!selectedServiceDefinition) {
@@ -787,7 +807,7 @@ export default function NewSalePage() {
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Buscar cliente..."
+                  placeholder="Filtrar ou digitar nome para cadastro rapido..."
                   value={clientSearch}
                   onChange={(event) => setClientSearch(event.target.value)}
                   className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-2.5 text-white placeholder-gray-400 focus:border-white focus:outline-none"
@@ -803,11 +823,17 @@ export default function NewSalePage() {
                   </Button>
                 )}
               </div>
+              {/* [FIX] Busca habilitada dentro do proprio dropdown.
+                  Antes so existia o input externo (usado para o cadastro
+                  rapido), e nao era possivel pesquisar ao abrir a lista --
+                  com muitos clientes cadastrados ficava inviavel achar. */}
               <Select
                 name="clientId"
                 value={formData.clientId}
                 onChange={handleChange}
                 required
+                searchable
+                searchPlaceholder="Digite para buscar cliente..."
                 options={filteredClients.map((client) => ({
                   value: client.id,
                   label: client.clientType === 'package' 
