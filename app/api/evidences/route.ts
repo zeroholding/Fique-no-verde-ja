@@ -37,12 +37,6 @@ const authenticateUser = async (request: NextRequest) => {
   }
 };
 
-const authenticateAdmin = async (request: NextRequest) => {
-  const user = await authenticateUser(request);
-  if (!user.is_admin) throw new Error("Acesso negado: Perfil de Administrador necessário.");
-  return user;
-};
-
 // GET: Recupera evidences de um determinado mês e ano (ou de uma data especifica)
 export async function GET(request: NextRequest) {
   try {
@@ -99,7 +93,7 @@ export const maxDuration = 60; // segundos
 // POST: Realiza Upload Multipart
 export async function POST(request: NextRequest) {
   try {
-    const user = await authenticateAdmin(request); // Apenas admins fazem upload
+    const user = await authenticateUser(request); // Qualquer usuário autenticado pode fazer upload
 
     const uploadDir = path.join(process.cwd(), "public", "uploads", "evidences");
     if (!fs.existsSync(uploadDir)) {

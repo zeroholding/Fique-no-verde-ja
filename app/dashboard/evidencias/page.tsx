@@ -496,8 +496,7 @@ export default function EvidencesCalendarPage() {
         widthClassName="max-w-4xl w-[95%] sm:w-[90%]"
       >
           <div className="space-y-6">
-             {/* AREA DE UPLOAD (SO ADMIN) */}
-             {isAdmin && (
+             {/* AREA DE UPLOAD (USUARIOS AUTENTICADOS) */}
                  <div className="bg-black/40 border border-dashed border-white/20 p-5 rounded-2xl flex flex-col gap-4">
                      <div className="flex items-center gap-2 text-gray-300 mb-2">
                          <UploadCloud size={18} className="text-blue-400"/>
@@ -532,7 +531,6 @@ export default function EvidencesCalendarPage() {
                          </Button>
                      )}
                  </div>
-             )}
 
              {/* LISTA DO DIA */}
              <div>
