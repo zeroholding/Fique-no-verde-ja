@@ -34,3 +34,19 @@ body {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;  /* Chrome, Safari e Opera */
 }
+
+/* ============================================================
+   Painel FNVJ x TRACKEN (/tracken)
+   Tema claro e fonte propria, isolados do dashboard escuro.
+   ============================================================ */
+.tracken-root {
+  color-scheme: light;
+  font-family: var(--font-tracken-sans), "DM Sans", system-ui, sans-serif;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.tracken-root ::selection {
+  background: #bbf7d0;
+  color: #14532d;
+}

@@ -3,6 +3,34 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+/**
+ * Destino apos autenticar.
+ *
+ * O middleware manda quem nao tem sessao para /login?redirect=<origem>, entao o
+ * login precisa honrar esse parametro. Sem isso quem tentava abrir /tracken
+ * caia sempre no /dashboard.
+ *
+ * Somente caminho interno e aceito: precisa comecar com uma unica "/" e nao
+ * conter "\", o que barra redirecionamento para fora do dominio.
+ */
+const resolvePostLoginPath = (fallback = "/dashboard") => {
+  if (typeof window === "undefined") {
+    return fallback;
+  }
+
+  const requested = new URLSearchParams(window.location.search).get("redirect");
+  if (!requested) {
+    return fallback;
+  }
+
+  const isInternalPath =
+    requested.startsWith("/") &&
+    !requested.startsWith("//") &&
+    !requested.includes("\\");
+
+  return isInternalPath ? requested : fallback;
+};
+
 interface User {
   id: string;
   firstName: string;
@@ -113,8 +141,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAdmin: data.user.isAdmin,
       });
 
-      // Redireciona para o dashboard
-      router.push("/dashboard");
+      // Volta para a pagina que pediu o login (ex.: /tracken), ou dashboard
+      router.push(resolvePostLoginPath());
     } catch (error) {
       console.error("Erro no login:", error);
       throw error;

@@ -9,7 +9,8 @@ export function middleware(request: NextRequest) {
   const isPublicPath = publicPaths.some(path => pathname === path || pathname.startsWith('/api/auth'));
 
   // Rotas que precisam de autenticação
-  const protectedPaths = ['/dashboard'];
+  // /tracken e o painel FNVJ x TRACKEN e usa a mesma sessao do dashboard.
+  const protectedPaths = ['/dashboard', '/tracken'];
   const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path));
 
   // Pega o token do cookie
@@ -44,5 +45,11 @@ export function middleware(request: NextRequest) {
 
 // Aplicar middleware a rotas específicas
 export const config = {
-  matcher: ['/', '/login', '/dashboard/:path*', '/api/((?!evidences).)*'],
+  matcher: [
+    '/',
+    '/login',
+    '/dashboard/:path*',
+    '/tracken/:path*',
+    '/api/((?!evidences).)*',
+  ],
 };
