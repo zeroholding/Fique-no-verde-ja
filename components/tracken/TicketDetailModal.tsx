@@ -59,10 +59,8 @@ function Field({
 }) {
   return (
     <div>
-      <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-        {label}
-      </dt>
-      <dd className="mt-0.5 text-sm text-slate-800">{children}</dd>
+      <dt className="tk-eyebrow">{label}</dt>
+      <dd className="mt-1 text-[13px] text-slate-800">{children}</dd>
     </div>
   );
 }
@@ -214,15 +212,15 @@ export default function TicketDetailModal({
         pressStartedOnBackdrop.current = false;
       }}
     >
-      <div className="w-full max-w-3xl rounded-xl bg-white shadow-xl">
-        <header className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
+      <div className="tk-overlay w-full max-w-3xl rounded-xl bg-white">
+        <header className="flex items-start justify-between gap-4 border-b border-[var(--tk-line)] px-5 py-4">
           <div className="min-w-0">
-            <h2 className="text-base font-semibold text-slate-900">
-              Atendimento
+            <h2 className="text-[15px] font-semibold text-slate-900">
+              Detalhe do atendimento
             </h2>
-            <p className="mt-0.5 text-xs text-slate-500">
+            <p className="tk-num mt-0.5 font-mono text-[11.5px] text-slate-500">
               {ticket
-                ? `Envio ${ticket.shipment_id} · Venda ${ticket.order_id}`
+                ? `${ticket.shipment_id} · ${ticket.order_id}`
                 : "Carregando..."}
             </p>
           </div>

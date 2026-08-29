@@ -25,6 +25,8 @@ const COLOR_KEYS: TrackenColor[] = [
   "slate",
 ];
 
+export type { TrackenColor as TrackenColorName };
+
 export function normalizeColor(value: string | null | undefined): TrackenColor {
   if (value && (COLOR_KEYS as string[]).includes(value)) {
     return value as TrackenColor;

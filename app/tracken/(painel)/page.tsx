@@ -26,6 +26,10 @@ import Pagination from "@/components/tracken/Pagination";
 import TicketDetailModal from "@/components/tracken/TicketDetailModal";
 import TicketsTable from "@/components/tracken/TicketsTable";
 import TrackenFilters from "@/components/tracken/TrackenFilters";
+import {
+  PrimaryButton,
+  SecondaryButton,
+} from "@/components/tracken/PageShell";
 import { useTrackenCatalogs } from "@/components/tracken/useTrackenCatalogs";
 import { usePanelTickets } from "@/components/tracken/usePanelTickets";
 import type {
@@ -129,35 +133,48 @@ export default function TrackenPanelPage() {
   return (
     <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
-            Painel de Atendimento Fique no Verde Ja x TRACKen
+        <div className="min-w-0">
+          <h1 className="text-[19px] font-semibold tracking-[-0.01em] text-slate-900 sm:text-[22px]">
+            Painel de Atendimento
           </h1>
-          <p className="mt-1 text-sm text-slate-600">
-            Gestao central dos atendimentos de remocao de atraso recebidos via
-            TRACKen
+          <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-slate-500">
+            Solicitações de remoção de atraso recebidas da TRACKen, ordenadas pelo
+            limite de envio do Mercado Livre.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
-            <CalendarDays className="h-4 w-4 text-slate-500" aria-hidden="true" />
-            {periodLabel(filters.startDate)} ate {periodLabel(filters.endDate)}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="tk-num inline-flex items-center gap-1.5 rounded-lg border border-[var(--tk-line)] bg-white px-2.5 py-2 text-[12px] text-slate-600">
+            <CalendarDays
+              className="h-[15px] w-[15px] text-slate-400"
+              strokeWidth={1.75}
+              aria-hidden="true"
+            />
+            {periodLabel(filters.startDate)} — {periodLabel(filters.endDate)}
           </span>
 
-          <button
+          <SecondaryButton
+            type="button"
+            onClick={() =>
+              window.open(`/api/tracken/export?${queryString}`, "_blank")
+            }
+          >
+            <Download className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+            Exportar
+          </SecondaryButton>
+
+          <PrimaryButton
             type="button"
             onClick={() => reload({ silent: true })}
             disabled={isRefreshing}
-            className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isRefreshing ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
             ) : (
-              <RefreshCw className="h-4 w-4" aria-hidden="true" />
+              <RefreshCw className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
             )}
             Atualizar
-          </button>
+          </PrimaryButton>
         </div>
       </header>
 
@@ -258,7 +275,16 @@ export default function TrackenPanelPage() {
         />
       </div>
 
-      <div className="mt-4">
+      <div className="mt-6 flex items-baseline justify-between gap-3">
+        <h2 className="text-[15px] font-semibold text-slate-900">
+          Fila de atendimento
+        </h2>
+        <p className="text-[11.5px] text-slate-500">
+          Clique no status para alterar sem sair da lista
+        </p>
+      </div>
+
+      <div className="mt-2.5">
         <TrackenFilters
           filters={filters}
           carriers={carriers}
@@ -276,7 +302,7 @@ export default function TrackenPanelPage() {
         />
       </div>
 
-      <div className="mt-4">
+      <div className="mt-3">
         <TicketsTable
           tickets={tickets}
           statuses={statuses}
@@ -304,28 +330,16 @@ export default function TrackenPanelPage() {
         />
       </div>
 
-      <div className="mt-4 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-        <p className="flex items-start gap-2 text-xs text-slate-600">
-          <Lightbulb
-            className="mt-0.5 h-4 w-4 shrink-0 text-amber-500"
-            aria-hidden="true"
-          />
-          <span>
-            <span className="font-semibold text-slate-800">Dica:</span> clique no
-            status de qualquer linha para alterar sem abrir tela nenhuma. A
-            ordenacao padrao coloca o limite de envio mais proximo no topo.
-          </span>
-        </p>
-
-        <button
-          type="button"
-          onClick={() => window.open(`/api/tracken/export?${queryString}`, "_blank")}
-          className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2"
-        >
-          <Download className="h-4 w-4" aria-hidden="true" />
-          Exportar Relatorio
-        </button>
-      </div>
+      <p className="mt-5 flex items-start gap-2 text-[11.5px] leading-relaxed text-slate-500">
+        <Lightbulb
+          className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400"
+          strokeWidth={1.75}
+          aria-hidden="true"
+        />
+        A fila e ordenada pelo limite de envio: o mais urgente fica no topo.
+        Prazo vencido aparece em vermelho, e envio postado depois do limite recebe
+        a marca de fora do prazo.
+      </p>
 
       {openTicketId && (
         <TicketDetailModal

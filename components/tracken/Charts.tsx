@@ -28,22 +28,28 @@ const EMPTY_MESSAGE = "Sem dados no periodo selecionado";
 
 function ChartFrame({
   title,
+  hint,
   children,
   isEmpty,
 }: {
   title: string;
+  hint?: string;
   children: React.ReactNode;
   isEmpty?: boolean;
 }) {
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
+    <section className="tk-card tk-raised overflow-hidden">
+      <div className="border-b border-[var(--tk-line)] px-4 py-3">
+        <h3 className="text-[13px] font-semibold text-slate-900">{title}</h3>
+        {hint && <p className="mt-0.5 text-[11px] text-slate-500">{hint}</p>}
+      </div>
+
       {isEmpty ? (
-        <p className="flex h-44 items-center justify-center text-center text-xs text-slate-400">
+        <p className="flex h-[188px] items-center justify-center px-4 text-center text-[12px] text-slate-400">
           {EMPTY_MESSAGE}
         </p>
       ) : (
-        <div className="mt-3">{children}</div>
+        <div className="p-4">{children}</div>
       )}
     </section>
   );
@@ -69,7 +75,11 @@ export function CarrierDonut({
   total: number;
 }) {
   return (
-    <ChartFrame title="Por Transportadora" isEmpty={data.length === 0}>
+    <ChartFrame
+      title="Distribuição por transportadora"
+      hint="Volume recebido no período filtrado"
+      isEmpty={data.length === 0}
+    >
       <div className="flex items-center gap-4">
         <div className="relative h-40 w-40 shrink-0">
           <ResponsiveContainer width="100%" height="100%">
@@ -115,26 +125,26 @@ export function CarrierDonut({
           </div>
         </div>
 
-        <ul className="min-w-0 flex-1 space-y-2">
+        <ul className="min-w-0 flex-1 space-y-2.5">
           {data.map((slice) => (
-            <li key={slice.code} className="flex items-center gap-2 text-xs">
+            <li key={slice.code} className="flex items-center gap-2">
               <span
-                className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+                className={`h-2 w-2 shrink-0 rounded-full ${
                   DOT_CLASSES[normalizeColor(slice.color)]
                 }`}
                 aria-hidden="true"
               />
               <span
-                className="min-w-0 flex-1 truncate font-semibold text-slate-700"
+                className="min-w-0 flex-1 truncate text-[12px] font-semibold text-slate-700"
                 title={slice.name}
               >
                 {slice.code}
               </span>
-              <span className="tabular-nums font-semibold text-slate-900">
+              <span className="tk-num text-[12.5px] font-semibold text-slate-900">
                 {formatNumber(slice.count)}
               </span>
-              <span className="tabular-nums text-slate-400">
-                ({formatPercent(slice.percentage)})
+              <span className="tk-num w-[52px] text-right text-[11px] text-slate-500">
+                {formatPercent(slice.percentage)}
               </span>
             </li>
           ))}
@@ -161,25 +171,33 @@ export function StatusBars({ data }: { data: StatusSlice[] }) {
 
   return (
     <ChartFrame
-      title="Atendimentos por Status"
+      title="Composição por status"
+      hint="Onde a fila está parada"
       isEmpty={data.every((item) => item.count === 0)}
     >
-      <ul className="space-y-3 pt-1">
+      <ul className="space-y-3">
         {data.map((item) => (
           <li key={item.code}>
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-medium text-slate-600">{item.label}</span>
-              <span className="tabular-nums font-semibold text-slate-900">
-                {formatNumber(item.count)}
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-[12px] font-medium text-slate-700">
+                {item.label}
+              </span>
+              <span className="flex items-baseline gap-1.5">
+                <span className="tk-num text-[13px] font-semibold text-slate-900">
+                  {formatNumber(item.count)}
+                </span>
+                <span className="tk-num text-[10.5px] text-slate-500">
+                  {formatPercent(item.percentage)}
+                </span>
               </span>
             </div>
             <div
-              className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-slate-100"
+              className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100"
               role="img"
               aria-label={`${item.label}: ${item.count} atendimentos`}
             >
               <div
-                className={`h-full rounded-full ${
+                className={`h-full rounded-full transition-[width] duration-500 ${
                   BAR_CLASSES[normalizeColor(item.color)]
                 }`}
                 style={{ width: `${(item.count / max) * 100}%` }}
@@ -206,8 +224,9 @@ export function TrendLine({ data }: { data: TrendPoint[] }) {
 
   return (
     <ChartFrame
-      title="Tendencia dos ultimos 7 dias"
-      isEmpty={data.length === 0}
+      title="Recebidos nos últimos 7 dias"
+      hint="Independente do período filtrado"
+      isEmpty={data.every((point) => point.count === 0)}
     >
       <div className="h-40 w-full">
         <ResponsiveContainer width="100%" height="100%">
@@ -272,7 +291,10 @@ export function SlaGauge({
   const color = meetsTarget ? CHART_HEX.green : CHART_HEX.red;
 
   return (
-    <ChartFrame title="SLA de Atendimento">
+    <ChartFrame
+      title="Cumprimento de prazo"
+      hint="Finalizados antes do limite de envio"
+    >
       <div className="relative h-40 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <RadialBarChart

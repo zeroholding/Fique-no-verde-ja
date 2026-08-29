@@ -37,16 +37,129 @@ body {
 
 /* ============================================================
    Painel FNVJ x TRACKEN (/tracken)
-   Tema claro e fonte propria, isolados do dashboard escuro.
+
+   Sistema visual proprio, isolado do dashboard escuro. A navegacao e
+   escura e o conteudo claro: e o arranjo usado em painel operacional
+   (Azure, Datadog, Grafana) porque separa "onde estou" de "o que estou
+   lendo" sem precisar de borda grossa.
    ============================================================ */
 .tracken-root {
   color-scheme: light;
   font-family: var(--font-tracken-sans), "DM Sans", system-ui, sans-serif;
-  background: #f8fafc;
-  color: #0f172a;
+
+  /* Superficies, da mais funda para a mais alta */
+  --tk-nav: #0f1520;
+  --tk-nav-raised: #18202e;
+  --tk-canvas: #f6f7f9;
+  --tk-surface: #ffffff;
+  --tk-surface-muted: #fafbfc;
+
+  /* Tracos: linha quase imperceptivel, para separar sem enquadrar */
+  --tk-line: #e7e9ee;
+  --tk-line-strong: #d6dae2;
+
+  /* Texto */
+  --tk-ink: #10151f;
+  --tk-ink-soft: #5a6474;
+  --tk-ink-faint: #8b93a1;
+
+  /* Marca */
+  --tk-brand: #0b903a;
+  --tk-brand-strong: #048842;
+  --tk-brand-wash: #eff8f1;
+
+  background: var(--tk-canvas);
+  color: var(--tk-ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "cv11", "ss01";
 }
 
 .tracken-root ::selection {
-  background: #bbf7d0;
-  color: #14532d;
+  background: #c9ecd3;
+  color: #0b3d1c;
+}
+
+/* Numero em coluna alinha quando as casas tem a mesma largura. */
+.tk-num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Rotulo de secao e de cabecalho de coluna. */
+.tk-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tk-ink-faint);
+}
+
+/* Elevacao usada com parcimonia: so o que flutua de fato. */
+.tk-card {
+  background: var(--tk-surface);
+  border: 1px solid var(--tk-line);
+  border-radius: 10px;
+}
+
+.tk-raised {
+  box-shadow:
+    0 1px 2px rgb(16 21 31 / 0.04),
+    0 4px 12px -2px rgb(16 21 31 / 0.06);
+}
+
+.tk-overlay {
+  box-shadow:
+    0 0 0 1px rgb(16 21 31 / 0.05),
+    0 8px 24px -4px rgb(16 21 31 / 0.12),
+    0 16px 48px -8px rgb(16 21 31 / 0.1);
+}
+
+/* Grade de dados: separacao horizontal apenas. Regua vertical e o que da
+   aparencia de planilha. */
+.tk-grid-row {
+  border-bottom: 1px solid var(--tk-line);
+  transition: background-color 120ms ease;
+}
+.tk-grid-row:last-child {
+  border-bottom: 0;
+}
+.tk-grid-row:hover {
+  background: var(--tk-surface-muted);
+}
+
+/* Acao que aparece ao passar o mouse, mas segue acessivel por teclado. */
+.tk-row-action {
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.tk-grid-row:hover .tk-row-action,
+.tk-row-action:focus-within {
+  opacity: 1;
+}
+@media (hover: none) {
+  .tk-row-action {
+    opacity: 1;
+  }
+}
+
+/* Barra de estado do item ativo na navegacao. */
+.tk-nav-active {
+  position: relative;
+}
+.tk-nav-active::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  height: 18px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: #4ade80;
+  transform: translateY(-50%);
+}
+
+.tracken-root *:focus-visible {
+  outline: 2px solid var(--tk-brand);
+  outline-offset: 1px;
 }

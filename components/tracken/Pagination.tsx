@@ -3,7 +3,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { formatNumber } from "@/lib/tracken/format";
 
-/** Monta a lista de paginas com reticencias, como no mockup: 1 2 3 ... 32. */
+/** Monta a lista de paginas com reticencias: 1 2 3 ... 32. */
 function buildPageList(current: number, totalPages: number): Array<number | "gap"> {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, index) => index + 1);
@@ -57,34 +57,31 @@ export default function Pagination({
   const lastRow = Math.min(page * pageSize, total);
   const pages = buildPageList(page, totalPages);
 
+  const stepClasses =
+    "rounded-md border border-[var(--tk-line-strong)] bg-white p-1.5 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40";
+
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-center gap-3">
-        <p className="text-xs text-slate-500">
-          Mostrando{" "}
-          <span className="font-semibold text-slate-700">
-            {formatNumber(firstRow)}
-          </span>{" "}
-          a{" "}
-          <span className="font-semibold text-slate-700">
-            {formatNumber(lastRow)}
+      <div className="flex items-center gap-4">
+        <p className="tk-num text-[12px] text-slate-500">
+          <span className="font-semibold text-slate-800">
+            {formatNumber(firstRow)}–{formatNumber(lastRow)}
           </span>{" "}
           de{" "}
-          <span className="font-semibold text-slate-700">
+          <span className="font-semibold text-slate-800">
             {formatNumber(total)}
-          </span>{" "}
-          registros
+          </span>
         </p>
 
-        <label className="flex items-center gap-1.5 text-xs text-slate-500">
-          <span className="sr-only sm:not-sr-only">Por pagina</span>
+        <label className="flex items-center gap-1.5 text-[12px] text-slate-500">
+          <span className="hidden sm:inline">Linhas</span>
           <select
             value={pageSize}
             onChange={(event) => onPageSizeChange(Number(event.target.value))}
-            aria-label="Registros por pagina"
-            className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 outline-none focus:border-green-500"
+            aria-label="Linhas por página"
+            className="tk-num rounded-md border border-[var(--tk-line-strong)] bg-white px-2 py-1 text-[12px] text-slate-700 transition-colors hover:bg-slate-50"
           >
-            {[8, 25, 50, 100].map((size) => (
+            {[25, 50, 100, 200].map((size) => (
               <option key={size} value={size}>
                 {size}
               </option>
@@ -93,13 +90,13 @@ export default function Pagination({
         </label>
       </div>
 
-      <nav className="flex items-center gap-1" aria-label="Paginacao">
+      <nav className="flex items-center gap-1" aria-label="Paginação">
         <button
           type="button"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className="rounded-md border border-slate-200 bg-white p-1.5 text-slate-500 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-          aria-label="Pagina anterior"
+          className={stepClasses}
+          aria-label="Página anterior"
         >
           <ChevronLeft className="h-4 w-4" aria-hidden="true" />
         </button>
@@ -108,10 +105,10 @@ export default function Pagination({
           item === "gap" ? (
             <span
               key={`gap-${index}`}
-              className="px-1.5 text-xs text-slate-400"
+              className="px-1 text-[12px] text-slate-300"
               aria-hidden="true"
             >
-              ...
+              …
             </span>
           ) : (
             <button
@@ -119,10 +116,10 @@ export default function Pagination({
               type="button"
               onClick={() => onPageChange(item)}
               aria-current={item === page ? "page" : undefined}
-              className={`min-w-8 rounded-md border px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+              className={`tk-num min-w-[30px] rounded-md border px-2 py-1.5 text-[12px] font-semibold transition-colors ${
                 item === page
-                  ? "border-green-600 bg-green-600 text-white"
-                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                  ? "border-[var(--tk-brand-strong)] bg-[var(--tk-brand-strong)] text-white"
+                  : "border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900"
               }`}
             >
               {item}
@@ -134,8 +131,8 @@ export default function Pagination({
           type="button"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          className="rounded-md border border-slate-200 bg-white p-1.5 text-slate-500 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-          aria-label="Proxima pagina"
+          className={stepClasses}
+          aria-label="Próxima página"
         >
           <ChevronRight className="h-4 w-4" aria-hidden="true" />
         </button>

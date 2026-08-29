@@ -2,7 +2,36 @@
 
 import type { LucideIcon } from "lucide-react";
 import { formatNumber } from "@/lib/tracken/format";
-import { KPI_ICON_CLASSES, normalizeColor } from "./tokens";
+import { normalizeColor, type TrackenColor } from "./tokens";
+
+/**
+ * Cartao de indicador.
+ *
+ * A hierarquia e deliberada: o numero e o que se le de longe, o rotulo e
+ * pequeno e o icone e discreto. Quando rotulo, numero e icone tem peso
+ * parecido, nada se destaca e o cartao vira decoracao.
+ *
+ * Clicavel: aplica o filtro correspondente na grade.
+ */
+
+/** Trilha superior de cor, o unico lugar onde a cor aparece cheia. */
+const RAIL: Record<TrackenColor, string> = {
+  green: "bg-green-500",
+  blue: "bg-blue-500",
+  amber: "bg-amber-500",
+  red: "bg-red-500",
+  purple: "bg-purple-500",
+  slate: "bg-slate-300",
+};
+
+const ICON_TINT: Record<TrackenColor, string> = {
+  green: "text-green-600",
+  blue: "text-blue-600",
+  amber: "text-amber-600",
+  red: "text-red-600",
+  purple: "text-purple-600",
+  slate: "text-slate-400",
+};
 
 type Props = {
   title: string;
@@ -14,7 +43,6 @@ type Props = {
   onClick?: () => void;
 };
 
-/** Cartao de indicador. Clicavel: aplica o filtro de status correspondente. */
 export default function KpiCard({
   title,
   value,
@@ -28,38 +56,41 @@ export default function KpiCard({
 
   const content = (
     <>
-      <div className="flex items-start justify-between gap-3">
-        <span className="text-sm font-medium text-slate-500">{title}</span>
-        <span
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${KPI_ICON_CLASSES[tone]}`}
-        >
-          <Icon className="h-4 w-4" aria-hidden="true" />
-        </span>
+      <span
+        className={`absolute inset-x-0 top-0 h-[3px] ${RAIL[tone]} ${
+          isActive ? "opacity-100" : "opacity-0 transition-opacity"
+        } group-hover:opacity-70`}
+        aria-hidden="true"
+      />
+
+      <div className="flex items-start justify-between gap-2">
+        <span className="tk-eyebrow">{title}</span>
+        <Icon
+          className={`h-4 w-4 shrink-0 ${ICON_TINT[tone]}`}
+          strokeWidth={1.75}
+          aria-hidden="true"
+        />
       </div>
-      <p className="mt-3 text-3xl font-bold tabular-nums text-slate-900">
+
+      <p className="tk-num mt-2.5 text-[28px] font-semibold leading-none text-slate-900">
         {formatNumber(value)}
       </p>
-      <p className="mt-1 text-xs text-slate-500">{hint}</p>
+      <p className="mt-1.5 text-[11.5px] text-slate-500">{hint}</p>
     </>
   );
 
-  const baseClasses = `rounded-xl border bg-white p-4 text-left shadow-sm transition-all ${
+  const base = `group relative overflow-hidden rounded-[10px] border bg-white px-4 pb-3.5 pt-4 text-left transition-all ${
     isActive
-      ? "border-green-400 ring-2 ring-green-100"
-      : "border-slate-200"
+      ? "border-[var(--tk-brand)] shadow-[0_0_0_3px_var(--tk-brand-wash)]"
+      : "border-[var(--tk-line)] hover:border-[var(--tk-line-strong)]"
   }`;
 
   if (!onClick) {
-    return <div className={baseClasses}>{content}</div>;
+    return <div className={base}>{content}</div>;
   }
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={isActive}
-      className={`${baseClasses} hover:border-slate-300 hover:shadow focus:outline-none focus:ring-2 focus:ring-green-200`}
-    >
+    <button type="button" onClick={onClick} aria-pressed={isActive} className={base}>
       {content}
     </button>
   );
