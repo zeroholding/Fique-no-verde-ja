@@ -1,195 +1,96 @@
 import type { Metadata } from "next";
-import { FnvjLogo, FnvjMark } from "@/components/tracken/BrandLogo";
+import { FnvjLogo } from "@/components/tracken/BrandLogo";
 import TrackenLoginForm from "@/components/tracken/TrackenLoginForm";
 
 /**
- * Tela de login propria do painel FNVJ x TRACKEN.
+ * Tela de login do painel FNVJ x TRACKEN.
  *
  * As credenciais sao as MESMAS do Fique no Verde: mesmo e-mail, mesma senha,
  * mesma tabela `users`, mesmo endpoint /api/auth/signin. O que muda e a porta
  * de entrada e a identidade visual.
  *
- * O painel de marca e estatico e fica neste Server Component de proposito: so o
- * formulario vai como JavaScript para o navegador, o que deixa a tela mais leve
- * e ja pintada no primeiro carregamento.
+ * Cartao unico centralizado, com divisoria curva entre o painel da marca e o
+ * formulario. So o formulario vai como JavaScript para o navegador; todo o
+ * resto e renderizado no servidor.
  */
 
 export const metadata: Metadata = {
   title: "Entrar | Painel TRACKen",
   description: "Acesso ao painel de atendimento FNVJ x TRACKen",
-  // Tela de autenticacao nao deve ser indexada.
   robots: { index: false, follow: false },
 };
 
-/** Icones do painel de marca, desenhados aqui para nao virar dependencia. */
-const FEATURE_ICONS = {
-  bolt: (
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M13 3 4 14h6l-1 7 9-11h-6l1-7Z"
-    />
-  ),
-  gauge: (
-    <>
-      <path strokeLinecap="round" d="M12 14 16 9" />
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M4 18a9 9 0 1 1 16 0"
-      />
-      <circle cx="12" cy="18" r="1.4" />
-    </>
-  ),
-  plug: (
-    <>
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M10 4v5m4-5v5M7 9h10v3a5 5 0 0 1-10 0V9Zm5 8v4"
-      />
-    </>
-  ),
-  shield: (
-    <>
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M12 3.5 5 6v5.5c0 4.2 2.9 7.6 7 8.9 4.1-1.3 7-4.7 7-8.9V6l-7-2.5Z"
-      />
-      <path strokeLinecap="round" strokeLinejoin="round" d="m9.3 11.8 2 2 3.4-3.4" />
-    </>
-  ),
-};
-
-const FEATURES: Array<{
-  icon: keyof typeof FEATURE_ICONS;
-  title: string;
-  description: string;
-}> = [
-  {
-    icon: "bolt",
-    title: "Atendimento em um clique",
-    description: "Troque o status direto na lista, sem abrir tela nenhuma.",
-  },
-  {
-    icon: "gauge",
-    title: "Prazo sempre à vista",
-    description:
-      "O limite de envio do Mercado Livre ordena a fila e acende o alerta.",
-  },
-  {
-    icon: "plug",
-    title: "Integração direta",
-    description: "As solicitações chegam da TRACKen por API, em lote ou uma a uma.",
-  },
-  {
-    icon: "shield",
-    title: "Histórico inviolável",
-    description: "Cada mudança fica registrada e nenhuma pode ser reescrita.",
-  },
-];
-
 export default function TrackenLoginPage() {
   return (
-    <div className="flex min-h-screen flex-col lg:flex-row">
-      {/* ---------------- Painel de marca (some no mobile) ---------------- */}
-      <section className="relative hidden overflow-hidden bg-gradient-to-br from-[#036c35] via-[#048842] to-[#0b903a] lg:flex lg:w-[52%] lg:flex-col lg:justify-between lg:p-12 xl:p-16">
-        {/* Trama de pontos, puramente decorativa */}
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#0d9c40] via-[#048842] to-[#02652f] p-4 sm:p-6">
+      <div className="relative w-full max-w-4xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+        {/*
+          Divisoria curva. Fica atras do conteudo e some no mobile, onde o
+          cartao passa a ter uma coluna so. `preserveAspectRatio="none"` deixa
+          a onda acompanhar qualquer altura de cartao.
+        */}
         <svg
-          className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.18]"
+          className="absolute inset-0 hidden h-full w-full md:block"
+          viewBox="0 0 800 480"
+          preserveAspectRatio="none"
           aria-hidden="true"
         >
           <defs>
-            <pattern
-              id="tracken-dots"
-              width="22"
-              height="22"
-              patternUnits="userSpaceOnUse"
+            <linearGradient
+              id="tracken-wave"
+              x1="0"
+              y1="0"
+              x2="1"
+              y2="1"
             >
-              <circle cx="1.5" cy="1.5" r="1.5" fill="#ffffff" />
-            </pattern>
+              <stop offset="0%" stopColor="#5ec624" />
+              <stop offset="55%" stopColor="#0b903a" />
+              <stop offset="100%" stopColor="#036c35" />
+            </linearGradient>
           </defs>
-          <rect width="100%" height="100%" fill="url(#tracken-dots)" />
+          <path
+            fill="url(#tracken-wave)"
+            d="M0,0 H408 C462,104 330,182 374,286 C412,376 452,398 416,480 H0 Z"
+          />
         </svg>
 
-        {/* Marca d'agua com o simbolo */}
-        <div
-          className="pointer-events-none absolute -bottom-16 -right-16 opacity-[0.07]"
-          aria-hidden="true"
-        >
-          <FnvjMark className="h-[26rem] w-[26rem]" />
-        </div>
+        <div className="relative grid md:grid-cols-2">
+          {/* -------- Painel da marca (some no mobile) -------- */}
+          <div className="hidden flex-col justify-center p-10 pr-16 md:flex lg:p-14 lg:pr-20">
+            <FnvjLogo className="h-11 w-auto" onDark />
 
-        <div className="relative">
-          <FnvjLogo className="h-14 w-auto" onDark />
+            <h1 className="mt-10 text-2xl font-bold leading-snug text-white lg:text-3xl">
+              Painel TRACKen
+            </h1>
 
-          <h1 className="mt-12 max-w-md text-3xl font-bold leading-tight text-white xl:text-4xl">
-            Painel de Atendimento
-            <span className="mt-1 block text-green-200">
-              Fique no Verde Já × TRACKen
-            </span>
-          </h1>
+            <span
+              className="mt-4 block h-1 w-12 rounded-full bg-white/70"
+              aria-hidden="true"
+            />
 
-          <p className="mt-4 max-w-md text-sm leading-relaxed text-green-50/90">
-            Gestão central das solicitações de remoção de atraso que chegam da
-            TRACKen. Uma fila, um prazo, um lugar para resolver.
-          </p>
-        </div>
-
-        <ul className="relative mt-12 space-y-5">
-          {FEATURES.map((feature) => (
-            <li key={feature.title} className="flex items-start gap-3.5">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15 ring-1 ring-inset ring-white/25">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.8}
-                  className="h-4 w-4 text-white"
-                  aria-hidden="true"
-                >
-                  {FEATURE_ICONS[feature.icon]}
-                </svg>
-              </span>
-              <span>
-                <span className="block text-sm font-semibold text-white">
-                  {feature.title}
-                </span>
-                <span className="mt-0.5 block text-xs leading-relaxed text-green-50/80">
-                  {feature.description}
-                </span>
-              </span>
-            </li>
-          ))}
-        </ul>
-
-        <p className="relative mt-12 text-[11px] text-green-50/60">
-          Uso restrito à equipe Fique no Verde Já.
-        </p>
-      </section>
-
-      {/* ---------------- Coluna do formulario ---------------- */}
-      <section className="flex flex-1 items-center justify-center bg-slate-50 px-4 py-12 sm:px-8">
-        <div className="w-full max-w-sm">
-          {/* No mobile o painel de marca nao aparece, entao a marca entra aqui */}
-          <div className="mb-8 flex flex-col items-center lg:hidden">
-            <FnvjLogo className="h-12 w-auto" />
-            <p className="mt-3 text-sm font-medium text-slate-500">
-              Painel de Atendimento TRACKen
+            <p className="mt-4 max-w-[15rem] text-sm leading-relaxed text-green-50/90">
+              Entre para acompanhar e resolver os atendimentos do dia.
             </p>
           </div>
 
-          <div className="hidden lg:block">
-            <h2 className="text-xl font-bold text-slate-900">Entrar no painel</h2>
+          {/* -------- Formulario -------- */}
+          <div className="px-7 py-10 sm:px-10 lg:px-14 lg:py-14">
+            {/* No mobile o painel da marca nao aparece, entao a logo entra aqui */}
+            <div className="mb-8 flex justify-center md:hidden">
+              <FnvjLogo className="h-11 w-auto" />
+            </div>
+
+            <h2 className="text-lg font-bold text-slate-900 md:text-xl">
+              Entrar
+            </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Use suas credenciais do Fique no Verde Já.
+              Suas credenciais do Fique no Verde Já.
             </p>
-          </div>
 
-          <TrackenLoginForm />
+            <TrackenLoginForm />
+          </div>
         </div>
-      </section>
+      </div>
     </div>
   );
 }
