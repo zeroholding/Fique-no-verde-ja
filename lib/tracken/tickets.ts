@@ -10,12 +10,22 @@ import type { NormalizedItem } from "./validation";
 
 /** Regra de negocio do atendimento Tracken. */
 
-export async function getStatusMap(): Promise<TrackenStatusRow[]> {
+/**
+ * Mapa de status.
+ *
+ * @param includeInactive inclui status desativados. Necessario ao VALIDAR uma
+ *   transicao: se o status atual do atendimento saiu do mapa, sem ele a origem
+ *   fica desconhecida e o atendimento trava para sempre, com mensagem
+ *   enganosa. Para montar filtro e catalogo, so os ativos interessam.
+ */
+export async function getStatusMap(
+  includeInactive = false
+): Promise<TrackenStatusRow[]> {
   const result = await trackenQuery<TrackenStatusRow>(
     `SELECT code, label, tracken_status, color, sort_order,
-            is_initial, is_final, counts_as_sla, allowed_next
+            is_initial, is_final, counts_as_sla, allowed_next, is_active
        FROM tracken_status_map
-      WHERE is_active = true
+      ${includeInactive ? "" : "WHERE is_active = true"}
       ORDER BY sort_order`
   );
   return result.rows;
@@ -134,12 +144,13 @@ export async function createTicketsBatch(
           `INSERT INTO tracken_tickets (
              shipment_id, order_id, carrier_id, tracken_ref,
              buyer_nickname, buyer_name, seller_name, seller_ml_id,
-             sale_date, shipping_deadline, status, service_type,
+             sale_date, shipping_deadline, shipped_at, shipping_mode,
+             status, service_type,
              tracking_number, pack_id, delay_reason, requested_by,
              payload_raw, credential_id
            ) VALUES (
              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
-             $13, $14, $15, $16, $17::jsonb, $18
+             $13, $14, $15, $16, $17, $18, $19::jsonb, $20
            )
            ON CONFLICT (shipment_id) DO NOTHING
            RETURNING id, status`,
@@ -156,6 +167,8 @@ export async function createTicketsBatch(
             normalized.shippingDeadline
               ? normalized.shippingDeadline.toISOString()
               : null,
+            normalized.shippedAt ? normalized.shippedAt.toISOString() : null,
+            normalized.shippingMode,
             initialStatus,
             normalized.serviceType,
             normalized.trackingNumber,
@@ -265,12 +278,20 @@ export type StatusChangeInput = {
  * depois, pelo worker do outbox.
  */
 export async function changeTicketStatus(input: StatusChangeInput) {
-  const statuses = await getStatusMap();
+  // Inclui desativados para reconhecer a origem de um atendimento cujo status
+  // saiu do mapa. O destino, porem, precisa estar ativo.
+  const statuses = await getStatusMap(true);
   const target = statuses.find((status) => status.code === input.toStatus);
   if (!target) {
     throw unprocessable(
       "INVALID_STATUS",
       `Status "${input.toStatus}" nao existe no mapa de status`
+    );
+  }
+  if (target.is_active === false) {
+    throw unprocessable(
+      "INACTIVE_STATUS",
+      `Status "${target.label}" esta desativado e nao pode ser aplicado`
     );
   }
 

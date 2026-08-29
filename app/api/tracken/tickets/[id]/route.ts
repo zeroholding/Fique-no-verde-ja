@@ -33,8 +33,9 @@ export async function GET(
               t.buyer_nickname, t.buyer_name,
               t.seller_name, t.seller_ml_id,
               t.sale_date, t.shipping_deadline, t.received_at,
+              t.shipped_at, t.shipping_mode,
               t.status, sm.label AS status_label, sm.color AS status_color,
-              sm.allowed_next, sm.is_final,
+              sm.allowed_next, sm.is_final, sm.is_active AS status_is_active,
               t.assigned_user_id,
               NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), '')
                 AS assigned_user_name,

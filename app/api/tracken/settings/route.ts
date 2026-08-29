@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticatePanelUser } from "@/lib/tracken/auth";
-import { trackenQuery } from "@/lib/tracken/db";
+import { withClient } from "@/lib/tracken/db";
 import { toErrorResponse } from "@/lib/tracken/errors";
 
 /**
@@ -34,9 +34,11 @@ export async function GET(request: NextRequest) {
   try {
     const user = await authenticatePanelUser(request);
 
+    // As cinco consultas rodam em UMA conexao, em sequencia, para nao ocupar
+    // metade do pool de dez slots numa unica requisicao.
     const [credentials, statuses, outboxSummary, outboxRecent, requestLog] =
-      await Promise.all([
-        trackenQuery<CredentialRow>(
+      await withClient(async (run) => [
+        await run<CredentialRow>(
           `SELECT id, name, api_key, environment, scopes, require_signature,
                   (secret_encrypted IS NOT NULL) AS has_encrypted_secret,
                   allowed_ips, webhook_url, is_active,
@@ -45,20 +47,20 @@ export async function GET(request: NextRequest) {
             ORDER BY created_at DESC`
         ),
 
-        trackenQuery(
+        await run(
           `SELECT code, label, tracken_status, color, sort_order,
                   is_initial, is_final, counts_as_sla, allowed_next, is_active
              FROM tracken_status_map
             ORDER BY sort_order`
         ),
 
-        trackenQuery<{ status: string; total: string }>(
+        await run<{ status: string; total: string }>(
           `SELECT status, COUNT(*)::text AS total
              FROM tracken_outbox
             GROUP BY status`
         ),
 
-        trackenQuery(
+        await run(
           `SELECT o.id, o.event_type, o.status, o.attempts, o.max_attempts,
                   o.next_attempt_at, o.last_error, o.last_http_status,
                   o.sent_at, o.created_at, t.shipment_id
@@ -68,7 +70,7 @@ export async function GET(request: NextRequest) {
             LIMIT 25`
         ),
 
-        trackenQuery<{
+        await run<{
           total: string;
           erros: string;
           ultima: string | null;

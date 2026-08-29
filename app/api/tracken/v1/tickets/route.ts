@@ -6,6 +6,7 @@ import {
   payloadTooLarge,
   toErrorResponse,
 } from "@/lib/tracken/errors";
+import { PANEL_TIMEZONE } from "@/lib/tracken/filters";
 import { createTicketsBatch } from "@/lib/tracken/tickets";
 import {
   MAX_BATCH_ITEMS,
@@ -170,9 +171,11 @@ type PublicTicketRow = {
   status: string;
   status_label: string | null;
   service_type: string;
+  shipping_mode: string | null;
   seller_name: string;
   sale_date: string;
   shipping_deadline: string | null;
+  shipped_at: string | null;
   received_at: string;
   started_at: string | null;
   finished_at: string | null;
@@ -202,16 +205,34 @@ export async function GET(request: NextRequest) {
       conditions.push(`c.code = $${params.length}`);
     }
 
+    // `from` e `to` sao dias no fuso da operacao, nao instantes UTC. Sem essa
+    // conversao, `?from=2026-08-19` significaria 18/08 21:00 em Sao Paulo e os
+    // totais da Tracken nunca fechariam com os do painel.
+    const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
     const from = searchParams.get("from");
     if (from) {
+      if (!DATE_ONLY.test(from)) {
+        throw badRequest("INVALID_FROM", "from deve estar no formato YYYY-MM-DD");
+      }
       params.push(from);
-      conditions.push(`t.received_at >= $${params.length}::timestamptz`);
+      conditions.push(
+        `t.received_at >= (($${params.length}::date)::timestamp
+           AT TIME ZONE '${PANEL_TIMEZONE}')`
+      );
     }
 
     const to = searchParams.get("to");
     if (to) {
+      if (!DATE_ONLY.test(to)) {
+        throw badRequest("INVALID_TO", "to deve estar no formato YYYY-MM-DD");
+      }
       params.push(to);
-      conditions.push(`t.received_at <= $${params.length}::timestamptz`);
+      // Meia-noite do dia seguinte, exclusivo: inclui o dia inteiro informado.
+      conditions.push(
+        `t.received_at < (($${params.length}::date + 1)::timestamp
+           AT TIME ZONE '${PANEL_TIMEZONE}')`
+      );
     }
 
     const page = Math.max(1, Number(searchParams.get("page")) || 1);
@@ -234,14 +255,15 @@ export async function GET(request: NextRequest) {
     const listParams = [...params, pageSize, (page - 1) * pageSize];
     const rows = await trackenQuery<PublicTicketRow>(
       `SELECT t.shipment_id, t.order_id, c.code AS carrier_code, t.status,
-              sm.label AS status_label, t.service_type, t.seller_name,
-              t.sale_date, t.shipping_deadline, t.received_at,
+              sm.label AS status_label, t.service_type, t.shipping_mode,
+              t.seller_name,
+              t.sale_date, t.shipping_deadline, t.shipped_at, t.received_at,
               t.started_at, t.finished_at, t.ml_claim_id
          FROM tracken_tickets t
          LEFT JOIN tracken_carriers c ON c.id = t.carrier_id
          LEFT JOIN tracken_status_map sm ON sm.code = t.status
          ${whereClause}
-         ORDER BY t.received_at DESC
+         ORDER BY t.received_at DESC, t.id
          LIMIT $${listParams.length - 1} OFFSET $${listParams.length}`,
       listParams
     );

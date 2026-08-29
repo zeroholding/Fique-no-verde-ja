@@ -4,6 +4,7 @@ import { trackenQuery } from "@/lib/tracken/db";
 import { toErrorResponse } from "@/lib/tracken/errors";
 import { buildTicketFilters, parsePanelFilters } from "@/lib/tracken/filters";
 import { formatDate, formatTime, toInputDate } from "@/lib/tracken/format";
+import { describeShippingMode } from "@/lib/tracken/shipping";
 
 /**
  * GET /api/tracken/export
@@ -27,8 +28,11 @@ const HEADERS = [
   "Nome do Comprador",
   "Seller",
   "Servico",
+  "Modalidade de Envio",
+  "E FLEX",
   "Data da Venda",
   "Limite de Envio",
+  "Envio Realizado em",
   "Status",
   "Recebido em",
   "Atendente",
@@ -58,8 +62,10 @@ type ExportRow = {
   buyer_name: string | null;
   seller_name: string;
   service_type: string;
+  shipping_mode: string | null;
   sale_date: string;
   shipping_deadline: string | null;
+  shipped_at: string | null;
   status_label: string | null;
   status: string;
   received_at: string;
@@ -79,7 +85,8 @@ export async function GET(request: NextRequest) {
     const result = await trackenQuery<ExportRow>(
       `SELECT c.code AS carrier_code, t.shipment_id, t.order_id,
               t.buyer_nickname, t.buyer_name, t.seller_name, t.service_type,
-              t.sale_date, t.shipping_deadline,
+              t.shipping_mode,
+              t.sale_date, t.shipping_deadline, t.shipped_at,
               sm.label AS status_label, t.status, t.received_at,
               NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), '')
                 AS assigned_user_name,
@@ -104,6 +111,11 @@ export async function GET(request: NextRequest) {
       const receivedAt = `${formatDate(row.received_at)} ${formatTime(
         row.received_at
       )}`;
+      const shippedAt = row.shipped_at
+        ? `${formatDate(row.shipped_at)} ${formatTime(row.shipped_at)}`
+        : "";
+
+      const mode = describeShippingMode(row.shipping_mode);
 
       lines.push(
         [
@@ -114,8 +126,11 @@ export async function GET(request: NextRequest) {
           row.buyer_name,
           row.seller_name,
           row.service_type,
+          mode?.label ?? "",
+          mode ? (mode.isFlex ? "Sim" : "Nao") : "",
           saleDate,
           deadline,
+          shippedAt,
           row.status_label ?? row.status,
           receivedAt,
           row.assigned_user_name,

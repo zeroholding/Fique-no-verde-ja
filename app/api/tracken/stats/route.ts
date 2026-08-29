@@ -1,19 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticatePanelUser } from "@/lib/tracken/auth";
-import { trackenQuery } from "@/lib/tracken/db";
+import { withClient } from "@/lib/tracken/db";
 import { toErrorResponse } from "@/lib/tracken/errors";
 import {
   PANEL_TIMEZONE,
   buildTicketFilters,
+  mergeClause,
   parsePanelFilters,
 } from "@/lib/tracken/filters";
+import { describeShippingMode } from "@/lib/tracken/shipping";
 
 /**
  * GET /api/tracken/stats
- * Alimenta os 5 KPIs e os 4 graficos do Painel de Atendimento.
+ * Alimenta os KPIs e os graficos do Painel de Atendimento.
  *
  * Os numeros usam exatamente o mesmo construtor de filtros da listagem, para
  * que KPI e tabela nunca contem historias diferentes.
+ *
+ * Todas as consultas rodam em UMA conexao, em sequencia. Antes eram seis em
+ * paralelo, de um pool de dez, e a tela dispara tres requisicoes ao carregar:
+ * dois atendentes simultaneos bastavam para estourar o pool e a tela falhar com
+ * erro generico.
  */
 
 export const dynamic = "force-dynamic";
@@ -42,33 +49,39 @@ export async function GET(request: NextRequest) {
       user.id
     );
 
-    const [
-      statusCounts,
-      todayCount,
-      carrierCounts,
-      trend,
-      sla,
-      statusCatalog,
-    ] = await Promise.all([
-      trackenQuery<{ status: string; total: string }>(
+    const data = await withClient(async (run) => {
+      const statusCatalog = await run<{
+        code: string;
+        label: string;
+        color: string;
+        sort_order: number;
+      }>(
+        `SELECT code, label, color, sort_order
+           FROM tracken_status_map
+          WHERE is_active = true
+          ORDER BY sort_order`
+      );
+
+      const statusCounts = await run<{ status: string; total: string }>(
         `SELECT t.status, COUNT(*)::text AS total
          ${FROM_TICKETS}
          ${scoped.clause}
          GROUP BY t.status`,
         scoped.params
-      ),
+      );
 
-      trackenQuery<{ total: string }>(
+      const todayCount = await run<{ total: string }>(
         `SELECT COUNT(*)::text AS total
          ${FROM_TICKETS}
-         ${undated.clause}
-         ${undated.clause ? "AND" : "WHERE"}
-           (t.received_at AT TIME ZONE '${PANEL_TIMEZONE}')::date
-             = (CURRENT_TIMESTAMP AT TIME ZONE '${PANEL_TIMEZONE}')::date`,
+         ${mergeClause(
+           undated.clause,
+           `(t.received_at AT TIME ZONE '${PANEL_TIMEZONE}')::date
+             = (CURRENT_TIMESTAMP AT TIME ZONE '${PANEL_TIMEZONE}')::date`
+         )}`,
         undated.params
-      ),
+      );
 
-      trackenQuery<{
+      const carrierCounts = await run<{
         code: string | null;
         name: string | null;
         color: string | null;
@@ -80,9 +93,18 @@ export async function GET(request: NextRequest) {
          GROUP BY c.code, c.name, c.color
          ORDER BY COUNT(*) DESC`,
         scoped.params
-      ),
+      );
 
-      trackenQuery<{ day: string; total: string }>(
+      const modeCounts = await run<{ mode: string | null; total: string }>(
+        `SELECT t.shipping_mode AS mode, COUNT(*)::text AS total
+         ${FROM_TICKETS}
+         ${scoped.clause}
+         GROUP BY t.shipping_mode
+         ORDER BY COUNT(*) DESC`,
+        scoped.params
+      );
+
+      const trend = await run<{ day: string; total: string }>(
         `WITH dias AS (
            SELECT generate_series(
              (CURRENT_TIMESTAMP AT TIME ZONE '${PANEL_TIMEZONE}')::date
@@ -104,46 +126,40 @@ export async function GET(request: NextRequest) {
            LEFT JOIN recebidos ON recebidos.day = dias.day
           ORDER BY dias.day`,
         undated.params
-      ),
+      );
 
-      trackenQuery<{ within: string; measured: string }>(
+      const sla = await run<{ within: string; measured: string }>(
         `SELECT
            COUNT(*) FILTER (
              WHERE t.finished_at <= t.shipping_deadline
            )::text AS within,
            COUNT(*)::text AS measured
          ${FROM_TICKETS}
-         ${scoped.clause}
-         ${scoped.clause ? "AND" : "WHERE"}
-           sm.is_final = true
-           AND sm.counts_as_sla = true
-           AND t.finished_at IS NOT NULL
-           AND t.shipping_deadline IS NOT NULL`,
+         ${mergeClause(
+           scoped.clause,
+           `sm.is_final = true
+            AND sm.counts_as_sla = true
+            AND t.finished_at IS NOT NULL
+            AND t.shipping_deadline IS NOT NULL`
+         )}`,
         scoped.params
-      ),
+      );
 
-      trackenQuery<{
-        code: string;
-        label: string;
-        color: string;
-        sort_order: number;
-      }>(
-        `SELECT code, label, color, sort_order
-           FROM tracken_status_map
-          WHERE is_active = true
-          ORDER BY sort_order`
-      ),
-    ]);
+      return { statusCatalog, statusCounts, todayCount, carrierCounts, modeCounts, trend, sla };
+    });
 
     const countByStatus = new Map(
-      statusCounts.rows.map((row) => [row.status, Number(row.total)])
+      data.statusCounts.rows.map((row) => [row.status, Number(row.total)])
     );
+
+    // Total de TODOS os atendimentos do periodo, inclusive os que estao em
+    // status desativado.
     const total = Array.from(countByStatus.values()).reduce(
       (sum, value) => sum + value,
       0
     );
 
-    const byStatus = statusCatalog.rows.map((status) => {
+    const byStatus = data.statusCatalog.rows.map((status) => {
       const count = countByStatus.get(status.code) ?? 0;
       return {
         code: status.code,
@@ -154,32 +170,63 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    const byCarrier = carrierCounts.rows
-      .filter((row) => row.code !== null)
-      .map((row) => {
-        const count = Number(row.total);
-        return {
-          code: row.code as string,
-          name: row.name ?? row.code as string,
-          color: row.color ?? "slate",
-          count,
-          percentage: total > 0 ? Number(((count / total) * 100).toFixed(1)) : 0,
-        };
-      });
+    // Atendimentos parados em status que saiu do mapa nao aparecem em card
+    // nenhum. Em vez de deixar a soma dos cards nao fechar com o total sem
+    // explicacao, isso e informado a parte.
+    const mappedStatusCount = byStatus.reduce((sum, item) => sum + item.count, 0);
+    const unmappedStatusCount = total - mappedStatusCount;
 
-    const measured = Number(sla.rows[0]?.measured ?? 0);
-    const within = Number(sla.rows[0]?.within ?? 0);
+    // O donut mostra o total no centro; o denominador dele tem de ser a soma
+    // das proprias fatias, senao os angulos nao correspondem aos percentuais
+    // da legenda.
+    const carrierRows = data.carrierCounts.rows.filter(
+      (row) => row.code !== null
+    );
+    const carrierTotal = carrierRows.reduce(
+      (sum, row) => sum + Number(row.total),
+      0
+    );
+    const byCarrier = carrierRows.map((row) => {
+      const count = Number(row.total);
+      return {
+        code: row.code as string,
+        name: row.name ?? (row.code as string),
+        color: row.color ?? "slate",
+        count,
+        percentage:
+          carrierTotal > 0 ? Number(((count / carrierTotal) * 100).toFixed(1)) : 0,
+      };
+    });
+
+    const byShippingMode = data.modeCounts.rows.map((row) => {
+      const info = describeShippingMode(row.mode);
+      const count = Number(row.total);
+      return {
+        code: info?.code ?? null,
+        label: info?.label ?? "Não informada",
+        color: info?.color ?? "slate",
+        isFlex: info?.isFlex ?? false,
+        count,
+        percentage: total > 0 ? Number(((count / total) * 100).toFixed(1)) : 0,
+      };
+    });
+
+    const measured = Number(data.sla.rows[0]?.measured ?? 0);
+    const within = Number(data.sla.rows[0]?.within ?? 0);
 
     return NextResponse.json({
       kpis: {
         total,
-        today: Number(todayCount.rows[0]?.total ?? 0),
+        today: Number(data.todayCount.rows[0]?.total ?? 0),
         byStatus,
+        unmappedStatusCount,
       },
       charts: {
         byCarrier,
+        carrierTotal,
         byStatus,
-        trend: trend.rows.map((row) => ({
+        byShippingMode,
+        trend: data.trend.rows.map((row) => ({
           date: row.day,
           count: Number(row.total),
         })),

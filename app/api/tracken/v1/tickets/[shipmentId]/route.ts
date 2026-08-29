@@ -17,12 +17,14 @@ type TicketDetail = {
   status_label: string | null;
   carrier_code: string | null;
   service_type: string;
+  shipping_mode: string | null;
   seller_name: string;
   buyer_nickname: string | null;
   buyer_name: string | null;
   assigned_to: string | null;
   sale_date: string;
   shipping_deadline: string | null;
+  shipped_at: string | null;
   received_at: string;
   started_at: string | null;
   finished_at: string | null;
@@ -45,9 +47,10 @@ export async function GET(
     const result = await trackenQuery<TicketDetail & { id: string }>(
       `SELECT t.id, t.shipment_id, t.order_id, t.status,
               sm.label AS status_label, c.code AS carrier_code,
-              t.service_type, t.seller_name, t.buyer_nickname, t.buyer_name,
+              t.service_type, t.shipping_mode,
+              t.seller_name, t.buyer_nickname, t.buyer_name,
               NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), '') AS assigned_to,
-              t.sale_date, t.shipping_deadline, t.received_at,
+              t.sale_date, t.shipping_deadline, t.shipped_at, t.received_at,
               t.started_at, t.finished_at, t.ml_claim_id, t.resolution_note
          FROM tracken_tickets t
          LEFT JOIN tracken_carriers c ON c.id = t.carrier_id

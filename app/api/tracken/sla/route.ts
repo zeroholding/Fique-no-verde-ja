@@ -1,17 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticatePanelUser } from "@/lib/tracken/auth";
-import { trackenQuery } from "@/lib/tracken/db";
+import { withClient } from "@/lib/tracken/db";
 import { toErrorResponse } from "@/lib/tracken/errors";
-import { buildTicketFilters, parsePanelFilters } from "@/lib/tracken/filters";
+import {
+  buildTicketFilters,
+  mergeClause,
+  parsePanelFilters,
+} from "@/lib/tracken/filters";
 
 /**
  * GET /api/tracken/sla
  * Alimenta a tela "SLA & Performance".
  *
  * Definicao de SLA em uso: atendimento finalizado ANTES do limite de envio do
- * Mercado Livre. Depois do limite o atraso ja foi contabilizado pela
- * plataforma, entao esse e o marco que importa para a operacao.
- * (Confirmar com a Tracken - pergunta 15.5 do documento mestre.)
+ * Mercado Livre. Depois do limite a plataforma ja contabilizou o atraso, entao
+ * esse e o marco que importa.
+ * (Definicao a confirmar com a Tracken - pergunta 15.5 do documento mestre.)
+ *
+ * As quatro consultas rodam em UMA conexao, em sequencia, para nao disputar
+ * slots de um pool de dez com as outras requisicoes da tela.
  */
 
 export const dynamic = "force-dynamic";
@@ -32,6 +39,31 @@ const MEASURABLE = `
   AND t.shipping_deadline IS NOT NULL
 `;
 
+/**
+ * Ainda em aberto.
+ *
+ * COALESCE e necessario: `sm` vem de LEFT JOIN, entao um atendimento cujo
+ * status saiu do mapa tem `sm.is_final` nulo. Como `NULL = false` resulta em
+ * NULL, a linha seria descartada em silencio e o atendimento desapareceria da
+ * fila de trabalho sem ter sido concluido.
+ */
+const STILL_OPEN = `COALESCE(sm.is_final, false) = false`;
+
+const AVG_MINUTES = `
+  AVG(
+    EXTRACT(EPOCH FROM (t.started_at - t.received_at)) / 60
+  )::text AS minutos_ate_inicio,
+  AVG(
+    EXTRACT(EPOCH FROM (t.finished_at - t.received_at)) / 60
+  )::text AS minutos_ate_fim
+`;
+
+const WITHIN_DEADLINE = `
+  COUNT(*) FILTER (
+    WHERE t.finished_at <= t.shipping_deadline
+  )::text AS no_prazo
+`;
+
 type Aggregate = {
   chave: string | null;
   rotulo: string | null;
@@ -42,7 +74,7 @@ type Aggregate = {
   minutos_ate_fim: string | null;
 };
 
-const toBreakdown = (rows: Aggregate[]) =>
+const toBreakdown = (rows: Aggregate[], fallbackLabel = "Sem nome") =>
   rows
     .filter((row) => row.chave !== null)
     .map((row) => {
@@ -50,7 +82,8 @@ const toBreakdown = (rows: Aggregate[]) =>
       const noPrazo = Number(row.no_prazo);
       return {
         key: row.chave as string,
-        label: row.rotulo ?? (row.chave as string),
+        // Sem rotulo, mostra um texto neutro em vez do identificador interno.
+        label: row.rotulo ?? fallbackLabel,
         color: row.cor ?? "slate",
         measured: medidos,
         within: noPrazo,
@@ -74,103 +107,94 @@ export async function GET(request: NextRequest) {
     const filters = parsePanelFilters(searchParams);
     const { clause, params } = buildTicketFilters(filters, user.id);
 
-    const and = clause ? "AND" : "WHERE";
+    const measurableClause = mergeClause(clause, MEASURABLE);
 
-    const [geral, porTransportadora, porAtendente, emAberto] =
-      await Promise.all([
-        trackenQuery<Aggregate>(
-          `SELECT 'geral' AS chave, 'Geral' AS rotulo, NULL AS cor,
-                  COUNT(*)::text AS medidos,
-                  COUNT(*) FILTER (
-                    WHERE t.finished_at <= t.shipping_deadline
-                  )::text AS no_prazo,
-                  AVG(
-                    EXTRACT(EPOCH FROM (t.started_at - t.received_at)) / 60
-                  )::text AS minutos_ate_inicio,
-                  AVG(
-                    EXTRACT(EPOCH FROM (t.finished_at - t.received_at)) / 60
-                  )::text AS minutos_ate_fim
-           ${FROM_TICKETS}
-           ${clause}
-           ${and} ${MEASURABLE}`,
-          params
-        ),
+    const data = await withClient(async (run) => {
+      const geral = await run<Aggregate>(
+        `SELECT 'geral' AS chave, 'Geral' AS rotulo, NULL AS cor,
+                COUNT(*)::text AS medidos,
+                ${WITHIN_DEADLINE},
+                ${AVG_MINUTES}
+         ${FROM_TICKETS}
+         ${measurableClause}`,
+        params
+      );
 
-        trackenQuery<Aggregate>(
-          `SELECT c.code AS chave, c.name AS rotulo, c.color AS cor,
-                  COUNT(*)::text AS medidos,
-                  COUNT(*) FILTER (
-                    WHERE t.finished_at <= t.shipping_deadline
-                  )::text AS no_prazo,
-                  AVG(
-                    EXTRACT(EPOCH FROM (t.started_at - t.received_at)) / 60
-                  )::text AS minutos_ate_inicio,
-                  AVG(
-                    EXTRACT(EPOCH FROM (t.finished_at - t.received_at)) / 60
-                  )::text AS minutos_ate_fim
-           ${FROM_TICKETS}
-           ${clause}
-           ${and} ${MEASURABLE}
-           GROUP BY c.code, c.name, c.color
-           ORDER BY COUNT(*) DESC`,
-          params
-        ),
+      const porTransportadora = await run<Aggregate>(
+        `SELECT c.code AS chave, c.name AS rotulo, c.color AS cor,
+                COUNT(*)::text AS medidos,
+                ${WITHIN_DEADLINE},
+                ${AVG_MINUTES}
+         ${FROM_TICKETS}
+         ${measurableClause}
+         GROUP BY c.code, c.name, c.color
+         ORDER BY COUNT(*) DESC`,
+        params
+      );
 
-        trackenQuery<Aggregate>(
-          `SELECT t.assigned_user_id::text AS chave,
-                  NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), '')
-                    AS rotulo,
-                  NULL AS cor,
-                  COUNT(*)::text AS medidos,
-                  COUNT(*) FILTER (
-                    WHERE t.finished_at <= t.shipping_deadline
-                  )::text AS no_prazo,
-                  AVG(
-                    EXTRACT(EPOCH FROM (t.started_at - t.received_at)) / 60
-                  )::text AS minutos_ate_inicio,
-                  AVG(
-                    EXTRACT(EPOCH FROM (t.finished_at - t.received_at)) / 60
-                  )::text AS minutos_ate_fim
-           ${FROM_TICKETS}
-           LEFT JOIN users u ON u.id = t.assigned_user_id
-           ${clause}
-           ${and} ${MEASURABLE}
-             AND t.assigned_user_id IS NOT NULL
-           GROUP BY t.assigned_user_id, u.first_name, u.last_name
-           ORDER BY COUNT(*) DESC`,
-          params
-        ),
+      const porAtendente = await run<Aggregate>(
+        `SELECT t.assigned_user_id::text AS chave,
+                NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), '')
+                  AS rotulo,
+                NULL AS cor,
+                COUNT(*)::text AS medidos,
+                ${WITHIN_DEADLINE},
+                ${AVG_MINUTES}
+         ${FROM_TICKETS}
+         LEFT JOIN users u ON u.id = t.assigned_user_id
+         ${mergeClause(clause, MEASURABLE, "t.assigned_user_id IS NOT NULL")}
+         GROUP BY t.assigned_user_id, u.first_name, u.last_name
+         ORDER BY COUNT(*) DESC`,
+        params
+      );
 
-        // Atendimentos ainda abertos, separados por situacao do prazo.
-        trackenQuery<{
-          vencidos: string;
-          proximas_24h: string;
-          no_prazo: string;
-          sem_limite: string;
-        }>(
-          `SELECT
-             COUNT(*) FILTER (
-               WHERE t.shipping_deadline IS NOT NULL
-                 AND t.shipping_deadline < CURRENT_TIMESTAMP
-             )::text AS vencidos,
-             COUNT(*) FILTER (
-               WHERE t.shipping_deadline BETWEEN CURRENT_TIMESTAMP
-                 AND CURRENT_TIMESTAMP + INTERVAL '24 hours'
-             )::text AS proximas_24h,
-             COUNT(*) FILTER (
-               WHERE t.shipping_deadline > CURRENT_TIMESTAMP + INTERVAL '24 hours'
-             )::text AS no_prazo,
-             COUNT(*) FILTER (
-               WHERE t.shipping_deadline IS NULL
-             )::text AS sem_limite
-           ${FROM_TICKETS}
-           ${clause}
-           ${and} sm.is_final = false`,
-          params
-        ),
-      ]);
+      const porModalidade = await run<Aggregate>(
+        `SELECT COALESCE(t.shipping_mode, 'nao_informada') AS chave,
+                COALESCE(t.shipping_mode, 'nao_informada') AS rotulo,
+                NULL AS cor,
+                COUNT(*)::text AS medidos,
+                ${WITHIN_DEADLINE},
+                ${AVG_MINUTES}
+         ${FROM_TICKETS}
+         ${measurableClause}
+         GROUP BY t.shipping_mode
+         ORDER BY COUNT(*) DESC`,
+        params
+      );
 
-    const resumo = toBreakdown(geral.rows)[0] ?? {
+      // Atendimentos ainda abertos, separados por situacao do prazo.
+      const emAberto = await run<{
+        vencidos: string;
+        proximas_24h: string;
+        no_prazo: string;
+        sem_limite: string;
+      }>(
+        `SELECT
+           COUNT(*) FILTER (
+             WHERE t.shipping_deadline IS NOT NULL
+               AND t.shipping_deadline < CURRENT_TIMESTAMP
+           )::text AS vencidos,
+           COUNT(*) FILTER (
+             WHERE t.shipping_deadline >= CURRENT_TIMESTAMP
+               AND t.shipping_deadline
+                   < CURRENT_TIMESTAMP + INTERVAL '24 hours'
+           )::text AS proximas_24h,
+           COUNT(*) FILTER (
+             WHERE t.shipping_deadline
+                   >= CURRENT_TIMESTAMP + INTERVAL '24 hours'
+           )::text AS no_prazo,
+           COUNT(*) FILTER (
+             WHERE t.shipping_deadline IS NULL
+           )::text AS sem_limite
+         ${FROM_TICKETS}
+         ${mergeClause(clause, STILL_OPEN)}`,
+        params
+      );
+
+      return { geral, porTransportadora, porAtendente, porModalidade, emAberto };
+    });
+
+    const resumo = toBreakdown(data.geral.rows)[0] ?? {
       key: "geral",
       label: "Geral",
       color: "slate",
@@ -185,13 +209,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       target: SLA_TARGET_PERCENT,
       overall: resumo,
-      byCarrier: toBreakdown(porTransportadora.rows),
-      byAttendant: toBreakdown(porAtendente.rows),
+      byCarrier: toBreakdown(data.porTransportadora.rows, "Sem transportadora"),
+      byAttendant: toBreakdown(data.porAtendente.rows, "Sem nome cadastrado"),
+      byShippingMode: toBreakdown(data.porModalidade.rows, "Não informada"),
       open: {
-        overdue: Number(emAberto.rows[0]?.vencidos ?? 0),
-        next24h: Number(emAberto.rows[0]?.proximas_24h ?? 0),
-        onTime: Number(emAberto.rows[0]?.no_prazo ?? 0),
-        withoutDeadline: Number(emAberto.rows[0]?.sem_limite ?? 0),
+        overdue: Number(data.emAberto.rows[0]?.vencidos ?? 0),
+        next24h: Number(data.emAberto.rows[0]?.proximas_24h ?? 0),
+        onTime: Number(data.emAberto.rows[0]?.no_prazo ?? 0),
+        withoutDeadline: Number(data.emAberto.rows[0]?.sem_limite ?? 0),
       },
     });
   } catch (error) {

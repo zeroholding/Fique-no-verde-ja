@@ -34,6 +34,42 @@ export async function trackenQuery<T = Record<string, unknown>>(
 }
 
 /**
+ * Executa varias consultas em UMA unica conexao.
+ *
+ * Por que isso existe: `trackenQuery` pega um client do pool por chamada. Um
+ * `Promise.all` de seis consultas ocupava seis das dez conexoes do pool de uma
+ * vez, e a tela do painel dispara tres requisicoes ao carregar. Bastavam dois
+ * atendentes ao mesmo tempo para estourar o limite e a conexao passar a falhar
+ * por timeout, aparecendo como erro generico na tela.
+ *
+ * As consultas passam a rodar em sequencia numa conexao so. Perde-se o
+ * paralelismo, que de todo modo era falso: o pool nao tinha folga para
+ * sustenta-lo.
+ */
+export async function withClient<T>(
+  fn: (run: <R = Record<string, unknown>>(
+    text: string,
+    params?: unknown[]
+  ) => Promise<TrackenQueryResult<R>>) => Promise<T>
+): Promise<T> {
+  const client = await pool.connect();
+
+  const run = async <R = Record<string, unknown>>(
+    text: string,
+    params?: unknown[]
+  ): Promise<TrackenQueryResult<R>> => {
+    const result = await client.query(text, params as never[]);
+    return { rows: result.rows as R[], rowCount: result.rowCount ?? 0 };
+  };
+
+  try {
+    return await fn(run);
+  } finally {
+    client.release();
+  }
+}
+
+/**
  * Executa `fn` dentro de uma transacao isolada.
  *
  * O client e exclusivo desta chamada: nenhuma outra requisicao consegue

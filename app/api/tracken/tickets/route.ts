@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticatePanelUser } from "@/lib/tracken/auth";
-import { trackenQuery } from "@/lib/tracken/db";
+import { withClient } from "@/lib/tracken/db";
 import { toErrorResponse } from "@/lib/tracken/errors";
 import { buildTicketFilters, parsePanelFilters } from "@/lib/tracken/filters";
 
@@ -15,9 +15,11 @@ const SORTABLE_COLUMNS: Record<string, string> = {
   deadline: "t.shipping_deadline",
   received: "t.received_at",
   sale: "t.sale_date",
+  shipped: "t.shipped_at",
   carrier: "c.code",
   status: "sm.sort_order",
   seller: "t.seller_name",
+  mode: "t.shipping_mode",
 };
 
 type TicketListRow = {
@@ -32,10 +34,14 @@ type TicketListRow = {
   seller_name: string;
   sale_date: string;
   shipping_deadline: string | null;
+  shipped_at: string | null;
+  shipping_mode: string | null;
   received_at: string;
   status: string;
   status_label: string | null;
   status_color: string | null;
+  allowed_next: string[] | null;
+  is_final: boolean | null;
   service_type: string;
   assigned_user_id: string | null;
   assigned_user_name: string | null;
@@ -63,45 +69,55 @@ export async function GET(request: NextRequest) {
     const sortDirection =
       searchParams.get("sortDir")?.toLowerCase() === "desc" ? "DESC" : "ASC";
 
-    const totalResult = await trackenQuery<{ total: string }>(
-      `SELECT COUNT(*)::text AS total
-         FROM tracken_tickets t
-         LEFT JOIN tracken_carriers c ON c.id = t.carrier_id
-         LEFT JOIN tracken_status_map sm ON sm.code = t.status
-         ${clause}`,
-      params
-    );
+    // As duas consultas rodam na MESMA conexao, em sequencia. O pool tem dez
+    // slots no total e a tela dispara varias requisicoes ao carregar.
+    const { total, rows } = await withClient(async (run) => {
+      const totalResult = await run<{ total: string }>(
+        `SELECT COUNT(*)::text AS total
+           FROM tracken_tickets t
+           LEFT JOIN tracken_carriers c ON c.id = t.carrier_id
+           LEFT JOIN tracken_status_map sm ON sm.code = t.status
+           ${clause}`,
+        params
+      );
 
-    const listParams = [...params, pageSize, (page - 1) * pageSize];
-    const rows = await trackenQuery<TicketListRow>(
-      `SELECT t.id, t.shipment_id, t.order_id,
-              c.code AS carrier_code, c.name AS carrier_name,
-              c.color AS carrier_color,
-              t.buyer_nickname, t.buyer_name, t.seller_name,
-              t.sale_date, t.shipping_deadline, t.received_at,
-              t.status, sm.label AS status_label, sm.color AS status_color,
-              t.service_type, t.assigned_user_id,
-              NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), '')
-                AS assigned_user_name,
-              t.ml_claim_id
-         FROM tracken_tickets t
-         LEFT JOIN tracken_carriers c ON c.id = t.carrier_id
-         LEFT JOIN tracken_status_map sm ON sm.code = t.status
-         LEFT JOIN users u ON u.id = t.assigned_user_id
-         ${clause}
-         ORDER BY ${sortColumn} ${sortDirection} NULLS LAST, t.received_at DESC
-         LIMIT $${listParams.length - 1} OFFSET $${listParams.length}`,
-      listParams
-    );
+      const listParams = [...params, pageSize, (page - 1) * pageSize];
+      const listResult = await run<TicketListRow>(
+        `SELECT t.id, t.shipment_id, t.order_id,
+                c.code AS carrier_code, c.name AS carrier_name,
+                c.color AS carrier_color,
+                t.buyer_nickname, t.buyer_name, t.seller_name,
+                t.sale_date, t.shipping_deadline, t.shipped_at,
+                t.shipping_mode, t.received_at,
+                t.status, sm.label AS status_label, sm.color AS status_color,
+                sm.allowed_next, sm.is_final,
+                t.service_type, t.assigned_user_id,
+                NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), '')
+                  AS assigned_user_name,
+                t.ml_claim_id
+           FROM tracken_tickets t
+           LEFT JOIN tracken_carriers c ON c.id = t.carrier_id
+           LEFT JOIN tracken_status_map sm ON sm.code = t.status
+           LEFT JOIN users u ON u.id = t.assigned_user_id
+           ${clause}
+           ORDER BY ${sortColumn} ${sortDirection} NULLS LAST,
+                    t.received_at DESC, t.id
+           LIMIT $${listParams.length - 1} OFFSET $${listParams.length}`,
+        listParams
+      );
 
-    const total = Number(totalResult.rows[0]?.total ?? 0);
+      return {
+        total: Number(totalResult.rows[0]?.total ?? 0),
+        rows: listResult.rows,
+      };
+    });
 
     return NextResponse.json({
       total,
       page,
       pageSize,
       totalPages: Math.max(1, Math.ceil(total / pageSize)),
-      tickets: rows.rows,
+      tickets: rows,
     });
   } catch (error) {
     return toErrorResponse(error);

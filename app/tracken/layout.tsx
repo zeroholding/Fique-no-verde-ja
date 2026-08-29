@@ -3,7 +3,7 @@ import { DM_Sans } from "next/font/google";
 
 /**
  * Camada visual do painel FNVJ x TRACKEN.
- *
+ *./(painel)/layout-client
  * Aqui NAO ha checagem de sessao: este layout envolve tanto a tela de login
  * (/tracken/login) quanto as telas autenticadas. O portao de sessao fica em
  * app/tracken/(painel)/layout.tsx, para a pagina de login nao se redirecionar

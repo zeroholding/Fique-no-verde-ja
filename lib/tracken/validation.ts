@@ -1,3 +1,4 @@
+import { normalizeShippingMode } from "./shipping";
 import type {
   TrackenIncomingItem,
   TrackenServiceType,
@@ -30,6 +31,10 @@ export type NormalizedItem = {
   sellerMlId: string | null;
   saleDate: Date;
   shippingDeadline: Date | null;
+  /** Data em que o envio de fato saiu. */
+  shippedAt: Date | null;
+  /** Modalidade logistica do ML (self_service = FLEX). */
+  shippingMode: string | null;
   trackingNumber: string | null;
   packId: string | null;
   delayReason: string | null;
@@ -154,6 +159,18 @@ export function validateIncomingItem(input: unknown): ItemValidation {
     }
   }
 
+  let shippedAt: Date | null = null;
+  if (item.shipped_at !== undefined && item.shipped_at !== null) {
+    shippedAt = parseDate(item.shipped_at);
+    if (!shippedAt) {
+      return {
+        ok: false,
+        code: "INVALID_SHIPPED_AT",
+        message: "shipped_at deve estar em ISO 8601 com offset",
+      };
+    }
+  }
+
   return {
     ok: true,
     value: {
@@ -167,6 +184,8 @@ export function validateIncomingItem(input: unknown): ItemValidation {
       sellerMlId: truncate(asTrimmedString(item.seller?.ml_id), 80),
       saleDate,
       shippingDeadline,
+      shippedAt,
+      shippingMode: normalizeShippingMode(item.shipping_mode),
       trackingNumber: truncate(asTrimmedString(item.tracking_number), 120),
       packId: truncate(asTrimmedString(item.pack_id), 80),
       delayReason: asTrimmedString(item.delay_reason),

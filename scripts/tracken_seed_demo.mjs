@@ -32,6 +32,18 @@ const STATUS_MIX = [
   { code: "negado", weight: 14 },
 ];
 
+/**
+ * Modalidade logistica. A maioria e FLEX porque e o publico da Tracken, mas
+ * as outras aparecem para a equipe exercitar a conferencia.
+ */
+const MODE_MIX = [
+  { code: "self_service", weight: 168 },
+  { code: "cross_docking", weight: 44 },
+  { code: "drop_off", weight: 24 },
+  { code: "fulfillment", weight: 14 },
+  { code: "xd_drop_off", weight: 6 },
+];
+
 const SELLERS = [
   "Loja Top Imports",
   "MegaStore Brasil",
@@ -139,6 +151,7 @@ async function seedDemo() {
 
     const carrierPool = expand(CARRIER_MIX);
     const statusPool = expand(STATUS_MIX);
+    const modePool = expand(MODE_MIX);
     const total = statusPool.length; // 256, como no painel aprovado
 
     const now = Date.now();
@@ -149,6 +162,7 @@ async function seedDemo() {
     for (let index = 0; index < total; index += 1) {
       const carrierCode = carrierPool[index];
       const status = statusPool[index];
+      const shippingMode = modePool[index] ?? "self_service";
 
       // Metade chega hoje (para os KPIs do filtro padrao), o resto se espalha
       // pelos 6 dias anteriores para alimentar o grafico de tendencia.
@@ -189,6 +203,21 @@ async function seedDemo() {
         }
       }
 
+      // Data real do envio: parte ainda nao saiu, e algumas saem fora do prazo
+      // para a coluna exibir o alerta.
+      let shippedAt = null;
+      const sorteioEnvio = random();
+      if (sorteioEnvio < 0.62) {
+        const foraDoPrazo = random() < 0.18;
+        shippedAt = foraDoPrazo
+          ? new Date(shippingDeadline.getTime() + (1 + random() * 30) * HOUR)
+          : new Date(shippingDeadline.getTime() - (1 + random() * 40) * HOUR);
+
+        if (shippedAt < saleDate) {
+          shippedAt = new Date(saleDate.getTime() + 6 * HOUR);
+        }
+      }
+
       const [nickname, fullName] = pick(BUYERS);
       const assignedUser = isStarted ? pick(users).id : null;
       const suffix = String(index + 1).padStart(4, "0");
@@ -200,10 +229,10 @@ async function seedDemo() {
            sale_date, shipping_deadline, received_at,
            status, assigned_user_id, started_at, finished_at,
            ml_claim_id, service_type, tracking_number,
-           requested_by, payload_raw
+           requested_by, payload_raw, shipping_mode, shipped_at
          ) VALUES (
            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-           $11, $12, $13, $14, $15, $16, $17, $18, $19::jsonb
+           $11, $12, $13, $14, $15, $16, $17, $18, $19::jsonb, $20, $21
          )
          ON CONFLICT (shipment_id) DO NOTHING
          RETURNING id`,
@@ -227,6 +256,8 @@ async function seedDemo() {
           `ML${Math.floor(random() * 900000000 + 100000000)}BR`,
           "demo@tracken.local",
           JSON.stringify({ origem: "seed de demonstracao" }),
+          shippingMode,
+          shippedAt ? shippedAt.toISOString() : null,
         ]
       );
 
@@ -307,11 +338,32 @@ async function report(client) {
           = (CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')::date`
   );
 
+  const { rows: porModalidade } = await client.query(
+    `SELECT COALESCE(shipping_mode, 'nao informada') AS modo,
+            COUNT(*)::int AS total
+       FROM tracken_tickets
+      WHERE shipment_id LIKE '${PREFIX}%'
+      GROUP BY shipping_mode ORDER BY total DESC`
+  );
+  const { rows: enviados } = await client.query(
+    `SELECT COUNT(*) FILTER (WHERE shipped_at IS NOT NULL)::int AS enviados,
+            COUNT(*) FILTER (
+              WHERE shipped_at IS NOT NULL AND shipped_at > shipping_deadline
+            )::int AS fora_do_prazo
+       FROM tracken_tickets
+      WHERE shipment_id LIKE '${PREFIX}%'`
+  );
+
   console.log("\nPor status:");
   porStatus.forEach((r) => console.log(`  ${r.label.padEnd(16)} ${r.total}`));
   console.log("\nPor transportadora:");
   porCarrier.forEach((r) => console.log(`  ${r.code.padEnd(16)} ${r.total}`));
-  console.log(`\nRecebidos hoje: ${hoje[0].total}`);
+  console.log("\nPor modalidade de envio:");
+  porModalidade.forEach((r) => console.log(`  ${r.modo.padEnd(16)} ${r.total}`));
+  console.log(
+    `\nCom envio realizado: ${enviados[0].enviados} (${enviados[0].fora_do_prazo} fora do prazo)`
+  );
+  console.log(`Recebidos hoje: ${hoje[0].total}`);
 }
 
 async function purge() {

@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { ExternalLink, Loader2, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ExternalLink, Loader2, Lock, X } from "lucide-react";
+import ShippingModeBadge from "./ShippingModeBadge";
 import { CarrierBadge, StatusBadge } from "./Badges";
 import CopyableId from "./CopyableId";
 import DeadlineCell from "./DeadlineCell";
@@ -89,6 +90,10 @@ export default function TicketDetailModal({
   const [note, setNote] = useState("");
   const [mlClaimId, setMlClaimId] = useState("");
 
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  /** Guarda onde o clique comecou, para nao fechar em selecao de texto. */
+  const pressStartedOnBackdrop = useRef(false);
+
   const loadTicket = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -128,6 +133,23 @@ export default function TicketDetailModal({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
+
+  // Leva o foco para dentro do dialogo e devolve ao fechar. Sem isso o foco
+  // ficava no botao atras do overlay, e o teclado seguia percorrendo a pagina
+  // que o aria-modal declara inexistente.
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    closeButtonRef.current?.focus();
+
+    // Travar a rolagem do fundo evita a pagina deslizar atras do dialogo.
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      previouslyFocused?.focus?.();
+    };
+  }, []);
 
   const handleStatusChange = async () => {
     if (!targetStatus) return;
@@ -179,12 +201,20 @@ export default function TicketDetailModal({
       role="dialog"
       aria-modal="true"
       aria-label="Detalhes do atendimento"
-      onClick={onClose}
+      onMouseDown={(event) => {
+        pressStartedOnBackdrop.current = event.target === event.currentTarget;
+      }}
+      onClick={(event) => {
+        // Fecha somente quando o clique COMECOU no fundo. Antes, arrastar para
+        // selecionar um numero dentro do dialogo e soltar fora fechava a tela e
+        // descartava a observacao ja digitada.
+        if (event.target === event.currentTarget && pressStartedOnBackdrop.current) {
+          onClose();
+        }
+        pressStartedOnBackdrop.current = false;
+      }}
     >
-      <div
-        className="w-full max-w-3xl rounded-xl bg-white shadow-xl"
-        onClick={(event) => event.stopPropagation()}
-      >
+      <div className="w-full max-w-3xl rounded-xl bg-white shadow-xl">
         <header className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
           <div className="min-w-0">
             <h2 className="text-base font-semibold text-slate-900">
@@ -197,9 +227,10 @@ export default function TicketDetailModal({
             </p>
           </div>
           <button
+            ref={closeButtonRef}
             type="button"
             onClick={onClose}
-            className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+            className="rounded-md p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
             aria-label="Fechar"
           >
             <X className="h-5 w-5" />
@@ -234,9 +265,10 @@ export default function TicketDetailModal({
                 label={ticket.status_label ?? ticket.status}
                 color={ticket.status_color}
               />
-              <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
+              <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
                 {SERVICE_TYPE_LABELS[ticket.service_type] ?? ticket.service_type}
               </span>
+              <ShippingModeBadge mode={ticket.shipping_mode} />
               <a
                 href={`https://www.mercadolivre.com.br/vendas/${ticket.order_id}/detalhe`}
                 target="_blank"
@@ -278,6 +310,25 @@ export default function TicketDetailModal({
                   {formatTime(ticket.sale_date)}
                 </span>
               </Field>
+              <Field label="Envio realizado em">
+                {ticket.shipped_at ? (
+                  <>
+                    {formatDate(ticket.shipped_at)}
+                    <span className="block text-xs text-slate-500">
+                      {formatTime(ticket.shipped_at)}
+                    </span>
+                    {ticket.shipping_deadline &&
+                      new Date(ticket.shipped_at) >
+                        new Date(ticket.shipping_deadline) && (
+                        <span className="block text-xs font-semibold text-red-600">
+                          Postado fora do prazo
+                        </span>
+                      )}
+                  </>
+                ) : (
+                  "Nao enviado"
+                )}
+              </Field>
               <Field label="Recebido em">
                 {formatDate(ticket.received_at)}
                 <span className="block text-xs text-slate-500">
@@ -300,6 +351,22 @@ export default function TicketDetailModal({
                 <Field label="Motivo do atraso">{ticket.delay_reason}</Field>
               )}
             </dl>
+
+            {/* Sem transicao disponivel, explicar o motivo. Antes a secao
+                simplesmente desaparecia e o atendente nao tinha como saber
+                por que o atendimento estava sem botoes. */}
+            {allowedNext.length === 0 && (
+              <p className="mt-5 flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                <Lock className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" aria-hidden="true" />
+                <span>
+                  Nenhuma mudanca de status disponivel a partir de{" "}
+                  <strong>{ticket.status_label ?? ticket.status}</strong>.
+                  {ticket.is_final
+                    ? " O atendimento esta finalizado; reabrir exige permissao administrativa."
+                    : " Verifique as transicoes desse status em Configuracoes."}
+                </span>
+              </p>
+            )}
 
             {allowedNext.length > 0 && (
               <section className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4">

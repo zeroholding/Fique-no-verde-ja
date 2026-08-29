@@ -1521,3 +1521,68 @@ mensagem genérica e sem cookie quando a senha está errada.
 
 **Lacuna registrada:** `/api/auth/signin` não tem proteção contra força bruta.
 Já era assim, e agora há duas telas apontando para o mesmo endpoint.
+
+---
+
+## 19. MELHORIAS DA SEGUNDA RODADA — 25/08
+
+Quatro pedidos do cliente, mais as correções de uma revisão de código do módulo.
+
+### As 4 funcionalidades
+
+**1. Troca de status na própria linha.** O badge de status da tabela virou
+gatilho: um clique abre as transições permitidas, outro aplica. O menu vai para
+um portal no `body` porque a tabela tem `overflow-x-auto` e um menu absoluto
+seria cortado pela borda. Reposiciona no scroll, abre para cima quando não há
+espaço abaixo, e mostra o erro dentro do próprio menu.
+Arquivo: `components/tracken/RowStatusMenu.tsx`.
+
+**2. Coluna de modalidade de envio.** Coluna nova com destaque para **FLEX**
+(`self_service` no Mercado Livre), que é a conferência que a operação faz antes
+de abrir chamado. Aceita apelidos na entrada (`flex`, `me2_flex`, `coleta`,
+`full`, `agencia`) e, se o ML criar uma modalidade nova, ela aparece com o código
+cru em vez de sumir. Virou também filtro e dois cartões de KPI clicáveis.
+Arquivos: `lib/tracken/shipping.ts`, `components/tracken/ShippingModeBadge.tsx`.
+
+**3. Filtro de atendente.** Novo endpoint `/api/tracken/attendants` com a
+contagem de abertos por pessoa. Inclui a opção **Não atribuídos** e traz também
+usuários inativos que ainda têm atendimento vinculado — sem isso, desativar
+alguém esconderia os atendimentos dele do filtro.
+
+**4. Coluna de data real do envio.** `shipped_at`, distinto de
+`shipping_deadline` (que é o prazo). Quando a postagem ocorreu depois do limite,
+a célula marca **"Fora do prazo"**. Ordenável e presente na exportação.
+
+### Migration 020 (aplicada em produção)
+
+Colunas `shipping_mode` e `shipped_at`, mais índices. Aplicada em
+`72.61.62.227:5434` com ensaio de `ROLLBACK` antes do `COMMIT` e reexecução para
+provar idempotência. Tabelas do FNVJ conferidas antes e depois: 17 users /
+8.078 sales / 3 services, inalteradas.
+
+### Defeitos corrigidos (achados na revisão)
+
+| Gravidade | Problema | Correção |
+|---|---|---|
+| **Alta** | `/stats` abria **6 conexões simultâneas** de um pool de 10, e a tela dispara 3 requisições. Dois atendentes juntos estouravam o pool e a tela falhava com erro genérico. | Novo `withClient`: as consultas rodam em sequência numa conexão só. Aplicado em `stats`, `sla` e `settings`. |
+| **Alta** | O filtro de período usava `(received_at AT TIME ZONE ...)::date`, o que **impede o uso do índice**. Presente em toda consulta do painel. | Passou a comparar a coluna crua com um instante calculado. Continua correto no fuso e volta a ser indexável. |
+| **Alta** | Nenhuma requisição era cancelada. Digitar rápido fazia a resposta antiga sobrescrever a nova: a tabela mostrava um resultado e a busca dizia outro. | Novo `usePanelTickets` com `AbortController` e número de geração; só a carga mais recente é aplicada. |
+| Média | `kpis.total` somava status desativados, que não aparecem em cartão nenhum — a soma dos cartões não fechava. | Passou a informar `unmappedStatusCount` e o painel avisa explicitamente. |
+| Média | O donut usava o total geral como denominador, então os ângulos não correspondiam aos percentuais da legenda. | Denominador virou a soma das próprias fatias (`carrierTotal`). |
+| Média | "Vence hoje" trazia prazos das primeiras horas **já perdidos**. | Passou a exigir `>= agora`. Adicionado o recorte "Sem limite". |
+| Média | `sm.is_final = false` com LEFT JOIN descartava atendimento cujo status saiu do mapa — ele desaparecia da fila sem ter sido concluído. | `COALESCE(sm.is_final, false)`. |
+| Média | Atendimento em status desativado ficava **imutável para sempre**, e o modal escondia a seção de status sem explicar. | `getStatusMap(true)` reconhece a origem, e o modal passou a explicar o motivo. |
+| Média | Lote inteiro recebia o mesmo `received_at` (é o instante da transação), e sem desempate a paginação repetia e omitia registros. | `ORDER BY ... , t.id` como desempate final. |
+| Média | Na API pública, `?from=2026-08-19` era lido em UTC e não no fuso local: os totais da Tracken nunca fechariam com os do painel. Data inválida dava 500. | Conversão para o fuso da operação e validação de formato (400). |
+| Média | UUID de atendente vazava como rótulo na tela de SLA. | Rótulo neutro quando não há nome. |
+| Média | Modal sem foco gerenciado, sem travar scroll, e fechava ao arrastar para selecionar texto — descartando a observação digitada. | Foco ao abrir e devolvido ao fechar, scroll travado, e só fecha se o clique **começou** no fundo. |
+| Média | Tabelas roláveis não alcançáveis por teclado; `text-slate-400` em dado real (contraste ~2,85:1). | `tabIndex` + `role="region"`, primeira coluna fixa, contraste elevado para `slate-500/600`. |
+| Média | "Limpar filtros" escondido atrás do toggle; dois campos de data lado a lado cortavam em tela média. | "Limpar" sempre visível com a contagem de filtros ativos; datas empilham em tela estreita. |
+
+### Verificação
+
+**57 checagens, todas passando** contra o banco de produção: filtro e badge de
+FLEX, `shipped_at` com ordenação e alerta de fora do prazo, filtro de atendente
+(por pessoa e não atribuídos), transição pela linha com bloqueio das não
+permitidas, denominador do donut, recortes de prazo disjuntos, CSV com as
+colunas novas, as 7 telas abrindo e as tabelas do FNVJ preservadas.

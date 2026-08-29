@@ -12,6 +12,8 @@ export type TrackenStatusRow = {
   is_final: boolean;
   counts_as_sla: boolean;
   allowed_next: string[];
+  /** Presente somente quando o mapa e lido incluindo desativados. */
+  is_active?: boolean;
 };
 
 export type TrackenCarrierRow = {
@@ -36,6 +38,8 @@ export type TrackenTicketRow = {
   seller_ml_id: string | null;
   sale_date: string;
   shipping_deadline: string | null;
+  shipped_at: string | null;
+  shipping_mode: string | null;
   received_at: string;
   status: string;
   status_label: string | null;
@@ -76,6 +80,10 @@ export type TrackenIncomingItem = {
   seller?: { name?: string | null; ml_id?: string | null } | null;
   sale_date: string;
   shipping_deadline?: string | null;
+  /** Data real em que o envio foi despachado. */
+  shipped_at?: string | null;
+  /** Modalidade logistica do ML: self_service = FLEX. */
+  shipping_mode?: string | null;
   tracking_number?: string | null;
   pack_id?: string | null;
   delay_reason?: string | null;
