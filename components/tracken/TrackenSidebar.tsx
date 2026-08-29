@@ -14,6 +14,7 @@ import {
   Settings,
   X,
 } from "lucide-react";
+import { FnvjMark } from "./BrandLogo";
 
 /** Itens do menu do painel, na ordem aprovada no mockup. */
 const MENU_ITEMS = [
@@ -129,27 +130,18 @@ export default function TrackenSidebar({ isMobileOpen, onMobileClose }: Props) {
         aria-label="Menu do painel Tracken"
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-5">
-          <Link href="/tracken" className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-green-600 text-white">
-              <svg
-                className="h-5 w-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={3}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            </span>
-            <span className="leading-tight">
-              <span className="block text-sm font-semibold text-slate-900">
-                Fique no
+          <Link
+            href="/tracken"
+            className="flex min-w-0 items-center gap-2.5"
+            aria-label="Painel de Atendimento TRACKen"
+          >
+            <FnvjMark className="h-9 w-9 shrink-0" />
+            <span className="min-w-0 leading-tight">
+              <span className="block truncate text-sm font-bold text-slate-900">
+                Fique no <span className="text-green-600">Verde Já</span>
               </span>
-              <span className="block text-sm font-bold text-green-600">
-                VERDE ja
+              <span className="block truncate text-[11px] font-medium text-slate-400">
+                Painel TRACKen
               </span>
             </span>
           </Link>
