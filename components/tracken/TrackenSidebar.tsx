@@ -104,7 +104,8 @@ export default function TrackenSidebar({ isMobileOpen, onMobileClose }: Props) {
     }
     window.localStorage.removeItem("user");
     window.localStorage.removeItem("token");
-    window.location.href = "/login";
+    // Volta para a porta de entrada do painel, nao para a do sistema completo.
+    window.location.href = "/tracken/login";
   };
 
   const displayName = [user?.firstName, user?.lastName]

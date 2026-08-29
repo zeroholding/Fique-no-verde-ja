@@ -43,7 +43,16 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  /**
+   * @param fallbackPath destino quando a URL nao traz ?redirect=.
+   *   O painel Tracken passa "/tracken" para nao jogar o atendente no
+   *   dashboard depois de entrar pela tela de login dele.
+   */
+  login: (
+    email: string,
+    password: string,
+    fallbackPath?: string
+  ) => Promise<void>;
   signup: (data: SignupData) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -111,7 +120,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (
+    email: string,
+    password: string,
+    fallbackPath = "/dashboard"
+  ) => {
     try {
       const response = await fetch("/api/auth/signin", {
         method: "POST",
@@ -141,8 +154,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAdmin: data.user.isAdmin,
       });
 
-      // Volta para a pagina que pediu o login (ex.: /tracken), ou dashboard
-      router.push(resolvePostLoginPath());
+      // Volta para a pagina que pediu o login, ou para o destino padrao
+      router.push(resolvePostLoginPath(fallbackPath));
     } catch (error) {
       console.error("Erro no login:", error);
       throw error;

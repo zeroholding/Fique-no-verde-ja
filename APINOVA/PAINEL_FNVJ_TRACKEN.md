@@ -168,6 +168,7 @@ registro. Sem API do WhatsApp — link simples (`wa.me`), como já é hoje.
 | 7 | **Botão no painel da Tracken** | Por venda **e** com seleção múltipla (lote). |
 | 8 | **Fonte** | Google Sans ou DM Sans. Local por enquanto está ok. |
 | 9 | **Tema do painel novo** | **Claro** (conforme mockup), diferente do dashboard atual, que é escuro. |
+| 10 | **Tela de login própria** | `/tracken/login`, com a identidade do painel. Mesmas credenciais, mesmo endpoint, mesma sessão. Detalhe na seção 12. |
 
 ### Por que a decisão 3 está certa
 
@@ -922,13 +923,63 @@ necessários).
 **Decisão 5:** os usuários de hoje entram nos dois painéis com o mesmo e-mail e
 senha.
 
+**Decisão 10 (25/08):** o painel tem **tela de login própria** em
+`/tracken/login`, com a identidade visual dele. As credenciais continuam as
+mesmas — o que muda é só a porta de entrada.
+
 ### Como fica
 
 - Reusa a tabela **`users`** e o mesmo **JWT** (cookie `token`).
-- Reusa `/api/auth/signin` — **sem alteração**.
-- O painel `/tracken` valida sessão do mesmo jeito que `/dashboard`
-  (`jwtVerify` no layout server-side).
-- Sessão única: quem está logado no dashboard já está logado no `/tracken`.
+- Reusa `/api/auth/signin` — **sem alteração**. Não existe base de usuários
+  separada nem segunda senha para manter.
+- Sessão única: quem entra por `/tracken/login` também está logado no
+  `/dashboard`, e vice-versa.
+
+### Duas portas, uma sessão
+
+| Área | Porta de entrada | Tema |
+|---|---|---|
+| `/dashboard` | `/login` | Escuro |
+| `/tracken` | `/tracken/login` | Claro |
+
+O middleware manda cada área para a sua porta, preservando o destino em
+`?redirect=`. Quem já tem sessão e abre `/tracken/login` vai direto para o
+painel. O logout do painel volta para `/tracken/login`, não para o login do
+sistema completo.
+
+### Por que a tela de login fica fora do route group
+
+Um layout no App Router protege **tudo** abaixo dele. Se a página de login
+ficasse sob o mesmo layout que faz a checagem de sessão, ela se redirecionaria
+para si mesma em loop infinito. Daí a estrutura:
+
+```
+app/tracken/
+├── layout.tsx          ← só tema claro + DM Sans (sem checagem)
+├── login/page.tsx      ← /tracken/login, público
+└── (painel)/
+    ├── layout.tsx      ← portão de sessão + sidebar
+    ├── page.tsx        ← /tracken
+    └── ...             ← as outras 6 telas
+```
+
+O grupo `(painel)` está entre parênteses, então **não aparece na URL**: as rotas
+seguem `/tracken`, `/tracken/atendimentos` e assim por diante.
+
+### Como o destino é preservado
+
+O Next não expõe o pathname a um layout server-side. O middleware injeta o
+header `x-pathname`, e o layout do painel usa isso para montar
+`/tracken/login?redirect=<origem>`. No cliente, o `AuthContext` só aceita
+destino que comece com uma única `/` e não contenha `\`, o que barra
+redirecionamento para fora do domínio.
+
+### Lacuna conhecida
+
+**Não há proteção contra força bruta em `/api/auth/signin`** — sem rate limit,
+sem bloqueio após N tentativas, sem captcha. Isso já era assim antes; a tela
+nova não piora (usa o mesmo endpoint), mas continua sendo uma exposição real,
+agora com duas telas apontando para ela.
 
 ### O que precisa decidir
 
@@ -1272,7 +1323,12 @@ Descobertas durante a aplicação:
 | Filtros compartilhados entre KPI, tabela e exportação | `lib/tracken/filters.ts` |
 | API pública: `POST/GET /tickets`, `GET /tickets/{shipment_id}`, `GET /statuses` | `app/api/tracken/v1/**` |
 | API interna: `tickets`, `tickets/[id]` (GET/PATCH), `stats`, `carriers`, `export` (CSV) | `app/api/tracken/**` |
-| Shell do painel: sessão compartilhada, sidebar clara de 7 itens, DM Sans, tema claro | `app/tracken/layout.tsx`, `layout-client.tsx`, `components/tracken/TrackenSidebar.tsx` |
+| Shell do painel: sidebar clara de 7 itens, DM Sans, tema claro | `app/tracken/layout.tsx`, `(painel)/layout.tsx`, `(painel)/layout-client.tsx`, `components/tracken/TrackenSidebar.tsx` |
+| **Tela de login própria** do painel, com portão de sessão em route group separado | `app/tracken/login/page.tsx`, `components/tracken/TrackenLoginForm.tsx`, `middleware.ts` |
+| As 6 telas secundárias do menu | `app/tracken/(painel)/{atendimentos,transportadoras,relatorios,historico,sla,configuracoes}/page.tsx` |
+| APIs das telas secundárias | `app/api/tracken/{events,sla,settings}/route.ts`, `PATCH` em `carriers` |
+| Componentes de página compartilhados | `components/tracken/PageShell.tsx`, `useTrackenCatalogs.ts` |
+| Dados de demonstração | `scripts/tracken_seed_demo.mjs` |
 | Painel de Atendimento: 5 KPIs, 4 gráficos, filtros, tabela de 10 colunas, paginação, detalhe com histórico e troca de status | `app/tracken/page.tsx`, `components/tracken/**` |
 | Proteção de rota `/tracken` | `middleware.ts` |
 | Link de acesso no menu do dashboard atual | `components/Sidebar.tsx` |
@@ -1282,9 +1338,10 @@ Descobertas durante a aplicação:
 
 - **Worker do outbox.** Os eventos são gravados em `tracken_outbox`, mas nada
   envia ainda. A Tracken consulta o `GET /tickets` até a Fase 5 existir.
-- Telas Atendimentos, Transportadoras, Relatórios, Histórico, SLA e
-  Configurações (rotas do menu ainda sem página).
+- **Proteção contra força bruta no login** (ver seção 12).
 - Documentação OpenAPI/Postman para entregar ao time deles.
+- Emitir a credencial de produção e configurar `TRACKEN_ENCRYPTION_KEY` no
+  Coolify.
 
 ### Para criar a credencial de produção
 
@@ -1411,3 +1468,56 @@ Consulta rápida antes de escrever qualquer linha de código:
 9. **Sempre** notificar a Tracken via outbox/fila, nunca chamada direta no
    request do atendente.
 10. Migration nova = **019**, idempotente, com `COMMENT ON`.
+
+---
+
+## 18. DIÁRIO — CONTINUAÇÃO
+
+### 25/08 — As 6 telas do menu e o fluxo de login
+
+Reportado pelo cliente: todas as rotas do menu davam 404 (só o Painel de
+Atendimento existia) e o login jogava no `/dashboard` em vez de voltar ao painel.
+
+Corrigido e entregue:
+
+- **As 6 telas** foram construídas de verdade, não como casca: Atendimentos,
+  Transportadoras, Relatórios, Histórico de Status, SLA & Performance e
+  Configurações. Detalhe na seção 10.2 e na 17.
+- **Três APIs novas** (`events`, `sla`, `settings`) e `PATCH` em `carriers`.
+- **Dois defeitos no fluxo de login:** o `AuthContext` fazia
+  `router.push("/dashboard")` fixo, ignorando `?redirect=`; e o layout do painel
+  redirecionava para `/api/auth/logout`, que **apagava o cookie** e derrubava
+  também a sessão do dashboard.
+
+Verificação: 46 checagens, todas passando.
+
+### 25/08 — Tela de login própria do painel
+
+Pedido do cliente: o painel deve ter tela de login própria, não a do Fique no
+Verde.
+
+Entregue `/tracken/login` com a identidade do painel (tema claro, DM Sans,
+marca), usando as **mesmas credenciais e o mesmo endpoint**. Nada de base de
+usuários paralela.
+
+Detalhe estrutural que exigiu reorganização: no App Router um layout protege
+tudo abaixo dele, então uma página de login sob o layout autenticado se
+redirecionaria em loop. As telas autenticadas foram movidas para o route group
+`(painel)`, que não altera as URLs. Estrutura e raciocínio na seção 12.
+
+Também nesta rodada:
+
+- O middleware passa a mandar cada área para a sua porta (`/dashboard` → `/login`,
+  `/tracken` → `/tracken/login`) e injeta `x-pathname` para o layout conseguir
+  preservar o destino.
+- O logout do painel volta para `/tracken/login`.
+- `login()` do `AuthContext` ganhou destino padrão opcional (compatível com as
+  chamadas existentes).
+- A tela de login é `noindex`.
+
+Verificação: 40 checagens, todas passando — incluindo que o fluxo do
+`/dashboard` **não** foi afetado e que o endpoint de autenticação segue devolvendo
+mensagem genérica e sem cookie quando a senha está errada.
+
+**Lacuna registrada:** `/api/auth/signin` não tem proteção contra força bruta.
+Já era assim, e agora há duas telas apontando para o mesmo endpoint.
