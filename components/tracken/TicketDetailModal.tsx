@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ExternalLink, Loader2, Lock, X } from "lucide-react";
+import MercadoLivreIcon from "./MercadoLivreIcon";
 import ShippingModeBadge from "./ShippingModeBadge";
 import { CarrierBadge, StatusBadge } from "./Badges";
 import CopyableId from "./CopyableId";
@@ -271,10 +272,14 @@ export default function TicketDetailModal({
                 href={`https://www.mercadolivre.com.br/vendas/${ticket.order_id}/detalhe`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                className="ml-auto inline-flex items-center gap-2 rounded-lg border border-[var(--tk-line-strong)] bg-white px-2.5 py-1.5 text-[12px] font-medium text-slate-700 transition-colors hover:bg-slate-50"
               >
-                Abrir venda no ML
-                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                <MercadoLivreIcon className="h-4 w-auto" />
+                Abrir venda
+                <ExternalLink
+                  className="h-3.5 w-3.5 text-slate-400"
+                  aria-hidden="true"
+                />
               </a>
             </div>
 

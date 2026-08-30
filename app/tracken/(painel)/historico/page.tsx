@@ -1,8 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { History, Loader2, RefreshCw, Search } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRightLeft,
+  History,
+  Inbox,
+  Loader2,
+  MessageSquare,
+  RefreshCw,
+  Search,
+  Send,
+  UserCheck,
+  UserMinus,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { CarrierBadge, StatusBadge } from "@/components/tracken/Badges";
+import MercadoLivreIcon from "@/components/tracken/MercadoLivreIcon";
 import Pagination from "@/components/tracken/Pagination";
 import {
   Card,
@@ -22,25 +36,55 @@ import { formatDate, formatTime, toInputDate } from "@/lib/tracken/format";
  * pode ser reescrita. Serve para responder "quem mudou o que, e quando".
  */
 
-const EVENT_LABELS: Record<string, string> = {
-  received: "Recebido da TRACKen",
-  status_changed: "Status alterado",
-  assigned: "Atribuido",
-  unassigned: "Atribuicao removida",
-  note: "Observacao",
-  webhook_sent: "TRACKen notificada",
-  webhook_failed: "Falha ao notificar",
+/**
+ * Cada tipo de evento tem icone proprio. Numa trilha de auditoria longa, a
+ * forma do icone e reconhecida antes do texto: da para varrer a coluna e achar
+ * o que interessa sem ler linha por linha.
+ */
+const EVENT_META: Record<
+  string,
+  { label: string; icon: LucideIcon; tint: string }
+> = {
+  received: {
+    label: "Recebido da TRACKen",
+    icon: Inbox,
+    tint: "bg-blue-50 text-blue-600",
+  },
+  status_changed: {
+    label: "Status alterado",
+    icon: ArrowRightLeft,
+    tint: "bg-slate-100 text-slate-600",
+  },
+  assigned: {
+    label: "Atribuído",
+    icon: UserCheck,
+    tint: "bg-purple-50 text-purple-600",
+  },
+  unassigned: {
+    label: "Atribuição removida",
+    icon: UserMinus,
+    tint: "bg-slate-100 text-slate-500",
+  },
+  note: {
+    label: "Observação",
+    icon: MessageSquare,
+    tint: "bg-amber-50 text-amber-600",
+  },
+  webhook_sent: {
+    label: "TRACKen notificada",
+    icon: Send,
+    tint: "bg-green-50 text-green-600",
+  },
+  webhook_failed: {
+    label: "Falha ao notificar",
+    icon: AlertTriangle,
+    tint: "bg-red-50 text-red-600",
+  },
 };
 
-const EVENT_TONE: Record<string, string> = {
-  received: "bg-blue-50 text-blue-700",
-  status_changed: "bg-slate-100 text-slate-700",
-  assigned: "bg-purple-50 text-purple-700",
-  unassigned: "bg-slate-100 text-slate-600",
-  note: "bg-amber-50 text-amber-700",
-  webhook_sent: "bg-green-50 text-green-700",
-  webhook_failed: "bg-red-50 text-red-700",
-};
+const EVENT_LABELS: Record<string, string> = Object.fromEntries(
+  Object.entries(EVENT_META).map(([code, meta]) => [code, meta.label])
+);
 
 const FIELD =
   "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-100";
@@ -272,101 +316,132 @@ export default function HistoricoPage() {
             hint="Ajuste os filtros ou amplie o intervalo de datas."
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px] text-left">
-              <caption className="sr-only">Historico de mudancas</caption>
+          <div
+            className="overflow-x-auto"
+            tabIndex={0}
+            role="region"
+            aria-label="Trilha de auditoria"
+          >
+            <table className="w-full min-w-[880px] border-separate border-spacing-0 text-left">
+              <caption className="sr-only">
+                Histórico de mudanças nos atendimentos
+              </caption>
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                  <th scope="col" className="px-4 py-3">Quando</th>
-                  <th scope="col" className="px-4 py-3">Evento</th>
-                  <th scope="col" className="px-4 py-3">Transportadora</th>
-                  <th scope="col" className="px-4 py-3">ID de Envio</th>
-                  <th scope="col" className="px-4 py-3">Transicao</th>
-                  <th scope="col" className="px-4 py-3">Autor</th>
-                  <th scope="col" className="px-4 py-3">Observacao</th>
+                <tr>
+                  {[
+                    "Quando",
+                    "Evento",
+                    "Atendimento",
+                    "Transição",
+                    "Autor",
+                    "Observação",
+                  ].map((label) => (
+                    <th
+                      key={label}
+                      scope="col"
+                      className="sticky top-0 z-10 border-b border-[var(--tk-line)] bg-[var(--tk-surface-muted)] px-3.5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500"
+                    >
+                      {label}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {events.map((event) => (
-                  <tr
-                    key={event.id}
-                    className="border-b border-slate-100 last:border-0 hover:bg-slate-50/70"
-                  >
-                    <td className="whitespace-nowrap px-4 py-3">
-                      <span className="block text-sm text-slate-700">
-                        {formatDate(event.created_at)}
-                      </span>
-                      <span className="block text-xs text-slate-400">
-                        {formatTime(event.created_at)}
-                      </span>
-                    </td>
+                {events.map((event) => {
+                  const meta = EVENT_META[event.event_type];
+                  const Icon = meta?.icon ?? History;
 
-                    <td className="px-4 py-3">
-                      <span
-                        className={`whitespace-nowrap rounded-full px-2 py-1 text-[11px] font-semibold ${
-                          EVENT_TONE[event.event_type] ?? "bg-slate-100 text-slate-700"
-                        }`}
-                      >
-                        {EVENT_LABELS[event.event_type] ?? event.event_type}
-                      </span>
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <CarrierBadge
-                        label={event.carrier_code ?? "-"}
-                        color={event.carrier_color}
-                      />
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <span className="font-mono text-sm text-slate-800">
-                        {event.shipment_id}
-                      </span>
-                      <span className="block font-mono text-[11px] text-slate-400">
-                        {event.order_id}
-                      </span>
-                    </td>
-
-                    <td className="px-4 py-3">
-                      {event.to_status_label ? (
-                        <span className="flex items-center gap-1.5 text-xs text-slate-500">
-                          {event.from_status_label && (
-                            <>
-                              <span>{event.from_status_label}</span>
-                              <span aria-hidden="true">-&gt;</span>
-                            </>
-                          )}
-                          <StatusBadge
-                            label={event.to_status_label}
-                            color={event.to_status_color}
-                          />
+                  return (
+                    <tr key={event.id} className="tk-grid-row group">
+                      <td className="whitespace-nowrap px-3.5 py-3">
+                        <span className="tk-num block text-[13px] text-slate-700">
+                          {formatDate(event.created_at)}
                         </span>
-                      ) : (
-                        <span className="text-xs text-slate-400">-</span>
-                      )}
-                    </td>
+                        <span className="tk-num block text-[11.5px] text-slate-500">
+                          {formatTime(event.created_at)}
+                        </span>
+                      </td>
 
-                    <td className="px-4 py-3">
-                      <span className="text-sm text-slate-700">
-                        {event.actor_name ??
-                          (event.actor_type === "tracken"
-                            ? "API TRACKen"
-                            : event.actor_type === "system"
-                              ? "Sistema"
-                              : "-")}
-                      </span>
-                    </td>
+                      <td className="px-3.5 py-3">
+                        <span className="flex items-center gap-2">
+                          <span
+                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${
+                              meta?.tint ?? "bg-slate-100 text-slate-500"
+                            }`}
+                          >
+                            <Icon
+                              className="h-3.5 w-3.5"
+                              strokeWidth={1.75}
+                              aria-hidden="true"
+                            />
+                          </span>
+                          <span className="whitespace-nowrap text-[12.5px] font-medium text-slate-800">
+                            {meta?.label ?? event.event_type}
+                          </span>
+                        </span>
+                      </td>
 
-                    <td className="max-w-[240px] px-4 py-3">
-                      <span
-                        className="block truncate text-xs text-slate-600"
-                        title={event.note ?? undefined}
-                      >
-                        {event.note ?? "-"}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                      {/* Transportadora e identificadores lidos juntos */}
+                      <td className="px-3.5 py-3">
+                        <span className="flex items-center gap-2">
+                          <CarrierBadge
+                            label={event.carrier_code ?? "—"}
+                            color={event.carrier_color}
+                          />
+                          <MercadoLivreIcon className="h-3.5 w-auto shrink-0 opacity-60" />
+                          <span className="tk-num font-mono text-[12px] text-slate-800">
+                            {event.shipment_id}
+                          </span>
+                        </span>
+                        <span className="tk-num mt-0.5 block pl-[13px] font-mono text-[11px] text-slate-500">
+                          {event.order_id}
+                        </span>
+                      </td>
+
+                      <td className="px-3.5 py-3">
+                        {event.to_status_label ? (
+                          <span className="flex items-center gap-1.5 text-[11.5px] text-slate-500">
+                            {event.from_status_label && (
+                              <>
+                                <span>{event.from_status_label}</span>
+                                <ArrowRightLeft
+                                  className="h-3 w-3 shrink-0 text-slate-300"
+                                  aria-hidden="true"
+                                />
+                              </>
+                            )}
+                            <StatusBadge
+                              label={event.to_status_label}
+                              color={event.to_status_color}
+                            />
+                          </span>
+                        ) : (
+                          <span className="text-[12px] text-slate-400">—</span>
+                        )}
+                      </td>
+
+                      <td className="px-3.5 py-3">
+                        <span className="text-[12.5px] text-slate-700">
+                          {event.actor_name ??
+                            (event.actor_type === "tracken"
+                              ? "API TRACKen"
+                              : event.actor_type === "system"
+                                ? "Sistema"
+                                : "—")}
+                        </span>
+                      </td>
+
+                      <td className="max-w-[240px] px-3.5 py-3">
+                        <span
+                          className="block truncate text-[12px] text-slate-600"
+                          title={event.note ?? undefined}
+                        >
+                          {event.note ?? "—"}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -16,9 +16,12 @@ import { Check, Copy } from "lucide-react";
 export default function CopyableId({
   value,
   label,
+  muted = false,
 }: {
   value: string;
   label?: string;
+  /** Identificador secundario, quando dois aparecem empilhados. */
+  muted?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -40,7 +43,11 @@ export default function CopyableId({
 
   return (
     <span className="inline-flex items-center gap-1">
-      <span className="tk-num font-mono text-[12.5px] text-slate-800">
+      <span
+        className={`tk-num font-mono ${
+          muted ? "text-[11.5px] text-slate-500" : "text-[12.5px] text-slate-800"
+        }`}
+      >
         {value}
       </span>
       <button

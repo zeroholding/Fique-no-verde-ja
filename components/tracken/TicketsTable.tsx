@@ -4,6 +4,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown, ChevronRight, SearchX } from "lucide-r
 import { CarrierBadge } from "./Badges";
 import CopyableId from "./CopyableId";
 import DeadlineCell from "./DeadlineCell";
+import MercadoLivreIcon from "./MercadoLivreIcon";
 import RowStatusMenu from "./RowStatusMenu";
 import ShippingModeBadge from "./ShippingModeBadge";
 import type { PanelStatus, PanelTicket, SortState } from "./panel-types";
@@ -16,32 +17,44 @@ import {
 /**
  * Grade de atendimentos.
  *
+ * Sao oito colunas, nao doze. Data da venda e data de recebimento sairam da
+ * grade e vivem no detalhe: quem trabalha a fila decide pelo LIMITE de envio,
+ * nao por quando a venda aconteceu. Os dois identificadores e as duas partes
+ * (comprador e seller) foram empilhados em uma coluna cada, porque sao lidos
+ * juntos.
+ *
  * Sem regua vertical entre colunas: e a linha vertical que da aparencia de
- * planilha. A separacao e horizontal, o cabecalho e fixo na rolagem e a acao da
- * linha aparece ao passar o mouse, para a grade nao virar um mural de botoes.
+ * planilha. A separacao e horizontal, o cabecalho fica fixo na rolagem e a
+ * acao da linha aparece ao passar o mouse.
  */
 
 const COLUMNS: Array<{
   key: string;
   label: string;
   sortKey?: string;
-  hint?: string;
   align?: "right";
   width?: string;
+  /** Marca as colunas que somem em tela media, por serem secundarias. */
+  hideBelow?: "xl" | "lg";
 }> = [
-  { key: "carrier", label: "Transp.", sortKey: "carrier", width: "w-[108px]" },
-  { key: "shipment", label: "ID de envio", width: "w-[168px]" },
-  { key: "order", label: "Nº da venda", width: "w-[184px]" },
-  { key: "mode", label: "Modalidade", sortKey: "mode", width: "w-[132px]" },
-  { key: "buyer", label: "Comprador", width: "w-[196px]" },
-  { key: "seller", label: "Seller", sortKey: "seller", width: "w-[172px]" },
-  { key: "sale", label: "Venda", sortKey: "sale", width: "w-[112px]" },
+  { key: "carrier", label: "Transp.", sortKey: "carrier", width: "w-[104px]" },
+  { key: "ids", label: "Envio · Venda", width: "w-[196px]" },
+  { key: "parties", label: "Comprador · Seller", width: "w-[224px]" },
+  { key: "mode", label: "Modalidade", sortKey: "mode", width: "w-[128px]" },
   { key: "deadline", label: "Limite de envio", sortKey: "deadline", width: "w-[168px]" },
-  { key: "shipped", label: "Envio realizado", sortKey: "shipped", width: "w-[136px]" },
-  { key: "status", label: "Status", sortKey: "status", width: "w-[176px]" },
-  { key: "received", label: "Recebido", sortKey: "received", width: "w-[112px]" },
-  { key: "actions", label: "", align: "right", width: "w-[92px]" },
+  {
+    key: "shipped",
+    label: "Envio realizado",
+    sortKey: "shipped",
+    width: "w-[136px]",
+    hideBelow: "xl",
+  },
+  { key: "status", label: "Status", sortKey: "status", width: "w-[180px]" },
+  { key: "actions", label: "", align: "right", width: "w-[84px]" },
 ];
+
+const hideClass = (hideBelow?: "xl" | "lg") =>
+  hideBelow === "xl" ? "hidden xl:table-cell" : hideBelow === "lg" ? "hidden lg:table-cell" : "";
 
 type Props = {
   tickets: PanelTicket[];
@@ -57,13 +70,18 @@ type Props = {
 function SkeletonRows() {
   return (
     <>
-      {Array.from({ length: 6 }).map((_, rowIndex) => (
+      {Array.from({ length: 7 }).map((_, rowIndex) => (
         <tr key={rowIndex} className="border-b border-[var(--tk-line)]">
           {COLUMNS.map((column) => (
-            <td key={column.key} className="px-3.5 py-3">
+            <td
+              key={column.key}
+              className={`px-3.5 py-3.5 ${hideClass(column.hideBelow)}`}
+            >
               <span
                 className="block h-3 animate-pulse rounded bg-slate-100"
-                style={{ width: `${45 + ((rowIndex + column.key.length) % 5) * 10}%` }}
+                style={{
+                  width: `${50 + ((rowIndex + column.key.length) % 5) * 9}%`,
+                }}
               />
             </td>
           ))}
@@ -84,24 +102,20 @@ export default function TicketsTable({
 }: Props) {
   return (
     <div className="tk-card tk-raised overflow-hidden">
-      {/*
-        tabIndex e role tornam a area rolavel alcancavel por teclado. Sem isso,
-        quem navega sem mouse nao chega as colunas da direita.
-      */}
       <div
         className="overflow-x-auto"
         tabIndex={0}
         role="region"
-        aria-label="Grade de atendimentos, rolável horizontalmente"
+        aria-label="Grade de atendimentos"
       >
-        <table className="w-full min-w-[1500px] border-separate border-spacing-0 text-left">
+        <table className="w-full min-w-[1000px] border-separate border-spacing-0 text-left">
           <caption className="sr-only">
-            Atendimentos recebidos da TRACKen
+            Atendimentos recebidos da TRACKen, ordenados pelo limite de envio
           </caption>
 
           <thead>
             <tr>
-              {COLUMNS.map((column, index) => {
+              {COLUMNS.map((column) => {
                 const isSorted = column.sortKey === sort.sortBy;
 
                 return (
@@ -117,13 +131,9 @@ export default function TicketsTable({
                     }
                     className={`sticky top-0 z-10 border-b border-[var(--tk-line)] bg-[var(--tk-surface-muted)] px-3.5 py-2.5 ${
                       column.width ?? ""
-                    } ${column.align === "right" ? "text-right" : ""} ${
-                      // Primeira coluna fixa na rolagem lateral, para nao se
-                      // perder de vista qual transportadora e a linha.
-                      index === 0
-                        ? "left-0 z-20 after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-[var(--tk-line)]"
-                        : ""
-                    }`}
+                    } ${column.align === "right" ? "text-right" : ""} ${hideClass(
+                      column.hideBelow
+                    )}`}
                   >
                     {column.sortKey ? (
                       <button
@@ -186,7 +196,8 @@ export default function TicketsTable({
 
             {tickets.map((ticket) => (
               <tr key={ticket.id} className="tk-grid-row group">
-                <td className="sticky left-0 z-10 bg-white px-3.5 py-3 after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-[var(--tk-line)] group-hover:bg-[var(--tk-surface-muted)]">
+                {/* Transportadora */}
+                <td className="px-3.5 py-3">
                   <CarrierBadge
                     label={ticket.carrier_code ?? "—"}
                     color={ticket.carrier_color}
@@ -200,33 +211,34 @@ export default function TicketsTable({
                   )}
                 </td>
 
+                {/* Identificadores do Mercado Livre, empilhados */}
                 <td className="px-3.5 py-3">
-                  <CopyableId value={ticket.shipment_id} label="ID de envio" />
+                  <span className="flex items-center gap-1.5">
+                    <MercadoLivreIcon className="h-3.5 w-auto shrink-0 opacity-70" />
+                    <CopyableId value={ticket.shipment_id} label="ID de envio" />
+                  </span>
+                  <span className="mt-0.5 block pl-[22px]">
+                    <CopyableId
+                      value={ticket.order_id}
+                      label="número da venda"
+                      muted
+                    />
+                  </span>
                 </td>
 
-                <td className="px-3.5 py-3">
-                  <CopyableId value={ticket.order_id} label="número da venda" />
-                </td>
-
-                <td className="px-3.5 py-3">
-                  <ShippingModeBadge mode={ticket.shipping_mode} />
-                </td>
-
+                {/* Comprador e seller, lidos juntos */}
                 <td className="px-3.5 py-3">
                   <span className="block truncate text-[13px] font-medium text-slate-900">
                     {ticket.buyer_nickname ?? "—"}
+                    {ticket.buyer_name && (
+                      <span className="font-normal text-slate-500">
+                        {" · "}
+                        {ticket.buyer_name}
+                      </span>
+                    )}
                   </span>
                   <span
-                    className="block truncate text-[11.5px] text-slate-500"
-                    title={ticket.buyer_name ?? undefined}
-                  >
-                    {ticket.buyer_name ?? "—"}
-                  </span>
-                </td>
-
-                <td className="px-3.5 py-3">
-                  <span
-                    className="block truncate text-[13px] text-slate-700"
+                    className="mt-0.5 block truncate text-[11.5px] text-slate-500"
                     title={ticket.seller_name}
                   >
                     {ticket.seller_name}
@@ -234,19 +246,14 @@ export default function TicketsTable({
                 </td>
 
                 <td className="px-3.5 py-3">
-                  <span className="tk-num block text-[13px] text-slate-700">
-                    {formatDate(ticket.sale_date)}
-                  </span>
-                  <span className="tk-num block text-[11.5px] text-slate-500">
-                    {formatTime(ticket.sale_date)}
-                  </span>
+                  <ShippingModeBadge mode={ticket.shipping_mode} />
                 </td>
 
                 <td className="px-3.5 py-3">
                   <DeadlineCell deadline={ticket.shipping_deadline} />
                 </td>
 
-                <td className="px-3.5 py-3">
+                <td className={`px-3.5 py-3 ${hideClass("xl")}`}>
                   {ticket.shipped_at ? (
                     <>
                       <span className="tk-num block text-[13px] text-slate-700">
@@ -283,22 +290,11 @@ export default function TicketsTable({
                     statuses={statuses}
                     onApply={onChangeStatus}
                   />
-                  {ticket.assigned_user_name && (
-                    <span
-                      className="mt-1 block max-w-[150px] truncate pl-[13px] text-[10.5px] text-slate-500"
-                      title={ticket.assigned_user_name}
-                    >
-                      {ticket.assigned_user_name}
-                    </span>
-                  )}
-                </td>
-
-                <td className="px-3.5 py-3">
-                  <span className="tk-num block text-[13px] text-slate-700">
-                    {formatDate(ticket.received_at)}
-                  </span>
-                  <span className="tk-num block text-[11.5px] text-slate-500">
-                    {formatTime(ticket.received_at)}
+                  <span
+                    className="mt-1 block max-w-[160px] truncate pl-[13px] text-[10.5px] text-slate-500"
+                    title={ticket.assigned_user_name ?? undefined}
+                  >
+                    {ticket.assigned_user_name ?? "Sem responsável"}
                   </span>
                 </td>
 
