@@ -1350,7 +1350,7 @@ export default function SalesPage() {
                     onChange={(e) => { setSearchTerm(e.target.value); setSortOverride(false); }}
                     // Enter nao espera a pausa de digitacao, aplica na hora.
                     onKeyDown={(e) => e.key === 'Enter' && setAppliedSearch(searchTerm.trim())}
-                    placeholder="Buscar por nome do cliente (sem acento tambem) ou ID da venda..."
+                    placeholder="Buscar por cliente, atendente ou ID da venda (acento nao importa)..."
                     className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 pl-10 pr-24 text-white placeholder-gray-500 focus:border-white focus:outline-none"
                   />
                   <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
@@ -1386,7 +1386,8 @@ export default function SalesPage() {
                 <p className="mt-2 text-xs text-gray-400">
                   Ordenado por relevancia: o cliente que casa exatamente com{" "}
                   <span className="text-gray-200 font-semibold">{appliedSearch}</span>{" "}
-                  vem primeiro. Acento e ordem das palavras nao importam.
+                  vem primeiro, depois os parciais e por ultimo as vendas do
+                  atendente com esse nome. Acento e ordem das palavras nao importam.
                 </p>
               )}
           </div>

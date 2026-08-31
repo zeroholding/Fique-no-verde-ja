@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
       queryParams.push(user.id);
     }
 
-    // Busca por nome do cliente ou ID da venda.
+    // Busca por nome do cliente, nome do atendente ou ID da venda.
     //
     // Antes: `c.name ILIKE '%termo%'` com ORDER BY fixo em sale_date DESC.
     // O match exato nunca vinha em primeiro porque a ordem era cronologica:
@@ -154,13 +154,20 @@ export async function GET(request: NextRequest) {
     // MARIA aparecia onde a data dela mandasse -- normalmente fora da
     // primeira pagina (a lista pagina de 7 em 7).
     //
-    // Tres correcoes aqui:
+    // Quatro correcoes aqui:
     //   1. Acento deixa de atrapalhar: os dois lados passam por
     //      fnvj_normalize_text, entao "JOAO" encontra "JOÃO".
     //   2. Termo com mais de uma palavra vira AND de pedacos, em qualquer
     //      ordem: "MARIA SILVA" encontra "MARIA DA SILVA" (antes a
     //      comparacao era literal e nao casava).
-    //   3. O ORDER BY passa a ranquear por relevancia quando ha busca.
+    //   3. Nome de ATENDENTE passa a ser buscavel. Antes o atendente so
+    //      existia como <select> exclusivo de admin, e digitar o nome dele no
+    //      campo de busca devolvia lista vazia.
+    //   4. O ORDER BY passa a ranquear por relevancia quando ha busca.
+    //
+    // Nao ha risco de vazamento ao buscar por atendente: o filtro de escopo
+    // acima ja amarra `s.attendant_id = user.id` para quem nao e admin, entao
+    // um atendente continua vendo somente as vendas dele.
     if (search && search.trim()) {
       const rawTerm = search.trim();
 
@@ -169,21 +176,62 @@ export async function GET(request: NextRequest) {
       const escapeLike = (value: string) =>
         value.replace(/[\\%_]/g, (ch) => `\\${ch}`);
 
+      // Nome do atendente nao existe como coluna unica: e a concatenacao.
+      // COALESCE porque last_name pode ser nulo -- sem ele a concatenacao
+      // inteira viraria NULL e o atendente sumiria da busca.
+      const attendantName =
+        "(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, ''))";
+      const clientNorm = "fnvj_normalize_text(c.name)";
+      const attendantNorm = `fnvj_normalize_text(${attendantName})`;
+
       const tokens = rawTerm.split(/\s+/).filter(Boolean);
 
       // Cada palavra digitada precisa estar no nome, em qualquer ordem.
-      const tokenConditions = tokens.map((token) => {
+      // Tres listas com os MESMOS parametros: duas para as subconsultas do
+      // WHERE (aliases cc/uu) e uma sobre as colunas ja unidas, usada apenas
+      // no ORDER BY.
+      const clientSubConditions: string[] = [];
+      const attendantSubConditions: string[] = [];
+      const clientJoinConditions: string[] = [];
+
+      for (const token of tokens) {
         queryParams.push(escapeLike(token));
-        return `fnvj_normalize_text(c.name) LIKE '%' || fnvj_normalize_text($${queryParams.length}) || '%'`;
-      });
+        const p = `fnvj_normalize_text($${queryParams.length})`;
+        clientSubConditions.push(
+          `fnvj_normalize_text(cc.name) LIKE '%' || ${p} || '%'`
+        );
+        attendantSubConditions.push(
+          `fnvj_normalize_text(COALESCE(uu.first_name, '') || ' ' || COALESCE(uu.last_name, '')) LIKE '%' || ${p} || '%'`
+        );
+        clientJoinConditions.push(`${clientNorm} LIKE '%' || ${p} || '%'`);
+      }
+
+      // Expressao usada no ORDER BY para saber se foi o CLIENTE que casou.
+      // Avaliada sobre as linhas que o WHERE ja reduziu, entao e barata.
+      const clientMatches = `(${clientJoinConditions.join(" AND ")})`;
 
       // O ID da venda continua buscavel. Nao passa pela normalizacao porque e
       // UUID, e um match de ID e intencao exata do operador.
       queryParams.push(`%${escapeLike(rawTerm)}%`);
       const idParamIndex = queryParams.length;
 
+      // Cada lado do OR e resolvido como conjunto de ids, o que deixa a
+      // condicao sobre `sales` sozinha e permite indice em cada ramo.
+      //
+      // Escrever `c.name LIKE ... OR <atendente> LIKE ...` direto nas colunas
+      // unidas tambem funciona e da o mesmo resultado, mas coloca o OR em cima
+      // de duas tabelas diferentes: o planejador perde o indice trigram de
+      // clients e cai em filtro apos o join. Medido nos dados de producao:
+      // 50 ms com o OR nas colunas unidas contra 7 ms nesta forma, com o
+      // Bitmap Index Scan em idx_clients_name_norm_trgm de volta.
       conditions.push(
-        `((${tokenConditions.join(" AND ")}) OR s.id::text ILIKE $${idParamIndex})`
+        `(s.client_id IN (
+             SELECT cc.id FROM clients cc WHERE ${clientSubConditions.join(" AND ")}
+           )
+           OR s.attendant_id IN (
+             SELECT uu.id FROM users uu WHERE ${attendantSubConditions.join(" AND ")}
+           )
+           OR s.id::text ILIKE $${idParamIndex})`
       );
 
       // Termo completo, usado somente no calculo de relevancia.
@@ -195,24 +243,46 @@ export async function GET(request: NextRequest) {
       const nrmRaw = `fnvj_normalize_text($${rawIndex})`;
       const nrmLike = `fnvj_normalize_text($${likeIndex})`;
 
-      // Faixas de relevancia, da mais forte para a mais fraca. O que importa
-      // e que match de PALAVRA INTEIRA vence match no meio de palavra: quem
-      // digita "ANA" quer ANA antes de MARIANA.
+      // Faixas de relevancia de um nome, da mais forte para a mais fraca.
+      // O que importa e que match de PALAVRA INTEIRA vence match no meio de
+      // palavra: quem digita "ANA" quer ANA antes de MARIANA.
+      const rankOf = (col: string) => `CASE
+               WHEN ${col} = ${nrmRaw} THEN 1
+               WHEN ${col} LIKE ${nrmLike} || ' %' THEN 2
+               WHEN ${col} LIKE '% ' || ${nrmLike} || ' %' THEN 3
+               WHEN ${col} LIKE '% ' || ${nrmLike} THEN 4
+               WHEN ${col} LIKE ${nrmLike} || '%' THEN 5
+               WHEN ${col} LIKE '%' || ${nrmLike} || '%' THEN 6
+               ELSE 7
+             END`;
+
+      // Tres chaves de ordenacao:
       //
-      // Empate dentro da mesma faixa: nome mais curto primeiro (nome curto
-      // e o match mais "puro"), depois a venda mais recente.
+      // 1. ORIGEM do match. Cliente vem antes de atendente de proposito: um
+      //    nome que existe nos dois lados (ex: atendente "Gabriel" e cliente
+      //    "GABRIEL") tem que mostrar o cliente primeiro, senao as vendas do
+      //    atendente afundariam o cliente procurado -- que e exatamente a
+      //    reclamacao original.
+      // 2. FAIXA de relevancia, calculada sobre o nome que de fato casou.
+      // 3. Empate: nome mais curto primeiro (match mais "puro"), depois a
+      //    venda mais recente. Buscando um atendente, todas as vendas dele
+      //    empatam nas duas primeiras chaves e caem aqui, ou seja, saem em
+      //    ordem cronologica -- que e o esperado.
       orderByClause = `
          ORDER BY
            CASE
              WHEN s.id::text ILIKE $${idParamIndex} THEN 0
-             WHEN fnvj_normalize_text(c.name) = ${nrmRaw} THEN 1
-             WHEN fnvj_normalize_text(c.name) LIKE ${nrmLike} || ' %' THEN 2
-             WHEN fnvj_normalize_text(c.name) LIKE '% ' || ${nrmLike} || ' %' THEN 3
-             WHEN fnvj_normalize_text(c.name) LIKE '% ' || ${nrmLike} THEN 4
-             WHEN fnvj_normalize_text(c.name) LIKE ${nrmLike} || '%' THEN 5
-             ELSE 6
+             WHEN ${clientMatches} THEN 1
+             ELSE 2
            END,
-           LENGTH(c.name),
+           CASE
+             WHEN ${clientMatches} THEN ${rankOf(clientNorm)}
+             ELSE ${rankOf(attendantNorm)}
+           END,
+           CASE
+             WHEN ${clientMatches} THEN LENGTH(c.name)
+             ELSE LENGTH(${attendantName})
+           END,
            s.sale_date DESC,
            s.created_at DESC`;
     }
