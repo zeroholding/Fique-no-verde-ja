@@ -3,7 +3,13 @@ import { authenticatePanelUser } from "@/lib/tracken/auth";
 import { trackenQuery } from "@/lib/tracken/db";
 import { toErrorResponse } from "@/lib/tracken/errors";
 import { buildTicketFilters, parsePanelFilters } from "@/lib/tracken/filters";
-import { formatDate, formatTime, toInputDate } from "@/lib/tracken/format";
+import { denialReasonLabel } from "@/lib/tracken/denial";
+import {
+  formatDate,
+  formatLateness,
+  formatTime,
+  toInputDate,
+} from "@/lib/tracken/format";
 import { describeShippingMode } from "@/lib/tracken/shipping";
 
 /**
@@ -33,7 +39,11 @@ const HEADERS = [
   "Data da Venda",
   "Limite de Envio",
   "Envio Realizado em",
+  // O atraso vai calculado, e nao deixado para quem abre a planilha subtrair
+  // duas datas: a coluna existe justamente para poder ordenar e somar por ele.
+  "Atraso do Envio",
   "Status",
+  "Motivo da Negativa",
   "Recebido em",
   "Atendente",
   "Chamado ML",
@@ -72,6 +82,7 @@ type ExportRow = {
   assigned_user_name: string | null;
   ml_claim_id: string | null;
   resolution_note: string | null;
+  denial_reason: string | null;
 };
 
 export async function GET(request: NextRequest) {
@@ -90,7 +101,7 @@ export async function GET(request: NextRequest) {
               sm.label AS status_label, t.status, t.received_at,
               NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), '')
                 AS assigned_user_name,
-              t.ml_claim_id, t.resolution_note
+              t.ml_claim_id, t.resolution_note, t.denial_reason
          FROM tracken_tickets t
          LEFT JOIN tracken_carriers c ON c.id = t.carrier_id
          LEFT JOIN tracken_status_map sm ON sm.code = t.status
@@ -117,6 +128,13 @@ export async function GET(request: NextRequest) {
 
       const mode = describeShippingMode(row.shipping_mode);
 
+      // Enviado depois do limite: quanto atrasou. Ainda nao enviado: o atraso
+      // acumulado ate agora, para a planilha nao perder o caso em aberto, que
+      // e justamente o que a operacao trabalha.
+      const lateness =
+        formatLateness(row.shipping_deadline, row.shipped_at ?? new Date()) ??
+        "";
+
       lines.push(
         [
           row.carrier_code,
@@ -131,7 +149,9 @@ export async function GET(request: NextRequest) {
           saleDate,
           deadline,
           shippedAt,
+          lateness,
           row.status_label ?? row.status,
+          denialReasonLabel(row.denial_reason) ?? "",
           receivedAt,
           row.assigned_user_name,
           row.ml_claim_id,

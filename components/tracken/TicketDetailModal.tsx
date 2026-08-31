@@ -7,7 +7,13 @@ import ShippingModeBadge from "./ShippingModeBadge";
 import { CarrierBadge, StatusBadge } from "./Badges";
 import CopyableId from "./CopyableId";
 import DeadlineCell from "./DeadlineCell";
+import ShippedCell from "./ShippedCell";
 import type { PanelStatus, PanelTicket } from "./panel-types";
+import {
+  DENIAL_REASONS,
+  STATUS_REQUIRING_DENIAL_REASON,
+  denialReasonLabel,
+} from "@/lib/tracken/denial";
 import {
   SERVICE_TYPE_LABELS,
   formatDate,
@@ -87,7 +93,12 @@ export default function TicketDetailModal({
 
   const [targetStatus, setTargetStatus] = useState("");
   const [note, setNote] = useState("");
+  /** Motivo escolhido quando o status destino e "negado". */
+  const [denialReason, setDenialReason] = useState("");
   const [mlClaimId, setMlClaimId] = useState("");
+
+  /** Negar e a unica transicao com campo obrigatorio. */
+  const isDenying = targetStatus === STATUS_REQUIRING_DENIAL_REASON;
 
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   /** Guarda onde o clique comecou, para nao fechar em selecao de texto. */
@@ -153,6 +164,14 @@ export default function TicketDetailModal({
   const handleStatusChange = async () => {
     if (!targetStatus) return;
 
+    // Barrado antes da requisicao para o atendente ver o que falta sem esperar
+    // a ida ao servidor. A API valida de novo: esta checagem e conveniencia,
+    // nao a regra.
+    if (isDenying && !denialReason) {
+      setError("Escolha o motivo da negativa");
+      return;
+    }
+
     setIsSaving(true);
     setError(null);
 
@@ -166,6 +185,7 @@ export default function TicketDetailModal({
           status: targetStatus,
           note: note.trim() || null,
           mlClaimId: mlClaimId.trim() || null,
+          denialReason: isDenying ? denialReason : null,
         }),
       });
 
@@ -176,6 +196,7 @@ export default function TicketDetailModal({
 
       setTargetStatus("");
       setNote("");
+      setDenialReason("");
       await loadTicket();
       onUpdated();
     } catch (saveError) {
@@ -314,23 +335,13 @@ export default function TicketDetailModal({
                 </span>
               </Field>
               <Field label="Envio realizado em">
-                {ticket.shipped_at ? (
-                  <>
-                    {formatDate(ticket.shipped_at)}
-                    <span className="block text-xs text-slate-500">
-                      {formatTime(ticket.shipped_at)}
-                    </span>
-                    {ticket.shipping_deadline &&
-                      new Date(ticket.shipped_at) >
-                        new Date(ticket.shipping_deadline) && (
-                        <span className="block text-xs font-semibold text-red-600">
-                          Postado fora do prazo
-                        </span>
-                      )}
-                  </>
-                ) : (
-                  "Nao enviado"
-                )}
+                {/* Mesmo componente da grade: antes esta ficha repetia a
+                    comparacao de datas e dizia apenas "Postado fora do prazo",
+                    sem o tamanho do atraso. */}
+                <ShippedCell
+                  shippedAt={ticket.shipped_at}
+                  deadline={ticket.shipping_deadline}
+                />
               </Field>
               <Field label="Recebido em">
                 {formatDate(ticket.received_at)}
@@ -352,6 +363,32 @@ export default function TicketDetailModal({
               )}
               {ticket.delay_reason && (
                 <Field label="Motivo do atraso">{ticket.delay_reason}</Field>
+              )}
+
+              {/*
+                Motivo da NEGATIVA (do atendente), diferente do "Motivo do
+                atraso" acima, que vem da TRACKen e fala do envio.
+
+                Aparece sempre que o atendimento esta negado, inclusive quando
+                nao ha motivo: as 14 negativas anteriores a migracao 023 nao
+                tem como ser preenchidas retroativamente, e dizer isso e melhor
+                que omitir a ficha e deixar parecer que nunca se registra.
+              */}
+              {ticket.status === STATUS_REQUIRING_DENIAL_REASON && (
+                <Field label="Motivo da negativa">
+                  {ticket.denial_reason ? (
+                    <span className="font-semibold text-red-700">
+                      {denialReasonLabel(ticket.denial_reason)}
+                    </span>
+                  ) : (
+                    <span className="text-slate-400">
+                      Nao registrado
+                      <span className="block text-[11px] leading-snug">
+                        Negado antes do motivo passar a ser obrigatorio
+                      </span>
+                    </span>
+                  )}
+                </Field>
               )}
             </dl>
 
@@ -382,11 +419,16 @@ export default function TicketDetailModal({
                     <button
                       key={option.code}
                       type="button"
-                      onClick={() =>
+                      onClick={() => {
                         setTargetStatus(
                           targetStatus === option.code ? "" : option.code
-                        )
-                      }
+                        );
+                        // Trocar de destino descarta o motivo: motivo de
+                        // negativa em transicao que nao e negativa e recusado
+                        // pela API, e deixar selecionado engana o atendente.
+                        setDenialReason("");
+                        setError(null);
+                      }}
                       aria-pressed={targetStatus === option.code}
                       className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
                         targetStatus === option.code
@@ -401,6 +443,38 @@ export default function TicketDetailModal({
 
                 {targetStatus && (
                   <div className="mt-3 space-y-3">
+                    {/* Negar exige motivo, e ele vem antes dos campos
+                        opcionais: e o unico obrigatorio do formulario. */}
+                    {isDenying && (
+                      <fieldset>
+                        <legend className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-red-700">
+                          Motivo da negativa (obrigatório)
+                        </legend>
+                        <div className="space-y-1.5">
+                          {DENIAL_REASONS.map((reason) => (
+                            <label
+                              key={reason.code}
+                              className={`flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 text-[12.5px] leading-snug transition-colors ${
+                                denialReason === reason.code
+                                  ? "border-red-400 bg-red-50 font-semibold text-red-800"
+                                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name="tracken-denial-reason"
+                                value={reason.code}
+                                checked={denialReason === reason.code}
+                                onChange={() => setDenialReason(reason.code)}
+                                className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-red-600"
+                              />
+                              {reason.label}
+                            </label>
+                          ))}
+                        </div>
+                      </fieldset>
+                    )}
+
                     <div>
                       <label
                         htmlFor="tracken-ml-claim"
@@ -436,7 +510,12 @@ export default function TicketDetailModal({
                     <button
                       type="button"
                       onClick={handleStatusChange}
-                      disabled={isSaving}
+                      disabled={isSaving || (isDenying && !denialReason)}
+                      title={
+                        isDenying && !denialReason
+                          ? "Escolha o motivo da negativa"
+                          : undefined
+                      }
                       className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {isSaving && (

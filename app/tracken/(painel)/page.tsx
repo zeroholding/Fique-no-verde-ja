@@ -29,6 +29,7 @@ import TrackenFilters from "@/components/tracken/TrackenFilters";
 import {
   PrimaryButton,
   SecondaryButton,
+  kpiGridClass,
 } from "@/components/tracken/PageShell";
 import { useTrackenCatalogs } from "@/components/tracken/useTrackenCatalogs";
 import { usePanelTickets } from "@/components/tracken/usePanelTickets";
@@ -103,12 +104,21 @@ export default function TrackenPanelPage() {
 
   /** Troca de status a partir da propria linha da tabela. */
   const handleChangeStatus = useCallback(
-    async (ticketId: string, nextStatus: string) => {
+    async (
+      ticketId: string,
+      nextStatus: string,
+      denialReason?: string | null
+    ) => {
       const response = await fetch(`/api/tracken/tickets/${ticketId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ action: "status", status: nextStatus }),
+        body: JSON.stringify({
+          action: "status",
+          status: nextStatus,
+          // Obrigatorio ao negar; a API recusa a negativa sem ele.
+          denialReason: denialReason ?? null,
+        }),
       });
 
       const data = await response.json();
@@ -144,13 +154,21 @@ export default function TrackenPanelPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="tk-num inline-flex items-center gap-1.5 rounded-lg border border-[var(--tk-line)] bg-white px-2.5 py-2 text-[12px] text-slate-600">
+          {/* Diz por qual data o periodo recorta; antes eram duas datas soltas
+              e nao dava para saber se era recebimento ou limite. */}
+          <span
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--tk-line)] bg-white px-2.5 py-2 text-[12px] text-slate-600"
+            title="Periodo filtrado pelo limite de envio"
+          >
             <CalendarDays
-              className="h-[15px] w-[15px] text-slate-400"
+              className="h-[15px] w-[15px] shrink-0 text-slate-400"
               strokeWidth={1.75}
               aria-hidden="true"
             />
-            {periodLabel(filters.startDate)} — {periodLabel(filters.endDate)}
+            <span className="hidden text-slate-500 sm:inline">Limite:</span>
+            <span className="tk-num">
+              {periodLabel(filters.startDate)} — {periodLabel(filters.endDate)}
+            </span>
           </span>
 
           <SecondaryButton
@@ -198,7 +216,13 @@ export default function TrackenPanelPage() {
         </p>
       )}
 
-      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      {/* A grade acompanha a quantidade de cartoes (1 fixo + status ativos),
+          senao um cartao fica sozinho na linha de baixo. */}
+      <div
+        className={`mt-6 grid gap-3 ${kpiGridClass(
+          1 + (stats?.kpis.byStatus?.length ?? 0)
+        )}`}
+      >
         <KpiCard
           title="Total Recebidos"
           value={kpiTotal}

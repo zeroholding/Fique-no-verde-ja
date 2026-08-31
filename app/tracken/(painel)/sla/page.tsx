@@ -235,22 +235,29 @@ export default function SlaPage() {
       {error && <ErrorBanner message={error} />}
 
       <Card className="mt-6">
+        {/* Eram tres colunas para dois filtros, deixando a terceira vazia e
+            comprimindo o par de datas em um terco do card. O periodo agora
+            ocupa duas colunas, que e o espaco que dois campos de data pedem. */}
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          <div>
-            <label className={LABEL} htmlFor="sla-inicio">Periodo</label>
-            <div className="flex items-center gap-2">
+          <div className="md:col-span-2">
+            {/* O recorte e pelo LIMITE DE ENVIO, nao pela data de recebimento. */}
+            <label className={LABEL} htmlFor="sla-inicio">
+              Limite de envio
+            </label>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <input
                 id="sla-inicio"
                 type="date"
+                aria-label="Limite de envio a partir de"
                 value={startDate}
                 max={endDate || undefined}
                 onChange={(e) => setStartDate(e.target.value)}
                 className={FIELD}
               />
-              <span className="text-xs text-slate-400">ate</span>
+              <span className="shrink-0 text-xs text-slate-400">ate</span>
               <input
                 type="date"
-                aria-label="Data final"
+                aria-label="Limite de envio até"
                 value={endDate}
                 min={startDate || undefined}
                 onChange={(e) => setEndDate(e.target.value)}

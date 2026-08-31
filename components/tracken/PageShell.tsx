@@ -131,6 +131,36 @@ export function EmptyState({
   );
 }
 
+/**
+ * Grade que fecha a ultima linha, escolhida pela quantidade de cartoes.
+ *
+ * Nao pode ser uma classe fixa porque a quantidade e dirigida por dados: os
+ * cartoes do painel sao "1 fixo + um por status ativo". Com `xl:grid-cols-5` e
+ * seis cartoes, sobrava um sozinho na linha de baixo -- foi a reclamacao da
+ * operacao. Desativar um status muda a conta, entao a grade tem que acompanhar.
+ *
+ * As combinacoes estao escritas por extenso porque o Tailwind v4 monta o CSS
+ * lendo o codigo-fonte: `xl:grid-cols-${n}` nao existe no bundle final.
+ *
+ * No telefone e sempre uma coluna: com uma coluna nao ha linha incompleta.
+ */
+const KPI_GRID_BY_COUNT: Record<number, string> = {
+  1: "grid-cols-1",
+  2: "grid-cols-1 sm:grid-cols-2",
+  3: "grid-cols-1 sm:grid-cols-3",
+  4: "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4",
+  5: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5",
+  6: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6",
+  7: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7",
+  8: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8",
+};
+
+export function kpiGridClass(count: number): string {
+  if (count <= 1) return KPI_GRID_BY_COUNT[1];
+  if (count >= 8) return KPI_GRID_BY_COUNT[8];
+  return KPI_GRID_BY_COUNT[count] ?? KPI_GRID_BY_COUNT[6];
+}
+
 /** Indicador compacto, para as telas secundarias. */
 export function StatTile({
   label,

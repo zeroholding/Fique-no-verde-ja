@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Clock } from "lucide-react";
+import { Clock } from "lucide-react";
 import {
   formatDate,
   formatTime,
@@ -11,39 +11,38 @@ import {
 /**
  * Limite de envio.
  *
- * E o campo mais critico da operacao: passado o limite, o Mercado Livre ja
- * contabilizou o atraso. Aqui a cor aparece cheia de proposito, porque este e o
- * lugar onde o olho DEVE ser puxado. Nas outras colunas a cor e discreta
- * justamente para este destaque funcionar.
+ * O que esta coluna responde e "quando vence", e nada mais.
+ *
+ * Antes ela marcava "Vencido" em chip vermelho cheio sempre que o limite ja
+ * tinha passado. Num painel onde TODO atendimento e de atraso, isso pintava a
+ * coluna inteira de vermelho e nao separava um caso do outro -- alarme que
+ * dispara sempre nao e alarme. O tamanho do atraso passou para a coluna
+ * "Envio realizado", que e onde a diferenca entre os casos aparece.
+ *
+ * A cor continua existindo apenas para prazo que AINDA da tempo, porque ai ela
+ * significa uma acao possivel: vence em horas, vence amanha, vence depois.
  */
 const URGENCY = {
+  /** Limite ja passou: sem chip, sem cor. Nao ha nada a decidir aqui. */
   overdue: {
-    chip: "bg-red-600 text-white",
-    date: "text-red-700 font-semibold",
-    time: "text-red-600/80",
-    icon: AlertTriangle,
-    tag: "Vencido",
+    chip: null,
+    date: "text-slate-700",
+    time: "text-slate-500",
   },
   critical: {
     chip: "bg-red-50 text-red-700 ring-1 ring-inset ring-red-200",
     date: "text-red-700 font-semibold",
     time: "text-red-600/70",
-    icon: AlertTriangle,
-    tag: null,
   },
   warning: {
     chip: "bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-200",
     date: "text-amber-800 font-semibold",
     time: "text-amber-700/70",
-    icon: Clock,
-    tag: null,
   },
   normal: {
     chip: "bg-slate-100 text-slate-600",
     date: "text-slate-700",
     time: "text-slate-500",
-    icon: Clock,
-    tag: null,
   },
 } as const;
 
@@ -58,12 +57,11 @@ export default function DeadlineCell({ deadline }: { deadline: string | null }) 
 
   const urgency = getDeadlineUrgency(deadline);
   const style = URGENCY[urgency];
-  const timeLeft = formatTimeLeft(deadline);
-  const Icon = style.icon;
+  const timeLeft = urgency === "overdue" ? null : formatTimeLeft(deadline);
 
   return (
     <span className="block">
-      <span className="flex items-baseline gap-1.5">
+      <span className="flex flex-wrap items-baseline gap-x-1.5">
         <span className={`tk-num text-[13px] ${style.date}`}>
           {formatDate(deadline)}
         </span>
@@ -72,12 +70,12 @@ export default function DeadlineCell({ deadline }: { deadline: string | null }) 
         </span>
       </span>
 
-      {timeLeft && (
+      {timeLeft && style.chip && (
         <span
           className={`mt-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold ${style.chip}`}
         >
-          <Icon className="h-2.5 w-2.5 shrink-0" aria-hidden="true" />
-          {style.tag ?? timeLeft}
+          <Clock className="h-2.5 w-2.5 shrink-0" aria-hidden="true" />
+          {timeLeft}
         </span>
       )}
     </span>

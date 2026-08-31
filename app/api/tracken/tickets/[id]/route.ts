@@ -40,6 +40,7 @@ export async function GET(
               NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), '')
                 AS assigned_user_name,
               t.started_at, t.finished_at, t.resolution_note, t.ml_claim_id,
+              t.denial_reason,
               t.service_type, t.tracking_number, t.pack_id,
               t.delay_reason, t.requested_by
          FROM tracken_tickets t
@@ -94,6 +95,8 @@ export async function PATCH(
       status?: string;
       note?: string | null;
       mlClaimId?: string | null;
+      /** Obrigatorio quando status = "negado"; validado em changeTicketStatus. */
+      denialReason?: string | null;
       assignedUserId?: string | null;
     };
 
@@ -130,6 +133,7 @@ export async function PATCH(
         actorIsAdmin: user.is_admin,
         note: body.note?.trim() || null,
         mlClaimId: body.mlClaimId?.trim() || null,
+        denialReason: body.denialReason?.trim() || null,
       });
 
       return NextResponse.json({ success: true, ticket: updated });

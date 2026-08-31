@@ -1,5 +1,10 @@
 import type { PoolClient } from "pg";
 import { trackenQuery, withTransaction } from "./db";
+import {
+  STATUS_REQUIRING_DENIAL_REASON,
+  denialReasonLabel,
+  isDenialReasonCode,
+} from "./denial";
 import { TrackenApiError, notFound, unprocessable } from "./errors";
 import type {
   TrackenCarrierRow,
@@ -267,6 +272,8 @@ export type StatusChangeInput = {
   actorIsAdmin: boolean;
   note?: string | null;
   mlClaimId?: string | null;
+  /** Obrigatorio quando `toStatus` e "negado". Um dos codigos de DENIAL_REASONS. */
+  denialReason?: string | null;
   assignToActor?: boolean;
 };
 
@@ -292,6 +299,41 @@ export async function changeTicketStatus(input: StatusChangeInput) {
     throw unprocessable(
       "INACTIVE_STATUS",
       `Status "${target.label}" esta desativado e nao pode ser aplicado`
+    );
+  }
+
+  /**
+   * Motivo da negativa.
+   *
+   * A validacao mora aqui, e nao na rota, porque este e o unico caminho de
+   * escrita de status: as duas telas que negam (menu da linha e modal de
+   * detalhe) passam por aqui, e qualquer chamada futura tambem. Validar na
+   * rota deixaria a porta aberta para um caminho novo gravar negativa sem
+   * motivo, que e justamente o dado que a operacao passou a exigir.
+   *
+   * A checagem e feita ANTES de abrir a transacao: recusa barata, sem lock.
+   */
+  const requiresReason = input.toStatus === STATUS_REQUIRING_DENIAL_REASON;
+  const reason = input.denialReason?.trim() || null;
+
+  if (requiresReason && !reason) {
+    throw unprocessable(
+      "MISSING_DENIAL_REASON",
+      "Negar um atendimento exige informar o motivo"
+    );
+  }
+  if (reason && !isDenialReasonCode(reason)) {
+    throw unprocessable(
+      "INVALID_DENIAL_REASON",
+      `Motivo de negativa "${reason}" nao existe`
+    );
+  }
+  // Motivo em transicao que nao e negativa seria dado enganoso: apareceria na
+  // ficha de um atendimento removido como se ele tivesse sido negado.
+  if (reason && !requiresReason) {
+    throw unprocessable(
+      "DENIAL_REASON_NOT_APPLICABLE",
+      `Motivo de negativa so se aplica ao status "${STATUS_REQUIRING_DENIAL_REASON}"`
     );
   }
 
@@ -364,9 +406,15 @@ export async function changeTicketStatus(input: StatusChangeInput) {
                 ELSE NULL
               END,
               resolution_note = COALESCE($7, resolution_note),
-              ml_claim_id = COALESCE($8, ml_claim_id)
+              ml_claim_id = COALESCE($8, ml_claim_id),
+              -- Atribuicao direta, sem COALESCE: sair de "negado" para
+              -- qualquer outro status precisa LIMPAR o motivo, senao um
+              -- atendimento reaberto e depois removido continuaria carregando
+              -- a justificativa de uma negativa que nao vale mais.
+              denial_reason = $9
         WHERE id = $1
-        RETURNING id, status, started_at, finished_at, assigned_user_id`,
+        RETURNING id, status, started_at, finished_at, assigned_user_id,
+                  denial_reason`,
       [
         input.ticketId,
         input.toStatus,
@@ -376,9 +424,13 @@ export async function changeTicketStatus(input: StatusChangeInput) {
         target.is_final,
         input.note ?? null,
         input.mlClaimId ?? null,
+        reason,
       ]
     );
 
+    // O motivo entra no historico e na notificacao. Sem isso, reabrir um
+    // atendimento negado apagaria o motivo da coluna e nao sobraria registro
+    // nenhum de por que ele havia sido negado.
     await recordEvent(client, {
       ticketId: input.ticketId,
       eventType: "status_changed",
@@ -387,7 +439,15 @@ export async function changeTicketStatus(input: StatusChangeInput) {
       actorType: "user",
       actorUserId: input.actorUserId,
       note: input.note ?? null,
-      metadata: input.mlClaimId ? { ml_claim_id: input.mlClaimId } : {},
+      metadata: {
+        ...(input.mlClaimId ? { ml_claim_id: input.mlClaimId } : {}),
+        ...(reason
+          ? {
+              denial_reason: reason,
+              denial_reason_label: denialReasonLabel(reason),
+            }
+          : {}),
+      },
     });
 
     await enqueueOutboxEvent(client, input.ticketId, "ticket.status_changed", {
@@ -398,6 +458,8 @@ export async function changeTicketStatus(input: StatusChangeInput) {
       status_label: target.label,
       ml_claim_id: input.mlClaimId ?? null,
       note: input.note ?? null,
+      denial_reason: reason,
+      denial_reason_label: denialReasonLabel(reason),
     });
 
     return updated.rows[0];

@@ -47,6 +47,11 @@ export type PanelTicket = {
   assigned_user_id: string | null;
   assigned_user_name: string | null;
   ml_claim_id: string | null;
+  /**
+   * Codigo do motivo da negativa, quando o status e "negado".
+   * Nulo tambem nas 14 negativas anteriores a migracao 023, que sao historico.
+   */
+  denial_reason: string | null;
 };
 
 export type PanelAttendant = {

@@ -109,6 +109,49 @@ export function formatTimeLeft(
   return `${Math.floor(hours / 24)}d ${suffix}`;
 }
 
+/**
+ * Tamanho do atraso: quanto tempo passou do limite de envio.
+ *
+ * A operacao cobra "quanto atrasou", nao "quando saiu". Um envio postado dois
+ * dias depois do limite e um caso diferente de um postado vinte minutos
+ * depois, e a data crua nao diz isso sem quem le fazer a conta na cabeca.
+ *
+ * `reference` e o instante com que o limite e comparado: a data real do envio
+ * quando ja saiu, ou agora quando ainda nao saiu (atraso em curso).
+ *
+ * Devolve null quando nao houve atraso ou quando falta uma das duas datas --
+ * assim quem chama decide o que mostrar, em vez de receber "0h".
+ */
+export function formatLateness(
+  deadline: string | null | undefined,
+  reference: string | Date | null | undefined
+): string | null {
+  if (!deadline || !reference) return null;
+
+  const limit = new Date(deadline).getTime();
+  const actual = (
+    reference instanceof Date ? reference : new Date(reference)
+  ).getTime();
+  if (Number.isNaN(limit) || Number.isNaN(actual)) return null;
+
+  const minutes = Math.floor((actual - limit) / 60_000);
+  if (minutes <= 0) return null;
+
+  // No maximo duas unidades. "2d 5h" e legivel numa celula de tabela;
+  // "2d 5h 13min" nao.
+  if (minutes < 60) return `${minutes}min`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    const restMinutes = minutes % 60;
+    return restMinutes > 0 ? `${hours}h ${restMinutes}min` : `${hours}h`;
+  }
+
+  const days = Math.floor(hours / 24);
+  const restHours = hours % 24;
+  return restHours > 0 ? `${days}d ${restHours}h` : `${days}d`;
+}
+
 export function formatNumber(value: number): string {
   return new Intl.NumberFormat("pt-BR").format(value);
 }

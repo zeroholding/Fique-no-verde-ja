@@ -72,12 +72,21 @@ export default function AtendimentosPage() {
   };
 
   const handleChangeStatus = useCallback(
-    async (ticketId: string, nextStatus: string) => {
+    async (
+      ticketId: string,
+      nextStatus: string,
+      denialReason?: string | null
+    ) => {
       const response = await fetch(`/api/tracken/tickets/${ticketId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ action: "status", status: nextStatus }),
+        body: JSON.stringify({
+          action: "status",
+          status: nextStatus,
+          // Obrigatorio ao negar; a API recusa a negativa sem ele.
+          denialReason: denialReason ?? null,
+        }),
       });
 
       const data = await response.json();

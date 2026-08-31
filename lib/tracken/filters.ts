@@ -92,9 +92,10 @@ export type BuiltFilters = {
  *
  * 1. O filtro de periodo compara a COLUNA CRUA com um instante calculado, em
  *    vez de converter a coluna com `AT TIME ZONE ... ::date`. Envolver a coluna
- *    em funcao impede o Postgres de usar o indice de `received_at`, e o filtro
- *    de periodo esta presente em praticamente toda consulta do painel. Assim a
- *    comparacao continua indexavel e o resultado no fuso da operacao e o mesmo.
+ *    em funcao impede o Postgres de usar o indice de `shipping_deadline`, e o
+ *    filtro de periodo esta presente em praticamente toda consulta do painel.
+ *    Assim a comparacao continua indexavel e o resultado no fuso da operacao e
+ *    o mesmo.
  *
  * 2. Cada condicao entra entre parenteses. As condicoes sao unidas por AND,
  *    mas algumas contem OR ou AND internos; sem parenteses, incluir uma nova
@@ -116,17 +117,31 @@ export function buildTicketFilters(
   const localMidnight = (placeholder: string, addDays = 0) =>
     `((${placeholder}::date + ${addDays})::timestamp AT TIME ZONE '${PANEL_TIMEZONE}')`;
 
+  // O periodo recorta pelo LIMITE DE ENVIO, nao pela data de recebimento.
+  //
+  // Antes era `received_at`, quando a TRACKen entregou o registro. Isso e data
+  // de integracao, nao de operacao: quem trabalha a fila decide pelo prazo do
+  // Mercado Livre. O efeito pratico do errado era grave -- o painel abre com o
+  // periodo em "hoje", e como nada tinha sido RECEBIDO hoje, ele abria vazio
+  // enquanto existiam 55 atendimentos com limite vencendo hoje.
+  //
+  // Atendimento sem limite entra em QUALQUER periodo, de proposito. Sem data
+  // nao ha como posiciona-lo num intervalo, e some-lo da lista seria esconder
+  // trabalho em silencio -- fila de atendimento nao pode perder item. Para
+  // isolar esses casos existe a opcao "Sem limite" no filtro de prazo.
   if (filters.startDate) {
     conditions.push(
-      `(t.received_at >= ${localMidnight(push(filters.startDate))})`
+      `(t.shipping_deadline IS NULL
+        OR t.shipping_deadline >= ${localMidnight(push(filters.startDate))})`
     );
   }
 
   if (filters.endDate) {
-    // Fim do dia = meia-noite do dia seguinte, exclusivo. Evita perder os
-    // registros gravados depois de 23:59:59.
+    // Fim do dia = meia-noite do dia seguinte, exclusivo. Evita perder o que
+    // vence depois de 23:59:59.
     conditions.push(
-      `(t.received_at < ${localMidnight(push(filters.endDate), 1)})`
+      `(t.shipping_deadline IS NULL
+        OR t.shipping_deadline < ${localMidnight(push(filters.endDate), 1)})`
     );
   }
 

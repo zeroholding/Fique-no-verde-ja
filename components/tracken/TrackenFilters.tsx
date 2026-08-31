@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { CalendarClock, Search, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { SHIPPING_MODE_OPTIONS } from "@/lib/tracken/shipping";
 import type {
@@ -134,7 +134,7 @@ export default function TrackenFilters({
   return (
     <section className="tk-card tk-raised overflow-hidden">
       {/* ---------- Linha sempre visivel ---------- */}
-      <div className="flex flex-col gap-2.5 p-3 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-2.5 p-3 sm:flex-row sm:items-end">
         <div className="relative min-w-0 flex-1">
           <Search
             className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
@@ -154,38 +154,67 @@ export default function TrackenFilters({
           />
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
-          <label htmlFor="tk-start" className="sr-only">
-            Data inicial
-          </label>
-          <input
-            id="tk-start"
-            type="date"
-            value={filters.startDate}
-            max={filters.endDate || undefined}
-            onChange={(event) => onChange({ startDate: event.target.value })}
-            className="tk-num rounded-lg border border-[var(--tk-line-strong)] bg-white px-2.5 py-2 text-[12.5px] text-slate-800 transition-colors hover:border-slate-300"
-          />
-          <span className="text-[11px] text-slate-400" aria-hidden="true">
-            →
-          </span>
-          <label htmlFor="tk-end" className="sr-only">
-            Data final
-          </label>
-          <input
-            id="tk-end"
-            type="date"
-            value={filters.endDate}
-            min={filters.startDate || undefined}
-            onChange={(event) => onChange({ endDate: event.target.value })}
-            className="tk-num rounded-lg border border-[var(--tk-line-strong)] bg-white px-2.5 py-2 text-[12.5px] text-slate-800 transition-colors hover:border-slate-300"
-          />
+        {/*
+          O periodo recorta pelo LIMITE DE ENVIO. Antes os dois campos vinham
+          sem rotulo visivel (so `sr-only`), e "duas datas e uma seta" nao diz
+          por qual data o recorte acontece. Agora o titulo esta na tela.
+
+          A linha tambem deixou de ser `shrink-0`: com dois `input[type=date]`
+          nativos (~140px cada no iOS) mais o botao, ela estourava a largura em
+          telas de 320-360px.
+        */}
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-end sm:gap-2">
+          <div className="min-w-0">
+            <span
+              className="tk-eyebrow mb-1 flex items-center gap-1"
+              id="tk-period-label"
+            >
+              <CalendarClock
+                className="h-3 w-3 shrink-0 text-slate-400"
+                strokeWidth={1.75}
+                aria-hidden="true"
+              />
+              Limite de envio
+            </span>
+
+            <div
+              className="flex min-w-0 items-center gap-1.5"
+              role="group"
+              aria-labelledby="tk-period-label"
+            >
+              <label htmlFor="tk-start" className="sr-only">
+                Limite de envio a partir de
+              </label>
+              <input
+                id="tk-start"
+                type="date"
+                value={filters.startDate}
+                max={filters.endDate || undefined}
+                onChange={(event) => onChange({ startDate: event.target.value })}
+                className="tk-num min-w-0 flex-1 rounded-lg border border-[var(--tk-line-strong)] bg-white px-2.5 py-2 text-[12.5px] text-slate-800 transition-colors hover:border-slate-300 sm:flex-none"
+              />
+              <span className="shrink-0 text-[11px] text-slate-400" aria-hidden="true">
+                →
+              </span>
+              <label htmlFor="tk-end" className="sr-only">
+                Limite de envio até
+              </label>
+              <input
+                id="tk-end"
+                type="date"
+                value={filters.endDate}
+                min={filters.startDate || undefined}
+                onChange={(event) => onChange({ endDate: event.target.value })}
+                className="tk-num min-w-0 flex-1 rounded-lg border border-[var(--tk-line-strong)] bg-white px-2.5 py-2 text-[12.5px] text-slate-800 transition-colors hover:border-slate-300 sm:flex-none"
+              />
+            </div>
+          </div>
 
           <button
             type="button"
             onClick={() => setShowAdvanced((previous) => !previous)}
             aria-expanded={showAdvanced}
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-[12.5px] font-medium transition-colors ${
+            className={`inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-[12.5px] font-medium transition-colors ${
               showAdvanced || chips.length > 0
                 ? "border-[var(--tk-brand)] bg-[var(--tk-brand-wash)] text-[var(--tk-brand-strong)]"
                 : "border-[var(--tk-line-strong)] bg-white text-slate-700 hover:bg-slate-50"

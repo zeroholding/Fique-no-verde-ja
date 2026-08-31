@@ -21,6 +21,7 @@ import {
   PageShell,
   ProgressRow,
   StatTile,
+  kpiGridClass,
 } from "@/components/tracken/PageShell";
 import { useTrackenCatalogs } from "@/components/tracken/useTrackenCatalogs";
 import type { PanelStats } from "@/components/tracken/panel-types";
@@ -151,21 +152,25 @@ export default function RelatoriosPage() {
 
       <Card className="mt-6">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <div>
-            <label className={LABEL} htmlFor="rel-inicio">Periodo</label>
-            <div className="flex items-center gap-2">
+          <div className="xl:col-span-2">
+            {/* O recorte e pelo LIMITE DE ENVIO, nao pela data de recebimento. */}
+            <label className={LABEL} htmlFor="rel-inicio">
+              Limite de envio
+            </label>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <input
                 id="rel-inicio"
                 type="date"
+                aria-label="Limite de envio a partir de"
                 value={startDate}
                 max={endDate || undefined}
                 onChange={(e) => setStartDate(e.target.value)}
                 className={FIELD}
               />
-              <span className="text-xs text-slate-400">ate</span>
+              <span className="shrink-0 text-xs text-slate-400">ate</span>
               <input
                 type="date"
-                aria-label="Data final"
+                aria-label="Limite de envio até"
                 value={endDate}
                 min={startDate || undefined}
                 onChange={(e) => setEndDate(e.target.value)}
@@ -228,7 +233,13 @@ export default function RelatoriosPage() {
         <LoadingState label="Gerando relatorio..." />
       ) : stats ? (
         <>
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          {/* Um tile fixo + um por status: a grade segue a contagem para nao
+              deixar tile sozinho na ultima linha. */}
+          <div
+            className={`mt-4 grid gap-3 ${kpiGridClass(
+              1 + (stats.charts.byStatus?.length ?? 0)
+            )}`}
+          >
             <StatTile
               label="Total no periodo"
               value={total}

@@ -6,13 +6,14 @@ import CopyableId from "./CopyableId";
 import DeadlineCell from "./DeadlineCell";
 import MercadoLivreIcon from "./MercadoLivreIcon";
 import RowStatusMenu from "./RowStatusMenu";
+import ShippedCell from "./ShippedCell";
 import ShippingModeBadge from "./ShippingModeBadge";
 import type { PanelStatus, PanelTicket, SortState } from "./panel-types";
 import {
-  SERVICE_TYPE_LABELS,
-  formatDate,
-  formatTime,
-} from "@/lib/tracken/format";
+  STATUS_REQUIRING_DENIAL_REASON,
+  denialReasonLabel,
+} from "@/lib/tracken/denial";
+import { SERVICE_TYPE_LABELS } from "@/lib/tracken/format";
 
 /**
  * Grade de atendimentos.
@@ -42,12 +43,14 @@ const COLUMNS: Array<{
   { key: "parties", label: "Comprador · Seller", width: "w-[224px]" },
   { key: "mode", label: "Modalidade", sortKey: "mode", width: "w-[128px]" },
   { key: "deadline", label: "Limite de envio", sortKey: "deadline", width: "w-[168px]" },
+  // Sem `hideBelow`: esta coluna passou a carregar o TAMANHO do atraso, que e
+  // o dado pelo qual a fila e priorizada. Escondendo abaixo de 1280px, quem
+  // trabalha em notebook menor ou tablet perdia justamente esse numero.
   {
     key: "shipped",
     label: "Envio realizado",
     sortKey: "shipped",
-    width: "w-[136px]",
-    hideBelow: "xl",
+    width: "w-[156px]",
   },
   { key: "status", label: "Status", sortKey: "status", width: "w-[180px]" },
   { key: "actions", label: "", align: "right", width: "w-[84px]" },
@@ -63,7 +66,11 @@ type Props = {
   sort: SortState;
   onSortChange: (sortKey: string) => void;
   onOpenTicket: (ticket: PanelTicket) => void;
-  onChangeStatus: (ticketId: string, nextStatus: string) => Promise<void>;
+  onChangeStatus: (
+    ticketId: string,
+    nextStatus: string,
+    denialReason?: string | null
+  ) => Promise<void>;
 };
 
 /** Esqueleto durante a primeira carga, para a tela nao piscar vazia. */
@@ -253,32 +260,11 @@ export default function TicketsTable({
                   <DeadlineCell deadline={ticket.shipping_deadline} />
                 </td>
 
-                <td className={`px-3.5 py-3 ${hideClass("xl")}`}>
-                  {ticket.shipped_at ? (
-                    <>
-                      <span className="tk-num block text-[13px] text-slate-700">
-                        {formatDate(ticket.shipped_at)}
-                      </span>
-                      <span className="tk-num block text-[11.5px] text-slate-500">
-                        {formatTime(ticket.shipped_at)}
-                      </span>
-                      {/* Postado depois do limite: o atraso ja se concretizou. */}
-                      {ticket.shipping_deadline &&
-                        new Date(ticket.shipped_at) >
-                          new Date(ticket.shipping_deadline) && (
-                          <span className="mt-1 inline-flex items-center rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-semibold text-red-700">
-                            Fora do prazo
-                          </span>
-                        )}
-                    </>
-                  ) : (
-                    <span
-                      className="text-[12.5px] text-slate-400"
-                      title="Envio ainda não despachado ou data não informada"
-                    >
-                      Não enviado
-                    </span>
-                  )}
+                <td className="px-3.5 py-3">
+                  <ShippedCell
+                    shippedAt={ticket.shipped_at}
+                    deadline={ticket.shipping_deadline}
+                  />
                 </td>
 
                 <td className="px-3.5 py-3">
@@ -291,11 +277,25 @@ export default function TicketsTable({
                     onApply={onChangeStatus}
                   />
                   <span
-                    className="mt-1 block max-w-[160px] truncate pl-[13px] text-[10.5px] text-slate-500"
+                    className="mt-1 block max-w-[170px] truncate pl-[13px] text-[10.5px] text-slate-500"
                     title={ticket.assigned_user_name ?? undefined}
                   >
                     {ticket.assigned_user_name ?? "Sem responsável"}
                   </span>
+
+                  {/* Negativa sem o motivo na linha obrigaria a abrir a ficha
+                      para saber por que foi negada. */}
+                  {ticket.status === STATUS_REQUIRING_DENIAL_REASON &&
+                    ticket.denial_reason && (
+                      <span
+                        className="mt-0.5 block max-w-[170px] truncate pl-[13px] text-[10.5px] font-medium text-red-700"
+                        title={
+                          denialReasonLabel(ticket.denial_reason) ?? undefined
+                        }
+                      >
+                        {denialReasonLabel(ticket.denial_reason)}
+                      </span>
+                    )}
                 </td>
 
                 <td className="px-3.5 py-3 text-right">
