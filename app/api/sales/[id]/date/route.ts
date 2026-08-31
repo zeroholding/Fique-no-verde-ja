@@ -124,6 +124,7 @@ export async function PUT(
          s.attendant_id,
          si.id AS item_id,
          si.product_id,
+         si.product_name,
          si.quantity,
          si.sale_type,
          si.total,
@@ -142,18 +143,22 @@ export async function PUT(
       const baseAmount = Number(
         item.sale_type === "03" ? item.subtotal : item.total,
       );
+      // O 5o argumento e o nome do servico, que habilita a politica por
+      // servico (ex.: Reclamacao 3,5% em dia util).
       const policyResult = await client.query(
         `SELECT get_applicable_commission_policy(
            $1,
            $2,
            $3::date,
-           $4
+           $4,
+           $5
          ) AS policy_id`,
         [
           item.attendant_id,
           item.product_id || null,
           saleDate,
           item.sale_type,
+          item.product_name || null,
         ],
       );
       const policyId = policyResult.rows[0]?.policy_id || null;

@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
          c.base_amount,
          s.sale_date,
          si.product_id,
+         si.product_name,
          si.quantity,
          si.sale_type
        FROM commissions c
@@ -49,13 +50,17 @@ export async function POST(request: NextRequest) {
     let updated = 0;
 
     for (const commission of commissionsResult.rows) {
+      // O 5o argumento e o nome do servico, que habilita a politica por
+      // servico (ex.: Reclamacao 3,5% em dia util). Sem ele, o recalculo
+      // devolveria a comissao para a taxa geral.
       const policyResult = await client.query(
-        `SELECT get_applicable_commission_policy($1, $2, $3::date, $4) AS policy_id`,
+        `SELECT get_applicable_commission_policy($1, $2, $3::date, $4, $5) AS policy_id`,
         [
           commission.user_id,
           commission.product_id || null,
           commission.sale_date,
           commission.sale_type || "01",
+          commission.product_name || null,
         ],
       );
 

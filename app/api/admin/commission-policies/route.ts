@@ -79,12 +79,20 @@ export async function POST(request: NextRequest) {
       valid_until = null,
       description,
       sale_type = "all",
-      consider_business_days = false
+      consider_business_days = false,
+      service_id = null
     } = body;
 
     // Basic Validation
     if (!name) throw new Error("Nome e obrigatorio");
     if (value === undefined || value === null) throw new Error("Valor e obrigatorio");
+
+    // Escopo de servico sem servico casaria com qualquer venda e passaria na
+    // frente da politica geral. O banco tambem barra, mas falhar aqui devolve
+    // mensagem util em vez de erro de constraint.
+    if (scope === "service" && !service_id) {
+      throw new Error("Politica com escopo de servico exige informar o servico");
+    }
 
     const { data, error } = await supabaseAdmin
       .from("commission_policies")
@@ -99,6 +107,7 @@ export async function POST(request: NextRequest) {
         description,
         sale_type,
         consider_business_days,
+        service_id: scope === "service" ? service_id : null,
         is_active: true,
         created_by_user_id: admin.id
       })

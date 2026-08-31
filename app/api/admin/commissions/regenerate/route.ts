@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
         s.sale_date,
         si.id as item_id,
         si.product_id,
+        si.product_name,
         si.quantity,
         si.sale_type,
         si.subtotal as item_base_value, 
@@ -61,10 +62,17 @@ export async function POST(request: NextRequest) {
             let itemCommissionType = 'percentage';
             let itemCommissionRate = 5.00;
 
-            // Policy Lookup
+            // Policy Lookup. O 5o argumento e o nome do servico, que habilita
+            // a politica por servico (ex.: Reclamacao 3,5% em dia util).
             const policyResult = await query(
-                `SELECT get_applicable_commission_policy($1, $2, $3, $4) as policy_id`,
-                [attendantId, item.product_id || null, saleDate, item.sale_type]
+                `SELECT get_applicable_commission_policy($1, $2, $3, $4, $5) as policy_id`,
+                [
+                    attendantId,
+                    item.product_id || null,
+                    saleDate,
+                    item.sale_type,
+                    item.product_name || null,
+                ]
             );
 
             if (policyResult.rows.length > 0 && policyResult.rows[0].policy_id) {

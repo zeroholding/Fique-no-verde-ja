@@ -826,8 +826,17 @@ export async function POST(request: NextRequest) {
 
             // Buscar policy via DB
             const policyResult = await query(
-              `SELECT get_applicable_commission_policy($1, $2, $3, $4) as policy_id`,
-              [finalAttendantId, item.product_id || null, saleDate, itemSaleType]
+              `SELECT get_applicable_commission_policy($1, $2, $3, $4, $5) as policy_id`,
+              [
+                finalAttendantId,
+                item.product_id || null,
+                saleDate,
+                itemSaleType,
+                // Nome do servico: habilita politica por servico
+                // (ex.: Reclamacao 3,5% em dia util). O servico so existe
+                // como texto, porque sale_items nao tem service_id.
+                item.product_name || null,
+              ]
             );
 
             if (policyResult.rows.length > 0 && policyResult.rows[0].policy_id) {

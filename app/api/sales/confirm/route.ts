@@ -139,9 +139,17 @@ export async function POST(request: NextRequest) {
 
         // 1. Perguntar ao banco qual a política certa para este item/atendente/data
         try {
+            // O 5o argumento e o nome do servico, que habilita a politica por
+            // servico (ex.: Reclamacao 3,5% em dia util).
             const policyIdResult = await query(
-            `SELECT get_applicable_commission_policy($1, $2, $3::DATE, $4) as policy_id`,
-            [sale.attendant_id, item.product_id || null, sale.sale_date, itemSaleType]
+            `SELECT get_applicable_commission_policy($1, $2, $3::DATE, $4, $5) as policy_id`,
+            [
+              sale.attendant_id,
+              item.product_id || null,
+              sale.sale_date,
+              itemSaleType,
+              item.product_name || null,
+            ]
             );
 
             if (policyIdResult.rows.length > 0 && policyIdResult.rows[0].policy_id) {
