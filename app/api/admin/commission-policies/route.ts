@@ -132,8 +132,40 @@ export async function PUT(request: NextRequest) {
     if (!id) throw new Error("ID da politica e obrigatorio");
 
     // Remove protected fields
-    delete (updates as any).created_at;
-    delete (updates as any).created_by_user_id;
+    delete (updates as Record<string, unknown>).created_at;
+    delete (updates as Record<string, unknown>).created_by_user_id;
+
+    // Coerencia do escopo de servico.
+    // O corpo e espalhado direto no UPDATE, entao sem esta checagem daria para
+    // trocar o escopo para 'service' sem informar o servico, ou pendurar um
+    // servico numa politica geral. O primeiro caso o banco barra; o segundo
+    // passaria e ficaria como dado enganoso, sugerindo uma regra por servico
+    // que a funcao de resolucao ignora.
+    const currentResult = await supabaseAdmin
+      .from("commission_policies")
+      .select("scope, service_id")
+      .eq("id", id)
+      .single();
+
+    const current = currentResult.data as
+      | { scope: string; service_id: string | null }
+      | null;
+
+    const nextScope =
+      (updates as { scope?: string }).scope ?? current?.scope ?? "general";
+    const nextServiceId =
+      "service_id" in updates
+        ? ((updates as { service_id?: string | null }).service_id ?? null)
+        : (current?.service_id ?? null);
+
+    if (nextScope === "service" && !nextServiceId) {
+      throw new Error("Politica com escopo de servico exige informar o servico");
+    }
+    if (nextScope !== "service" && nextServiceId) {
+      throw new Error(
+        "Somente politica com escopo de servico pode ter servico vinculado"
+      );
+    }
 
     const { data, error } = await supabaseAdmin
       .from("commission_policies")
