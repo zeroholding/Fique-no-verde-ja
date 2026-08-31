@@ -7,6 +7,7 @@ import { Modal } from "@/components/Modal";
 import { Button } from "@/components/Button";
 import { useToast } from "@/components/Toast";
 import { calculateServiceSubtotal } from "@/lib/service-pricing";
+import { filterAndRankByName, normalizeName } from "@/lib/name-search";
 
 type SaleStatus = "aberta" | "confirmada" | "cancelada";
 type DiscountType = "percentage" | "fixed";
@@ -180,17 +181,47 @@ export default function SalesPage() {
   const [attendants, setAttendants] = useState<AttendantOption[]>([]);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null); // [NEW] Guarda ID do admin
-  const [sortField, setSortField] = useState<"date" | "client" | "total" | "created">("date");
+  // "relevance" e a ordem que o servidor devolve quando ha termo de busca.
+  // Sem ela, o resultado ranqueado no SQL era reordenado por data aqui no
+  // cliente e o match voltava para o meio da lista.
+  const [sortField, setSortField] = useState<"relevance" | "date" | "client" | "total" | "created">("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [saleTypeFilter, setSaleTypeFilter] = useState<"" | "common" | "package" | "purchase">("");
   const [searchTerm, setSearchTerm] = useState(""); // [NEW] Search State
+  // Termo efetivamente enviado a API. O input alimenta `searchTerm` a cada
+  // tecla; este so acompanha depois da pausa de digitacao. Antes o
+  // `searchTerm` estava direto nas dependencias do fetch, entao cada tecla
+  // disparava uma requisicao que trazia TODAS as vendas com seus itens.
+  const [appliedSearch, setAppliedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("active"); // [NEW] Status Filter
   const [couponFilter, setCouponFilter] = useState<"all" | "with_coupon" | "without_coupon">("all");
 
+  const hasSearch = appliedSearch.trim().length > 0;
+
   const hasFilters = useMemo(
-    () => Boolean(startDate || endDate || serviceFilter || attendantFilter || dayType || saleTypeFilter || statusFilter !== "active" || couponFilter !== "all"),
-    [startDate, endDate, serviceFilter, attendantFilter, dayType, saleTypeFilter, statusFilter, couponFilter]
+    () => Boolean(startDate || endDate || serviceFilter || attendantFilter || dayType || saleTypeFilter || statusFilter !== "active" || couponFilter !== "all" || appliedSearch.trim()),
+    [startDate, endDate, serviceFilter, attendantFilter, dayType, saleTypeFilter, statusFilter, couponFilter, appliedSearch]
   );
+
+  // Ordem realmente aplicada. Buscando, o padrao e a relevancia que o servidor
+  // calculou; fora de busca, o padrao e a data. Se o operador escolher uma
+  // coluna no meio da busca (`sortOverride`), a escolha dele manda.
+  //
+  // Isso e derivado no render de proposito, em vez de um useEffect trocando
+  // sortField: um efeito que chama setState gera render em cascata e faz a
+  // lista piscar na ordem errada antes de corrigir.
+  const [sortOverride, setSortOverride] = useState(false);
+  const effectiveSortField = hasSearch && !sortOverride ? "relevance" : sortField;
+
+  // Pausa de digitacao antes de bater na API. Antes `searchTerm` estava direto
+  // nas dependencias do fetch, entao cada tecla disparava uma requisicao que
+  // trazia TODAS as vendas que casavam, com todos os itens de cada uma.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAppliedSearch(searchTerm.trim());
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const clientOptions = useMemo(() => {
      let filtered = clients;
@@ -198,15 +229,45 @@ export default function SalesPage() {
      if (formData.saleType === "01" || formData.saleType === "03") {
        filtered = filtered.filter(c => c.clientType !== "package");
      }
-     
-     // Se tiver busca (para combobox do 01)
+
+     // Se tiver busca (para combobox do 01).
+     //
+     // Era `includes()` puro sobre a lista como ela vem de /api/admin/clients,
+     // que esta ordenada por created_at DESC. Resultado: digitar "MARIA"
+     // mostrava primeiro o cliente cadastrado mais recentemente entre os
+     // matches, e a MARIA exata ia para o fim do dropdown. Agora ordena por
+     // relevancia do nome e ignora acento.
      if (formData.saleType === "01" && clientSearch.trim()) {
-        const search = clientSearch.toUpperCase();
-        filtered = filtered.filter(c => c.name.toUpperCase().includes(search));
+        return filterAndRankByName(filtered, clientSearch, (c) => c.name);
      }
 
      return filtered;
   }, [clients, formData.saleType, clientSearch]);
+
+  // Lista final exibida no dropdown de cliente.
+  //
+  // O JSX repetia `clientOptions.filter(c => c.name.toUpperCase().includes(...))`
+  // cinco vezes. Alem da duplicacao, aquele filtro comparava com caixa alta e
+  // acento, entao descartava justamente os matches sem acento que o
+  // ranqueamento acabou de encontrar (digitar "JOAO" perdia "JOÃO").
+  const clientDropdownOptions = useMemo(
+    () =>
+      clientSearch.trim()
+        ? filterAndRankByName(clientOptions, clientSearch, (c) => c.name)
+        : clientOptions,
+    [clientOptions, clientSearch]
+  );
+
+  // Já existe um cliente com exatamente esse nome? Compara sem acento e sem
+  // caixa, senao a opcao "cadastrar novo" aparecia para um cliente que ja
+  // existe escrito com acento.
+  const clientSearchAlreadyExists = useMemo(
+    () =>
+      clientOptions.some(
+        (c) => normalizeName(c.name) === normalizeName(clientSearch)
+      ),
+    [clientOptions, clientSearch]
+  );
 
   const filteredSales = useMemo(() => {
     let result = [...sales];
@@ -294,9 +355,17 @@ export default function SalesPage() {
   }, [attendantFilter, dayType, endDate, isAdmin, sales, serviceFilter, services, startDate, saleTypeFilter, clients, statusFilter, couponFilter]);
 
   const sortedSales = useMemo(() => {
+    // O servidor ja devolveu ranqueado por relevancia do termo buscado.
+    // Reordenar aqui era exatamente o que jogava o match procurado de volta
+    // para o meio da lista.
+    if (effectiveSortField === "relevance") {
+      return filteredSales;
+    }
+
+    const field = effectiveSortField;
     const sorted = [...filteredSales];
     sorted.sort((a, b) => {
-      if (sortField === "date") {
+      if (field === "date") {
         const dateDiff = new Date(a.saleDate).getTime() - new Date(b.saleDate).getTime();
         if (dateDiff === 0) {
           // Tie-breaker: use createdAt (registration time)
@@ -304,17 +373,17 @@ export default function SalesPage() {
         }
         return dateDiff * (sortDirection === "asc" ? 1 : -1);
       }
-      if (sortField === "created") {
+      if (field === "created") {
         const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
         return diff * (sortDirection === "asc" ? 1 : -1);
       }
-      if (sortField === "client") {
+      if (field === "client") {
         return a.clientName.localeCompare(b.clientName) * (sortDirection === "asc" ? 1 : -1);
       }
       return (a.total - b.total) * (sortDirection === "asc" ? 1 : -1);
     });
     return sorted;
-  }, [filteredSales, sortField, sortDirection]);
+  }, [filteredSales, effectiveSortField, sortDirection]);
 
   const totalSalesCopy = useMemo(() => {
     if (sortedSales.length === 0) {
@@ -348,8 +417,8 @@ export default function SalesPage() {
       if (isAdmin && attendantFilter) {
         params.set("attendantId", attendantFilter);
       }
-      if (searchTerm) { // [NEW] Add search param
-         params.set("search", searchTerm);
+      if (appliedSearch) { // termo com debounce, nao o que esta sendo digitado
+         params.set("search", appliedSearch);
       }
       if (statusFilter === "all" || statusFilter === "canceled") {
          params.set("includeCanceled", "true");
@@ -375,7 +444,7 @@ export default function SalesPage() {
     } finally {
       setLoading(false);
     }
-  }, [attendantFilter, error, isAdmin, searchTerm, statusFilter]);
+  }, [attendantFilter, error, isAdmin, appliedSearch, statusFilter]);
 
   const fetchClients = useCallback(async () => {
     const token = localStorage.getItem("token");
@@ -586,13 +655,22 @@ export default function SalesPage() {
     }));
   };
 
-  const toggleSort = (field: "date" | "client" | "total" | "created") => {
-    if (sortField === field) {
+  const toggleSort = (field: "relevance" | "date" | "client" | "total" | "created") => {
+    if (field === "relevance") {
+      // Relevancia nao tem asc/desc: e voltar para a ordem que o servidor
+      // calculou, ou seja, abrir mao da escolha manual de coluna.
+      setSortOverride(false);
+      setSortDirection("desc");
+      setCurrentPage(1);
+      return;
+    }
+    if (effectiveSortField === field) {
       setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
       setSortField(field);
       setSortDirection("desc");
     }
+    setSortOverride(true);
     setCurrentPage(1);
   };
 
@@ -1266,9 +1344,13 @@ export default function SalesPage() {
                   <input
                     type="text"
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && fetchSales()} // Search on Enter
-                    placeholder="Buscar por Nome do Cliente ou ID da Venda..."
+                    // Mexer na busca devolve a ordenacao para o padrao, senao
+                    // uma coluna escolhida numa busca anterior continuaria
+                    // valendo e o novo resultado nao viria em primeiro.
+                    onChange={(e) => { setSearchTerm(e.target.value); setSortOverride(false); }}
+                    // Enter nao espera a pausa de digitacao, aplica na hora.
+                    onKeyDown={(e) => e.key === 'Enter' && setAppliedSearch(searchTerm.trim())}
+                    placeholder="Buscar por nome do cliente (sem acento tambem) ou ID da venda..."
                     className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 pl-10 pr-24 text-white placeholder-gray-500 focus:border-white focus:outline-none"
                   />
                   <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
@@ -1277,15 +1359,36 @@ export default function SalesPage() {
                           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                       </svg>
                   </div>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <button 
-                        onClick={() => fetchSales()}
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                      {searchTerm && (
+                        <button
+                          type="button"
+                          aria-label="Limpar busca"
+                          onClick={() => { setSearchTerm(""); setAppliedSearch(""); setSortOverride(false); }}
+                          className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                          </svg>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setAppliedSearch(searchTerm.trim())}
                         className="bg-white/10 hover:bg-white/20 text-xs px-3 py-1.5 rounded-lg text-white transition-colors"
                       >
                          Buscar
                       </button>
                   </div>
               </div>
+              {hasSearch && (
+                <p className="mt-2 text-xs text-gray-400">
+                  Ordenado por relevancia: o cliente que casa exatamente com{" "}
+                  <span className="text-gray-200 font-semibold">{appliedSearch}</span>{" "}
+                  vem primeiro. Acento e ordem das palavras nao importam.
+                </p>
+              )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -1428,49 +1531,62 @@ export default function SalesPage() {
 
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-wrap gap-2">
+              {hasSearch && (
+                <button
+                  type="button"
+                  onClick={() => toggleSort("relevance")}
+                  className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
+                    effectiveSortField === "relevance"
+                      ? "border-emerald-400/60 bg-emerald-500/20 text-emerald-100"
+                      : "border-white/20 bg-white/5 text-white hover:bg-white/10"
+                  }`}
+                >
+                  Relevancia
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => toggleSort("date")}
                 className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
-                  sortField === "date"
+                  effectiveSortField === "date"
                     ? "border-blue-400/60 bg-blue-500/20 text-blue-100"
                     : "border-white/20 bg-white/5 text-white hover:bg-white/10"
                 }`}
               >
-                Data {sortField === "date" ? `(${sortDirection.toUpperCase()})` : ""}
+                Data {effectiveSortField === "date" ? `(${sortDirection.toUpperCase()})` : ""}
               </button>
               <button
                 type="button"
                 onClick={() => toggleSort("created")}
                 className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
-                  sortField === "created"
+                  effectiveSortField === "created"
                     ? "border-blue-400/60 bg-blue-500/20 text-blue-100"
                     : "border-white/20 bg-white/5 text-white hover:bg-white/10"
                 }`}
               >
-                Últimos Criados {sortField === "created" ? `(${sortDirection === "asc" ? "ANTIGOS" : "NOVOS"})` : ""}
+                Últimos Criados {effectiveSortField === "created" ? `(${sortDirection === "asc" ? "ANTIGOS" : "NOVOS"})` : ""}
               </button>
               <button
                 type="button"
                 onClick={() => toggleSort("client")}
                 className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
-                  sortField === "client"
+                  effectiveSortField === "client"
                     ? "border-blue-400/60 bg-blue-500/20 text-blue-100"
                     : "border-white/20 bg-white/5 text-white hover:bg-white/10"
                 }`}
               >
-                Cliente {sortField === "client" ? `(${sortDirection.toUpperCase()})` : ""}
+                Cliente {effectiveSortField === "client" ? `(${sortDirection.toUpperCase()})` : ""}
               </button>
               <button
                 type="button"
                 onClick={() => toggleSort("total")}
                 className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
-                  sortField === "total"
+                  effectiveSortField === "total"
                     ? "border-blue-400/60 bg-blue-500/20 text-blue-100"
                     : "border-white/20 bg-white/5 text-white hover:bg-white/10"
                 }`}
               >
-                Valor {sortField === "total" ? `(${sortDirection.toUpperCase()})` : ""}
+                Valor {effectiveSortField === "total" ? `(${sortDirection.toUpperCase()})` : ""}
               </button>
             </div>
             <div className="flex gap-2">
@@ -1483,7 +1599,12 @@ export default function SalesPage() {
                   setAttendantFilter("");
                   setDayType("");
                   setSaleTypeFilter("");
+                  // O termo de busca tambem e um filtro: deixar ele para tras
+                  // fazia o botao parecer que nao funcionou.
+                  setSearchTerm("");
+                  setAppliedSearch("");
                   setSortField("date");
+                  setSortOverride(false);
                   setSortDirection("desc");
                   setCurrentPage(1);
                 }}
@@ -1898,14 +2019,13 @@ export default function SalesPage() {
                     <div className="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto rounded-xl border border-white/10 bg-[#1a1a1a] shadow-2xl">
                        
                        {/* Section: Existing Clients */}
-                       {clientOptions.filter(c => c.name.toUpperCase().includes(clientSearch.toUpperCase())).length > 0 && (
+                       {clientDropdownOptions.length > 0 && (
                           <div className="px-4 py-2 text-[10px] uppercase tracking-wider text-gray-500 font-semibold bg-black/20">
                              Clientes Encontrados
                           </div>
                        )}
 
-                       {clientOptions
-                          .filter(c => c.name.toUpperCase().includes(clientSearch.toUpperCase()))
+                       {clientDropdownOptions
                           .map(client => (
                              <div 
                                 key={client.id}
@@ -1923,9 +2043,9 @@ export default function SalesPage() {
                        
                        {/* Quick Register Option */}
                        {clientSearch.length > 2 && 
-                        !clientOptions.some(c => c.name.toUpperCase() === clientSearch.toUpperCase()) && (
+                        !clientSearchAlreadyExists && (
                            <>
-                              {clientOptions.filter(c => c.name.toUpperCase().includes(clientSearch.toUpperCase())).length > 0 && (
+                              {clientDropdownOptions.length > 0 && (
                                   <div className="border-t border-white/10 my-1"></div>
                               )}
                               <div 
@@ -1946,7 +2066,7 @@ export default function SalesPage() {
                         )
                        }
 
-                       {clientOptions.filter(c => c.name.toUpperCase().includes(clientSearch.toUpperCase())).length === 0 &&
+                       {clientDropdownOptions.length === 0 &&
                         clientSearch.length <= 2 && (
                            <div className="px-4 py-3 text-gray-500 text-xs text-center italic">
                               Digite para buscar...
@@ -2044,14 +2164,13 @@ export default function SalesPage() {
                  {showClientList && (
                     <div className="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto rounded-xl border border-white/10 bg-[#1a1a1a] shadow-2xl">
                        
-                       {clientOptions.filter(c => c.name.toUpperCase().includes(clientSearch.toUpperCase())).length > 0 && (
+                       {clientDropdownOptions.length > 0 && (
                           <div className="px-4 py-2 text-[10px] uppercase tracking-wider text-gray-500 font-semibold bg-black/20">
                              Clientes Encontrados
                           </div>
                        )}
 
-                       {clientOptions
-                          .filter(c => c.name.toUpperCase().includes(clientSearch.toUpperCase()))
+                       {clientDropdownOptions
                           .map(client => (
                              <div 
                                 key={client.id}
@@ -2068,9 +2187,9 @@ export default function SalesPage() {
                        }
                        
                        {clientSearch.length > 2 && 
-                        !clientOptions.some(c => c.name.toUpperCase() === clientSearch.toUpperCase()) && (
+                        !clientSearchAlreadyExists && (
                            <>
-                              {clientOptions.filter(c => c.name.toUpperCase().includes(clientSearch.toUpperCase())).length > 0 && (
+                              {clientDropdownOptions.length > 0 && (
                                   <div className="border-t border-white/10 my-1"></div>
                               )}
                               <div 
@@ -2091,7 +2210,7 @@ export default function SalesPage() {
                         )
                        }
 
-                       {clientOptions.filter(c => c.name.toUpperCase().includes(clientSearch.toUpperCase())).length === 0 &&
+                       {clientDropdownOptions.length === 0 &&
                         clientSearch.length <= 2 && (
                            <div className="px-4 py-3 text-gray-500 text-xs text-center italic">
                               Digite para buscar...

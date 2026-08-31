@@ -16,6 +16,7 @@ import {
   calculateServiceSubtotal,
   isProgressiveService,
 } from "@/lib/service-pricing";
+import { filterAndRankByName } from "@/lib/name-search";
 
 type DiscountType = "percentage" | "fixed";
 type PaymentMethod =
@@ -227,12 +228,13 @@ export default function NewSalePage() {
   );
 
   const filteredClients = useMemo(() => {
-    const term = clientSearch.trim().toLowerCase();
+    const term = clientSearch.trim();
     if (!term) return clients;
 
-    const matches = clients.filter((client) =>
-      client.name.toLowerCase().includes(term),
-    );
+    // Era `includes()` sobre a lista como vem de /api/admin/clients, ordenada
+    // por created_at DESC: o nome procurado caia onde a data de cadastro
+    // mandasse. Agora ordena por relevancia e ignora acento.
+    const matches = filterAndRankByName(clients, term, (c) => c.name);
 
     // [FIX] Mantem o cliente ja selecionado sempre presente nas opcoes.
     // Antes, se o usuario selecionasse um cliente e depois digitasse algo na

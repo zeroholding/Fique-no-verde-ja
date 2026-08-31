@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
+import { filterAndRankByName } from "@/lib/name-search";
 
 interface SelectOption {
   value: string;
@@ -182,9 +183,13 @@ export const Select = ({
   );
 
   const filteredOptions = useMemo(() => {
+    // Sem filtro a ordem original e preservada: em selects como "tipo de
+    // venda" ou "forma de pagamento" a ordem das opcoes tem significado.
     if (!filter) return options;
-    const term = filter.toLowerCase();
-    return options.filter((opt) => opt.label.toLowerCase().includes(term));
+    // Com filtro, ordena por relevancia e ignora acento -- antes era
+    // `includes()` puro, entao o match exato aparecia onde a lista de origem
+    // mandasse e "JOAO" nao encontrava "JOÃO".
+    return filterAndRankByName(options, filter, (opt) => opt.label);
   }, [options, filter]);
 
   const hasEmptyOption = useMemo(

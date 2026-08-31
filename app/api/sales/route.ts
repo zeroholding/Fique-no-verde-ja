@@ -126,6 +126,10 @@ export async function GET(request: NextRequest) {
     const conditions: string[] = [];
     const queryParams: any[] = [];
 
+    // Ordem padrao da listagem. Quando ha termo de busca, o bloco de busca
+    // mais abaixo troca isso por uma ordem de relevancia.
+    let orderByClause = "ORDER BY s.sale_date DESC, s.created_at DESC";
+
     const includeCanceled = searchParams.get("includeCanceled") === "true";
     
     // Filter status based on includeCanceled
@@ -142,12 +146,75 @@ export async function GET(request: NextRequest) {
       queryParams.push(user.id);
     }
 
-    // Filter by Search (Name or ID)
-    if (search) {
-       const searchParamIndex = queryParams.length + 1;
-       // Cast UUID to text for search
-       conditions.push(`(c.name ILIKE $${searchParamIndex} OR s.id::text ILIKE $${searchParamIndex})`);
-       queryParams.push(`%${search.trim()}%`);
+    // Busca por nome do cliente ou ID da venda.
+    //
+    // Antes: `c.name ILIKE '%termo%'` com ORDER BY fixo em sale_date DESC.
+    // O match exato nunca vinha em primeiro porque a ordem era cronologica:
+    // buscar "MARIA" trazia junto MARIANA, ADRIANA e JULIANA, e a venda da
+    // MARIA aparecia onde a data dela mandasse -- normalmente fora da
+    // primeira pagina (a lista pagina de 7 em 7).
+    //
+    // Tres correcoes aqui:
+    //   1. Acento deixa de atrapalhar: os dois lados passam por
+    //      fnvj_normalize_text, entao "JOAO" encontra "JOÃO".
+    //   2. Termo com mais de uma palavra vira AND de pedacos, em qualquer
+    //      ordem: "MARIA SILVA" encontra "MARIA DA SILVA" (antes a
+    //      comparacao era literal e nao casava).
+    //   3. O ORDER BY passa a ranquear por relevancia quando ha busca.
+    if (search && search.trim()) {
+      const rawTerm = search.trim();
+
+      // `%` e `_` digitados pelo operador sao curingas do LIKE. Sem escapar,
+      // um `%` solto casaria com tudo e a busca pareceria quebrada.
+      const escapeLike = (value: string) =>
+        value.replace(/[\\%_]/g, (ch) => `\\${ch}`);
+
+      const tokens = rawTerm.split(/\s+/).filter(Boolean);
+
+      // Cada palavra digitada precisa estar no nome, em qualquer ordem.
+      const tokenConditions = tokens.map((token) => {
+        queryParams.push(escapeLike(token));
+        return `fnvj_normalize_text(c.name) LIKE '%' || fnvj_normalize_text($${queryParams.length}) || '%'`;
+      });
+
+      // O ID da venda continua buscavel. Nao passa pela normalizacao porque e
+      // UUID, e um match de ID e intencao exata do operador.
+      queryParams.push(`%${escapeLike(rawTerm)}%`);
+      const idParamIndex = queryParams.length;
+
+      conditions.push(
+        `((${tokenConditions.join(" AND ")}) OR s.id::text ILIKE $${idParamIndex})`
+      );
+
+      // Termo completo, usado somente no calculo de relevancia.
+      queryParams.push(rawTerm);
+      const rawIndex = queryParams.length;
+      queryParams.push(escapeLike(rawTerm));
+      const likeIndex = queryParams.length;
+
+      const nrmRaw = `fnvj_normalize_text($${rawIndex})`;
+      const nrmLike = `fnvj_normalize_text($${likeIndex})`;
+
+      // Faixas de relevancia, da mais forte para a mais fraca. O que importa
+      // e que match de PALAVRA INTEIRA vence match no meio de palavra: quem
+      // digita "ANA" quer ANA antes de MARIANA.
+      //
+      // Empate dentro da mesma faixa: nome mais curto primeiro (nome curto
+      // e o match mais "puro"), depois a venda mais recente.
+      orderByClause = `
+         ORDER BY
+           CASE
+             WHEN s.id::text ILIKE $${idParamIndex} THEN 0
+             WHEN fnvj_normalize_text(c.name) = ${nrmRaw} THEN 1
+             WHEN fnvj_normalize_text(c.name) LIKE ${nrmLike} || ' %' THEN 2
+             WHEN fnvj_normalize_text(c.name) LIKE '% ' || ${nrmLike} || ' %' THEN 3
+             WHEN fnvj_normalize_text(c.name) LIKE '% ' || ${nrmLike} THEN 4
+             WHEN fnvj_normalize_text(c.name) LIKE ${nrmLike} || '%' THEN 5
+             ELSE 6
+           END,
+           LENGTH(c.name),
+           s.sale_date DESC,
+           s.created_at DESC`;
     }
 
     let whereClause = "";
@@ -190,7 +257,7 @@ export async function GET(request: NextRequest) {
          JOIN users u ON s.attendant_id = u.id
          LEFT JOIN cupons cp ON s.cupom_id = cp.id
          ${whereClause}
-         ORDER BY s.sale_date DESC, s.created_at DESC`,
+         ${orderByClause}`,
         queryParams
       );
     } catch (err: any) {
@@ -227,7 +294,7 @@ export async function GET(request: NextRequest) {
            JOIN users u ON s.attendant_id = u.id
            LEFT JOIN cupons cp ON s.cupom_id = cp.id
            ${whereClause}
-           ORDER BY s.sale_date DESC, s.created_at DESC`,
+           ${orderByClause}`,
           queryParams
         );
       } else {
