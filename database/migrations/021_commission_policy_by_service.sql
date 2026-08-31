@@ -329,7 +329,11 @@ COMMIT;
 --   JOIN services s ON s.id = p.service_id
 --  WHERE p.scope = 'service' ORDER BY p.sale_type;
 --
--- Esperado: 232 comissoes a 3,5%, somando 1.469,06 (antes: 1.049,34).
+-- Verificado em producao: 232 comissoes a 3,5% somando 1.469,20
+-- (antes: 1.049,34 a 2,5%; diferenca de +419,86). O total sai de ROUND por
+-- linha, nao do arredondamento da soma: SUM(base)*3,5% daria 1.469,06.
+-- As linhas de Reclamacao com status 'cancelado' (4 em agosto) seguem em
+-- 2,5% de proposito: comissao cancelada nao e paga.
 -- SELECT c.commission_rate, COUNT(*), SUM(c.commission_amount)
 --   FROM commissions c
 --   JOIN sale_items si ON si.id = c.sale_item_id
