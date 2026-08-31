@@ -938,8 +938,14 @@ export async function POST(request: NextRequest) {
       
       // [CRITICAL FIX] Fetch saved items BEFORE commission try/catch to ensure
       // defensive total calculation (lines 887+) ALWAYS has access to item data.
+      // product_name e OBRIGATORIO aqui: e o 5o argumento de
+      // get_applicable_commission_policy, o que habilita a politica por
+      // servico (Reclamacao 3,5% em dia util). Sem a coluna no SELECT,
+      // `item.product_name` vinha undefined, o argumento ia NULL, o escopo
+      // 'service' era ignorado e a comissao caia na politica geral de 2,5%
+      // -- em silencio, com o valor errado gravado.
       const savedItemsResult = await query(
-        `SELECT id, total, subtotal, quantity, sale_type, product_id, discount_amount FROM sale_items WHERE sale_id = $1`,
+        `SELECT id, total, subtotal, quantity, sale_type, product_id, product_name, discount_amount FROM sale_items WHERE sale_id = $1`,
         [saleId]
       );
 
