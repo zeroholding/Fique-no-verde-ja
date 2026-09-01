@@ -4,17 +4,12 @@ import { useCallback, useState } from "react";
 import {
   AlertTriangle,
   CalendarDays,
-  CheckCircle2,
-  Clock,
   Download,
-  Inbox,
   Lightbulb,
   Loader2,
   RefreshCw,
-  XCircle,
   Zap,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import {
   CarrierDonut,
   SlaGauge,
@@ -27,10 +22,12 @@ import TicketDetailModal from "@/components/tracken/TicketDetailModal";
 import TicketsTable from "@/components/tracken/TicketsTable";
 import TrackenFilters from "@/components/tracken/TrackenFilters";
 import {
+  PageShell,
   PrimaryButton,
   SecondaryButton,
   kpiGridClass,
 } from "@/components/tracken/PageShell";
+import { statusIcon } from "@/components/tracken/tokens";
 import { useTrackenCatalogs } from "@/components/tracken/useTrackenCatalogs";
 import { usePanelTickets } from "@/components/tracken/usePanelTickets";
 import type {
@@ -39,15 +36,6 @@ import type {
 } from "@/components/tracken/panel-types";
 import { formatNumber, formatPercent, toInputDate } from "@/lib/tracken/format";
 import { FLEX_MODE } from "@/lib/tracken/shipping";
-
-/** Icone de cada KPI de status. */
-const STATUS_ICONS: Record<string, LucideIcon> = {
-  recepcionado: Inbox,
-  em_atendimento: Clock,
-  removido: CheckCircle2,
-  negado: XCircle,
-  cancelado: XCircle,
-};
 
 const today = toInputDate();
 
@@ -141,7 +129,10 @@ export default function TrackenPanelPage() {
     value ? value.split("-").reverse().join("/") : "-";
 
   return (
-    <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
+    // Usa o PageShell como as outras seis telas. Antes tinha container proprio
+    // com max-w-[1600px], entao trocar de tela deslocava o conteudo na
+    // horizontal por 80px.
+    <PageShell>
       <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <h1 className="text-[19px] font-semibold tracking-[-0.01em] text-slate-900 sm:text-[22px]">
@@ -240,7 +231,7 @@ export default function TrackenPanelPage() {
             value={status.count}
             hint={`${formatPercent(status.percentage)} do total`}
             color={status.color}
-            icon={STATUS_ICONS[status.code] ?? Inbox}
+            icon={statusIcon(status.code)}
             isActive={filters.status === status.code}
             onClick={() =>
               handleFilterChange({
@@ -373,6 +364,6 @@ export default function TrackenPanelPage() {
           onUpdated={() => reload({ silent: true })}
         />
       )}
-    </div>
+    </PageShell>
   );
 }

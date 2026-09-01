@@ -152,11 +152,15 @@ export default function TransportadorasPage() {
             />
           </div>
 
-          <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-3">
+          {/* A tabela de cadastro tem oito colunas e pede ~760px. Em
+              `lg:grid-cols-3` ela ficava em dois tercos de ~1024px menos a
+              barra lateral, ou seja rolava na horizontal ja em `lg`. A divisao
+              passa para `xl`. */}
+          <div className="mt-4 grid grid-cols-1 gap-3 xl:grid-cols-3">
             <Card
               title="Volume por transportadora"
               description="Total de atendimentos recebidos"
-              className="lg:col-span-1"
+              className="xl:col-span-1"
             >
               <ul className="space-y-3">
                 {lista
@@ -182,7 +186,7 @@ export default function TransportadorasPage() {
             <Card
               title="Cadastro"
               description="Nome e cor do badge usado no painel"
-              className="lg:col-span-2"
+              className="xl:col-span-2"
             >
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[760px] text-left">
@@ -323,9 +327,9 @@ export default function TransportadorasPage() {
                                   aria-label="Salvar"
                                 >
                                   {isSaving ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} />
                                   ) : (
-                                    <Check className="h-4 w-4" />
+                                    <Check className="h-4 w-4" strokeWidth={1.75} />
                                   )}
                                 </button>
                                 <button
@@ -334,7 +338,7 @@ export default function TransportadorasPage() {
                                   className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-100"
                                   aria-label="Cancelar"
                                 >
-                                  <X className="h-4 w-4" />
+                                  <X className="h-4 w-4" strokeWidth={1.75} />
                                 </button>
                               </span>
                             ) : (
@@ -351,7 +355,7 @@ export default function TransportadorasPage() {
                                   className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
                                   aria-label={`Editar ${carrier.code}`}
                                 >
-                                  <Pencil className="h-4 w-4" />
+                                  <Pencil className="h-4 w-4" strokeWidth={1.75} />
                                 </button>
                                 <button
                                   type="button"

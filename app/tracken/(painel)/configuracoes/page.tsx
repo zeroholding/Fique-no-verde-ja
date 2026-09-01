@@ -20,6 +20,7 @@ import {
   LoadingState,
   PageHeader,
   PageShell,
+  PrimaryButton,
   StatTile,
 } from "@/components/tracken/PageShell";
 import { formatDate, formatNumber, formatTime } from "@/lib/tracken/format";
@@ -148,19 +149,22 @@ export default function ConfiguracoesPage() {
         title="Configuracoes"
         subtitle="Credenciais da API da TRACKen, mapa de status e fila de notificacoes"
         actions={
-          <button
+          <PrimaryButton
             type="button"
             onClick={() => load({ silent: true })}
             disabled={isRefreshing}
-            className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700 disabled:opacity-60"
           >
             {isRefreshing ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" strokeWidth={1.75} />
             ) : (
-              <RefreshCw className="h-4 w-4" aria-hidden="true" />
+              <RefreshCw
+                className="h-4 w-4"
+                strokeWidth={1.75}
+                aria-hidden="true"
+              />
             )}
             Atualizar
-          </button>
+          </PrimaryButton>
         }
       />
 
@@ -205,8 +209,7 @@ export default function ConfiguracoesPage() {
             <p className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
               <AlertTriangle
                 className="mt-0.5 h-4 w-4 shrink-0"
-                aria-hidden="true"
-              />
+                aria-hidden="true" strokeWidth={1.75} />
               <span>
                 <strong>O worker de envio ainda nao existe.</strong> As
                 notificacoes estao sendo gravadas na fila corretamente, mas nada
@@ -267,9 +270,9 @@ export default function ConfiguracoesPage() {
                               aria-label="Copiar API key"
                             >
                               {copied === credential.api_key ? (
-                                <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                                <CheckCircle2 className="h-3.5 w-3.5 text-green-600" strokeWidth={1.75} />
                               ) : (
-                                <Copy className="h-3.5 w-3.5" />
+                                <Copy className="h-3.5 w-3.5" strokeWidth={1.75} />
                               )}
                             </button>
                           </span>
@@ -292,12 +295,12 @@ export default function ConfiguracoesPage() {
                         <td className="py-2.5 pr-3">
                           {credential.require_signature ? (
                             <span className="flex items-center gap-1 text-xs font-medium text-green-700">
-                              <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                              <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" strokeWidth={1.75} />
                               HMAC exigido
                             </span>
                           ) : (
                             <span className="flex items-center gap-1 text-xs font-medium text-amber-700">
-                              <ShieldOff className="h-3.5 w-3.5" aria-hidden="true" />
+                              <ShieldOff className="h-3.5 w-3.5" aria-hidden="true" strokeWidth={1.75} />
                               Sem assinatura
                             </span>
                           )}
@@ -357,13 +360,17 @@ node scripts/tracken_credential.mjs revoke <api_key>`}
             </div>
           </Card>
 
-          <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
+          {/* Duas tabelas de ~430px lado a lado em `lg:grid-cols-2` davam
+              ~340px por coluna, entao cada card ganhava a sua propria rolagem
+              horizontal. A divisao em duas colunas passa para `xl`, onde
+              existe largura para as duas caberem. */}
+          <div className="mt-4 grid grid-cols-1 gap-3 xl:grid-cols-2">
             <Card
               title="Mapa de status"
               description="Fluxo do atendimento e transicoes permitidas"
             >
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[420px] text-left">
+                <table className="w-full min-w-[380px] text-left">
                   <thead>
                     <tr className="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                       <th scope="col" className="py-2 pr-3">Status</th>
@@ -430,7 +437,7 @@ node scripts/tracken_credential.mjs revoke <api_key>`}
                 />
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[440px] text-left">
+                  <table className="w-full min-w-[380px] text-left">
                     <thead>
                       <tr className="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                         <th scope="col" className="py-2 pr-3">Evento</th>
@@ -493,7 +500,9 @@ node scripts/tracken_credential.mjs revoke <api_key>`}
                 </div>
               )}
 
-              <dl className="mt-4 grid grid-cols-4 gap-2 text-center">
+              {/* Era `grid-cols-4` fixo: no telefone davam quatro caixas de
+                  ~60px, com "Esgotadas" quebrando em tres linhas. */}
+              <dl className="mt-4 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
                 {[
                   { label: "Pendentes", value: data.outbox.pending },
                   { label: "Enviadas", value: data.outbox.sent },

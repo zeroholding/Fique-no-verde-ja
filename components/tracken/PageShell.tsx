@@ -3,7 +3,7 @@
 import { AlertCircle, Inbox, Loader2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { formatNumber } from "@/lib/tracken/format";
-import { normalizeColor, type TrackenColor } from "./tokens";
+import { DOT_CLASSES, TINT_CLASSES, normalizeColor } from "./tokens";
 
 /** Estrutura comum das telas, para as sete ficarem coerentes entre si. */
 
@@ -177,22 +177,13 @@ export function StatTile({
 }) {
   const tone = normalizeColor(color);
 
-  const tint: Record<TrackenColor, string> = {
-    green: "text-green-600",
-    blue: "text-blue-600",
-    amber: "text-amber-600",
-    red: "text-red-600",
-    purple: "text-purple-600",
-    slate: "text-slate-400",
-  };
-
   return (
     <div className="tk-card px-4 pb-3.5 pt-4">
       <div className="flex items-start justify-between gap-2">
         <span className="tk-eyebrow">{label}</span>
         {Icon && (
           <Icon
-            className={`h-4 w-4 shrink-0 ${tint[tone]}`}
+            className={`h-4 w-4 shrink-0 ${TINT_CLASSES[tone]}`}
             strokeWidth={1.75}
             aria-hidden="true"
           />
@@ -225,15 +216,6 @@ export function ProgressRow({
   const tone = normalizeColor(color);
   const width = max > 0 ? Math.min(100, (value / max) * 100) : 0;
 
-  const bar: Record<TrackenColor, string> = {
-    green: "bg-green-500",
-    blue: "bg-blue-500",
-    amber: "bg-amber-500",
-    red: "bg-red-500",
-    purple: "bg-purple-500",
-    slate: "bg-slate-400",
-  };
-
   return (
     <li>
       <div className="flex items-center justify-between gap-3">
@@ -249,7 +231,7 @@ export function ProgressRow({
       </div>
       <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
         <div
-          className={`h-full rounded-full transition-[width] duration-500 ${bar[tone]}`}
+          className={`h-full rounded-full transition-[width] duration-500 ${DOT_CLASSES[tone]}`}
           style={{ width: `${width}%` }}
         />
       </div>

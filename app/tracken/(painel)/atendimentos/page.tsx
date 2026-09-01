@@ -10,6 +10,7 @@ import {
   ErrorBanner,
   PageHeader,
   PageShell,
+  PrimaryButton,
 } from "@/components/tracken/PageShell";
 import { useTrackenCatalogs } from "@/components/tracken/useTrackenCatalogs";
 import { usePanelTickets } from "@/components/tracken/usePanelTickets";
@@ -113,22 +114,25 @@ export default function AtendimentosPage() {
               }
               className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
             >
-              <Download className="h-4 w-4" aria-hidden="true" />
+              <Download className="h-4 w-4" aria-hidden="true" strokeWidth={1.75} />
               Exportar
             </button>
-            <button
+            <PrimaryButton
               type="button"
               onClick={() => reload({ silent: true })}
               disabled={isRefreshing}
-              className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2 disabled:opacity-60"
             >
               {isRefreshing ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" strokeWidth={1.75} />
               ) : (
-                <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                <RefreshCw
+                  className="h-4 w-4"
+                  strokeWidth={1.75}
+                  aria-hidden="true"
+                />
               )}
               Atualizar
-            </button>
+            </PrimaryButton>
           </>
         }
       />

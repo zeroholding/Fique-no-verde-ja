@@ -35,15 +35,10 @@ export function StatusBadge({ label, color, title }: BadgeProps) {
   );
 }
 
-/** Cores da trilha vertical que identifica a transportadora na grade. */
-const CARRIER_ACCENT: Record<string, string> = {
-  green: "bg-green-500",
-  blue: "bg-blue-500",
-  amber: "bg-amber-500",
-  red: "bg-red-500",
-  purple: "bg-purple-500",
-  slate: "bg-slate-400",
-};
+/*
+ * A trilha vertical da transportadora usa o mesmo preenchimento cheio do resto
+ * do painel (DOT_CLASSES em tokens.ts). Era um mapa identico copiado aqui.
+ */
 
 /**
  * Transportadora: sigla em caixa alta com uma trilha de cor a esquerda.
@@ -58,7 +53,7 @@ export function CarrierBadge({ label, color, title }: BadgeProps) {
       className="inline-flex items-center gap-2 whitespace-nowrap"
     >
       <span
-        className={`h-3.5 w-[3px] shrink-0 rounded-full ${CARRIER_ACCENT[tone]}`}
+        className={`h-3.5 w-[3px] shrink-0 rounded-full ${DOT_CLASSES[tone]}`}
         aria-hidden="true"
       />
       <span className="text-[12.5px] font-semibold tracking-wide text-slate-800">

@@ -21,9 +21,13 @@ export const metadata: Metadata = {
 };
 
 export default function TrackenLoginPage() {
+  // Rolagem em vez de `items-center` puro no telefone: deitado e com o teclado
+  // aberto, a altura util cai para ~200px, e o cartao centralizado ficava com
+  // topo e rodape cortados pelo `overflow-hidden`, sem como rolar ate o botao
+  // de entrar. A partir de `sm` volta a centralizar.
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#0d9c40] via-[#048842] to-[#02652f] p-4 sm:p-6">
-      <div className="relative w-full max-w-4xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+    <div className="flex min-h-screen justify-center overflow-y-auto bg-gradient-to-br from-[#0d9c40] via-[#048842] to-[#02652f] p-4 sm:items-center sm:p-6">
+      <div className="relative my-auto w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl sm:rounded-3xl">
         {/*
           Divisoria curva. Fica atras do conteudo e some no mobile, onde o
           cartao passa a ter uma coluna so. `preserveAspectRatio="none"` deixa

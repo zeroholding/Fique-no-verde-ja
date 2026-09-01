@@ -18,6 +18,7 @@ import {
   LoadingState,
   PageHeader,
   PageShell,
+  PrimaryButton,
   ProgressRow,
   StatTile,
   formatDuration,
@@ -216,19 +217,22 @@ export default function SlaPage() {
         title="SLA & Performance"
         subtitle="Cumprimento do limite de envio do Mercado Livre por transportadora e por atendente"
         actions={
-          <button
+          <PrimaryButton
             type="button"
             onClick={() => load({ silent: true })}
             disabled={isRefreshing}
-            className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700 disabled:opacity-60"
           >
             {isRefreshing ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" strokeWidth={1.75} />
             ) : (
-              <RefreshCw className="h-4 w-4" aria-hidden="true" />
+              <RefreshCw
+                className="h-4 w-4"
+                strokeWidth={1.75}
+                aria-hidden="true"
+              />
             )}
             Atualizar
-          </button>
+          </PrimaryButton>
         }
       />
 
@@ -302,7 +306,7 @@ export default function SlaPage() {
                       : "bg-red-100 text-red-600"
                   }`}
                 >
-                  <Gauge className="h-4 w-4" aria-hidden="true" />
+                  <Gauge className="h-4 w-4" aria-hidden="true" strokeWidth={1.75} />
                 </span>
               </div>
               <p
@@ -340,7 +344,9 @@ export default function SlaPage() {
             />
           </div>
 
-          <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-3">
+          {/* A tabela de quebra tem sete colunas e pede ~620px. Em dois tercos
+              de `lg` ela rolava dentro do card; a divisao passa para `xl`. */}
+          <div className="mt-4 grid grid-cols-1 gap-3 xl:grid-cols-3">
             <Card
               title="Atendimentos em aberto"
               description="Situacao do prazo de quem ainda nao foi concluido"
@@ -400,8 +406,7 @@ export default function SlaPage() {
                 <p className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
                   <AlertTriangle
                     className="mt-0.5 h-3.5 w-3.5 shrink-0"
-                    aria-hidden="true"
-                  />
+                    aria-hidden="true" strokeWidth={1.75} />
                   {formatNumber(data.open.overdue)} atendimentos com o limite de
                   envio ja vencido. Depois do limite o Mercado Livre ja
                   contabilizou o atraso.
@@ -409,7 +414,7 @@ export default function SlaPage() {
               )}
             </Card>
 
-            <div className="lg:col-span-2">
+            <div className="xl:col-span-2">
               {renderBreakdown(
                 "Por transportadora",
                 "SLA e tempo medio de cada transportadora",

@@ -3,22 +3,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
-  CheckCircle2,
-  Clock,
   Download,
   FileText,
-  Inbox,
   Loader2,
-  XCircle,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { StatusBadge } from "@/components/tracken/Badges";
+import { statusIcon } from "@/components/tracken/tokens";
 import {
   Card,
   ErrorBanner,
   LoadingState,
   PageHeader,
   PageShell,
+  PrimaryButton,
   ProgressRow,
   StatTile,
   kpiGridClass,
@@ -43,14 +40,6 @@ const FIELD =
   "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-100";
 const LABEL =
   "mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-500";
-
-const STATUS_ICONS: Record<string, LucideIcon> = {
-  recepcionado: Inbox,
-  em_atendimento: Clock,
-  removido: CheckCircle2,
-  negado: XCircle,
-  cancelado: XCircle,
-};
 
 /** Atalhos de periodo, para não digitar data toda vez. */
 const ATALHOS = [
@@ -135,16 +124,19 @@ export default function RelatoriosPage() {
         title="Relatorios"
         subtitle="Resumo consolidado dos atendimentos por periodo, transportadora e status"
         actions={
-          <button
+          <PrimaryButton
             type="button"
             onClick={() =>
               window.open(`/api/tracken/export?${queryString}`, "_blank")
             }
-            className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700"
           >
-            <Download className="h-4 w-4" aria-hidden="true" />
+            <Download
+              className="h-4 w-4"
+              strokeWidth={1.75}
+              aria-hidden="true"
+            />
             Exportar CSV
-          </button>
+          </PrimaryButton>
         }
       />
 
@@ -237,7 +229,7 @@ export default function RelatoriosPage() {
               deixar tile sozinho na ultima linha. */}
           <div
             className={`mt-4 grid gap-3 ${kpiGridClass(
-              1 + (stats.charts.byStatus?.length ?? 0)
+              1 + (stats.kpis.byStatus?.length ?? 0)
             )}`}
           >
             <StatTile
@@ -254,7 +246,7 @@ export default function RelatoriosPage() {
                 value={s.count}
                 hint={`${formatPercent(s.percentage)} do total`}
                 color={s.color}
-                icon={STATUS_ICONS[s.code] ?? Inbox}
+                icon={statusIcon(s.code)}
               />
             ))}
           </div>
@@ -317,7 +309,9 @@ export default function RelatoriosPage() {
                 />
               </div>
 
-              <dl className="mt-4 grid grid-cols-3 gap-3 text-center">
+              {/* Era `grid-cols-3` fixo, sem breakpoint: tres caixas de ~90px
+                  a 320px de largura. */}
+              <dl className="mt-4 grid grid-cols-1 gap-3 text-center sm:grid-cols-3">
                 <div className="rounded-lg bg-slate-50 p-3">
                   <dt className="text-[11px] uppercase tracking-wide text-slate-400">
                     No prazo
@@ -406,8 +400,7 @@ export default function RelatoriosPage() {
             <p className="flex items-start gap-2 text-xs text-slate-500">
               <FileText
                 className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
-                aria-hidden="true"
-              />
+                aria-hidden="true" strokeWidth={1.75} />
               <span>
                 A exportacao respeita exatamente os filtros aplicados acima e sai
                 em CSV com separador ponto e virgula, pronto para abrir no Excel.
@@ -421,7 +414,7 @@ export default function RelatoriosPage() {
               }
               className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
             >
-              <Download className="h-4 w-4" aria-hidden="true" />
+              <Download className="h-4 w-4" aria-hidden="true" strokeWidth={1.75} />
               Baixar CSV
             </button>
           </div>
@@ -430,7 +423,7 @@ export default function RelatoriosPage() {
 
       {isLoading && stats && (
         <p className="mt-3 flex items-center gap-2 text-xs text-slate-400">
-          <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+          <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" strokeWidth={1.75} />
           Atualizando...
         </p>
       )}

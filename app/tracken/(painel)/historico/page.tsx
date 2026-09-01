@@ -25,6 +25,7 @@ import {
   LoadingState,
   PageHeader,
   PageShell,
+  PrimaryButton,
 } from "@/components/tracken/PageShell";
 import { useTrackenCatalogs } from "@/components/tracken/useTrackenCatalogs";
 import { formatDate, formatTime, toInputDate } from "@/lib/tracken/format";
@@ -198,19 +199,22 @@ export default function HistoricoPage() {
         title="Historico de Status"
         subtitle="Trilha de auditoria de todas as mudancas nos atendimentos: quem alterou o que, e quando"
         actions={
-          <button
+          <PrimaryButton
             type="button"
             onClick={() => loadEvents({ silent: true })}
             disabled={isRefreshing}
-            className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700 disabled:opacity-60"
           >
             {isRefreshing ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" strokeWidth={1.75} />
             ) : (
-              <RefreshCw className="h-4 w-4" aria-hidden="true" />
+              <RefreshCw
+                className="h-4 w-4"
+                strokeWidth={1.75}
+                aria-hidden="true"
+              />
             )}
             Atualizar
-          </button>
+          </PrimaryButton>
         }
       />
 
@@ -291,8 +295,7 @@ export default function HistoricoPage() {
             <div className="relative">
               <Search
                 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-                aria-hidden="true"
-              />
+                aria-hidden="true" strokeWidth={1.75} />
               <input
                 id="hist-busca"
                 type="search"
@@ -406,8 +409,7 @@ export default function HistoricoPage() {
                                 <span>{event.from_status_label}</span>
                                 <ArrowRightLeft
                                   className="h-3 w-3 shrink-0 text-slate-300"
-                                  aria-hidden="true"
-                                />
+                                  aria-hidden="true" strokeWidth={1.75} />
                               </>
                             )}
                             <StatusBadge

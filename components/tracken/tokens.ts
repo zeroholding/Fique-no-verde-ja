@@ -6,6 +6,9 @@
  * final. Por isso as combinacoes ficam escritas por extenso aqui.
  */
 
+import { Ban, CheckCircle2, Clock, Inbox, XCircle } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
 export type TrackenColor =
   | "green"
   | "blue"
@@ -64,15 +67,30 @@ export const KPI_ICON_CLASSES: Record<TrackenColor, string> = {
   slate: "bg-slate-100 text-slate-600",
 };
 
-/** Barras horizontais do grafico "Atendimentos por Status". */
-export const BAR_CLASSES: Record<TrackenColor, string> = {
-  green: "bg-green-500",
-  blue: "bg-blue-500",
-  amber: "bg-amber-500",
-  red: "bg-red-500",
-  purple: "bg-purple-500",
-  slate: "bg-slate-400",
+/**
+ * Icone monocromatico sobre fundo claro (KPI, tile, legenda).
+ *
+ * Existia copiado em KpiCard (ICON_TINT) e em PageShell (o `tint` do StatTile),
+ * identicos. Duas copias do mesmo mapa divergem na primeira vez que alguem
+ * ajusta um tom em uma das telas.
+ */
+export const TINT_CLASSES: Record<TrackenColor, string> = {
+  green: "text-green-600",
+  blue: "text-blue-600",
+  amber: "text-amber-600",
+  red: "text-red-600",
+  purple: "text-purple-600",
+  slate: "text-slate-400",
 };
+
+/**
+ * Preenchimento cheio: barra, trilha de cartao e ponto de legenda usam o mesmo.
+ *
+ * Era o mesmo mapa escrito quatro vezes (BAR_CLASSES aqui, RAIL no KpiCard,
+ * `bar` no ProgressRow e CARRIER_ACCENT no Badges). Fica um so, e este alias
+ * existe para as chamadas antigas continuarem lendo bem no lugar onde estao.
+ */
+export const BAR_CLASSES = DOT_CLASSES;
 
 /** Valores hexadecimais para o recharts, que nao aceita classe do Tailwind. */
 export const CHART_HEX: Record<TrackenColor, string> = {
@@ -86,3 +104,29 @@ export const CHART_HEX: Record<TrackenColor, string> = {
 
 /** Verde da marca, usado em acoes primarias e no gauge de SLA. */
 export const BRAND_GREEN = "#16A34A";
+
+/**
+ * Icone de cada status.
+ *
+ * Estava duplicado, identico, no painel e em Relatorios. Duas copias do mesmo
+ * mapa divergem na primeira vez que um status novo entra: uma tela ganha o
+ * icone e a outra cai no fallback sem ninguem perceber.
+ *
+ * O fallback existe porque o mapa de status vive no banco
+ * (`tracken_status_map`): um status criado por lá nao tem icone aqui, e a tela
+ * precisa continuar renderizando.
+ */
+export const STATUS_ICONS: Record<string, LucideIcon> = {
+  recepcionado: Inbox,
+  em_atendimento: Clock,
+  removido: CheckCircle2,
+  negado: XCircle,
+  cancelado: Ban,
+};
+
+export const STATUS_ICON_FALLBACK: LucideIcon = Inbox;
+
+export function statusIcon(code: string | null | undefined): LucideIcon {
+  if (!code) return STATUS_ICON_FALLBACK;
+  return STATUS_ICONS[code] ?? STATUS_ICON_FALLBACK;
+}

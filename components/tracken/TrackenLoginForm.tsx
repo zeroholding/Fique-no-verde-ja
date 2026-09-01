@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { AlertCircle, Eye, EyeOff, Loader2, Lock, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 /**
@@ -11,8 +12,13 @@ import { useAuth } from "@/contexts/AuthContext";
  * nem senha diferente para manter. O destino padrao e /tracken; se a URL trouxer
  * ?redirect=, o AuthContext leva para lá.
  *
- * Os icones sao SVG inline para a tela de login nao carregar biblioteca de
- * icones. Os rotulos existem, mas ficam apenas para leitor de tela: o campo se
+ * Os icones vem do lucide, como no resto do painel. Antes eram cinco SVG
+ * desenhados a mao aqui para "a tela de login nao carregar biblioteca de
+ * icones", mas o layout raiz do Tracken e o mesmo do painel, que ja traz o
+ * lucide -- entao o custo era zero e o que sobrava era divergencia de traco e
+ * de tamanho em relacao a todas as outras telas.
+ *
+ * Os rotulos existem, mas ficam apenas para leitor de tela: o campo se
  * identifica visualmente pelo icone e pelo texto de exemplo.
  */
 
@@ -27,40 +33,8 @@ import { useAuth } from "@/contexts/AuthContext";
 const FIELD_BASE =
   "w-full rounded-xl border border-transparent bg-slate-100 py-3.5 pl-11 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 hover:bg-slate-100/80 focus:border-green-500 focus:bg-white focus:ring-4 focus:ring-green-500/15";
 
-const ICON_CLASSES =
+const FIELD_ICON =
   "pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400";
-
-function UserIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      className={ICON_CLASSES}
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="8" r="3.6" />
-      <path strokeLinecap="round" d="M5 20c0-3.6 3.1-5.6 7-5.6s7 2 7 5.6" />
-    </svg>
-  );
-}
-
-function LockIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      className={ICON_CLASSES}
-      aria-hidden="true"
-    >
-      <rect x="4.5" y="10" width="15" height="10" rx="2.4" />
-      <path strokeLinecap="round" d="M8.5 10V7.5a3.5 3.5 0 0 1 7 0V10" />
-    </svg>
-  );
-}
 
 export default function TrackenLoginForm() {
   const { login } = useAuth();
@@ -102,17 +76,11 @@ export default function TrackenLoginForm() {
           aria-live="polite"
           className="mb-5 flex items-start gap-2 rounded-xl bg-red-50 px-3.5 py-3 text-sm text-red-700 ring-1 ring-red-200"
         >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.8}
+          <AlertCircle
             className="mt-0.5 h-4 w-4 shrink-0"
+            strokeWidth={1.75}
             aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="9" />
-            <path strokeLinecap="round" d="M12 8v4.5M12 16h.01" />
-          </svg>
+          />
           {error}
         </p>
       )}
@@ -121,7 +89,7 @@ export default function TrackenLoginForm() {
         <label htmlFor="tracken-email" className="sr-only">
           E-mail
         </label>
-        <UserIcon />
+        <User className={FIELD_ICON} strokeWidth={1.75} aria-hidden="true" />
         <input
           id="tracken-email"
           name="email"
@@ -142,7 +110,7 @@ export default function TrackenLoginForm() {
         <label htmlFor="tracken-password" className="sr-only">
           Senha
         </label>
-        <LockIcon />
+        <Lock className={FIELD_ICON} strokeWidth={1.75} aria-hidden="true" />
         <input
           id="tracken-password"
           name="password"
@@ -161,38 +129,11 @@ export default function TrackenLoginForm() {
           aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
           aria-pressed={showPassword}
         >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.8}
-            className="h-4 w-4"
-            aria-hidden="true"
-          >
-            {showPassword ? (
-              <>
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3 3l18 18M10.6 10.7a2 2 0 0 0 2.8 2.8"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6.6 6.7C4.7 8 3.4 9.8 2.8 12c1.3 4 5.1 6.5 9.2 6.5 1.6 0 3.1-.4 4.4-1.1m2.6-1.9c.9-.9 1.6-2 2.1-3.5-1.3-4-5.1-6.5-9.2-6.5-.8 0-1.5.1-2.2.3"
-                />
-              </>
-            ) : (
-              <>
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M2.8 12C4.1 8 7.9 5.5 12 5.5s7.9 2.5 9.2 6.5c-1.3 4-5.1 6.5-9.2 6.5S4.1 16 2.8 12Z"
-                />
-                <circle cx="12" cy="12" r="2.6" />
-              </>
-            )}
-          </svg>
+          {showPassword ? (
+            <EyeOff className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+          ) : (
+            <Eye className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+          )}
         </button>
       </div>
 
@@ -203,16 +144,7 @@ export default function TrackenLoginForm() {
       >
         {isSubmitting ? (
           <>
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2.2}
-              className="h-4 w-4 animate-spin"
-              aria-hidden="true"
-            >
-              <path strokeLinecap="round" d="M12 3a9 9 0 1 0 9 9" />
-            </svg>
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
             Entrando
           </>
         ) : (

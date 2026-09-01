@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useSyncExternalStore } from "react";
 import {
   ArrowLeftRight,
   Building2,
@@ -105,6 +105,19 @@ const subscribeToNothing = () => () => {};
 const readStoredUser = () => window.localStorage.getItem("user");
 const readStoredUserOnServer = () => null;
 
+/** Espelha o breakpoint `lg` do Tailwind, onde o drawer deixa de ser drawer. */
+const NARROW_QUERY = "(max-width: 1023px)";
+
+const subscribeToViewport = (onChange: () => void) => {
+  const media = window.matchMedia(NARROW_QUERY);
+  media.addEventListener("change", onChange);
+  return () => media.removeEventListener("change", onChange);
+};
+const readIsNarrow = () => window.matchMedia(NARROW_QUERY).matches;
+// No servidor nao ha viewport. `false` faz a primeira renderizacao casar com o
+// caso em que o menu e fixo, que e o que o HTML entrega.
+const readIsNarrowOnServer = () => false;
+
 export default function TrackenSidebar({
   isMobileOpen,
   onMobileClose,
@@ -128,6 +141,42 @@ export default function TrackenSidebar({
       return null;
     }
   }, [storedUser]);
+
+  /**
+   * Abaixo de `lg` o menu e um drawer sobreposto; a partir de `lg` ele e fixo.
+   * A distincao importa para o `inert` e para o travamento de rolagem, que so
+   * valem no modo drawer.
+   */
+  const isNarrow = useSyncExternalStore(
+    subscribeToViewport,
+    readIsNarrow,
+    readIsNarrowOnServer
+  );
+
+  /**
+   * Com o drawer aberto, travar a rolagem do fundo. Sem isso, arrastar sobre o
+   * overlay rolava a lista de atendimentos atras do menu.
+   */
+  useEffect(() => {
+    if (!isMobileOpen || !isNarrow) return;
+
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [isMobileOpen, isNarrow]);
+
+  /** Escape fecha o drawer, como em qualquer sobreposicao. */
+  useEffect(() => {
+    if (!isMobileOpen) return;
+
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onMobileClose();
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [isMobileOpen, onMobileClose]);
 
   const handleLogout = async () => {
     try {
@@ -160,6 +209,12 @@ export default function TrackenSidebar({
       )}
 
       <aside
+        // `inert` quando fechado no mobile: o painel continua no DOM (so sai de
+        // vista por translate), entao sem isso os sete links seguiam alcancaveis
+        // por Tab e o foco desaparecia da tela para dentro de um menu invisivel.
+        // Em telas grandes ele nunca esta fechado, por isso a condicao olha o
+        // breakpoint tambem.
+        inert={!isMobileOpen && isNarrow ? true : undefined}
         className={`fixed inset-y-0 left-0 z-40 flex w-[260px] flex-col border-r border-[var(--tk-line)] bg-white transition-transform duration-200 lg:static lg:translate-x-0 ${
           isMobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}

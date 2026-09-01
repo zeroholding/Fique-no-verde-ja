@@ -2,7 +2,7 @@
 
 import type { LucideIcon } from "lucide-react";
 import { formatNumber } from "@/lib/tracken/format";
-import { normalizeColor, type TrackenColor } from "./tokens";
+import { DOT_CLASSES, TINT_CLASSES, normalizeColor } from "./tokens";
 
 /**
  * Cartao de indicador.
@@ -14,24 +14,12 @@ import { normalizeColor, type TrackenColor } from "./tokens";
  * Clicavel: aplica o filtro correspondente na grade.
  */
 
-/** Trilha superior de cor, o unico lugar onde a cor aparece cheia. */
-const RAIL: Record<TrackenColor, string> = {
-  green: "bg-green-500",
-  blue: "bg-blue-500",
-  amber: "bg-amber-500",
-  red: "bg-red-500",
-  purple: "bg-purple-500",
-  slate: "bg-slate-300",
-};
-
-const ICON_TINT: Record<TrackenColor, string> = {
-  green: "text-green-600",
-  blue: "text-blue-600",
-  amber: "text-amber-600",
-  red: "text-red-600",
-  purple: "text-purple-600",
-  slate: "text-slate-400",
-};
+/*
+ * A trilha de cor e o tom do icone vem de tokens.ts. Antes eram dois mapas
+ * copiados aqui; o de trilha usava `bg-slate-300` contra `bg-slate-400` do
+ * token, diferenca invisivel numa faixa de 2px e que so servia para as duas
+ * definicoes seguirem convivendo.
+ */
 
 type Props = {
   title: string;
@@ -57,7 +45,7 @@ export default function KpiCard({
   const content = (
     <>
       <span
-        className={`absolute inset-x-0 top-0 h-[3px] ${RAIL[tone]} ${
+        className={`absolute inset-x-0 top-0 h-[3px] ${DOT_CLASSES[tone]} ${
           isActive ? "opacity-100" : "opacity-0 transition-opacity"
         } group-hover:opacity-70`}
         aria-hidden="true"
@@ -66,7 +54,7 @@ export default function KpiCard({
       <div className="flex items-start justify-between gap-2">
         <span className="tk-eyebrow">{title}</span>
         <Icon
-          className={`h-4 w-4 shrink-0 ${ICON_TINT[tone]}`}
+          className={`h-4 w-4 shrink-0 ${TINT_CLASSES[tone]}`}
           strokeWidth={1.75}
           aria-hidden="true"
         />
