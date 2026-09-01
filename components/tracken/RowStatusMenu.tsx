@@ -234,7 +234,7 @@ export default function RowStatusMenu({
                   >
                     <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                  <span className="text-[11.5px] font-semibold uppercase tracking-wide text-slate-500">
                     Motivo da negativa
                   </span>
                 </div>
@@ -249,7 +249,7 @@ export default function RowStatusMenu({
                         onClick={() =>
                           apply(STATUS_REQUIRING_DENIAL_REASON, reason.code)
                         }
-                        className="flex w-full items-start justify-between gap-2 px-3 py-2 text-left text-[12px] font-medium leading-snug text-slate-700 transition-colors hover:bg-red-50 hover:text-red-800 focus:bg-red-50 focus:outline-none disabled:opacity-50"
+                        className="flex w-full items-start justify-between gap-2 px-3 py-2 text-left text-[13.5px] font-medium leading-snug text-slate-700 transition-colors hover:bg-red-50 hover:text-red-800 focus:bg-red-50 focus:outline-none disabled:opacity-50"
                       >
                         {reason.label}
                         {isApplying === reason.code && (
@@ -266,20 +266,20 @@ export default function RowStatusMenu({
                 {error && (
                   <p
                     role="alert"
-                    className="border-t border-red-100 bg-red-50 px-3 py-2 text-[11px] leading-snug text-red-700"
+                    className="border-t border-red-100 bg-red-50 px-3 py-2 text-[12.5px] leading-snug text-red-700"
                   >
                     {error}
                   </p>
                 )}
 
-                <p className="border-t border-slate-100 px-3 py-1.5 text-[10px] leading-snug text-slate-500">
+                <p className="border-t border-slate-100 px-3 py-1.5 text-[11.5px] leading-snug text-slate-500">
                   O motivo fica registrado no atendimento e no histórico.
                 </p>
               </>
             ) : (
               /* ---------- Passo 1: para qual status ---------- */
               <>
-                <p className="border-b border-slate-100 px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                <p className="border-b border-slate-100 px-3 py-2 text-[11.5px] font-semibold uppercase tracking-wide text-slate-500">
                   Mudar para
                 </p>
 
@@ -291,7 +291,7 @@ export default function RowStatusMenu({
                         role="menuitem"
                         disabled={isApplying !== null}
                         onClick={() => selectStatus(option)}
-                        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50 focus:bg-slate-50 focus:outline-none disabled:opacity-50"
+                        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-[13.5px] font-medium text-slate-700 transition-colors hover:bg-slate-50 focus:bg-slate-50 focus:outline-none disabled:opacity-50"
                       >
                         <span className="flex items-center gap-2">
                           <StatusBadge
@@ -324,13 +324,13 @@ export default function RowStatusMenu({
                 {error && (
                   <p
                     role="alert"
-                    className="border-t border-red-100 bg-red-50 px-3 py-2 text-[11px] leading-snug text-red-700"
+                    className="border-t border-red-100 bg-red-50 px-3 py-2 text-[12.5px] leading-snug text-red-700"
                   >
                     {error}
                   </p>
                 )}
 
-                <p className="border-t border-slate-100 px-3 py-1.5 text-[10px] text-slate-500">
+                <p className="border-t border-slate-100 px-3 py-1.5 text-[11.5px] text-slate-500">
                   Status atual: {statusLabel}
                 </p>
               </>

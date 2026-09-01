@@ -49,7 +49,7 @@ const URGENCY = {
 export default function DeadlineCell({ deadline }: { deadline: string | null }) {
   if (!deadline) {
     return (
-      <span className="text-[12.5px] text-slate-400" title="Limite não informado">
+      <span className="text-[14px] text-slate-400" title="Limite não informado">
         Sem limite
       </span>
     );
@@ -62,17 +62,17 @@ export default function DeadlineCell({ deadline }: { deadline: string | null }) 
   return (
     <span className="block">
       <span className="flex flex-wrap items-baseline gap-x-1.5">
-        <span className={`tk-num text-[13px] ${style.date}`}>
+        <span className={`tk-num text-[14.5px] ${style.date}`}>
           {formatDate(deadline)}
         </span>
-        <span className={`tk-num text-[11.5px] ${style.time}`}>
+        <span className={`tk-num text-[13px] ${style.time}`}>
           {formatTime(deadline)}
         </span>
       </span>
 
       {timeLeft && style.chip && (
         <span
-          className={`mt-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold ${style.chip}`}
+          className={`mt-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11.5px] font-semibold ${style.chip}`}
         >
           <Clock className="h-2.5 w-2.5 shrink-0" aria-hidden="true" />
           {timeLeft}

@@ -33,9 +33,9 @@ const DEADLINE_OPTIONS = [
 const UNASSIGNED = "unassigned";
 
 const FIELD =
-  "w-full rounded-lg border border-[var(--tk-line-strong)] bg-white px-2.5 py-1.5 text-[12.5px] text-slate-800 transition-colors hover:border-slate-300";
+  "w-full rounded-lg border border-[var(--tk-line-strong)] bg-white px-2.5 py-1.5 text-[14px] text-slate-800 transition-colors hover:border-slate-300";
 
-const LABEL = "mb-1 block text-[10.5px] font-semibold uppercase tracking-[0.04em] text-slate-500";
+const LABEL = "mb-1 block text-[12px] font-semibold uppercase tracking-[0.04em] text-slate-500";
 
 type Props = {
   filters: PanelFilterState;
@@ -150,7 +150,7 @@ export default function TrackenFilters({
             value={searchDraft}
             onChange={(event) => setSearchDraft(event.target.value)}
             placeholder="Buscar por ID de envio, venda, comprador ou seller"
-            className="w-full rounded-lg border border-[var(--tk-line-strong)] bg-white py-2 pl-9 pr-3 text-[13px] text-slate-800 transition-colors placeholder:text-slate-400 hover:border-slate-300"
+            className="w-full rounded-lg border border-[var(--tk-line-strong)] bg-white py-2 pl-9 pr-3 text-[14.5px] text-slate-800 transition-colors placeholder:text-slate-400 hover:border-slate-300"
           />
         </div>
 
@@ -191,9 +191,9 @@ export default function TrackenFilters({
                 value={filters.startDate}
                 max={filters.endDate || undefined}
                 onChange={(event) => onChange({ startDate: event.target.value })}
-                className="tk-num min-w-0 flex-1 rounded-lg border border-[var(--tk-line-strong)] bg-white px-2.5 py-2 text-[12.5px] text-slate-800 transition-colors hover:border-slate-300 sm:flex-none"
+                className="tk-num min-w-0 flex-1 rounded-lg border border-[var(--tk-line-strong)] bg-white px-2.5 py-2 text-[14px] text-slate-800 transition-colors hover:border-slate-300 sm:flex-none"
               />
-              <span className="shrink-0 text-[11px] text-slate-400" aria-hidden="true">
+              <span className="shrink-0 text-[12.5px] text-slate-400" aria-hidden="true">
                 →
               </span>
               <label htmlFor="tk-end" className="sr-only">
@@ -205,7 +205,7 @@ export default function TrackenFilters({
                 value={filters.endDate}
                 min={filters.startDate || undefined}
                 onChange={(event) => onChange({ endDate: event.target.value })}
-                className="tk-num min-w-0 flex-1 rounded-lg border border-[var(--tk-line-strong)] bg-white px-2.5 py-2 text-[12.5px] text-slate-800 transition-colors hover:border-slate-300 sm:flex-none"
+                className="tk-num min-w-0 flex-1 rounded-lg border border-[var(--tk-line-strong)] bg-white px-2.5 py-2 text-[14px] text-slate-800 transition-colors hover:border-slate-300 sm:flex-none"
               />
             </div>
           </div>
@@ -214,7 +214,7 @@ export default function TrackenFilters({
             type="button"
             onClick={() => setShowAdvanced((previous) => !previous)}
             aria-expanded={showAdvanced}
-            className={`inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-[12.5px] font-medium transition-colors ${
+            className={`inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-[14px] font-medium transition-colors ${
               showAdvanced || chips.length > 0
                 ? "border-[var(--tk-brand)] bg-[var(--tk-brand-wash)] text-[var(--tk-brand-strong)]"
                 : "border-[var(--tk-line-strong)] bg-white text-slate-700 hover:bg-slate-50"
@@ -223,7 +223,7 @@ export default function TrackenFilters({
             <SlidersHorizontal className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
             Filtros
             {chips.length > 0 && (
-              <span className="tk-num ml-0.5 rounded bg-[var(--tk-brand-strong)] px-1.5 text-[10px] font-bold text-white">
+              <span className="tk-num ml-0.5 rounded bg-[var(--tk-brand-strong)] px-1.5 text-[11.5px] font-bold text-white">
                 {chips.length}
               </span>
             )}
@@ -339,7 +339,7 @@ export default function TrackenFilters({
             </div>
 
             <div className="flex items-end">
-              <label className="flex cursor-pointer items-center gap-2 py-1.5 text-[12.5px] text-slate-700">
+              <label className="flex cursor-pointer items-center gap-2 py-1.5 text-[14px] text-slate-700">
                 <input
                   type="checkbox"
                   checked={filters.assignedToMe}
@@ -361,7 +361,7 @@ export default function TrackenFilters({
           {chips.map((chip) => (
             <span
               key={chip.label}
-              className="inline-flex items-center gap-1 rounded-md bg-slate-100 py-1 pl-2 pr-1 text-[11.5px] font-medium text-slate-700"
+              className="inline-flex items-center gap-1 rounded-md bg-slate-100 py-1 pl-2 pr-1 text-[13px] font-medium text-slate-700"
             >
               {chip.label}
               <button
@@ -378,7 +378,7 @@ export default function TrackenFilters({
           <button
             type="button"
             onClick={onReset}
-            className="ml-1 rounded-md px-2 py-1 text-[11.5px] font-semibold text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+            className="ml-1 rounded-md px-2 py-1 text-[13px] font-semibold text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
           >
             Limpar tudo
           </button>

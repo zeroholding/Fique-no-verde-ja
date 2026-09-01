@@ -21,7 +21,7 @@ export default function ShippingModeBadge({
   if (!info) {
     return (
       <span
-        className="text-xs text-slate-500"
+        className="text-[13.5px] text-slate-500"
         title="Modalidade não informada pela TRACKen"
       >
         Não informada
@@ -39,7 +39,7 @@ export default function ShippingModeBadge({
           ? "FLEX: entrega pelo próprio vendedor (self_service)"
           : `Modalidade: ${info.label} (${info.code})`
       }
-      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-md border px-2 py-1 text-xs ${
+      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-md border px-2 py-1 text-[13.5px] ${
         info.isFlex ? "font-bold" : "font-medium"
       } ${BADGE_CLASSES[tone]}`}
     >

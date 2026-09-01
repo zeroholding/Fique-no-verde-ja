@@ -72,7 +72,7 @@ export default function TrackenLoginPage() {
               aria-hidden="true"
             />
 
-            <p className="mt-4 max-w-[15rem] text-sm leading-relaxed text-green-50/90">
+            <p className="mt-4 max-w-[15rem] text-[15px] leading-relaxed text-green-50/90">
               Entre para acompanhar e resolver os atendimentos do dia.
             </p>
           </div>
@@ -87,7 +87,7 @@ export default function TrackenLoginPage() {
             <h2 className="text-lg font-bold text-slate-900 md:text-xl">
               Entrar
             </h2>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-[15px] text-slate-500">
               Suas credenciais do Fique no Verde Já.
             </p>
 

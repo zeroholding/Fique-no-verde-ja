@@ -27,10 +27,10 @@ export function PageHeader({
   return (
     <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
       <div className="min-w-0">
-        <h1 className="text-[19px] font-semibold tracking-[-0.01em] text-slate-900 sm:text-[22px]">
+        <h1 className="text-[21px] font-semibold tracking-[-0.01em] text-slate-900 sm:text-[25px]">
           {title}
         </h1>
-        <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-slate-500">
+        <p className="mt-1 max-w-2xl text-[14.5px] leading-relaxed text-slate-500">
           {subtitle}
         </p>
       </div>
@@ -62,12 +62,12 @@ export function Card({
         <div className="flex items-start justify-between gap-3 border-b border-[var(--tk-line)] px-4 py-3">
           <div className="min-w-0">
             {title && (
-              <h2 className="text-[13px] font-semibold text-slate-900">
+              <h2 className="text-[14.5px] font-semibold text-slate-900">
                 {title}
               </h2>
             )}
             {description && (
-              <p className="mt-0.5 text-[11.5px] text-slate-500">{description}</p>
+              <p className="mt-0.5 text-[13px] text-slate-500">{description}</p>
             )}
           </div>
           {actions}
@@ -82,7 +82,7 @@ export function ErrorBanner({ message }: { message: string }) {
   return (
     <p
       role="alert"
-      className="mt-4 flex items-start gap-2.5 rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800"
+      className="mt-4 flex items-start gap-2.5 rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-[14.5px] text-red-800"
     >
       <AlertCircle
         className="mt-0.5 h-4 w-4 shrink-0 text-red-600"
@@ -96,7 +96,7 @@ export function ErrorBanner({ message }: { message: string }) {
 
 export function LoadingState({ label = "Carregando..." }: { label?: string }) {
   return (
-    <div className="flex items-center justify-center gap-2 px-4 py-16 text-[13px] text-slate-500">
+    <div className="flex items-center justify-center gap-2 px-4 py-16 text-[14.5px] text-slate-500">
       <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
       {label}
     </div>
@@ -121,9 +121,9 @@ export function EmptyState({
           aria-hidden="true"
         />
       </span>
-      <p className="text-[13.5px] font-semibold text-slate-800">{title}</p>
+      <p className="text-[15px] font-semibold text-slate-800">{title}</p>
       {hint && (
-        <p className="mx-auto mt-1 max-w-sm text-[12.5px] text-slate-500">
+        <p className="mx-auto mt-1 max-w-sm text-[14px] text-slate-500">
           {hint}
         </p>
       )}
@@ -189,10 +189,10 @@ export function StatTile({
           />
         )}
       </div>
-      <p className="tk-num mt-2.5 text-[24px] font-semibold leading-none text-slate-900">
+      <p className="tk-num mt-2.5 text-[27px] font-semibold leading-none text-slate-900">
         {typeof value === "number" ? formatNumber(value) : value}
       </p>
-      {hint && <p className="mt-1.5 text-[11.5px] text-slate-500">{hint}</p>}
+      {hint && <p className="mt-1.5 text-[13px] text-slate-500">{hint}</p>}
     </div>
   );
 }
@@ -219,13 +219,13 @@ export function ProgressRow({
   return (
     <li>
       <div className="flex items-center justify-between gap-3">
-        <span className="min-w-0 truncate text-[12.5px] font-medium text-slate-700">
+        <span className="min-w-0 truncate text-[14px] font-medium text-slate-700">
           {label}
           {sublabel && (
             <span className="ml-1.5 font-normal text-slate-400">{sublabel}</span>
           )}
         </span>
-        <span className="tk-num shrink-0 text-[12.5px] font-semibold text-slate-900">
+        <span className="tk-num shrink-0 text-[14px] font-semibold text-slate-900">
           {right ?? formatNumber(value)}
         </span>
       </div>
@@ -258,7 +258,7 @@ export function PrimaryButton({
   return (
     <button
       {...props}
-      className={`inline-flex items-center gap-2 rounded-lg bg-[var(--tk-brand-strong)] px-3.5 py-2 text-[12.5px] font-semibold text-white transition-colors hover:bg-[#036c35] disabled:cursor-not-allowed disabled:opacity-60 ${
+      className={`inline-flex items-center gap-2 rounded-lg bg-[var(--tk-brand-strong)] px-3.5 py-2 text-[14px] font-semibold text-white transition-colors hover:bg-[#036c35] disabled:cursor-not-allowed disabled:opacity-60 ${
         props.className ?? ""
       }`}
     >
@@ -274,7 +274,7 @@ export function SecondaryButton({
   return (
     <button
       {...props}
-      className={`inline-flex items-center gap-2 rounded-lg border border-[var(--tk-line-strong)] bg-white px-3.5 py-2 text-[12.5px] font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 ${
+      className={`inline-flex items-center gap-2 rounded-lg border border-[var(--tk-line-strong)] bg-white px-3.5 py-2 text-[14px] font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 ${
         props.className ?? ""
       }`}
     >

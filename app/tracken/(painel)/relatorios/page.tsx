@@ -37,9 +37,9 @@ import {
  */
 
 const FIELD =
-  "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-100";
+  "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[15px] outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-100";
 const LABEL =
-  "mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-500";
+  "mb-1 block text-[12.5px] font-semibold uppercase tracking-wide text-slate-500";
 
 /** Atalhos de periodo, para não digitar data toda vez. */
 const ATALHOS = [
@@ -159,7 +159,7 @@ export default function RelatoriosPage() {
                 onChange={(e) => setStartDate(e.target.value)}
                 className={FIELD}
               />
-              <span className="shrink-0 text-xs text-slate-400">ate</span>
+              <span className="shrink-0 text-[13.5px] text-slate-400">ate</span>
               <input
                 type="date"
                 aria-label="Limite de envio até"
@@ -211,7 +211,7 @@ export default function RelatoriosPage() {
                   key={atalho.label}
                   type="button"
                   onClick={() => aplicarAtalho(atalho.days)}
-                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-[13.5px] font-medium text-slate-600 transition-colors hover:bg-slate-50"
                 >
                   {atalho.label}
                 </button>
@@ -257,7 +257,7 @@ export default function RelatoriosPage() {
               description="Volume recebido no periodo"
             >
               {stats.charts.byCarrier.length === 0 ? (
-                <p className="py-8 text-center text-xs text-slate-400">
+                <p className="py-8 text-center text-[13.5px] text-slate-400">
                   Sem atendimentos no periodo selecionado.
                 </p>
               ) : (
@@ -291,7 +291,7 @@ export default function RelatoriosPage() {
                 >
                   {formatPercent(stats.charts.sla.percentage)}
                 </span>
-                <span className="text-xs text-slate-500">
+                <span className="text-[13.5px] text-slate-500">
                   meta {stats.charts.sla.target}%
                 </span>
               </div>
@@ -313,7 +313,7 @@ export default function RelatoriosPage() {
                   a 320px de largura. */}
               <dl className="mt-4 grid grid-cols-1 gap-3 text-center sm:grid-cols-3">
                 <div className="rounded-lg bg-slate-50 p-3">
-                  <dt className="text-[11px] uppercase tracking-wide text-slate-400">
+                  <dt className="text-[12.5px] uppercase tracking-wide text-slate-400">
                     No prazo
                   </dt>
                   <dd className="mt-1 text-lg font-bold tabular-nums text-green-600">
@@ -321,7 +321,7 @@ export default function RelatoriosPage() {
                   </dd>
                 </div>
                 <div className="rounded-lg bg-slate-50 p-3">
-                  <dt className="text-[11px] uppercase tracking-wide text-slate-400">
+                  <dt className="text-[12.5px] uppercase tracking-wide text-slate-400">
                     Fora
                   </dt>
                   <dd className="mt-1 text-lg font-bold tabular-nums text-red-600">
@@ -331,7 +331,7 @@ export default function RelatoriosPage() {
                   </dd>
                 </div>
                 <div className="rounded-lg bg-slate-50 p-3">
-                  <dt className="text-[11px] uppercase tracking-wide text-slate-400">
+                  <dt className="text-[12.5px] uppercase tracking-wide text-slate-400">
                     Base
                   </dt>
                   <dd className="mt-1 text-lg font-bold tabular-nums text-slate-700">
@@ -350,7 +350,7 @@ export default function RelatoriosPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    <tr className="border-b border-slate-200 text-[12.5px] font-semibold uppercase tracking-wide text-slate-500">
                       <th scope="col" className="py-2 pr-3">Status</th>
                       <th scope="col" className="py-2 pr-3 text-right">Qtde</th>
                       <th scope="col" className="py-2 text-right">Participacao</th>
@@ -365,10 +365,10 @@ export default function RelatoriosPage() {
                         <td className="py-2.5 pr-3">
                           <StatusBadge label={s.label} color={s.color} />
                         </td>
-                        <td className="py-2.5 pr-3 text-right text-sm tabular-nums text-slate-800">
+                        <td className="py-2.5 pr-3 text-right text-[15px] tabular-nums text-slate-800">
                           {formatNumber(s.count)}
                         </td>
-                        <td className="py-2.5 text-right text-sm tabular-nums text-slate-600">
+                        <td className="py-2.5 text-right text-[15px] tabular-nums text-slate-600">
                           {formatPercent(s.percentage)}
                         </td>
                       </tr>
@@ -397,7 +397,7 @@ export default function RelatoriosPage() {
           </div>
 
           <div className="mt-4 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-            <p className="flex items-start gap-2 text-xs text-slate-500">
+            <p className="flex items-start gap-2 text-[13.5px] text-slate-500">
               <FileText
                 className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
                 aria-hidden="true" strokeWidth={1.75} />
@@ -412,7 +412,7 @@ export default function RelatoriosPage() {
               onClick={() =>
                 window.open(`/api/tracken/export?${queryString}`, "_blank")
               }
-              className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+              className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-[15px] font-semibold text-slate-700 transition-colors hover:bg-slate-50"
             >
               <Download className="h-4 w-4" aria-hidden="true" strokeWidth={1.75} />
               Baixar CSV
@@ -422,7 +422,7 @@ export default function RelatoriosPage() {
       ) : null}
 
       {isLoading && stats && (
-        <p className="mt-3 flex items-center gap-2 text-xs text-slate-400">
+        <p className="mt-3 flex items-center gap-2 text-[13.5px] text-slate-400">
           <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" strokeWidth={1.75} />
           Atualizando...
         </p>

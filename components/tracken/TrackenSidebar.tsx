@@ -229,10 +229,10 @@ export default function TrackenSidebar({
           >
             <FnvjMark className="h-8 w-8 shrink-0" />
             <span className="min-w-0 leading-tight">
-              <span className="block truncate text-[13px] font-semibold text-slate-900">
+              <span className="block truncate text-[14.5px] font-semibold text-slate-900">
                 Fique no Verde Já
               </span>
-              <span className="block truncate text-[10.5px] font-medium text-slate-400">
+              <span className="block truncate text-[12px] font-medium text-slate-400">
                 Painel TRACKen
               </span>
             </span>
@@ -252,7 +252,7 @@ export default function TrackenSidebar({
         <nav className="flex-1 overflow-y-auto px-2.5 py-4">
           {NAV_GROUPS.map((group, groupIndex) => (
             <div key={group.label} className={groupIndex > 0 ? "mt-5" : ""}>
-              <p className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.07em] text-slate-400">
+              <p className="px-2.5 pb-1.5 text-[11.5px] font-semibold uppercase tracking-[0.07em] text-slate-400">
                 {group.label}
               </p>
 
@@ -292,7 +292,7 @@ export default function TrackenSidebar({
                           aria-hidden="true"
                         />
                         <span
-                          className={`min-w-0 flex-1 truncate text-[13px] ${
+                          className={`min-w-0 flex-1 truncate text-[14.5px] ${
                             isActive ? "font-semibold" : "font-medium"
                           }`}
                         >
@@ -311,7 +311,7 @@ export default function TrackenSidebar({
         <div className="border-t border-[var(--tk-line)] p-2.5">
           <Link
             href="/dashboard"
-            className="mb-1.5 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12px] font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800"
+            className="mb-1.5 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13.5px] font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800"
           >
             <ArrowLeftRight
               className="h-4 w-4 shrink-0 text-slate-400"
@@ -326,14 +326,14 @@ export default function TrackenSidebar({
           </Link>
 
           <div className="flex items-center gap-2.5 rounded-lg bg-slate-50 px-2.5 py-2">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#5ec624] to-[#048842] text-[11px] font-bold text-white">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#5ec624] to-[#048842] text-[12.5px] font-bold text-white">
               {initials}
             </span>
             <span className="min-w-0 flex-1 leading-tight">
-              <span className="block truncate text-[12.5px] font-semibold text-slate-900">
+              <span className="block truncate text-[14px] font-semibold text-slate-900">
                 {displayName}
               </span>
-              <span className="block truncate text-[10.5px] text-slate-500">
+              <span className="block truncate text-[12px] text-slate-500">
                 {user?.isAdmin ? "Administrador" : "Atendente"}
               </span>
             </span>

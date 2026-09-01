@@ -63,7 +63,7 @@ export default function Pagination({
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-4">
-        <p className="tk-num text-[12px] text-slate-500">
+        <p className="tk-num text-[13.5px] text-slate-500">
           <span className="font-semibold text-slate-800">
             {formatNumber(firstRow)}–{formatNumber(lastRow)}
           </span>{" "}
@@ -73,13 +73,13 @@ export default function Pagination({
           </span>
         </p>
 
-        <label className="flex items-center gap-1.5 text-[12px] text-slate-500">
+        <label className="flex items-center gap-1.5 text-[13.5px] text-slate-500">
           <span className="hidden sm:inline">Linhas</span>
           <select
             value={pageSize}
             onChange={(event) => onPageSizeChange(Number(event.target.value))}
             aria-label="Linhas por página"
-            className="tk-num rounded-md border border-[var(--tk-line-strong)] bg-white px-2 py-1 text-[12px] text-slate-700 transition-colors hover:bg-slate-50"
+            className="tk-num rounded-md border border-[var(--tk-line-strong)] bg-white px-2 py-1 text-[13.5px] text-slate-700 transition-colors hover:bg-slate-50"
           >
             {[25, 50, 100, 200].map((size) => (
               <option key={size} value={size}>
@@ -105,7 +105,7 @@ export default function Pagination({
           item === "gap" ? (
             <span
               key={`gap-${index}`}
-              className="px-1 text-[12px] text-slate-300"
+              className="px-1 text-[13.5px] text-slate-300"
               aria-hidden="true"
             >
               …
@@ -116,7 +116,7 @@ export default function Pagination({
               type="button"
               onClick={() => onPageChange(item)}
               aria-current={item === page ? "page" : undefined}
-              className={`tk-num min-w-[30px] rounded-md border px-2 py-1.5 text-[12px] font-semibold transition-colors ${
+              className={`tk-num min-w-[30px] rounded-md border px-2 py-1.5 text-[13.5px] font-semibold transition-colors ${
                 item === page
                   ? "border-[var(--tk-brand-strong)] bg-[var(--tk-brand-strong)] text-white"
                   : "border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900"

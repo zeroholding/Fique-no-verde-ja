@@ -56,7 +56,7 @@ export default function TrackenLayoutClient({
           <nav aria-label="Caminho" className="flex min-w-0 items-center gap-1.5">
             <Link
               href="/tracken"
-              className="flex shrink-0 items-center gap-1.5 rounded-md text-[12.5px] font-medium text-slate-500 transition-colors hover:text-slate-900"
+              className="flex shrink-0 items-center gap-1.5 rounded-md text-[14px] font-medium text-slate-500 transition-colors hover:text-slate-900"
             >
               <PanelsTopLeft
                 className="h-[15px] w-[15px]"
@@ -72,14 +72,14 @@ export default function TrackenLayoutClient({
                   className="h-3.5 w-3.5 shrink-0 text-slate-300"
                   aria-hidden="true"
                 />
-                <span className="truncate text-[12.5px] font-semibold text-slate-900">
+                <span className="truncate text-[14px] font-semibold text-slate-900">
                   {current}
                 </span>
               </>
             )}
           </nav>
 
-          <span className="ml-auto hidden items-center gap-2 rounded-full bg-[var(--tk-brand-wash)] px-2.5 py-1 text-[11px] font-medium text-[var(--tk-brand-strong)] sm:flex">
+          <span className="ml-auto hidden items-center gap-2 rounded-full bg-[var(--tk-brand-wash)] px-2.5 py-1 text-[12.5px] font-medium text-[var(--tk-brand-strong)] sm:flex">
             <span
               className="h-1.5 w-1.5 rounded-full bg-[var(--tk-brand)]"
               aria-hidden="true"

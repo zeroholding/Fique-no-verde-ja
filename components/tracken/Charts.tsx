@@ -40,12 +40,12 @@ function ChartFrame({
   return (
     <section className="tk-card tk-raised overflow-hidden">
       <div className="border-b border-[var(--tk-line)] px-4 py-3">
-        <h3 className="text-[13px] font-semibold text-slate-900">{title}</h3>
-        {hint && <p className="mt-0.5 text-[11px] text-slate-500">{hint}</p>}
+        <h3 className="text-[14.5px] font-semibold text-slate-900">{title}</h3>
+        {hint && <p className="mt-0.5 text-[12.5px] text-slate-500">{hint}</p>}
       </div>
 
       {isEmpty ? (
-        <p className="flex h-[188px] items-center justify-center px-4 text-center text-[12px] text-slate-400">
+        <p className="flex h-[188px] items-center justify-center px-4 text-center text-[13.5px] text-slate-400">
           {EMPTY_MESSAGE}
         </p>
       ) : (
@@ -119,7 +119,7 @@ export function CarrierDonut({
             <span className="text-2xl font-bold tabular-nums text-slate-900">
               {formatNumber(total)}
             </span>
-            <span className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+            <span className="text-[12.5px] font-medium uppercase tracking-wide text-slate-400">
               Total
             </span>
           </div>
@@ -135,15 +135,15 @@ export function CarrierDonut({
                 aria-hidden="true"
               />
               <span
-                className="min-w-0 flex-1 truncate text-[12px] font-semibold text-slate-700"
+                className="min-w-0 flex-1 truncate text-[13.5px] font-semibold text-slate-700"
                 title={slice.name}
               >
                 {slice.code}
               </span>
-              <span className="tk-num text-[12.5px] font-semibold text-slate-900">
+              <span className="tk-num text-[14px] font-semibold text-slate-900">
                 {formatNumber(slice.count)}
               </span>
-              <span className="tk-num w-[52px] text-right text-[11px] text-slate-500">
+              <span className="tk-num w-[52px] text-right text-[12.5px] text-slate-500">
                 {formatPercent(slice.percentage)}
               </span>
             </li>
@@ -179,14 +179,14 @@ export function StatusBars({ data }: { data: StatusSlice[] }) {
         {data.map((item) => (
           <li key={item.code}>
             <div className="flex items-baseline justify-between gap-2">
-              <span className="text-[12px] font-medium text-slate-700">
+              <span className="text-[13.5px] font-medium text-slate-700">
                 {item.label}
               </span>
               <span className="flex items-baseline gap-1.5">
-                <span className="tk-num text-[13px] font-semibold text-slate-900">
+                <span className="tk-num text-[14.5px] font-semibold text-slate-900">
                   {formatNumber(item.count)}
                 </span>
-                <span className="tk-num text-[10.5px] text-slate-500">
+                <span className="tk-num text-[12px] text-slate-500">
                   {formatPercent(item.percentage)}
                 </span>
               </span>
@@ -328,16 +328,16 @@ export function SlaGauge({
           >
             {Math.round(percentage)}%
           </span>
-          <span className="text-xs font-medium text-slate-500">
+          <span className="text-[13.5px] font-medium text-slate-500">
             Dentro do prazo
           </span>
-          <span className="mt-0.5 text-[11px] text-slate-400">
+          <span className="mt-0.5 text-[12.5px] text-slate-400">
             Meta: {target}%
           </span>
         </div>
       </div>
 
-      <p className="mt-1 text-center text-[11px] text-slate-400">
+      <p className="mt-1 text-center text-[12.5px] text-slate-400">
         {measured > 0
           ? `Base: ${formatNumber(measured)} atendimentos finalizados com limite de envio`
           : "Nenhum atendimento finalizado com limite de envio no periodo"}

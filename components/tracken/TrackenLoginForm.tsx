@@ -31,7 +31,7 @@ import { useAuth } from "@/contexts/AuthContext";
  * texto digitado.
  */
 const FIELD_BASE =
-  "w-full rounded-xl border border-transparent bg-slate-100 py-3.5 pl-11 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 hover:bg-slate-100/80 focus:border-green-500 focus:bg-white focus:ring-4 focus:ring-green-500/15";
+  "w-full rounded-xl border border-transparent bg-slate-100 py-3.5 pl-11 text-[15px] text-slate-900 outline-none transition-colors placeholder:text-slate-400 hover:bg-slate-100/80 focus:border-green-500 focus:bg-white focus:ring-4 focus:ring-green-500/15";
 
 const FIELD_ICON =
   "pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400";
@@ -74,7 +74,7 @@ export default function TrackenLoginForm() {
         <p
           role="alert"
           aria-live="polite"
-          className="mb-5 flex items-start gap-2 rounded-xl bg-red-50 px-3.5 py-3 text-sm text-red-700 ring-1 ring-red-200"
+          className="mb-5 flex items-start gap-2 rounded-xl bg-red-50 px-3.5 py-3 text-[15px] text-red-700 ring-1 ring-red-200"
         >
           <AlertCircle
             className="mt-0.5 h-4 w-4 shrink-0"
@@ -140,7 +140,7 @@ export default function TrackenLoginForm() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#5ec624] to-[#048842] px-4 py-3.5 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-green-600/20 transition-opacity hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+        className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#5ec624] to-[#048842] px-4 py-3.5 text-[15px] font-bold uppercase tracking-wide text-white shadow-lg shadow-green-600/20 transition-opacity hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
       >
         {isSubmitting ? (
           <>
@@ -152,7 +152,7 @@ export default function TrackenLoginForm() {
         )}
       </button>
 
-      <p className="mt-6 text-center text-xs text-slate-500">
+      <p className="mt-6 text-center text-[13.5px] text-slate-500">
         <Link
           href="/login"
           className="font-medium text-green-700 underline decoration-green-300 underline-offset-2 transition-colors hover:decoration-green-600"

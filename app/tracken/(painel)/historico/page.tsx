@@ -88,9 +88,9 @@ const EVENT_LABELS: Record<string, string> = Object.fromEntries(
 );
 
 const FIELD =
-  "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-100";
+  "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[15px] outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-100";
 const LABEL =
-  "mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-500";
+  "mb-1 block text-[12.5px] font-semibold uppercase tracking-wide text-slate-500";
 
 type EventRow = {
   id: string;
@@ -233,7 +233,7 @@ export default function HistoricoPage() {
                 onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
                 className={FIELD}
               />
-              <span className="text-xs text-slate-400">ate</span>
+              <span className="text-[13.5px] text-slate-400">ate</span>
               <input
                 type="date"
                 aria-label="Data final"
@@ -342,7 +342,7 @@ export default function HistoricoPage() {
                     <th
                       key={label}
                       scope="col"
-                      className="sticky top-0 z-10 border-b border-[var(--tk-line)] bg-[var(--tk-surface-muted)] px-3.5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500"
+                      className="sticky top-0 z-10 border-b border-[var(--tk-line)] bg-[var(--tk-surface-muted)] px-3.5 py-2.5 text-[12.5px] font-semibold uppercase tracking-[0.04em] text-slate-500"
                     >
                       {label}
                     </th>
@@ -357,10 +357,10 @@ export default function HistoricoPage() {
                   return (
                     <tr key={event.id} className="tk-grid-row group">
                       <td className="whitespace-nowrap px-3.5 py-3">
-                        <span className="tk-num block text-[13px] text-slate-700">
+                        <span className="tk-num block text-[14.5px] text-slate-700">
                           {formatDate(event.created_at)}
                         </span>
-                        <span className="tk-num block text-[11.5px] text-slate-500">
+                        <span className="tk-num block text-[13px] text-slate-500">
                           {formatTime(event.created_at)}
                         </span>
                       </td>
@@ -378,7 +378,7 @@ export default function HistoricoPage() {
                               aria-hidden="true"
                             />
                           </span>
-                          <span className="whitespace-nowrap text-[12.5px] font-medium text-slate-800">
+                          <span className="whitespace-nowrap text-[14px] font-medium text-slate-800">
                             {meta?.label ?? event.event_type}
                           </span>
                         </span>
@@ -392,18 +392,18 @@ export default function HistoricoPage() {
                             color={event.carrier_color}
                           />
                           <MercadoLivreIcon className="h-3.5 w-auto shrink-0 opacity-60" />
-                          <span className="tk-num font-mono text-[12px] text-slate-800">
+                          <span className="tk-num font-mono text-[13.5px] text-slate-800">
                             {event.shipment_id}
                           </span>
                         </span>
-                        <span className="tk-num mt-0.5 block pl-[13px] font-mono text-[11px] text-slate-500">
+                        <span className="tk-num mt-0.5 block pl-[13px] font-mono text-[12.5px] text-slate-500">
                           {event.order_id}
                         </span>
                       </td>
 
                       <td className="px-3.5 py-3">
                         {event.to_status_label ? (
-                          <span className="flex items-center gap-1.5 text-[11.5px] text-slate-500">
+                          <span className="flex items-center gap-1.5 text-[13px] text-slate-500">
                             {event.from_status_label && (
                               <>
                                 <span>{event.from_status_label}</span>
@@ -418,12 +418,12 @@ export default function HistoricoPage() {
                             />
                           </span>
                         ) : (
-                          <span className="text-[12px] text-slate-400">—</span>
+                          <span className="text-[13.5px] text-slate-400">—</span>
                         )}
                       </td>
 
                       <td className="px-3.5 py-3">
-                        <span className="text-[12.5px] text-slate-700">
+                        <span className="text-[14px] text-slate-700">
                           {event.actor_name ??
                             (event.actor_type === "tracken"
                               ? "API TRACKen"
@@ -435,7 +435,7 @@ export default function HistoricoPage() {
 
                       <td className="max-w-[240px] px-3.5 py-3">
                         <span
-                          className="block truncate text-[12px] text-slate-600"
+                          className="block truncate text-[13.5px] text-slate-600"
                           title={event.note ?? undefined}
                         >
                           {event.note ?? "—"}
@@ -461,7 +461,7 @@ export default function HistoricoPage() {
         />
       </div>
 
-      <p className="mt-4 rounded-xl border border-slate-200 bg-white p-4 text-[11px] text-slate-500 shadow-sm">
+      <p className="mt-4 rounded-xl border border-slate-200 bg-white p-4 text-[12.5px] text-slate-500 shadow-sm">
         Este historico e imutavel: um trigger no banco impede que qualquer linha
         seja reescrita. Ele registra tanto o que a TRACKen envia quanto o que a
         equipe altera no painel.

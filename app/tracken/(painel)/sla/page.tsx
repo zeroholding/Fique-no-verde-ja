@@ -35,9 +35,9 @@ import { formatNumber, formatPercent, toInputDate } from "@/lib/tracken/format";
  */
 
 const FIELD =
-  "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-100";
+  "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[15px] outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-100";
 const LABEL =
-  "mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-500";
+  "mb-1 block text-[12.5px] font-semibold uppercase tracking-wide text-slate-500";
 
 type Breakdown = {
   key: string;
@@ -139,7 +139,7 @@ export default function SlaPage() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[620px] text-left">
             <thead>
-              <tr className="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <tr className="border-b border-slate-200 text-[12.5px] font-semibold uppercase tracking-wide text-slate-500">
                 <th scope="col" className="py-2 pr-3">
                   {comBadge ? "Transportadora" : "Atendente"}
                 </th>
@@ -161,13 +161,13 @@ export default function SlaPage() {
                     {comBadge ? (
                       <CarrierBadge label={linha.key} color={linha.color} />
                     ) : (
-                      <span className="text-sm text-slate-800">{linha.label}</span>
+                      <span className="text-[15px] text-slate-800">{linha.label}</span>
                     )}
                   </td>
 
                   <td className="w-40 py-2.5 pr-3">
                     <span
-                      className={`text-sm font-semibold tabular-nums ${
+                      className={`text-[15px] font-semibold tabular-nums ${
                         linha.percentage >= (data?.target ?? 90)
                           ? "text-green-600"
                           : "text-red-600"
@@ -187,19 +187,19 @@ export default function SlaPage() {
                     </span>
                   </td>
 
-                  <td className="py-2.5 pr-3 text-right text-sm tabular-nums text-green-700">
+                  <td className="py-2.5 pr-3 text-right text-[15px] tabular-nums text-green-700">
                     {formatNumber(linha.within)}
                   </td>
-                  <td className="py-2.5 pr-3 text-right text-sm tabular-nums text-red-600">
+                  <td className="py-2.5 pr-3 text-right text-[15px] tabular-nums text-red-600">
                     {formatNumber(linha.late)}
                   </td>
-                  <td className="py-2.5 pr-3 text-right text-sm tabular-nums text-slate-600">
+                  <td className="py-2.5 pr-3 text-right text-[15px] tabular-nums text-slate-600">
                     {formatNumber(linha.measured)}
                   </td>
-                  <td className="py-2.5 pr-3 text-sm text-slate-600">
+                  <td className="py-2.5 pr-3 text-[15px] text-slate-600">
                     {formatDuration(linha.avgMinutesToStart)}
                   </td>
-                  <td className="py-2.5 text-sm text-slate-600">
+                  <td className="py-2.5 text-[15px] text-slate-600">
                     {formatDuration(linha.avgMinutesToFinish)}
                   </td>
                 </tr>
@@ -258,7 +258,7 @@ export default function SlaPage() {
                 onChange={(e) => setStartDate(e.target.value)}
                 className={FIELD}
               />
-              <span className="shrink-0 text-xs text-slate-400">ate</span>
+              <span className="shrink-0 text-[13.5px] text-slate-400">ate</span>
               <input
                 type="date"
                 aria-label="Limite de envio até"
@@ -296,7 +296,7 @@ export default function SlaPage() {
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="flex items-start justify-between gap-3">
-                <span className="text-sm font-medium text-slate-500">
+                <span className="text-[15px] font-medium text-slate-500">
                   SLA no periodo
                 </span>
                 <span
@@ -316,7 +316,7 @@ export default function SlaPage() {
               >
                 {formatPercent(data.overall.percentage)}
               </p>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-[13.5px] text-slate-500">
                 Meta: {data.target}% · base de {formatNumber(data.overall.measured)}
               </p>
             </div>
@@ -403,7 +403,7 @@ export default function SlaPage() {
               </ul>
 
               {data.open.overdue > 0 && (
-                <p className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                <p className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[13.5px] text-red-700">
                   <AlertTriangle
                     className="mt-0.5 h-3.5 w-3.5 shrink-0"
                     aria-hidden="true" strokeWidth={1.75} />
@@ -433,7 +433,7 @@ export default function SlaPage() {
             )}
           </div>
 
-          <p className="mt-4 rounded-xl border border-slate-200 bg-white p-4 text-[11px] text-slate-500 shadow-sm">
+          <p className="mt-4 rounded-xl border border-slate-200 bg-white p-4 text-[12.5px] text-slate-500 shadow-sm">
             Como o SLA e calculado: considera apenas atendimentos ja finalizados
             que tinham limite de envio informado, e conta como dentro do prazo
             aquele cuja conclusao ocorreu antes desse limite. Atendimentos

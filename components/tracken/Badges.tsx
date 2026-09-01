@@ -24,7 +24,7 @@ export function StatusBadge({ label, color, title }: BadgeProps) {
   return (
     <span
       title={title ?? label}
-      className="inline-flex items-center gap-1.5 whitespace-nowrap text-[12.5px] font-medium text-slate-700"
+      className="inline-flex items-center gap-1.5 whitespace-nowrap text-[14px] font-medium text-slate-700"
     >
       <span
         className={`h-[7px] w-[7px] shrink-0 rounded-full ring-2 ring-inset ring-white/60 ${DOT_CLASSES[tone]}`}
@@ -56,7 +56,7 @@ export function CarrierBadge({ label, color, title }: BadgeProps) {
         className={`h-3.5 w-[3px] shrink-0 rounded-full ${DOT_CLASSES[tone]}`}
         aria-hidden="true"
       />
-      <span className="text-[12.5px] font-semibold tracking-wide text-slate-800">
+      <span className="text-[14px] font-semibold tracking-wide text-slate-800">
         {label}
       </span>
     </span>

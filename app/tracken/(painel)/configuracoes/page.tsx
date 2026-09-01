@@ -206,7 +206,7 @@ export default function ConfiguracoesPage() {
           </div>
 
           {!data.workerImplemented && data.outbox.pending > 0 && (
-            <p className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <p className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-[15px] text-amber-800">
               <AlertTriangle
                 className="mt-0.5 h-4 w-4 shrink-0"
                 aria-hidden="true" strokeWidth={1.75} />
@@ -215,7 +215,7 @@ export default function ConfiguracoesPage() {
                 notificacoes estao sendo gravadas na fila corretamente, mas nada
                 as entrega para a TRACKen ainda. Enquanto isso, eles podem
                 consultar o estado dos atendimentos pelo{" "}
-                <code className="rounded bg-amber-100 px-1 py-0.5 text-[11px]">
+                <code className="rounded bg-amber-100 px-1 py-0.5 text-[12.5px]">
                   GET /api/tracken/v1/tickets
                 </code>
                 .
@@ -238,7 +238,7 @@ export default function ConfiguracoesPage() {
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[900px] text-left">
                   <thead>
-                    <tr className="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    <tr className="border-b border-slate-200 text-[12.5px] font-semibold uppercase tracking-wide text-slate-500">
                       <th scope="col" className="py-2 pr-3">Nome</th>
                       <th scope="col" className="py-2 pr-3">API key</th>
                       <th scope="col" className="py-2 pr-3">Ambiente</th>
@@ -254,13 +254,13 @@ export default function ConfiguracoesPage() {
                         key={credential.id}
                         className="border-b border-slate-100 last:border-0"
                       >
-                        <td className="py-2.5 pr-3 text-sm text-slate-800">
+                        <td className="py-2.5 pr-3 text-[15px] text-slate-800">
                           {credential.name}
                         </td>
 
                         <td className="py-2.5 pr-3">
                           <span className="flex items-center gap-1.5">
-                            <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] text-slate-700">
+                            <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[12.5px] text-slate-700">
                               {credential.api_key}
                             </code>
                             <button
@@ -280,7 +280,7 @@ export default function ConfiguracoesPage() {
 
                         <td className="py-2.5 pr-3">
                           <span
-                            className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                            className={`rounded-full px-2 py-0.5 text-[12.5px] font-semibold ${
                               credential.environment === "production"
                                 ? "bg-green-50 text-green-700"
                                 : "bg-slate-100 text-slate-600"
@@ -294,31 +294,31 @@ export default function ConfiguracoesPage() {
 
                         <td className="py-2.5 pr-3">
                           {credential.require_signature ? (
-                            <span className="flex items-center gap-1 text-xs font-medium text-green-700">
+                            <span className="flex items-center gap-1 text-[13.5px] font-medium text-green-700">
                               <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" strokeWidth={1.75} />
                               HMAC exigido
                             </span>
                           ) : (
-                            <span className="flex items-center gap-1 text-xs font-medium text-amber-700">
+                            <span className="flex items-center gap-1 text-[13.5px] font-medium text-amber-700">
                               <ShieldOff className="h-3.5 w-3.5" aria-hidden="true" strokeWidth={1.75} />
                               Sem assinatura
                             </span>
                           )}
                           {credential.require_signature &&
                             !credential.has_encrypted_secret && (
-                              <span className="block text-[10px] text-red-600">
+                              <span className="block text-[11.5px] text-red-600">
                                 Secret cifrado ausente
                               </span>
                             )}
                         </td>
 
                         <td className="py-2.5 pr-3">
-                          <span className="text-[11px] text-slate-600">
+                          <span className="text-[12.5px] text-slate-600">
                             {credential.scopes.join(", ")}
                           </span>
                         </td>
 
-                        <td className="py-2.5 pr-3 text-xs text-slate-600">
+                        <td className="py-2.5 pr-3 text-[13.5px] text-slate-600">
                           {credential.last_used_at
                             ? `${formatDate(credential.last_used_at)} ${formatTime(credential.last_used_at)}`
                             : "Nunca"}
@@ -326,7 +326,7 @@ export default function ConfiguracoesPage() {
 
                         <td className="py-2.5">
                           <span
-                            className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                            className={`rounded-full px-2 py-0.5 text-[12.5px] font-semibold ${
                               credential.is_active
                                 ? "bg-green-50 text-green-700"
                                 : "bg-slate-100 text-slate-500"
@@ -343,16 +343,16 @@ export default function ConfiguracoesPage() {
             )}
 
             <div className="mt-4 rounded-lg bg-slate-50 p-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <p className="text-[12.5px] font-semibold uppercase tracking-wide text-slate-500">
                 Emitir ou revogar credencial
               </p>
-              <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all text-[11px] leading-relaxed text-slate-600">
+              <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all text-[12.5px] leading-relaxed text-slate-600">
 {`node scripts/tracken_credential.mjs genkey
 node scripts/tracken_credential.mjs create "Tracken Producao" production
 node scripts/tracken_credential.mjs list
 node scripts/tracken_credential.mjs revoke <api_key>`}
               </pre>
-              <p className="mt-2 text-[11px] text-slate-500">
+              <p className="mt-2 text-[12.5px] text-slate-500">
                 O secret aparece uma unica vez, no terminal. Depois disso so
                 ficam gravados o hash e a copia cifrada, entao nao ha como
                 recupera-lo: perdido, emita outra credencial.
@@ -372,7 +372,7 @@ node scripts/tracken_credential.mjs revoke <api_key>`}
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[380px] text-left">
                   <thead>
-                    <tr className="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    <tr className="border-b border-slate-200 text-[12.5px] font-semibold uppercase tracking-wide text-slate-500">
                       <th scope="col" className="py-2 pr-3">Status</th>
                       <th scope="col" className="py-2 pr-3">Codigo</th>
                       <th scope="col" className="py-2 pr-3">Vai para</th>
@@ -388,27 +388,27 @@ node scripts/tracken_credential.mjs revoke <api_key>`}
                         <td className="py-2.5 pr-3">
                           <StatusBadge label={status.label} color={status.color} />
                           {status.is_initial && (
-                            <span className="ml-1 text-[10px] text-slate-400">
+                            <span className="ml-1 text-[11.5px] text-slate-400">
                               inicial
                             </span>
                           )}
                           {status.is_final && (
-                            <span className="ml-1 text-[10px] text-slate-400">
+                            <span className="ml-1 text-[11.5px] text-slate-400">
                               final
                             </span>
                           )}
                         </td>
                         <td className="py-2.5 pr-3">
-                          <code className="text-[11px] text-slate-500">
+                          <code className="text-[12.5px] text-slate-500">
                             {status.code}
                           </code>
                         </td>
-                        <td className="py-2.5 pr-3 text-[11px] text-slate-600">
+                        <td className="py-2.5 pr-3 text-[12.5px] text-slate-600">
                           {status.allowed_next.length > 0
                             ? status.allowed_next.join(", ")
                             : "-"}
                         </td>
-                        <td className="py-2.5 text-[11px] text-slate-600">
+                        <td className="py-2.5 text-[12.5px] text-slate-600">
                           {status.counts_as_sla ? "Conta" : "Nao conta"}
                         </td>
                       </tr>
@@ -417,9 +417,9 @@ node scripts/tracken_credential.mjs revoke <api_key>`}
                 </table>
               </div>
 
-              <p className="mt-3 text-[11px] text-slate-500">
+              <p className="mt-3 text-[12.5px] text-slate-500">
                 Os status vivem em tabela de configuracao
-                (<code className="text-[10px]">tracken_status_map</code>), nao no
+                (<code className="text-[11.5px]">tracken_status_map</code>), nao no
                 codigo. Ajustar o fluxo do atendimento e mudanca de dado, sem
                 precisar de deploy.
               </p>
@@ -439,7 +439,7 @@ node scripts/tracken_credential.mjs revoke <api_key>`}
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[380px] text-left">
                     <thead>
-                      <tr className="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                      <tr className="border-b border-slate-200 text-[12.5px] font-semibold uppercase tracking-wide text-slate-500">
                         <th scope="col" className="py-2 pr-3">Evento</th>
                         <th scope="col" className="py-2 pr-3">Envio</th>
                         <th scope="col" className="py-2 pr-3">Situacao</th>
@@ -453,19 +453,19 @@ node scripts/tracken_credential.mjs revoke <api_key>`}
                           className="border-b border-slate-100 last:border-0"
                         >
                           <td className="py-2.5 pr-3">
-                            <code className="text-[11px] text-slate-700">
+                            <code className="text-[12.5px] text-slate-700">
                               {item.event_type}
                             </code>
-                            <span className="block text-[10px] text-slate-400">
+                            <span className="block text-[11.5px] text-slate-400">
                               {formatDate(item.created_at)} {formatTime(item.created_at)}
                             </span>
                           </td>
-                          <td className="py-2.5 pr-3 font-mono text-[11px] text-slate-600">
+                          <td className="py-2.5 pr-3 font-mono text-[12.5px] text-slate-600">
                             {item.shipment_id}
                           </td>
                           <td className="py-2.5 pr-3">
                             <span
-                              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                              className={`rounded-full px-2 py-0.5 text-[11.5px] font-semibold ${
                                 item.status === "sent"
                                   ? "bg-green-50 text-green-700"
                                   : item.status === "pending"
@@ -483,14 +483,14 @@ node scripts/tracken_credential.mjs revoke <api_key>`}
                             </span>
                             {item.last_error && (
                               <span
-                                className="block max-w-[160px] truncate text-[10px] text-red-500"
+                                className="block max-w-[160px] truncate text-[11.5px] text-red-500"
                                 title={item.last_error}
                               >
                                 {item.last_error}
                               </span>
                             )}
                           </td>
-                          <td className="py-2.5 text-[11px] tabular-nums text-slate-600">
+                          <td className="py-2.5 text-[12.5px] tabular-nums text-slate-600">
                             {item.attempts}/{item.max_attempts}
                           </td>
                         </tr>
@@ -510,7 +510,7 @@ node scripts/tracken_credential.mjs revoke <api_key>`}
                   { label: "Esgotadas", value: data.outbox.dead },
                 ].map((item) => (
                   <div key={item.label} className="rounded-lg bg-slate-50 p-2">
-                    <dt className="text-[10px] uppercase tracking-wide text-slate-400">
+                    <dt className="text-[11.5px] uppercase tracking-wide text-slate-400">
                       {item.label}
                     </dt>
                     <dd className="mt-0.5 text-base font-bold tabular-nums text-slate-800">
@@ -523,7 +523,7 @@ node scripts/tracken_credential.mjs revoke <api_key>`}
           </div>
 
           {!data.canManage && (
-            <p className="mt-4 rounded-xl border border-slate-200 bg-white p-4 text-[11px] text-slate-500 shadow-sm">
+            <p className="mt-4 rounded-xl border border-slate-200 bg-white p-4 text-[12.5px] text-slate-500 shadow-sm">
               Voce esta vendo esta tela em modo leitura. Alterar transportadoras e
               emitir credenciais exige perfil administrativo.
             </p>

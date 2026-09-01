@@ -38,11 +38,13 @@ const COLUMNS: Array<{
   /** Marca as colunas que somem em tela media, por serem secundarias. */
   hideBelow?: "xl" | "lg";
 }> = [
-  { key: "carrier", label: "Transp.", sortKey: "carrier", width: "w-[104px]" },
-  { key: "ids", label: "Envio · Venda", width: "w-[196px]" },
-  { key: "parties", label: "Comprador · Seller", width: "w-[224px]" },
-  { key: "mode", label: "Modalidade", sortKey: "mode", width: "w-[128px]" },
-  { key: "deadline", label: "Limite de envio", sortKey: "deadline", width: "w-[168px]" },
+  // As larguras subiram junto com a tipografia. Com a fonte maior e as larguras
+  // antigas, comprador e seller passavam a truncar em telas onde antes cabiam.
+  { key: "carrier", label: "Transp.", sortKey: "carrier", width: "w-[112px]" },
+  { key: "ids", label: "Envio · Venda", width: "w-[212px]" },
+  { key: "parties", label: "Comprador · Seller", width: "w-[248px]" },
+  { key: "mode", label: "Modalidade", sortKey: "mode", width: "w-[140px]" },
+  { key: "deadline", label: "Limite de envio", sortKey: "deadline", width: "w-[178px]" },
   // Sem `hideBelow`: esta coluna passou a carregar o TAMANHO do atraso, que e
   // o dado pelo qual a fila e priorizada. Escondendo abaixo de 1280px, quem
   // trabalha em notebook menor ou tablet perdia justamente esse numero.
@@ -50,10 +52,10 @@ const COLUMNS: Array<{
     key: "shipped",
     label: "Envio realizado",
     sortKey: "shipped",
-    width: "w-[156px]",
+    width: "w-[172px]",
   },
-  { key: "status", label: "Status", sortKey: "status", width: "w-[180px]" },
-  { key: "actions", label: "", align: "right", width: "w-[84px]" },
+  { key: "status", label: "Status", sortKey: "status", width: "w-[196px]" },
+  { key: "actions", label: "", align: "right", width: "w-[92px]" },
 ];
 
 const hideClass = (hideBelow?: "xl" | "lg") =>
@@ -109,10 +111,10 @@ function NoResults() {
           aria-hidden="true"
         />
       </span>
-      <p className="text-[13.5px] font-semibold text-slate-800">
+      <p className="text-[15px] font-semibold text-slate-800">
         Nenhum atendimento encontrado
       </p>
-      <p className="mx-auto mt-1 max-w-xs text-[12.5px] text-slate-500">
+      <p className="mx-auto mt-1 max-w-xs text-[14px] text-slate-500">
         Ajuste o período ou limpe os filtros. Novos envios da TRACKen aparecem
         aqui automaticamente.
       </p>
@@ -151,7 +153,7 @@ function TicketCard({
           />
           <ShippingModeBadge mode={ticket.shipping_mode} />
           {ticket.service_type !== "atraso" && (
-            <span className="text-[10px] font-medium uppercase tracking-wide text-slate-500">
+            <span className="text-[11.5px] font-medium uppercase tracking-wide text-slate-500">
               {SERVICE_TYPE_LABELS[ticket.service_type] ?? ticket.service_type}
             </span>
           )}
@@ -175,7 +177,7 @@ function TicketCard({
         <CopyableId value={ticket.order_id} label="número da venda" muted />
       </div>
 
-      <p className="mt-1.5 truncate text-[12.5px] font-medium text-slate-900">
+      <p className="mt-1.5 truncate text-[14px] font-medium text-slate-900">
         {ticket.buyer_nickname ?? "—"}
         {ticket.buyer_name && (
           <span className="font-normal text-slate-500">
@@ -184,7 +186,7 @@ function TicketCard({
           </span>
         )}
       </p>
-      <p className="truncate text-[11.5px] text-slate-500" title={ticket.seller_name}>
+      <p className="truncate text-[13px] text-slate-500" title={ticket.seller_name}>
         {ticket.seller_name}
       </p>
 
@@ -209,12 +211,12 @@ function TicketCard({
 
       <div className="mt-2.5 flex items-end justify-between gap-2 border-t border-[var(--tk-line)] pt-2.5">
         <span className="min-w-0">
-          <span className="block truncate text-[11px] text-slate-500">
+          <span className="block truncate text-[12.5px] text-slate-500">
             {ticket.assigned_user_name ?? "Sem responsável"}
           </span>
           {ticket.status === STATUS_REQUIRING_DENIAL_REASON &&
             ticket.denial_reason && (
-              <span className="mt-0.5 block text-[11px] font-medium leading-snug text-red-700">
+              <span className="mt-0.5 block text-[12.5px] font-medium leading-snug text-red-700">
                 {denialReasonLabel(ticket.denial_reason)}
               </span>
             )}
@@ -223,7 +225,7 @@ function TicketCard({
         <button
           type="button"
           onClick={() => onOpenTicket(ticket)}
-          className="inline-flex shrink-0 items-center gap-0.5 rounded-md border border-[var(--tk-line-strong)] bg-white px-2.5 py-1.5 text-[11.5px] font-semibold text-slate-700 transition-colors hover:border-[var(--tk-brand)] hover:text-[var(--tk-brand-strong)]"
+          className="inline-flex shrink-0 items-center gap-0.5 rounded-md border border-[var(--tk-line-strong)] bg-white px-2.5 py-1.5 text-[13px] font-semibold text-slate-700 transition-colors hover:border-[var(--tk-brand)] hover:text-[var(--tk-brand-strong)]"
         >
           Abrir
           <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -262,7 +264,7 @@ function MobileSortBar({
         id="tk-mobile-sort"
         value={sort.sortBy}
         onChange={(event) => onSortChange(event.target.value)}
-        className="min-w-0 flex-1 rounded-lg border border-[var(--tk-line-strong)] bg-white px-2.5 py-1.5 text-[12.5px] text-slate-800"
+        className="min-w-0 flex-1 rounded-lg border border-[var(--tk-line-strong)] bg-white px-2.5 py-1.5 text-[14px] text-slate-800"
       >
         {sortable.map((column) => (
           <option key={column.key} value={column.sortKey as string}>
@@ -273,7 +275,7 @@ function MobileSortBar({
       <button
         type="button"
         onClick={() => onSortChange(sort.sortBy)}
-        className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[var(--tk-line-strong)] bg-white px-2.5 py-1.5 text-[11.5px] font-medium text-slate-700"
+        className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[var(--tk-line-strong)] bg-white px-2.5 py-1.5 text-[13px] font-medium text-slate-700"
         aria-label={`Inverter ordem (atual: ${
           sort.sortDir === "asc" ? "crescente" : "decrescente"
         })`}
@@ -343,7 +345,7 @@ export default function TicketsTable({
         role="region"
         aria-label="Grade de atendimentos"
       >
-        <table className="w-full min-w-[1000px] border-separate border-spacing-0 text-left">
+        <table className="w-full min-w-[1150px] border-separate border-spacing-0 text-left">
           <caption className="sr-only">
             Atendimentos recebidos da TRACKen, ordenados pelo limite de envio
           </caption>
@@ -374,7 +376,7 @@ export default function TicketsTable({
                       <button
                         type="button"
                         onClick={() => onSortChange(column.sortKey as string)}
-                        className={`group inline-flex items-center gap-1 rounded text-[11px] font-semibold uppercase tracking-[0.04em] transition-colors ${
+                        className={`group inline-flex items-center gap-1 rounded text-[12.5px] font-semibold uppercase tracking-[0.04em] transition-colors ${
                           isSorted
                             ? "text-[var(--tk-brand-strong)]"
                             : "text-slate-500 hover:text-slate-800"
@@ -395,7 +397,7 @@ export default function TicketsTable({
                         )}
                       </button>
                     ) : (
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500">
+                      <span className="text-[12.5px] font-semibold uppercase tracking-[0.04em] text-slate-500">
                         {column.label}
                       </span>
                     )}
@@ -426,7 +428,7 @@ export default function TicketsTable({
                     title={ticket.carrier_name ?? undefined}
                   />
                   {ticket.service_type !== "atraso" && (
-                    <span className="mt-1 block pl-[11px] text-[10px] font-medium uppercase tracking-wide text-slate-500">
+                    <span className="mt-1 block pl-[11px] text-[11.5px] font-medium uppercase tracking-wide text-slate-500">
                       {SERVICE_TYPE_LABELS[ticket.service_type] ??
                         ticket.service_type}
                     </span>
@@ -450,7 +452,7 @@ export default function TicketsTable({
 
                 {/* Comprador e seller, lidos juntos */}
                 <td className="px-3.5 py-3">
-                  <span className="block truncate text-[13px] font-medium text-slate-900">
+                  <span className="block truncate text-[14.5px] font-medium text-slate-900">
                     {ticket.buyer_nickname ?? "—"}
                     {ticket.buyer_name && (
                       <span className="font-normal text-slate-500">
@@ -460,7 +462,7 @@ export default function TicketsTable({
                     )}
                   </span>
                   <span
-                    className="mt-0.5 block truncate text-[11.5px] text-slate-500"
+                    className="mt-0.5 block truncate text-[13px] text-slate-500"
                     title={ticket.seller_name}
                   >
                     {ticket.seller_name}
@@ -492,7 +494,7 @@ export default function TicketsTable({
                     onApply={onChangeStatus}
                   />
                   <span
-                    className="mt-1 block max-w-[170px] truncate pl-[13px] text-[10.5px] text-slate-500"
+                    className="mt-1 block max-w-[186px] truncate pl-[13px] text-[12px] text-slate-500"
                     title={ticket.assigned_user_name ?? undefined}
                   >
                     {ticket.assigned_user_name ?? "Sem responsável"}
@@ -503,7 +505,7 @@ export default function TicketsTable({
                   {ticket.status === STATUS_REQUIRING_DENIAL_REASON &&
                     ticket.denial_reason && (
                       <span
-                        className="mt-0.5 block max-w-[170px] truncate pl-[13px] text-[10.5px] font-medium text-red-700"
+                        className="mt-0.5 block max-w-[186px] truncate pl-[13px] text-[12px] font-medium text-red-700"
                         title={
                           denialReasonLabel(ticket.denial_reason) ?? undefined
                         }
@@ -518,7 +520,7 @@ export default function TicketsTable({
                     <button
                       type="button"
                       onClick={() => onOpenTicket(ticket)}
-                      className="inline-flex items-center gap-0.5 rounded-md border border-[var(--tk-line-strong)] bg-white px-2.5 py-1.5 text-[11.5px] font-semibold text-slate-700 transition-colors hover:border-[var(--tk-brand)] hover:text-[var(--tk-brand-strong)]"
+                      className="inline-flex items-center gap-0.5 rounded-md border border-[var(--tk-line-strong)] bg-white px-2.5 py-1.5 text-[13px] font-semibold text-slate-700 transition-colors hover:border-[var(--tk-brand)] hover:text-[var(--tk-brand-strong)]"
                     >
                       Abrir
                       <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />

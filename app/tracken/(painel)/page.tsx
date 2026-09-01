@@ -135,10 +135,10 @@ export default function TrackenPanelPage() {
     <PageShell>
       <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <h1 className="text-[19px] font-semibold tracking-[-0.01em] text-slate-900 sm:text-[22px]">
+          <h1 className="text-[21px] font-semibold tracking-[-0.01em] text-slate-900 sm:text-[25px]">
             Painel de Atendimento
           </h1>
-          <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-slate-500">
+          <p className="mt-1 max-w-2xl text-[14.5px] leading-relaxed text-slate-500">
             Solicitações de remoção de atraso recebidas da TRACKen, ordenadas pelo
             limite de envio do Mercado Livre.
           </p>
@@ -148,7 +148,7 @@ export default function TrackenPanelPage() {
           {/* Diz por qual data o periodo recorta; antes eram duas datas soltas
               e nao dava para saber se era recebimento ou limite. */}
           <span
-            className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--tk-line)] bg-white px-2.5 py-2 text-[12px] text-slate-600"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--tk-line)] bg-white px-2.5 py-2 text-[13.5px] text-slate-600"
             title="Periodo filtrado pelo limite de envio"
           >
             <CalendarDays
@@ -190,7 +190,7 @@ export default function TrackenPanelPage() {
       {(error || catalogError) && (
         <p
           role="alert"
-          className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[15px] text-red-700"
         >
           {error ?? catalogError}
         </p>
@@ -199,7 +199,7 @@ export default function TrackenPanelPage() {
       {/* Atendimentos parados em status que saiu do mapa nao aparecem em card
           nenhum; avisar e melhor que deixar a soma nao fechar em silencio. */}
       {(stats?.kpis.unmappedStatusCount ?? 0) > 0 && (
-        <p className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <p className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-[15px] text-amber-800">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           {formatNumber(stats?.kpis.unmappedStatusCount ?? 0)} atendimento(s) em
           status desativado nao aparecem nos cartoes abaixo. Reative o status em
@@ -291,10 +291,10 @@ export default function TrackenPanelPage() {
       </div>
 
       <div className="mt-6 flex items-baseline justify-between gap-3">
-        <h2 className="text-[15px] font-semibold text-slate-900">
+        <h2 className="text-[16.5px] font-semibold text-slate-900">
           Fila de atendimento
         </h2>
-        <p className="text-[11.5px] text-slate-500">
+        <p className="text-[13px] text-slate-500">
           Clique no status para alterar sem sair da lista
         </p>
       </div>
@@ -345,7 +345,7 @@ export default function TrackenPanelPage() {
         />
       </div>
 
-      <p className="mt-5 flex items-start gap-2 text-[11.5px] leading-relaxed text-slate-500">
+      <p className="mt-5 flex items-start gap-2 text-[13px] leading-relaxed text-slate-500">
         <Lightbulb
           className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400"
           strokeWidth={1.75}

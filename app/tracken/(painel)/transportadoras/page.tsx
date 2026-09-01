@@ -191,7 +191,7 @@ export default function TransportadorasPage() {
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[760px] text-left">
                   <thead>
-                    <tr className="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    <tr className="border-b border-slate-200 text-[12.5px] font-semibold uppercase tracking-wide text-slate-500">
                       <th scope="col" className="py-2 pr-3">Sigla</th>
                       <th scope="col" className="py-2 pr-3">Nome</th>
                       <th scope="col" className="py-2 pr-3">Cor</th>
@@ -230,10 +230,10 @@ export default function TransportadorasPage() {
                                   }))
                                 }
                                 aria-label={`Nome da transportadora ${carrier.code}`}
-                                className="w-full rounded-md border border-slate-200 px-2 py-1 text-sm outline-none focus:border-green-500"
+                                className="w-full rounded-md border border-slate-200 px-2 py-1 text-[15px] outline-none focus:border-green-500"
                               />
                             ) : (
-                              <span className="text-sm text-slate-800">
+                              <span className="text-[15px] text-slate-800">
                                 {carrier.name}
                               </span>
                             )}
@@ -250,7 +250,7 @@ export default function TransportadorasPage() {
                                   }))
                                 }
                                 aria-label={`Cor do badge de ${carrier.code}`}
-                                className="rounded-md border border-slate-200 px-2 py-1 text-sm outline-none focus:border-green-500"
+                                className="rounded-md border border-slate-200 px-2 py-1 text-[15px] outline-none focus:border-green-500"
                               >
                                 {CORES.map((cor) => (
                                   <option key={cor.value} value={cor.value}>
@@ -259,7 +259,7 @@ export default function TransportadorasPage() {
                                 ))}
                               </select>
                             ) : (
-                              <span className="flex items-center gap-1.5 text-sm text-slate-600">
+                              <span className="flex items-center gap-1.5 text-[15px] text-slate-600">
                                 <span
                                   className={`h-2.5 w-2.5 rounded-full ${
                                     DOT_CLASSES[normalizeColor(carrier.color)]
@@ -272,11 +272,11 @@ export default function TransportadorasPage() {
                             )}
                           </td>
 
-                          <td className="py-2.5 pr-3 text-right text-sm tabular-nums text-slate-800">
+                          <td className="py-2.5 pr-3 text-right text-[15px] tabular-nums text-slate-800">
                             {formatNumber(carrier.total_tickets)}
                           </td>
 
-                          <td className="py-2.5 pr-3 text-right text-sm tabular-nums">
+                          <td className="py-2.5 pr-3 text-right text-[15px] tabular-nums">
                             <span
                               className={
                                 (carrier.overdue_tickets ?? 0) > 0
@@ -287,13 +287,13 @@ export default function TransportadorasPage() {
                               {formatNumber(carrier.open_tickets)}
                             </span>
                             {(carrier.overdue_tickets ?? 0) > 0 && (
-                              <span className="block text-[10px] text-red-500">
+                              <span className="block text-[11.5px] text-red-500">
                                 {carrier.overdue_tickets} vencidos
                               </span>
                             )}
                           </td>
 
-                          <td className="py-2.5 pr-3 text-sm text-slate-600">
+                          <td className="py-2.5 pr-3 text-[15px] text-slate-600">
                             {carrier.last_received_at
                               ? formatDate(carrier.last_received_at)
                               : "-"}
@@ -301,7 +301,7 @@ export default function TransportadorasPage() {
 
                           <td className="py-2.5 pr-3">
                             <span
-                              className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                              className={`rounded-full px-2 py-0.5 text-[12.5px] font-semibold ${
                                 carrier.is_active === false
                                   ? "bg-slate-100 text-slate-500"
                                   : "bg-green-50 text-green-700"
@@ -364,7 +364,7 @@ export default function TransportadorasPage() {
                                       isActive: carrier.is_active === false,
                                     })
                                   }
-                                  className="rounded-md px-2 py-1 text-[11px] font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                                  className="rounded-md px-2 py-1 text-[12.5px] font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
                                 >
                                   {carrier.is_active === false
                                     ? "Ativar"
@@ -380,7 +380,7 @@ export default function TransportadorasPage() {
                 </table>
               </div>
 
-              <p className="mt-3 text-[11px] text-slate-400">
+              <p className="mt-3 text-[12.5px] text-slate-400">
                 Editar nome e cor exige perfil administrativo. Transportadora
                 desativada deixa de aparecer nos filtros, mas os atendimentos
                 dela seguem preservados.

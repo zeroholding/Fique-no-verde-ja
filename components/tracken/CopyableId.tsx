@@ -45,7 +45,7 @@ export default function CopyableId({
     <span className="inline-flex items-center gap-1">
       <span
         className={`tk-num font-mono ${
-          muted ? "text-[11.5px] text-slate-500" : "text-[12.5px] text-slate-800"
+          muted ? "text-[13px] text-slate-500" : "text-[14px] text-slate-800"
         }`}
       >
         {value}

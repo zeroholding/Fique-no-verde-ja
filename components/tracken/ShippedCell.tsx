@@ -21,7 +21,7 @@ import { formatDate, formatLateness, formatTime } from "@/lib/tracken/format";
  * um parado ha tres dias.
  */
 
-const CHIP = "mt-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold";
+const CHIP = "mt-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11.5px] font-semibold";
 
 export default function ShippedCell({
   shippedAt,
@@ -37,7 +37,7 @@ export default function ShippedCell({
 
     return (
       <span className="block">
-        <span className="text-[12.5px] font-medium text-slate-500">
+        <span className="text-[14px] font-medium text-slate-500">
           Não enviado
         </span>
         {running ? (
@@ -66,10 +66,10 @@ export default function ShippedCell({
   return (
     <span className="block">
       <span className="flex flex-wrap items-baseline gap-x-1.5">
-        <span className="tk-num text-[13px] text-slate-700">
+        <span className="tk-num text-[14.5px] text-slate-700">
           {formatDate(shippedAt)}
         </span>
-        <span className="tk-num text-[11.5px] text-slate-500">
+        <span className="tk-num text-[13px] text-slate-500">
           {formatTime(shippedAt)}
         </span>
       </span>

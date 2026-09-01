@@ -60,10 +60,10 @@ export default function KpiCard({
         />
       </div>
 
-      <p className="tk-num mt-2.5 text-[28px] font-semibold leading-none text-slate-900">
+      <p className="tk-num mt-2.5 text-[32px] font-semibold leading-none text-slate-900">
         {formatNumber(value)}
       </p>
-      <p className="mt-1.5 text-[11.5px] text-slate-500">{hint}</p>
+      <p className="mt-1.5 text-[13px] text-slate-500">{hint}</p>
     </>
   );
 
