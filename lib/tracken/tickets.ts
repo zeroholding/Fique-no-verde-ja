@@ -12,6 +12,7 @@ import type {
   TrackenStatusRow,
 } from "./types";
 import type { NormalizedItem } from "./validation";
+import { normalizeName } from "@/lib/name-search";
 
 /** Regra de negocio do atendimento Tracken. */
 
@@ -116,10 +117,55 @@ export async function createTicketsBatch(
   const initialStatus =
     statuses.find((status) => status.is_initial)?.code ?? "recepcionado";
 
+  /**
+   * Transportadora resolvida por CODIGO ou por NOME.
+   *
+   * O contrato com a TRACKen pede "nome da transportadora". Casar apenas o
+   * codigo em igualdade exata rejeitaria o lote inteiro no primeiro envio
+   * real, porque o nome cadastrado aqui e "TM Transportes" e o codigo e "TM".
+   *
+   * O nome e comparado sem acento e sem caixa, e tambem pelo primeiro termo,
+   * para "Transmoto Logistica" achar "Transmoto". Codigo tem precedencia: e
+   * identificador, nome e descricao.
+   */
   const carriers = await getCarriers();
   const carrierByCode = new Map(
     carriers.map((carrier) => [carrier.code.toUpperCase(), carrier])
   );
+  const carrierByName = new Map(
+    carriers.map((carrier) => [normalizeName(carrier.name), carrier])
+  );
+  const carrierByFirstWord = new Map(
+    carriers.map((carrier) => [
+      normalizeName(carrier.name).split(/\s+/)[0],
+      carrier,
+    ])
+  );
+
+  const resolveCarrier = (item: NormalizedItem) => {
+    if (item.carrierCode) {
+      const byCode = carrierByCode.get(item.carrierCode);
+      if (byCode) return byCode;
+    }
+
+    if (item.carrierName) {
+      const normalized = normalizeName(item.carrierName);
+      // Nome pode coincidir com um codigo ("TM" mandado em carrier_name).
+      const asCode = carrierByCode.get(item.carrierName.toUpperCase());
+      return (
+        carrierByName.get(normalized) ??
+        asCode ??
+        carrierByFirstWord.get(normalized.split(/\s+/)[0])
+      );
+    }
+
+    return undefined;
+  };
+
+  /** Opcoes validas na mensagem de recusa, para o dev da TRACKen corrigir. */
+  const carrierOptions = carriers
+    .map((carrier) => `${carrier.code} (${carrier.name})`)
+    .join(", ");
 
   const results: TrackenItemResult[] = [];
   let created = 0;
@@ -131,14 +177,18 @@ export async function createTicketsBatch(
       const { normalized, rawPayload } = items[index];
       const savepoint = `sp_${index}`;
 
-      const carrier = carrierByCode.get(normalized.carrierCode);
+      const carrier = resolveCarrier(normalized);
       if (!carrier) {
+        const informado =
+          normalized.carrierName ?? normalized.carrierCode ?? "(vazio)";
         rejected += 1;
         results.push({
           shipment_id: normalized.shipmentId,
           status: "rejected",
           code: "UNKNOWN_CARRIER",
-          message: `Transportadora "${normalized.carrierCode}" nao cadastrada`,
+          // A mensagem lista as opcoes validas: sem isso, o dev do outro lado
+          // recebe "nao cadastrada" e nao tem como saber o que mandar.
+          message: `Transportadora "${informado}" nao cadastrada. Cadastradas: ${carrierOptions}`,
         });
         continue;
       }

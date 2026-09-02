@@ -74,7 +74,12 @@ export type TrackenTicketEventRow = {
 export type TrackenIncomingItem = {
   shipment_id: string;
   order_id: string;
-  carrier_code: string;
+  /** Codigo interno da transportadora. Alternativa a carrier_name. */
+  carrier_code?: string | null;
+  /** Nome da transportadora, como acordado no contrato com a TRACKen. */
+  carrier_name?: string | null;
+  /** Apelido de carrier_name, para quem manda um campo unico. */
+  carrier?: string | null;
   service_type?: string;
   buyer?: { nickname?: string | null; name?: string | null } | null;
   seller?: { name?: string | null; ml_id?: string | null } | null;

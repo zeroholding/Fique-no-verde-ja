@@ -23,7 +23,10 @@ const IDENTIFIER_REGEX = /^[A-Za-z0-9._-]{1,80}$/;
 export type NormalizedItem = {
   shipmentId: string;
   orderId: string;
-  carrierCode: string;
+  /** Codigo interno da transportadora. Nulo quando so o nome foi enviado. */
+  carrierCode: string | null;
+  /** Nome da transportadora. Nulo quando so o codigo foi enviado. */
+  carrierName: string | null;
   serviceType: TrackenServiceType;
   buyerNickname: string | null;
   buyerName: string | null;
@@ -110,12 +113,27 @@ export function validateIncomingItem(input: unknown): ItemValidation {
     };
   }
 
+  /**
+   * Transportadora por CODIGO ou por NOME.
+   *
+   * O contrato acordado com a TRACKen pede "nome da transportadora", nao o
+   * codigo interno. Antes so `carrier_code` era aceito, e a comparacao era
+   * igualdade exata em caixa alta: um payload com "Jadlog" em vez de "J3"
+   * seria rejeitado item por item com UNKNOWN_CARRIER -- falha que apareceria
+   * apenas no primeiro envio real, e para o lote inteiro.
+   *
+   * `carrier` e aceito como apelido para quem manda um campo unico.
+   */
   const carrierCode = asTrimmedString(item.carrier_code);
-  if (!carrierCode) {
+  const carrierName =
+    asTrimmedString(item.carrier_name) ?? asTrimmedString(item.carrier);
+
+  if (!carrierCode && !carrierName) {
     return {
       ok: false,
       code: "INVALID_CARRIER",
-      message: "carrier_code e obrigatorio",
+      message:
+        "Informe a transportadora em carrier_code (codigo) ou carrier_name (nome)",
     };
   }
 
@@ -176,7 +194,8 @@ export function validateIncomingItem(input: unknown): ItemValidation {
     value: {
       shipmentId,
       orderId,
-      carrierCode: carrierCode.toUpperCase(),
+      carrierCode: carrierCode ? carrierCode.toUpperCase() : null,
+      carrierName,
       serviceType,
       buyerNickname: truncate(asTrimmedString(item.buyer?.nickname), 200),
       buyerName: truncate(asTrimmedString(item.buyer?.name), 200),
