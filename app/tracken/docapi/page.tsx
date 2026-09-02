@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { FnvjLogo } from "@/components/tracken/BrandLogo";
 import CodeBlock from "@/components/tracken/docs/CodeBlock";
+import CopyInline from "@/components/tracken/docs/CopyInline";
 import {
   Callout,
   Endpoint,
@@ -58,7 +59,6 @@ const NAV = [
   { id: "status", label: "Status e negativas" },
   { id: "erros", label: "Erros" },
   { id: "limites", label: "Limites" },
-  { id: "pendente", label: "Fluxo de volta" },
 ];
 
 const CAMPOS: FieldRow[] = [
@@ -389,7 +389,9 @@ export default function TrackenApiDocsPage() {
     <div className="min-h-screen bg-white">
       {/* ---------- Topo ---------- */}
       <header className="border-b border-slate-200 bg-gradient-to-br from-[#0d9c40] via-[#048842] to-[#02652f]">
-        <div className="mx-auto max-w-[1200px] px-5 py-10 sm:px-8 sm:py-14">
+        {/* Topo mais justo que a base: 40px acima da marca deixava um vazio
+            verde sem funcao antes do conteudo comecar. */}
+        <div className="mx-auto max-w-[1200px] px-5 pb-10 pt-5 sm:px-8 sm:pb-14 sm:pt-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <FnvjLogo className="h-9 w-auto" onDark />
             <Link
@@ -412,22 +414,31 @@ export default function TrackenApiDocsPage() {
             atraso do Mercado Livre, e como consultar o andamento de cada um.
           </p>
 
-          <dl className="mt-8 flex flex-wrap gap-3">
+          {/* `copiavel` marca o que o dev vai colar em configuracao. Versao e
+              formato sao informativos, nao se copia "JSON · UTF-8". */}
+          <dl className="mt-7 flex flex-wrap gap-3">
             {[
-              ["URL base", BASE_URL.replace("https://", "")],
-              ["Versão", "v1"],
-              ["Formato", "JSON · UTF-8"],
-              ["Fuso das datas", "ISO 8601 com offset"],
-            ].map(([termo, valor]) => (
+              { termo: "URL base", valor: BASE_URL, mostrar: BASE_URL.replace("https://", ""), copiavel: true },
+              { termo: "Versão", valor: "v1", mostrar: "v1", copiavel: false },
+              { termo: "Formato", valor: "", mostrar: "JSON · UTF-8", copiavel: false },
+              { termo: "Fuso das datas", valor: "", mostrar: "ISO 8601 com offset", copiavel: false },
+            ].map((item) => (
               <div
-                key={termo}
+                key={item.termo}
                 className="rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 backdrop-blur"
               >
                 <dt className="text-[12.5px] font-bold uppercase tracking-wider text-white/60">
-                  {termo}
+                  {item.termo}
                 </dt>
-                <dd className="mt-0.5 font-mono text-[15px] font-semibold text-white">
-                  {valor}
+                <dd className="mt-0.5 flex items-center gap-1.5 font-mono text-[15px] font-semibold text-white">
+                  {item.mostrar}
+                  {item.copiavel && (
+                    <CopyInline
+                      value={item.valor}
+                      description={item.termo}
+                      tone="dark"
+                    />
+                  )}
                 </dd>
               </div>
             ))}
@@ -495,15 +506,16 @@ export default function TrackenApiDocsPage() {
                     strokeWidth={2}
                     aria-hidden="true"
                   />
-                  Fluxo 2 · aguardando a TRACKen
+                  Fluxo 2 · próxima etapa
                 </p>
                 <p className="mt-2.5 text-[19px] font-bold leading-snug text-slate-900">
                   FNVJ devolve a mudança de status
                 </p>
                 <p className="mt-2 text-[16.5px] leading-relaxed text-slate-700">
-                  A cada mudança de status nós avisamos a TRACKen. Para isso
-                  precisamos da URL, do método e da autenticação do lado de
-                  vocês.
+                  A cada mudança de status o Fique no Verde Já notifica a
+                  TRACKen. A fila de saída já registra todas as mudanças; o
+                  envio é habilitado quando o endereço de destino estiver
+                  definido entre os times.
                 </p>
                 <p className="mt-3.5 font-mono text-[15px] font-semibold text-slate-500">
                   FNVJ → TRACKen
@@ -540,9 +552,21 @@ export default function TrackenApiDocsPage() {
               code={`Authorization: Bearer <api_key>.<secret>`}
             />
             <p className="mt-4">
-              Se preferir separar, aceitamos também dois headers:{" "}
-              <code>X-FNVJ-Api-Key</code> e <code>X-FNVJ-Api-Secret</code>.
+              Se preferir separar, aceitamos também dois headers no lugar dele:
             </p>
+            <ul className="mt-3 space-y-2">
+              {["X-FNVJ-Api-Key", "X-FNVJ-Api-Secret"].map((header) => (
+                <li
+                  key={header}
+                  className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2"
+                >
+                  <code className="font-mono text-[16px] font-semibold text-slate-900">
+                    {header}
+                  </code>
+                  <CopyInline value={header} description={`header ${header}`} />
+                </li>
+              ))}
+            </ul>
 
             <SubTitle>Assinatura HMAC</SubTitle>
             <p>
@@ -555,6 +579,7 @@ export default function TrackenApiDocsPage() {
                   name: "X-FNVJ-Timestamp",
                   type: "string",
                   required: true,
+                  copiavel: true,
                   description:
                     "Momento da chamada em unix timestamp, em segundos. Aceitamos uma diferença de até 5 minutos em relação ao nosso relógio.",
                 },
@@ -562,6 +587,7 @@ export default function TrackenApiDocsPage() {
                   name: "X-FNVJ-Signature",
                   type: "string",
                   required: true,
+                  copiavel: true,
                   description:
                     "sha256= seguido do HMAC-SHA256, em hexadecimal, da string <timestamp>.<corpo bruto>, usando o secret como chave.",
                 },
@@ -589,7 +615,11 @@ export default function TrackenApiDocsPage() {
             eyebrow="Passo 2"
             title="Enviar acionamentos"
           >
-            <Endpoint method="POST" path="/api/tracken/v1/tickets" />
+            <Endpoint
+              method="POST"
+              path="/api/tracken/v1/tickets"
+              baseUrl={BASE_URL}
+            />
             <p className="mt-5">
               Envie um ou vários acionamentos numa chamada. O corpo é um objeto
               com a lista <code>items</code>, de 1 até 200 elementos.
@@ -672,6 +702,7 @@ export default function TrackenApiDocsPage() {
             <Endpoint
               method="GET"
               path="/api/tracken/v1/tickets/{shipment_id}"
+              baseUrl={BASE_URL}
             />
             <CodeBlock
               language="JSON"
@@ -680,7 +711,11 @@ export default function TrackenApiDocsPage() {
             />
 
             <SubTitle>Lista com filtros</SubTitle>
-            <Endpoint method="GET" path="/api/tracken/v1/tickets" />
+            <Endpoint
+              method="GET"
+              path="/api/tracken/v1/tickets"
+              baseUrl={BASE_URL}
+            />
             <FieldTable
               rows={[
                 {
@@ -750,9 +785,15 @@ export default function TrackenApiDocsPage() {
                       {status.label}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <code className="font-mono text-[15px] font-semibold text-slate-500">
-                        {status.code}
-                      </code>
+                      <span className="flex items-center gap-1">
+                        <code className="font-mono text-[15px] font-semibold text-slate-500">
+                          {status.code}
+                        </code>
+                        <CopyInline
+                          value={status.code}
+                          description={`código do status ${status.label}`}
+                        />
+                      </span>
                       <span className="mt-1 block text-[16.5px] leading-relaxed text-slate-700">
                         {status.desc}
                       </span>
@@ -773,9 +814,15 @@ export default function TrackenApiDocsPage() {
                   key={reason.code}
                   className="rounded-xl border border-red-200 bg-red-50 px-4 py-4"
                 >
-                  <code className="font-mono text-[14.5px] font-bold text-red-700">
-                    {reason.code}
-                  </code>
+                  <span className="flex items-center gap-1">
+                    <code className="font-mono text-[14.5px] font-bold text-red-700">
+                      {reason.code}
+                    </code>
+                    <CopyInline
+                      value={reason.code}
+                      description={`código do motivo ${reason.label}`}
+                    />
+                  </span>
                   <p className="mt-1.5 text-[16.5px] font-semibold leading-snug text-red-950">
                     {reason.label}
                   </p>
@@ -883,53 +930,6 @@ export default function TrackenApiDocsPage() {
               qualquer outra origem passa a ser recusada com{" "}
               <strong>403</strong>.
             </Callout>
-          </Section>
-
-          {/* ===== Pendente ===== */}
-          <Section
-            id="pendente"
-            eyebrow="Próximo passo"
-            title="Fluxo de volta: o que precisamos da TRACKen"
-          >
-            <p>
-              Para avisarmos cada mudança de status, precisamos do endereço do
-              lado de vocês. São três informações:
-            </p>
-            <ul className="mt-5 space-y-3">
-              {[
-                ["URL do endpoint", "para onde enviamos a notificação de mudança de status"],
-                ["Método", "POST, PUT ou o que a API de vocês espera"],
-                [
-                  "Autenticação",
-                  "chave em header, token fixo, HMAC, o que preferirem",
-                ],
-              ].map(([titulo, desc]) => (
-                <li
-                  key={titulo}
-                  className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5"
-                >
-                  <ArrowRight
-                    className="mt-1 h-[19px] w-[19px] shrink-0 text-[var(--tk-brand)]"
-                    strokeWidth={2}
-                    aria-hidden="true"
-                  />
-                  <span>
-                    <span className="text-[17px] font-bold text-slate-900">
-                      {titulo}
-                    </span>
-                    <span className="mt-0.5 block text-[16.5px] leading-relaxed text-slate-700">
-                      {desc}
-                    </span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-
-            <p className="mt-6 text-[17px] leading-relaxed text-slate-700">
-              Do nosso lado a fila de saída já registra cada mudança de status
-              desde o primeiro dia. Assim que o endereço estiver definido, o
-              envio passa a acontecer sem perder nada do que já foi acumulado.
-            </p>
           </Section>
 
           {/* ---------- Rodape ---------- */}

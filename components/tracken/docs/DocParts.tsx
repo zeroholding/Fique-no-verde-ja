@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import CopyInline from "./CopyInline";
 
 /**
  * Pecas da documentacao publica da API.
@@ -46,13 +47,21 @@ export function SubTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Rota da API, destacada. */
+/**
+ * Rota da API, destacada.
+ *
+ * O botao copia a URL ABSOLUTA, nao o caminho exibido: e o valor que vai para o
+ * cliente HTTP. Copiar "/api/tracken/v1/tickets" obrigaria a colar e depois
+ * lembrar de prefixar o dominio a mao.
+ */
 export function Endpoint({
   method,
   path,
+  baseUrl,
 }: {
   method: "POST" | "GET" | "PATCH";
   path: string;
+  baseUrl: string;
 }) {
   const tone =
     method === "POST"
@@ -71,6 +80,7 @@ export function Endpoint({
       <code className="min-w-0 break-all font-mono text-[16px] font-semibold text-slate-900">
         {path}
       </code>
+      <CopyInline value={`${baseUrl}${path}`} description="URL completa" />
     </p>
   );
 }
@@ -119,6 +129,14 @@ export type FieldRow = {
   type: string;
   required: boolean;
   description: string;
+  /**
+   * Mostra botao de copiar no nome do campo.
+   *
+   * Vale para o que se cola literalmente, como nome de header. Nome de campo de
+   * JSON aninhado (`seller.name`) nao se cola inteiro, entao ali o botao seria
+   * uma promessa falsa.
+   */
+  copiavel?: boolean;
 };
 
 /**
@@ -141,6 +159,9 @@ export function FieldTable({ rows }: { rows: FieldRow[] }) {
               <code className="font-mono text-[15.5px] font-bold text-slate-900">
                 {row.name}
               </code>
+              {row.copiavel && (
+                <CopyInline value={row.name} description={row.name} />
+              )}
               <RequiredTag required={row.required} />
             </p>
             <p className="mt-1 font-mono text-[14px] text-slate-500">
@@ -191,9 +212,14 @@ export function FieldTable({ rows }: { rows: FieldRow[] }) {
                 className="border-b border-slate-100 last:border-0 align-top"
               >
                 <td className="px-4 py-3.5">
-                  <code className="font-mono text-[15.5px] font-bold text-slate-900">
-                    {row.name}
-                  </code>
+                  <span className="flex items-center gap-1">
+                    <code className="font-mono text-[15.5px] font-bold text-slate-900">
+                      {row.name}
+                    </code>
+                    {row.copiavel && (
+                      <CopyInline value={row.name} description={row.name} />
+                    )}
+                  </span>
                 </td>
                 <td className="px-4 py-3.5 font-mono text-[14.5px] text-slate-500">
                   {row.type}
