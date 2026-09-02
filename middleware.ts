@@ -17,13 +17,24 @@ import type { NextRequest } from 'next/server';
 const TRACKEN_LOGIN = '/tracken/login';
 const FNVJ_LOGIN = '/login';
 
+/**
+ * Rotas de /tracken que NAO exigem sessao.
+ *
+ * A documentacao da API e publica de proposito: o dev da TRACKen precisa ler o
+ * contrato antes de ter qualquer credencial, e criar login para ele so para ver
+ * a documentacao seria atrito sem ganho. A pagina nao expoe token, chave nem
+ * dado de atendimento -- so o formato das chamadas.
+ */
+const TRACKEN_PUBLIC_PATHS = new Set([TRACKEN_LOGIN, '/tracken/docapi']);
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get('token')?.value;
 
   const isTrackenLogin = pathname === TRACKEN_LOGIN;
+  const isTrackenPublic = TRACKEN_PUBLIC_PATHS.has(pathname);
   const isTrackenArea =
-    !isTrackenLogin && (pathname === '/tracken' || pathname.startsWith('/tracken/'));
+    !isTrackenPublic && (pathname === '/tracken' || pathname.startsWith('/tracken/'));
   const isDashboardArea = pathname.startsWith('/dashboard');
 
   // Ja autenticado nao precisa ver tela de login.
