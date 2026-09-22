@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import type { PoolClient } from "pg";
 import { trackenQuery, withTransaction } from "./db";
 import {
@@ -61,7 +62,16 @@ export async function enqueueOutboxEvent(
   );
 }
 
-async function recordEvent(
+/**
+ * Grava uma linha do historico do atendimento.
+ *
+ * Exportada porque o worker do outbox (`lib/tracken/webhook.ts`) tambem escreve
+ * aqui, para registrar `webhook_sent` e `webhook_failed`. Toda escrita no
+ * historico passa por esta funcao: a tabela tem trigger que proibe UPDATE, e
+ * concentrar o INSERT em um lugar so evita que um caminho novo grave um
+ * `event_type` ou `actor_type` fora do CHECK e descubra isso em producao.
+ */
+export async function recordEvent(
   client: PoolClient,
   entry: {
     ticketId: string;
@@ -101,6 +111,91 @@ type BatchOutcome = {
 };
 
 /**
+ * Codigo interno a partir do nome informado pela TRACKen.
+ *
+ * `tracken_carriers.code` e VARCHAR(40) UNIQUE e serve de identificador estavel
+ * para quem integra. "FLEX BOYS" vira "FLEX_BOYS": sem acento, caixa alta, e
+ * qualquer corrida de caracteres fora de A-Z0-9 colapsada em um separador so.
+ *
+ * O fallback para hash existe porque nome escrito inteiro em caracteres nao
+ * latinos sairia vazio daqui, e codigo vazio viola o NOT NULL do banco no
+ * caminho que existe justamente para NAO recusar o acionamento.
+ */
+function derivarCodigoTransportadora(nome: string): string {
+  const base = normalizeName(nome)
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 40)
+    // O slice pode cortar no meio do separador e deixar "_" no fim.
+    .replace(/_+$/g, "");
+
+  if (base) return base;
+
+  return `TRANSP_${crypto
+    .createHash("sha256")
+    .update(nome, "utf8")
+    .digest("hex")
+    .slice(0, 12)
+    .toUpperCase()}`;
+}
+
+/**
+ * Cadastra uma transportadora vista pela primeira vez.
+ *
+ * Roda no savepoint do item, entao falhar aqui recusa um acionamento e nao o
+ * lote. Nasce ativa, porque uma transportadora inativa nao aparece em
+ * `getCarriers()` e o proximo acionamento tentaria criar de novo; e nasce com a
+ * cor `slate`, a neutra do painel, que na pratica marca quem entrou por este
+ * caminho e ainda nao passou por revisao na tela de Transportadoras.
+ *
+ * `ON CONFLICT (code) DO NOTHING` seguido de SELECT cobre dois casos com o
+ * mesmo codigo: dois lotes simultaneos trazendo a mesma transportadora nova, e
+ * um nome diferente que deriva para um codigo ja existente. Nos dois o certo e
+ * usar a linha que esta no banco, nao criar uma segunda.
+ */
+async function criarTransportadora(
+  client: PoolClient,
+  identificador: { code: string | null; name: string | null }
+): Promise<TrackenCarrierRow> {
+  // Quando so o codigo veio, ele serve tambem de nome: e o unico rotulo que
+  // temos, e deixar o nome vazio quebraria toda tela que exibe transportadora.
+  const nome = (identificador.name ?? identificador.code ?? "").trim();
+  const codigo = identificador.code
+    ? identificador.code.toUpperCase().slice(0, 40)
+    : derivarCodigoTransportadora(nome);
+
+  const inserida = await client.query<TrackenCarrierRow>(
+    `INSERT INTO tracken_carriers (code, name, color, is_active)
+     VALUES ($1, $2, 'slate', true)
+     ON CONFLICT (code) DO NOTHING
+     RETURNING id, code, name, color, is_active`,
+    [codigo, nome.slice(0, 200)]
+  );
+
+  if (inserida.rows[0]) {
+    return inserida.rows[0];
+  }
+
+  const existente = await client.query<TrackenCarrierRow>(
+    `SELECT id, code, name, color, is_active
+       FROM tracken_carriers
+      WHERE code = $1`,
+    [codigo]
+  );
+
+  if (!existente.rows[0]) {
+    // Sem linha inserida e sem linha existente o proximo passo gravaria
+    // carrier_id nulo sem ninguem perceber.
+    throw new Error(
+      `Nao foi possivel cadastrar nem localizar a transportadora "${nome}" (codigo ${codigo})`
+    );
+  }
+
+  return existente.rows[0];
+}
+
+/**
  * Grava um lote de atendimentos.
  *
  * Cada item roda em um SAVEPOINT proprio: um envio invalido nao derruba os
@@ -127,6 +222,13 @@ export async function createTicketsBatch(
    * O nome e comparado sem acento e sem caixa, e tambem pelo primeiro termo,
    * para "Transmoto Logistica" achar "Transmoto". Codigo tem precedencia: e
    * identificador, nome e descricao.
+   *
+   * Nao achou: a transportadora e CRIADA (ver `criarTransportadora`). Antes o
+   * item era recusado com UNKNOWN_CARRIER, e o efeito pratico era a TRACKen
+   * nao conseguir abrir atendimento para um cliente novo dela ate alguem aqui
+   * cadastrar a transportadora na mao -- sendo que nao existe tela para isso,
+   * so UPDATE em `tracken_carriers`. O acionamento e o dado que nao pode ser
+   * perdido; o cadastro se arruma depois.
    */
   const carriers = await getCarriers();
   const carrierByCode = new Map(
@@ -162,10 +264,23 @@ export async function createTicketsBatch(
     return undefined;
   };
 
-  /** Opcoes validas na mensagem de recusa, para o dev da TRACKen corrigir. */
-  const carrierOptions = carriers
-    .map((carrier) => `${carrier.code} (${carrier.name})`)
-    .join(", ");
+  /**
+   * Registra nos indices uma transportadora criada durante o lote.
+   *
+   * Chamado apenas DEPOIS do RELEASE do savepoint. Registrar antes deixaria os
+   * mapas apontando para uma linha que o ROLLBACK TO SAVEPOINT desfez, e os
+   * itens seguintes do mesmo lote gravariam `carrier_id` de transportadora
+   * inexistente.
+   */
+  const indexarTransportadora = (carrier: TrackenCarrierRow) => {
+    carrierByCode.set(carrier.code.toUpperCase(), carrier);
+    const normalizado = normalizeName(carrier.name);
+    carrierByName.set(normalizado, carrier);
+    const primeiroTermo = normalizado.split(/\s+/)[0];
+    if (!carrierByFirstWord.has(primeiroTermo)) {
+      carrierByFirstWord.set(primeiroTermo, carrier);
+    }
+  };
 
   const results: TrackenItemResult[] = [];
   let created = 0;
@@ -177,24 +292,19 @@ export async function createTicketsBatch(
       const { normalized, rawPayload } = items[index];
       const savepoint = `sp_${index}`;
 
-      const carrier = resolveCarrier(normalized);
-      if (!carrier) {
-        const informado =
-          normalized.carrierName ?? normalized.carrierCode ?? "(vazio)";
-        rejected += 1;
-        results.push({
-          shipment_id: normalized.shipmentId,
-          status: "rejected",
-          code: "UNKNOWN_CARRIER",
-          // A mensagem lista as opcoes validas: sem isso, o dev do outro lado
-          // recebe "nao cadastrada" e nao tem como saber o que mandar.
-          message: `Transportadora "${informado}" nao cadastrada. Cadastradas: ${carrierOptions}`,
-        });
-        continue;
-      }
-
       await client.query(`SAVEPOINT ${savepoint}`);
       try {
+        // O cadastro da transportadora nova acontece DENTRO do savepoint do
+        // item: se ele falhar, recusa este acionamento e nao o lote inteiro.
+        const conhecida = resolveCarrier(normalized);
+        const carrier =
+          conhecida ??
+          (await criarTransportadora(client, {
+            code: normalized.carrierCode,
+            name: normalized.carrierName,
+          }));
+        const carrierCriada = conhecida === undefined;
+
         const inserted = await client.query<{ id: string; status: string }>(
           `INSERT INTO tracken_tickets (
              shipment_id, order_id, carrier_id, tracken_ref,
@@ -241,6 +351,9 @@ export async function createTicketsBatch(
             [normalized.shipmentId]
           );
           await client.query(`RELEASE SAVEPOINT ${savepoint}`);
+          if (carrierCriada) {
+            indexarTransportadora(carrier);
+          }
 
           duplicated += 1;
           results.push({
@@ -266,16 +379,32 @@ export async function createTicketsBatch(
           metadata: {
             carrier_code: carrier.code,
             service_type: normalized.serviceType,
+            // Fica no historico imutavel do atendimento: e a unica forma de,
+            // meses depois, saber que aquela transportadora entrou pelo
+            // acionamento e nao por cadastro revisado.
+            ...(carrierCriada
+              ? { carrier_auto_created: true, carrier_name: carrier.name }
+              : {}),
           },
         });
 
+        // Mesmo formato do `ticket.status_changed`: quem consome o webhook le os
+        // dois eventos com um codigo so. Divergir aqui obrigaria o outro lado a
+        // dois parsers para dizer a mesma coisa.
         await enqueueOutboxEvent(client, ticket.id, "ticket.received", {
           shipment_id: normalized.shipmentId,
           order_id: normalized.orderId,
+          tracken_ref: normalized.trackenRef,
           status: ticket.status,
+          tracken_status:
+            statuses.find((status) => status.code === ticket.status)
+              ?.tracken_status ?? null,
         });
 
         await client.query(`RELEASE SAVEPOINT ${savepoint}`);
+        if (carrierCriada) {
+          indexarTransportadora(carrier);
+        }
 
         created += 1;
         results.push({
@@ -283,6 +412,14 @@ export async function createTicketsBatch(
           status: "created",
           ticket_id: ticket.id,
           ticket_status: ticket.status,
+          // Dito de volta de proposito: assim a TRACKen ve no retorno que o
+          // nome caiu num cadastro novo, e um erro de digitacao aparece para
+          // eles no mesmo instante em vez de virar transportadora fantasma.
+          ...(carrierCriada
+            ? {
+                message: `Transportadora "${carrier.name}" cadastrada automaticamente com o codigo ${carrier.code}`,
+              }
+            : {}),
         });
       } catch (error) {
         await client.query(`ROLLBACK TO SAVEPOINT ${savepoint}`);
@@ -388,14 +525,19 @@ export async function changeTicketStatus(input: StatusChangeInput) {
   }
 
   return withTransaction(async (client) => {
+    // `tracken_ref` entra aqui so para viajar de volta na notificacao: e o
+    // numero do atendimento no sistema DELES. Devolvendo essa referencia, a
+    // Tracken casa o webhook com o registro proprio sem precisar manter um
+    // indice por shipment_id.
     const current = await client.query<{
       id: string;
       shipment_id: string;
       order_id: string;
+      tracken_ref: string | null;
       status: string;
       assigned_user_id: string | null;
     }>(
-      `SELECT id, shipment_id, order_id, status, assigned_user_id
+      `SELECT id, shipment_id, order_id, tracken_ref, status, assigned_user_id
          FROM tracken_tickets
         WHERE id = $1
         FOR UPDATE`,
@@ -500,12 +642,43 @@ export async function changeTicketStatus(input: StatusChangeInput) {
       },
     });
 
+    // Quem mudou. A Tracken abre o atendimento no painel dela a partir do que
+    // recebe; sem isso o historico do lado deles mostra a mudanca sem autor e
+    // qualquer duvida vira ligacao para descobrir com quem falar. Vai o nome do
+    // atendente, nao e-mail nem id interno.
+    const actor = await client.query<{
+      first_name: string | null;
+      last_name: string | null;
+    }>(`SELECT first_name, last_name FROM users WHERE id = $1`, [
+      input.actorUserId,
+    ]);
+
+    const changedBy =
+      [actor.rows[0]?.first_name, actor.rows[0]?.last_name]
+        .filter(Boolean)
+        .join(" ")
+        .trim() || null;
+
     await enqueueOutboxEvent(client, input.ticketId, "ticket.status_changed", {
       shipment_id: ticket.shipment_id,
       order_id: ticket.order_id,
+      tracken_ref: ticket.tracken_ref,
       from_status: ticket.status,
       to_status: input.toStatus,
       status_label: target.label,
+      // `tracken_status` e o vocabulario DELES (received, in_progress,
+      // removed, denied, cancelled). Mandar so o codigo interno obrigaria o
+      // outro lado a manter uma copia do nosso mapa e a adivinhar o significado
+      // de um status novo.
+      tracken_status: target.tracken_status,
+      // Encerramento nao ganha evento proprio. Um `ticket.finished` separado
+      // descreveria o MESMO fato que este evento ja descreve, e a Tracken
+      // teria de tratar dois recebimentos para uma mudanca — com risco de
+      // aplicar um e perder o outro. Aqui o encerramento e um atributo da
+      // transicao.
+      is_final: target.is_final,
+      finished_at: updated.rows[0]?.finished_at ?? null,
+      changed_by: changedBy,
       ml_claim_id: input.mlClaimId ?? null,
       note: input.note ?? null,
       denial_reason: reason,
@@ -516,7 +689,16 @@ export async function changeTicketStatus(input: StatusChangeInput) {
   });
 }
 
-/** Atribui (ou libera) o atendimento para um atendente. */
+/**
+ * Atribui (ou libera) o atendimento para um atendente.
+ *
+ * NAO enfileira notificacao, e isso e decisao, nao esquecimento: atribuicao e
+ * organizacao interna da equipe e muda varias vezes sem que o status do
+ * atendimento se altere. Enviar para fora encheria a fila de eventos que a
+ * Tracken descartaria, e ainda expondo nome de atendente sem que isso mude nada
+ * do lado deles. O autor da mudanca ja viaja em `changed_by` quando o status
+ * muda de verdade, que e o que a Tracken pediu para acompanhar.
+ */
 export async function assignTicket(
   ticketId: string,
   actorUserId: string,

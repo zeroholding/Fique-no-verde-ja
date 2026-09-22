@@ -44,6 +44,7 @@ type Credential = {
   has_encrypted_secret: boolean;
   allowed_ips: string[];
   webhook_url: string | null;
+  has_webhook_secret: boolean;
   is_active: boolean;
   last_used_at: string | null;
   expires_at: string | null;
@@ -89,7 +90,12 @@ type Settings = {
     recent: OutboxRow[];
   };
   requestLog: { last7Days: number; errors: number; lastAt: string | null };
-  workerImplemented: boolean;
+  webhook: {
+    configured: boolean;
+    signed: boolean;
+    /** Credenciais ativas com destino. Mais de uma para a fila. */
+    destinations: number;
+  };
 };
 
 export default function ConfiguracoesPage() {
@@ -205,18 +211,75 @@ export default function ConfiguracoesPage() {
             />
           </div>
 
-          {!data.workerImplemented && data.outbox.pending > 0 && (
+          {/* Sem destino a fila acumula em silencio: o worker sai antes de
+              tentar, para nao gastar as tentativas do evento por falta de
+              configuracao nossa. O aviso aparece so quando ha algo esperando,
+              porque fila vazia sem webhook nao e problema ainda. */}
+          {!data.webhook.configured && data.outbox.pending > 0 && (
             <p className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-[15px] text-amber-800">
               <AlertTriangle
                 className="mt-0.5 h-4 w-4 shrink-0"
                 aria-hidden="true" strokeWidth={1.75} />
               <span>
-                <strong>O worker de envio ainda nao existe.</strong> As
-                notificacoes estao sendo gravadas na fila corretamente, mas nada
-                as entrega para a TRACKen ainda. Enquanto isso, eles podem
-                consultar o estado dos atendimentos pelo{" "}
+                <strong>Nenhuma credencial ativa tem URL de webhook.</strong> As
+                notificacoes estao sendo gravadas na fila corretamente, mas nao
+                ha para onde entregar. Grave o destino pelo script{" "}
+                <code className="rounded bg-amber-100 px-1 py-0.5 text-[12.5px]">
+                  tracken_credential.mjs webhook
+                </code>
+                , logo abaixo. Enquanto isso, eles podem consultar o estado dos
+                atendimentos pelo{" "}
                 <code className="rounded bg-amber-100 px-1 py-0.5 text-[12.5px]">
                   GET /api/tracken/v1/tickets
+                </code>
+                .
+              </span>
+            </p>
+          )}
+
+          {/* Dois destinos ativos: o worker para a fila em vez de escolher um,
+              porque a escolha nao olha ambiente e o evento real iria para o
+              servidor de homologacao da TRACKen. Sem este aviso a tela diria
+              "configurado" e a fila ficaria parada sem motivo aparente. */}
+          {data.webhook.destinations > 1 && (
+            <p className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[15px] text-red-800">
+              <AlertTriangle
+                className="mt-0.5 h-4 w-4 shrink-0"
+                aria-hidden="true" strokeWidth={1.75} />
+              <span>
+                <strong>
+                  {data.webhook.destinations} credenciais ativas tem URL de
+                  webhook.
+                </strong>{" "}
+                A fila esta parada: com mais de um destino o envio ficaria
+                indefinido, e um atendimento de producao poderia ser entregue no
+                ambiente de homologacao. Deixe apenas um destino ativo com{" "}
+                <code className="rounded bg-red-100 px-1 py-0.5 text-[12.5px]">
+                  tracken_credential.mjs webhook &lt;api_key&gt; --clear
+                </code>
+                .
+              </span>
+            </p>
+          )}
+
+          {/* Sem segredo a entrega sai, mas sem `X-FNVJ-Signature`. Funciona e e
+              por isso que merece aviso: a TRACKen nao tem como distinguir a
+              nossa chamada de uma forjada por quem descobriu a URL. */}
+          {data.webhook.configured && !data.webhook.signed && (
+            <p className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-[15px] text-amber-800">
+              <AlertTriangle
+                className="mt-0.5 h-4 w-4 shrink-0"
+                aria-hidden="true" strokeWidth={1.75} />
+              <span>
+                <strong>Webhook sem segredo de assinatura.</strong> As entregas
+                estao saindo sem o header{" "}
+                <code className="rounded bg-amber-100 px-1 py-0.5 text-[12.5px]">
+                  X-FNVJ-Signature
+                </code>
+                , entao a TRACKen nao consegue confirmar que a chamada partiu
+                daqui. Grave o segredo combinado com eles pelo script{" "}
+                <code className="rounded bg-amber-100 px-1 py-0.5 text-[12.5px]">
+                  tracken_credential.mjs webhook
                 </code>
                 .
               </span>
@@ -344,18 +407,21 @@ export default function ConfiguracoesPage() {
 
             <div className="mt-4 rounded-lg bg-slate-50 p-3">
               <p className="text-[12.5px] font-semibold uppercase tracking-wide text-slate-500">
-                Emitir ou revogar credencial
+                Emitir credencial e definir o destino das notificacoes
               </p>
               <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all text-[12.5px] leading-relaxed text-slate-600">
 {`node scripts/tracken_credential.mjs genkey
 node scripts/tracken_credential.mjs create "Tracken Producao" production
 node scripts/tracken_credential.mjs list
-node scripts/tracken_credential.mjs revoke <api_key>`}
+node scripts/tracken_credential.mjs revoke <api_key>
+node scripts/tracken_credential.mjs webhook <api_key> <url> [secret]`}
               </pre>
               <p className="mt-2 text-[12.5px] text-slate-500">
                 O secret aparece uma unica vez, no terminal. Depois disso so
                 ficam gravados o hash e a copia cifrada, entao nao ha como
-                recupera-lo: perdido, emita outra credencial.
+                recupera-lo: perdido, emita outra credencial. O segredo do
+                webhook segue o mesmo caminho, por ser material de assinatura:
+                ele nunca passa pelo navegador, e a tela mostra apenas se existe.
               </p>
             </div>
           </Card>

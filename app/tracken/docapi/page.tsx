@@ -80,7 +80,7 @@ const CAMPOS: FieldRow[] = [
     type: "string",
     required: true,
     description:
-      "Nome da transportadora, cliente da TRACKen. Aceita também o código, e a comparação ignora acento e maiúscula. Alternativamente use carrier_code.",
+      "Nome da transportadora, cliente da TRACKen. Aceita também o código, e a comparação ignora acento e maiúscula. Transportadora ainda não cadastrada aqui não recusa o acionamento: ela é cadastrada na hora, e o retorno do item informa o código gerado. Alternativamente use carrier_code.",
   },
   {
     name: "seller.name",
@@ -239,9 +239,9 @@ const REQUEST_EXAMPLE = `{
 
 const RESPONSE_EXAMPLE = `{
   "received": 3,
-  "created": 1,
+  "created": 2,
   "duplicated": 1,
-  "rejected": 1,
+  "rejected": 0,
   "results": [
     {
       "shipment_id": "44998877665",
@@ -258,9 +258,10 @@ const RESPONSE_EXAMPLE = `{
     },
     {
       "shipment_id": "44998877667",
-      "status": "rejected",
-      "code": "UNKNOWN_CARRIER",
-      "message": "Transportadora \\"Jadlog\\" nao cadastrada. Cadastradas: J3 (J3 Logistica), PEX (PEX Entregas), TM (TM Transportes), TRANSMOTO (Transmoto)"
+      "status": "created",
+      "ticket_id": "7d8e9f01-dddd-eeee-ffff-2a6b9c8d7e33",
+      "ticket_status": "recepcionado",
+      "message": "Transportadora \\"Flex Boys\\" cadastrada automaticamente com o codigo FLEX_BOYS"
     }
   ]
 }`;

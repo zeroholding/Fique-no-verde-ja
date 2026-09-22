@@ -24,6 +24,7 @@ type CredentialRow = {
   has_encrypted_secret: boolean;
   allowed_ips: string[];
   webhook_url: string | null;
+  has_webhook_secret: boolean;
   is_active: boolean;
   last_used_at: string | null;
   expires_at: string | null;
@@ -41,7 +42,11 @@ export async function GET(request: NextRequest) {
         await run<CredentialRow>(
           `SELECT id, name, api_key, environment, scopes, require_signature,
                   (secret_encrypted IS NOT NULL) AS has_encrypted_secret,
-                  allowed_ips, webhook_url, is_active,
+                  allowed_ips, webhook_url,
+                  -- Booleano, nunca o valor: e a chave que assina o que sai.
+                  (webhook_secret IS NOT NULL
+                   AND btrim(webhook_secret) <> '') AS has_webhook_secret,
+                  is_active,
                   last_used_at, expires_at, created_at
              FROM tracken_api_credentials
             ORDER BY created_at DESC`
@@ -105,8 +110,28 @@ export async function GET(request: NextRequest) {
         errors: Number(requestLog.rows[0]?.erros ?? 0),
         lastAt: requestLog.rows[0]?.ultima ?? null,
       },
-      // O worker de envio ainda nao existe (Fase 5 do documento mestre).
-      workerImplemented: false,
+      // O worker de envio e o `POST /api/tracken/outbox/dispatch`, chamado pelo
+      // agendador. Nao existe mais um booleano dizendo "o worker existe": o que
+      // trava a fila hoje e falta de destino, e e isso que a tela precisa saber.
+      //
+      // Derivados das credenciais ja carregadas, sem consulta extra. O destino e
+      // a credencial ativa com webhook_url; sem ela, a fila acumula sem erro
+      // aparente, porque o worker sai antes de tentar para nao queimar as
+      // tentativas do evento.
+      webhook: (() => {
+        const destinos = credentials.rows.filter(
+          (row) => row.is_active && Boolean(row.webhook_url?.trim())
+        );
+
+        return {
+          configured: destinos.length > 0,
+          signed: destinos.some((row) => row.has_webhook_secret),
+          // Dois destinos ativos param a fila em vez de escolher um (ver
+          // `resolveTarget` em lib/tracken/webhook.ts). Sem este numero a tela
+          // mostraria "configurado" e a fila ficaria parada sem explicacao.
+          destinations: destinos.length,
+        };
+      })(),
     });
   } catch (error) {
     return toErrorResponse(error);
