@@ -43,7 +43,6 @@ type Credential = {
   require_signature: boolean;
   has_encrypted_secret: boolean;
   allowed_ips: string[];
-  webhook_url: string | null;
   has_webhook_secret: boolean;
   is_active: boolean;
   last_used_at: string | null;
@@ -93,8 +92,12 @@ type Settings = {
   webhook: {
     configured: boolean;
     signed: boolean;
-    /** Credenciais ativas com destino. Mais de uma para a fila. */
+    /** Credenciais ativas, nao expiradas e com destino. Mais de uma para a fila. */
     destinations: number;
+    /** Reflete as mesmas regras de selecao e seguranca do dispatcher. */
+    usable: boolean;
+    /** Motivo operacional seguro para exibicao, sem URL ou segredo. */
+    blockedReason: string | null;
   };
 };
 
@@ -211,77 +214,16 @@ export default function ConfiguracoesPage() {
             />
           </div>
 
-          {/* Sem destino a fila acumula em silencio: o worker sai antes de
-              tentar, para nao gastar as tentativas do evento por falta de
-              configuracao nossa. O aviso aparece so quando ha algo esperando,
-              porque fila vazia sem webhook nao e problema ainda. */}
-          {!data.webhook.configured && data.outbox.pending > 0 && (
-            <p className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-[15px] text-amber-800">
-              <AlertTriangle
-                className="mt-0.5 h-4 w-4 shrink-0"
-                aria-hidden="true" strokeWidth={1.75} />
-              <span>
-                <strong>Nenhuma credencial ativa tem URL de webhook.</strong> As
-                notificacoes estao sendo gravadas na fila corretamente, mas nao
-                ha para onde entregar. Grave o destino pelo script{" "}
-                <code className="rounded bg-amber-100 px-1 py-0.5 text-[12.5px]">
-                  tracken_credential.mjs webhook
-                </code>
-                , logo abaixo. Enquanto isso, eles podem consultar o estado dos
-                atendimentos pelo{" "}
-                <code className="rounded bg-amber-100 px-1 py-0.5 text-[12.5px]">
-                  GET /api/tracken/v1/tickets
-                </code>
-                .
-              </span>
-            </p>
-          )}
-
-          {/* Dois destinos ativos: o worker para a fila em vez de escolher um,
-              porque a escolha nao olha ambiente e o evento real iria para o
-              servidor de homologacao da TRACKen. Sem este aviso a tela diria
-              "configurado" e a fila ficaria parada sem motivo aparente. */}
-          {data.webhook.destinations > 1 && (
+          {data.webhook.usable === false && data.webhook.blockedReason && (
             <p className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[15px] text-red-800">
               <AlertTriangle
                 className="mt-0.5 h-4 w-4 shrink-0"
-                aria-hidden="true" strokeWidth={1.75} />
+                aria-hidden="true"
+                strokeWidth={1.75}
+              />
               <span>
-                <strong>
-                  {data.webhook.destinations} credenciais ativas tem URL de
-                  webhook.
-                </strong>{" "}
-                A fila esta parada: com mais de um destino o envio ficaria
-                indefinido, e um atendimento de producao poderia ser entregue no
-                ambiente de homologacao. Deixe apenas um destino ativo com{" "}
-                <code className="rounded bg-red-100 px-1 py-0.5 text-[12.5px]">
-                  tracken_credential.mjs webhook &lt;api_key&gt; --clear
-                </code>
-                .
-              </span>
-            </p>
-          )}
-
-          {/* Sem segredo a entrega sai, mas sem `X-FNVJ-Signature`. Funciona e e
-              por isso que merece aviso: a TRACKen nao tem como distinguir a
-              nossa chamada de uma forjada por quem descobriu a URL. */}
-          {data.webhook.configured && !data.webhook.signed && (
-            <p className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-[15px] text-amber-800">
-              <AlertTriangle
-                className="mt-0.5 h-4 w-4 shrink-0"
-                aria-hidden="true" strokeWidth={1.75} />
-              <span>
-                <strong>Webhook sem segredo de assinatura.</strong> As entregas
-                estao saindo sem o header{" "}
-                <code className="rounded bg-amber-100 px-1 py-0.5 text-[12.5px]">
-                  X-FNVJ-Signature
-                </code>
-                , entao a TRACKen nao consegue confirmar que a chamada partiu
-                daqui. Grave o segredo combinado com eles pelo script{" "}
-                <code className="rounded bg-amber-100 px-1 py-0.5 text-[12.5px]">
-                  tracken_credential.mjs webhook
-                </code>
-                .
+                <strong>Webhook indisponivel.</strong>{" "}
+                {data.webhook.blockedReason}
               </span>
             </p>
           )}

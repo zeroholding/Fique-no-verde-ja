@@ -151,13 +151,14 @@ function derivarCodigoTransportadora(nome: string): string {
  *
  * `ON CONFLICT (code) DO NOTHING` seguido de SELECT cobre dois casos com o
  * mesmo codigo: dois lotes simultaneos trazendo a mesma transportadora nova, e
- * um nome diferente que deriva para um codigo ja existente. Nos dois o certo e
- * usar a linha que esta no banco, nao criar uma segunda.
+ * um nome diferente que deriva para um codigo ja existente. O retorno separa
+ * a linha resolvida do fato de ESTE INSERT ter criado a linha; apenas `created`
+ * autoriza metadata, mensagem e cleanup de autocadastro.
  */
 async function criarTransportadora(
   client: PoolClient,
   identificador: { code: string | null; name: string | null }
-): Promise<TrackenCarrierRow> {
+): Promise<{ carrier: TrackenCarrierRow; created: boolean }> {
   // Quando so o codigo veio, ele serve tambem de nome: e o unico rotulo que
   // temos, e deixar o nome vazio quebraria toda tela que exibe transportadora.
   const nome = (identificador.name ?? identificador.code ?? "").trim();
@@ -174,7 +175,7 @@ async function criarTransportadora(
   );
 
   if (inserida.rows[0]) {
-    return inserida.rows[0];
+    return { carrier: inserida.rows[0], created: true };
   }
 
   const existente = await client.query<TrackenCarrierRow>(
@@ -192,7 +193,7 @@ async function criarTransportadora(
     );
   }
 
-  return existente.rows[0];
+  return { carrier: existente.rows[0], created: false };
 }
 
 /**
@@ -223,12 +224,13 @@ export async function createTicketsBatch(
    * para "Transmoto Logistica" achar "Transmoto". Codigo tem precedencia: e
    * identificador, nome e descricao.
    *
-   * Nao achou: a transportadora e CRIADA (ver `criarTransportadora`). Antes o
+   * Nao achou nos indices ativos: tenta inserir e, em conflito, reutiliza a
+   * linha ja existente (inclusive inativa; ver `criarTransportadora`). Antes o
    * item era recusado com UNKNOWN_CARRIER, e o efeito pratico era a TRACKen
    * nao conseguir abrir atendimento para um cliente novo dela ate alguem aqui
    * cadastrar a transportadora na mao -- sendo que nao existe tela para isso,
    * so UPDATE em `tracken_carriers`. O acionamento e o dado que nao pode ser
-   * perdido; o cadastro se arruma depois.
+   * perdido; apenas um INSERT realmente vencedor e reportado como autocadastro.
    */
   const carriers = await getCarriers();
   const carrierByCode = new Map(
@@ -265,7 +267,7 @@ export async function createTicketsBatch(
   };
 
   /**
-   * Registra nos indices uma transportadora criada durante o lote.
+   * Registra nos indices uma transportadora resolvida durante o lote.
    *
    * Chamado apenas DEPOIS do RELEASE do savepoint. Registrar antes deixaria os
    * mapas apontando para uma linha que o ROLLBACK TO SAVEPOINT desfez, e os
@@ -297,13 +299,21 @@ export async function createTicketsBatch(
         // O cadastro da transportadora nova acontece DENTRO do savepoint do
         // item: se ele falhar, recusa este acionamento e nao o lote inteiro.
         const conhecida = resolveCarrier(normalized);
-        const carrier =
-          conhecida ??
-          (await criarTransportadora(client, {
+        let carrier: TrackenCarrierRow;
+        let carrierCriada = false;
+        let carrierResolvidaDinamicamente = false;
+
+        if (conhecida) {
+          carrier = conhecida;
+        } else {
+          const resolvida = await criarTransportadora(client, {
             code: normalized.carrierCode,
             name: normalized.carrierName,
-          }));
-        const carrierCriada = conhecida === undefined;
+          });
+          carrier = resolvida.carrier;
+          carrierCriada = resolvida.created;
+          carrierResolvidaDinamicamente = true;
+        }
 
         const inserted = await client.query<{ id: string; status: string }>(
           `INSERT INTO tracken_tickets (
@@ -350,8 +360,31 @@ export async function createTicketsBatch(
             `SELECT id, status FROM tracken_tickets WHERE shipment_id = $1`,
             [normalized.shipmentId]
           );
-          await client.query(`RELEASE SAVEPOINT ${savepoint}`);
+
+          // A corrida de idempotencia pode acontecer depois de uma transportadora
+          // desconhecida ter sido criada neste savepoint. Se o ticket perdeu o
+          // ON CONFLICT, essa transportadora nao pertence a atendimento nenhum e
+          // precisa ser removida antes do RELEASE; assim `duplicated` continua
+          // significando que o reenvio nao alterou estado persistido.
+          let carrierRemovida = false;
           if (carrierCriada) {
+            const cleanup = await client.query(
+              `DELETE FROM tracken_carriers c
+                WHERE c.id = $1
+                  AND NOT EXISTS (
+                    SELECT 1 FROM tracken_tickets t WHERE t.carrier_id = c.id
+                  )`,
+              [carrier.id]
+            );
+            carrierRemovida = (cleanup.rowCount ?? 0) > 0;
+          }
+
+          await client.query(`RELEASE SAVEPOINT ${savepoint}`);
+
+          // Linha encontrada por conflito (inclusive inativa) continua valida
+          // para o restante do lote. So nao indexamos a linha realmente criada
+          // por este item quando o cleanup confirmou que ela era orfa e apagou.
+          if (carrierResolvidaDinamicamente && !carrierRemovida) {
             indexarTransportadora(carrier);
           }
 
@@ -402,7 +435,9 @@ export async function createTicketsBatch(
         });
 
         await client.query(`RELEASE SAVEPOINT ${savepoint}`);
-        if (carrierCriada) {
+        if (carrierResolvidaDinamicamente) {
+          // Inclui linha preexistente/inativa encontrada pelo fallback: os
+          // proximos itens do lote devem reutiliza-la sem repetir INSERT/SELECT.
           indexarTransportadora(carrier);
         }
 
@@ -666,10 +701,9 @@ export async function changeTicketStatus(input: StatusChangeInput) {
       from_status: ticket.status,
       to_status: input.toStatus,
       status_label: target.label,
-      // `tracken_status` e o vocabulario DELES (received, in_progress,
-      // removed, denied, cancelled). Mandar so o codigo interno obrigaria o
-      // outro lado a manter uma copia do nosso mapa e a adivinhar o significado
-      // de um status novo.
+      // Contrato confirmado em 25/09/2026: `tracken_status` usa o mesmo
+      // codigo portugues de `to_status` (recepcionado, em_atendimento,
+      // removido, negado ou cancelado). O mapa persiste essa igualdade.
       tracken_status: target.tracken_status,
       // Encerramento nao ganha evento proprio. Um `ticket.finished` separado
       // descreveria o MESMO fato que este evento ja descreve, e a Tracken

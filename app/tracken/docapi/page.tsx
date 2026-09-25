@@ -507,16 +507,16 @@ export default function TrackenApiDocsPage() {
                     strokeWidth={2}
                     aria-hidden="true"
                   />
-                  Fluxo 2 · próxima etapa
+                  Fluxo 2 · ativo
                 </p>
                 <p className="mt-2.5 text-[19px] font-bold leading-snug text-slate-900">
                   FNVJ devolve a mudança de status
                 </p>
                 <p className="mt-2 text-[16.5px] leading-relaxed text-slate-700">
                   A cada mudança de status o Fique no Verde Já notifica a
-                  TRACKen. A fila de saída já registra todas as mudanças; o
-                  envio é habilitado quando o endereço de destino estiver
-                  definido entre os times.
+                  TRACKen pela URL de webhook configurada. A fila de saída
+                  preserva as mudanças e repete falhas temporárias sem bloquear o
+                  atendimento.
                 </p>
                 <p className="mt-3.5 font-mono text-[15px] font-semibold text-slate-500">
                   FNVJ → TRACKen
@@ -803,6 +803,25 @@ export default function TrackenApiDocsPage() {
                 );
               })}
             </ul>
+
+            <Callout icon={ArrowLeftRight} title="Mesmo código nos dois campos">
+              No webhook de retorno, <code>to_status</code> e{" "}
+              <code>tracken_status</code> usam o mesmo código desta lista. Exemplo
+              de negativa: <code>to_status: negado</code> e{" "}
+              <code>tracken_status: negado</code>. Esta regra foi confirmada pela
+              TRACKen em 25/09/2026.
+            </Callout>
+
+            <CodeBlock
+              language="JSON"
+              label="Trecho do webhook · Negado"
+              code={`{
+  "to_status": "negado",
+  "tracken_status": "negado",
+  "denial_reason": "venda_analisada",
+  "denial_reason_label": "Venda já analisada anteriormente"
+}`}
+            />
 
             <SubTitle>Os três motivos de negativa</SubTitle>
             <p>

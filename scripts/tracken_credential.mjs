@@ -22,9 +22,10 @@
  * lib/db.ts). Nao use o client do Supabase aqui: o .env.local aponta para um
  * projeto Supabase que NAO e o banco de producao.
  *
- * O secret nunca fica em texto puro no banco: guarda-se o hash SHA-256 e,
- * quando TRACKEN_ENCRYPTION_KEY esta definida, uma copia cifrada em
- * AES-256-GCM usada apenas para validar a assinatura HMAC das chamadas.
+ * O secret nunca fica em texto puro no banco: guarda-se o hash SHA-256 e uma
+ * copia cifrada em AES-256-GCM usada para validar a assinatura HMAC. O comando
+ * `create` exige TRACKEN_ENCRYPTION_KEY valida e sempre cria a credencial com
+ * assinatura obrigatoria; configuracao ausente/invalida falha antes do INSERT.
  */
 
 import crypto from "node:crypto";
@@ -99,13 +100,12 @@ async function create(name, environment) {
   const secret = crypto.randomBytes(32).toString("base64url");
 
   const encryptionKey = resolveEncryptionKey();
-  const secretEncrypted = encryptionKey
-    ? encryptSecret(secret, encryptionKey)
-    : null;
-
-  // Sem chave de cifra nao ha como validar HMAC, entao a credencial nasce
-  // sem exigir assinatura em vez de nascer quebrada.
-  const requireSignature = Boolean(secretEncrypted);
+  if (!encryptionKey) {
+    throw new Error(
+      "TRACKEN_ENCRYPTION_KEY nao configurada: o comando create exige uma chave valida e nao cria credencial sem HMAC. Gere uma com `node scripts/tracken_credential.mjs genkey`."
+    );
+  }
+  const secretEncrypted = encryptSecret(secret, encryptionKey);
 
   const client = connect();
   await client.connect();
@@ -118,10 +118,10 @@ async function create(name, environment) {
        ) VALUES (
          $1, $2, $3, $4,
          ARRAY['tickets:write','tickets:read']::TEXT[],
-         $5, $6, true
+         $5, true, true
        )
        RETURNING id, name, api_key, environment, require_signature, created_at`,
-      [name, apiKey, sha256(secret), secretEncrypted, environment, requireSignature]
+      [name, apiKey, sha256(secret), secretEncrypted, environment]
     );
 
     console.log("\nCredencial criada.\n");
@@ -131,20 +131,11 @@ async function create(name, environment) {
     console.log(`secret  : ${secret}`);
     console.log(`\nAuthorization: Bearer ${apiKey}.${secret}`);
 
-    if (requireSignature) {
-      console.log(
-        "\nAssinatura HMAC EXIGIDA. Headers obrigatorios em cada chamada:\n" +
-          "  X-FNVJ-Timestamp: <unix seconds>\n" +
-          "  X-FNVJ-Signature: sha256=HMAC_SHA256(secret, timestamp + '.' + corpo)"
-      );
-    } else {
-      console.log(
-        "\nAVISO: TRACKEN_ENCRYPTION_KEY nao esta definida, entao a credencial\n" +
-          "foi criada com require_signature = false (sem HMAC). Gere a chave com\n" +
-          "`node scripts/tracken_credential.mjs genkey` e recrie a credencial\n" +
-          "para exigir assinatura."
-      );
-    }
+    console.log(
+      "\nAssinatura HMAC EXIGIDA. Headers obrigatorios em cada chamada:\n" +
+        "  X-FNVJ-Timestamp: <unix seconds>\n" +
+        "  X-FNVJ-Signature: sha256=HMAC_SHA256(secret, timestamp + '.' + corpo)"
+    );
     console.log("");
   } finally {
     await client.end().catch(() => {});

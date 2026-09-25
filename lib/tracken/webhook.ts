@@ -119,10 +119,10 @@ function readWebhookSecret(stored: string | null): string | null {
       "[TRACKEN] webhook_secret parece cifrado mas nao pode ser decifrado:",
       error
     );
-    // Devolver o texto cifrado como se fosse a chave produziria uma assinatura
-    // que a Tracken rejeita em toda tentativa, ate zerar as oito e matar o
-    // evento. Melhor tratar como ausente e deixar isso visivel no retorno.
-    return null;
+    // Fail-closed: secret configurado mas ilegivel e configuracao quebrada, nao
+    // autorizacao para enviar sem assinatura. O destino sera recusado antes do
+    // claim, preservando todos os eventos pendentes para a proxima execucao.
+    throw new Error("WEBHOOK_SECRET_DECRYPT_FAILED");
   }
 }
 
@@ -154,8 +154,10 @@ async function resolveTarget(): Promise<
     environment: string;
     webhook_url: string;
     webhook_secret: string | null;
+    require_signature: boolean;
   }>(
-    `SELECT id, name, environment, webhook_url, webhook_secret
+    `SELECT id, name, environment, webhook_url, webhook_secret,
+            require_signature
        FROM tracken_api_credentials
       WHERE is_active = true
         AND webhook_url IS NOT NULL
@@ -208,12 +210,29 @@ async function resolveTarget(): Promise<
     };
   }
 
+  let secret: string | null;
+  try {
+    secret = readWebhookSecret(row.webhook_secret);
+  } catch {
+    return {
+      reason:
+        "webhook_secret esta configurado, mas nao pode ser decifrado. Corrija TRACKEN_ENCRYPTION_KEY ou grave novamente o secret antes de entregar eventos.",
+    };
+  }
+
+  if (row.require_signature && !secret) {
+    return {
+      reason:
+        "A credencial exige assinatura, mas webhook_secret esta ausente. Grave o secret antes de entregar eventos.",
+    };
+  }
+
   return {
     target: {
       credentialId: row.id,
       url: parsed.toString(),
       logLabel: `${parsed.origin}${parsed.pathname}`,
-      secret: readWebhookSecret(row.webhook_secret),
+      secret,
     },
   };
 }
@@ -225,6 +244,13 @@ async function resolveTarget(): Promise<
  * atrasado somado a um disparo manual) nao pegam o mesmo item — a segunda pula
  * o que a primeira travou em vez de entregar em dobro.
  *
+ * Alem do lock, o `NOT EXISTS` abaixo implementa FIFO GLOBAL POR TICKET: uma
+ * candidata so pode ser reclamada se nao existir predecessor `pending/failed`
+ * do mesmo atendimento. O predecessor bloqueia mesmo com `next_attempt_at` no
+ * futuro, pois esse futuro pode ser tanto backoff quanto lease de outro
+ * dispatch ainda em voo. Assim dispatches concorrentes nunca ultrapassam o
+ * evento nao terminal mais antigo de um ticket.
+ *
  * `attempts` sobe aqui, no claim, e nao depois da resposta. Se subisse depois,
  * um evento que derruba o processo no meio do envio seria reivindicado para
  * sempre, sem nunca chegar ao limite de tentativas: um loop infinito silencioso
@@ -234,13 +260,21 @@ async function resolveTarget(): Promise<
 async function claimBatch(limit: number): Promise<OutboxRow[]> {
   const result = await trackenQuery<OutboxRow>(
     `WITH elegiveis AS (
-       SELECT id
-         FROM tracken_outbox
-        WHERE status IN ('pending', 'failed')
-          AND next_attempt_at <= CURRENT_TIMESTAMP
-        ORDER BY created_at, id
+       SELECT candidata.id
+         FROM tracken_outbox candidata
+        WHERE candidata.status IN ('pending', 'failed')
+          AND candidata.next_attempt_at <= CURRENT_TIMESTAMP
+          AND NOT EXISTS (
+            SELECT 1
+              FROM tracken_outbox predecessora
+             WHERE predecessora.ticket_id = candidata.ticket_id
+               AND predecessora.status IN ('pending', 'failed')
+               AND (predecessora.created_at, predecessora.id) <
+                   (candidata.created_at, candidata.id)
+          )
+        ORDER BY candidata.created_at, candidata.id
         LIMIT $1
-        FOR UPDATE SKIP LOCKED
+        FOR UPDATE OF candidata SKIP LOCKED
      )
      UPDATE tracken_outbox o
         SET attempts = o.attempts + 1,
@@ -500,10 +534,10 @@ async function countPending(): Promise<number> {
 /**
  * Entrega o que estiver pendente na fila.
  *
- * Envio em serie, de proposito. O pedido da Tracken e "manter os status sempre
- * atualizados do nosso lado": dois eventos do mesmo atendimento em paralelo
- * podem chegar na ordem trocada e o status antigo sobrescreve o novo. Em serie,
- * a ordem de saida e a ordem de criacao.
+ * Envio em serie, de proposito. O claim ja garante FIFO global por ticket,
+ * inclusive entre dispatches concorrentes e durante backoff/lease. A execucao
+ * continua serial para manter carga previsivel no destino e uma ordem global
+ * deterministica entre os eventos efetivamente reclamados.
  */
 export async function dispatchOutbox(
   options: { batchSize?: number } = {}
@@ -558,6 +592,25 @@ export async function dispatchOutbox(
 
     if (travados.has(row.ticket_id) || Date.now() >= prazo) {
       devolvidos.push(row.id);
+      continue;
+    }
+
+    // `attempts` sobe no claim. Se o processo anterior morreu depois de
+    // reivindicar a ultima tentativa, a recuperacao do lease chega aqui com
+    // attempts > max_attempts. Esse estado fecha em dead sem montar payload nem
+    // abrir HTTP: a tentativa excedente existe apenas para detectar o crash,
+    // nunca para produzir uma nona entrega.
+    if (row.attempts > row.max_attempts) {
+      await finalizeFailure(row, {
+        ok: false,
+        httpStatus: null,
+        responseBody: null,
+        error:
+          "Lease anterior expirou apos consumir a ultima tentativa; nenhum novo envio HTTP foi realizado",
+        retryable: true,
+      });
+      outcome.dead += 1;
+      travados.add(row.ticket_id);
       continue;
     }
 

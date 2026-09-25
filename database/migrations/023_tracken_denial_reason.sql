@@ -22,12 +22,11 @@
 --   silencio no primeiro ajuste de redacao.
 --
 -- POR QUE NAO EXISTE CHECK CRUZADO COM `status`
---   Um CHECK do tipo `(status = 'negado' OR denial_reason IS NULL)` pareceria
---   mais rigoroso, mas impediria REABRIR um atendimento negado: a transicao
---   `negado -> em_atendimento` (privilegio de admin) falharia enquanto o
---   motivo estivesse preenchido, e apagar o motivo na reabertura destruiria o
---   registro de por que ele havia sido negado. O motivo fica como historico; a
---   obrigatoriedade e imposta na aplicacao, em changeTicketStatus.
+--   Um CHECK do tipo `(status = 'negado' OR denial_reason IS NULL)` duplicaria
+--   no banco uma regra que pertence a transicao da aplicacao. Ao reabrir
+--   `negado -> em_atendimento`, a coluna de estado atual e limpa; o motivo
+--   historico continua preservado na metadata imutavel de tracken_ticket_events.
+--   A obrigatoriedade e a limpeza sao impostas em changeTicketStatus.
 --
 -- Idempotente: pode ser executada mais de uma vez.
 -- =====================================================

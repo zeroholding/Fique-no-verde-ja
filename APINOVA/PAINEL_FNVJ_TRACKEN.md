@@ -387,14 +387,17 @@ allowed_next   TEXT[]                -- transições permitidas
 is_active      BOOLEAN DEFAULT true
 ```
 
-Seed inicial:
+Seed atual (o campo `tracken_status` usa o mesmo código português após a migration 024):
 
 ```
-recepcionado    | Recepcionado    | blue  | 1 | inicial | → em_atendimento
-em_atendimento  | Em Atendimento  | amber | 2 |         | → removido, negado
-removido        | Removido        | green | 3 | final   | → (admin) em_atendimento
-negado          | Negado          | red   | 4 | final   | → (admin) em_atendimento
+recepcionado    | recepcionado    | Recepcionado    | blue  | 1 | inicial | → em_atendimento, cancelado
+em_atendimento  | em_atendimento  | Em Atendimento  | amber | 2 |         | → removido, negado, cancelado
+removido        | removido        | Removido        | green | 3 | final   | → (admin) em_atendimento
+negado          | negado          | Negado          | red   | 4 | final   | → (admin) em_atendimento
+cancelado       | cancelado       | Cancelado       | slate | 5 | final   | → (admin) em_atendimento
 ```
+
+> Contrato canônico e histórico da decisão: `APINOVA/TRACKEN_SOURCE_OF_TRUTH.md`.
 
 ### 7.5 `tracken_outbox` — fila de saída para a Tracken
 

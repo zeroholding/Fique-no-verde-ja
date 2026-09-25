@@ -60,7 +60,9 @@ CREATE INDEX IF NOT EXISTS idx_tracken_status_map_active
 
 -- -----------------------------------------------------
 -- 3) Credenciais de maquina usadas pela Tracken
---    O secret nunca e gravado em texto puro, apenas o hash.
+--    O secret da API nunca e gravado em texto puro: fica hash/cifrado.
+--    `webhook_secret` aceita legado em claro apenas para compatibilidade e deve
+--    ser regravado cifrado pelo script de credenciais.
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS tracken_api_credentials (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -331,27 +333,27 @@ INSERT INTO tracken_status_map (
 )
 VALUES
   (
-    'recepcionado', 'Recepcionado', 'received', 'blue', 1,
+    'recepcionado', 'Recepcionado', 'recepcionado', 'blue', 1,
     true, false, true,
     ARRAY['em_atendimento', 'cancelado']::TEXT[], true
   ),
   (
-    'em_atendimento', 'Em Atendimento', 'in_progress', 'amber', 2,
+    'em_atendimento', 'Em Atendimento', 'em_atendimento', 'amber', 2,
     false, false, true,
     ARRAY['removido', 'negado', 'cancelado']::TEXT[], true
   ),
   (
-    'removido', 'Removido', 'removed', 'green', 3,
+    'removido', 'Removido', 'removido', 'green', 3,
     false, true, true,
     ARRAY['em_atendimento']::TEXT[], true
   ),
   (
-    'negado', 'Negado', 'denied', 'red', 4,
+    'negado', 'Negado', 'negado', 'red', 4,
     false, true, true,
     ARRAY['em_atendimento']::TEXT[], true
   ),
   (
-    'cancelado', 'Cancelado', 'cancelled', 'slate', 5,
+    'cancelado', 'Cancelado', 'cancelado', 'slate', 5,
     false, true, false,
     ARRAY['em_atendimento']::TEXT[], true
   )

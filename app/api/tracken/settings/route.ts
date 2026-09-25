@@ -94,9 +94,17 @@ export async function GET(request: NextRequest) {
       outboxSummary.rows.map((row) => [row.status, Number(row.total)])
     );
 
+    const publicCredentials = credentials.rows.map((row) => {
+      // URL pode carregar token em query string. Ela e usada apenas para o
+      // diagnostico abaixo e nao atravessa a fronteira da API para o navegador.
+      const { webhook_url: privateWebhookUrl, ...credential } = row;
+      void privateWebhookUrl;
+      return credential;
+    });
+
     return NextResponse.json({
       canManage: user.is_admin,
-      credentials: credentials.rows,
+      credentials: publicCredentials,
       statuses: statuses.rows,
       outbox: {
         pending: outboxByStatus.pending ?? 0,
@@ -110,26 +118,63 @@ export async function GET(request: NextRequest) {
         errors: Number(requestLog.rows[0]?.erros ?? 0),
         lastAt: requestLog.rows[0]?.ultima ?? null,
       },
-      // O worker de envio e o `POST /api/tracken/outbox/dispatch`, chamado pelo
-      // agendador. Nao existe mais um booleano dizendo "o worker existe": o que
-      // trava a fila hoje e falta de destino, e e isso que a tela precisa saber.
-      //
-      // Derivados das credenciais ja carregadas, sem consulta extra. O destino e
-      // a credencial ativa com webhook_url; sem ela, a fila acumula sem erro
-      // aparente, porque o worker sai antes de tentar para nao queimar as
-      // tentativas do evento.
+      // Mesmo conjunto de candidatos do worker: apenas credenciais ativas,
+      // nao expiradas e com URL preenchida. O diagnostico valida a candidata
+      // unica sem devolver qualquer segredo ao navegador.
       webhook: (() => {
+        const now = Date.now();
         const destinos = credentials.rows.filter(
-          (row) => row.is_active && Boolean(row.webhook_url?.trim())
+          (row) =>
+            row.is_active &&
+            Boolean(row.webhook_url?.trim()) &&
+            (row.expires_at === null || new Date(row.expires_at).getTime() > now)
         );
 
+        let blockedReason: string | null = null;
+
+        if (destinos.length === 0) {
+          blockedReason =
+            "Nenhuma credencial ativa, nao expirada e com URL de webhook esta configurada.";
+        } else if (destinos.length > 1) {
+          blockedReason =
+            `Ha ${destinos.length} credenciais utilizaveis com URL de webhook; ` +
+            "o destino e ambiguo e a fila permanece parada.";
+        } else {
+          const destino = destinos[0]!;
+          let parsed: URL | null = null;
+
+          try {
+            parsed = new URL(destino.webhook_url!.trim());
+          } catch {
+            blockedReason = "A URL de webhook configurada e invalida.";
+          }
+
+          if (parsed) {
+            const isLocal =
+              parsed.hostname === "localhost" ||
+              parsed.hostname === "127.0.0.1" ||
+              parsed.hostname === "::1";
+
+            if (parsed.protocol !== "https:" && !isLocal) {
+              blockedReason =
+                "A URL de webhook precisa usar HTTPS; HTTP so e permitido para localhost.";
+            } else if (
+              destino.require_signature &&
+              !destino.has_webhook_secret
+            ) {
+              blockedReason =
+                "A credencial exige assinatura, mas nao ha webhook_secret configurado.";
+            }
+          }
+        }
+
         return {
+          // Campos mantidos por compatibilidade com consumidores existentes.
           configured: destinos.length > 0,
           signed: destinos.some((row) => row.has_webhook_secret),
-          // Dois destinos ativos param a fila em vez de escolher um (ver
-          // `resolveTarget` em lib/tracken/webhook.ts). Sem este numero a tela
-          // mostraria "configurado" e a fila ficaria parada sem explicacao.
           destinations: destinos.length,
+          usable: blockedReason === null,
+          blockedReason,
         };
       })(),
     });

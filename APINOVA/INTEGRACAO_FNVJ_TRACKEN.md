@@ -634,6 +634,12 @@ allowed_next     TEXT[]             -- transições permitidas
 is_active        BOOLEAN DEFAULT true
 ```
 
+**Contrato vigente desde 25/09/2026:** `tracken_status` usa o mesmo código
+português de `fnvj_status`/`code`. A TRACKen confirmou que `negado` deve ser
+enviado como `negado`, e que os demais status devem seguir a documentação. O
+histórico e a migration estão em `APINOVA/TRACKEN_SOURCE_OF_TRUTH.md` e
+`database/migrations/024_align_tracken_status_codes.sql`.
+
 **Por que tabela e não enum no código:** o briefing diz que "os status
 definitivos ainda serão alinhados". Com tabela, ajustar o fluxo é configuração,
 não deploy. Isso protege o cronograma — mudança de status pela Tracken não
@@ -800,8 +806,9 @@ X-FNVJ-Timestamp / X-FNVJ-Signature: (assinatura, se eles quiserem validar)
   "occurred_at": "2026-08-19T11:02:00-03:00",
   "data": {
     "tracken_id": "TRK-2026-000123",
-    "from_status": "enviado_pela_tracken",
+    "from_status": "recepcionado",
     "to_status": "em_atendimento",
+    "tracken_status": "em_atendimento",
     "changed_by": "Nome do Atendente",
     "note": null
   }

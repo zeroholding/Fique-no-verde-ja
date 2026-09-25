@@ -60,11 +60,69 @@ const asTrimmedString = (value: unknown): string | null => {
 const truncate = (value: string | null, max: number): string | null =>
   value === null ? null : value.slice(0, max);
 
+const ISO_DATETIME_WITH_OFFSET =
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,9}))?)?(Z|[+-]\d{2}:\d{2})$/;
+
 const parseDate = (value: unknown): Date | null => {
   const raw = asTrimmedString(value);
   if (!raw) {
     return null;
   }
+
+  // `new Date` aceita date-only e datetime sem fuso usando regras dependentes
+  // do runtime. O contrato exige hora e offset explicito para que o instante
+  // persistido seja identico em qualquer servidor.
+  const match = ISO_DATETIME_WITH_OFFSET.exec(raw);
+  if (!match) {
+    return null;
+  }
+
+  const [, yearText, monthText, dayText, hourText, minuteText, secondText, , offset] =
+    match;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const second = Number(secondText ?? "0");
+
+  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const daysInMonth = [
+    31,
+    leapYear ? 29 : 28,
+    31,
+    30,
+    31,
+    30,
+    31,
+    31,
+    30,
+    31,
+    30,
+    31,
+  ];
+
+  const maxDay = daysInMonth[month - 1] ?? 0;
+
+  if (
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > maxDay ||
+    hour > 23 ||
+    minute > 59 ||
+    second > 59
+  ) {
+    return null;
+  }
+
+  if (offset !== "Z") {
+    const [offsetHour, offsetMinute] = offset.slice(1).split(":").map(Number);
+    if (offsetHour > 23 || offsetMinute > 59) {
+      return null;
+    }
+  }
+
   const parsed = new Date(raw);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
