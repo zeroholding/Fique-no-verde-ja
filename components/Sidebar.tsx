@@ -131,6 +131,15 @@ const defaultMenuItems: MenuItem[] = [
     ),
   },
   {
+    name: "Meta Ads",
+    href: "/ads",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.5 19 3v13l-8-2.5m0-8v8m0-8H7a4 4 0 0 0 0 8h4m-2 0 1.25 5H7.5l-1.25-5" />
+      </svg>
+    ),
+  },
+  {
     // Painel FNVJ x TRACKEN: outra area do sistema, com layout proprio.
     name: "Painel TRACKen",
     href: "/tracken",

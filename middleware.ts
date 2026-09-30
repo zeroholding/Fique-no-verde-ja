@@ -8,6 +8,7 @@ import type { NextRequest } from 'next/server';
  * sessao: o cookie `token` vale nas duas.
  *   /dashboard  -> login em /login          (sistema completo, tema escuro)
  *   /tracken    -> login em /tracken/login  (painel TRACKen, tema claro)
+ *   /ads        -> login em /login          (inteligencia de trafego pago)
  *
  * Aqui so se confere a EXISTENCIA do cookie. A validacao da assinatura fica
  * nos layouts server-side e em cada route handler, porque middleware nao e
@@ -36,6 +37,7 @@ export function middleware(request: NextRequest) {
   const isTrackenArea =
     !isTrackenPublic && (pathname === '/tracken' || pathname.startsWith('/tracken/'));
   const isDashboardArea = pathname.startsWith('/dashboard');
+  const isAdsArea = pathname === '/ads' || pathname.startsWith('/ads/');
 
   // Ja autenticado nao precisa ver tela de login.
   if (isTrackenLogin && token) {
@@ -49,7 +51,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (isDashboardArea && !token) {
+  if ((isDashboardArea || isAdsArea) && !token) {
     const url = new URL(FNVJ_LOGIN, request.url);
     url.searchParams.set('redirect', pathname);
     return NextResponse.redirect(url);
@@ -83,6 +85,7 @@ export const config = {
     '/',
     '/login',
     '/dashboard/:path*',
+    '/ads/:path*',
     '/tracken/:path*',
     '/api/((?!evidences).)*',
   ],

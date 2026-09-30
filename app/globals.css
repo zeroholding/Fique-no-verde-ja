@@ -166,3 +166,55 @@ body {
   outline: 2px solid var(--tk-brand);
   outline-offset: 1px;
 }
+
+/* ============================================================
+   FNVJ Ads (/ads)
+
+   Produto visual proprio dentro da mesma sessao FNVJ. Geist (OFL) vem primeiro;
+   Helvetica/Arial ficam apenas como fallback de sistema para manter a leitura
+   proxima da interface Meta sem baixar ou copiar uma fonte proprietaria. Tokens ficam isolados sob .ads-root para nao
+   alterar Dashboard nem Tracken.
+   ============================================================ */
+.ads-root {
+  color-scheme: light;
+  font-family: var(--font-geist-sans), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --ads-blue: #0866ff;
+  --ads-blue-strong: #0757d7;
+  --ads-canvas: #f4f7fb;
+  --ads-surface: #ffffff;
+  --ads-line: #e2e8f1;
+  --ads-ink: #18283f;
+  --ads-ink-soft: #718096;
+  min-height: 100dvh;
+  background: var(--ads-canvas);
+  color: var(--ads-ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "kern", "liga";
+  scroll-behavior: smooth;
+}
+
+.ads-root ::selection {
+  background: #cfe0ff;
+  color: #063a91;
+}
+
+.ads-root *:focus-visible {
+  outline: 2px solid var(--ads-blue);
+  outline-offset: 2px;
+}
+
+.ads-root [id] {
+  scroll-margin-top: 80px;
+}
+
+/* O modal Ads vive em portal fora de .ads-root para poder tornar o app inerte. */
+.ads-portal {
+  font-family: var(--font-geist-sans), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color-scheme: light;
+}
+
+.ads-portal *:focus-visible {
+  outline: 2px solid #0866ff;
+  outline-offset: 2px;
+}

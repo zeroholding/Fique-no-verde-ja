@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   ListChecks,
   LogOut,
+  Megaphone,
   Settings,
   X,
 } from "lucide-react";
@@ -63,6 +64,11 @@ const NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
         name: "Relatórios",
         href: "/tracken/relatorios",
         icon: FileBarChart,
+      },
+      {
+        name: "Meta Ads",
+        href: "/ads",
+        icon: Megaphone,
       },
       {
         name: "Histórico de Status",
