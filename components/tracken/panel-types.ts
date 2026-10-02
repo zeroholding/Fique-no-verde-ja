@@ -1,5 +1,7 @@
 /** Tipos consumidos pelos componentes do painel. */
 
+import type { TrackenEnvironment } from "@/lib/tracken/types";
+
 export type PanelStatus = {
   code: string;
   label: string;
@@ -64,6 +66,7 @@ export type PanelAttendant = {
 };
 
 export type PanelFilterState = {
+  environment: TrackenEnvironment;
   startDate: string;
   endDate: string;
   carrier: string;

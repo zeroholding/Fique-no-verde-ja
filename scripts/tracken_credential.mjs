@@ -6,17 +6,24 @@
  *     Gera um valor para TRACKEN_ENCRYPTION_KEY (32 bytes em hex).
  *
  *   node scripts/tracken_credential.mjs create "Tracken Producao" production
- *     Cria a credencial e imprime api_key e secret UMA UNICA VEZ.
+ *     Cria a credencial com TRACKEN_CREDENTIAL_SECRET e imprime apenas a
+ *     api_key. Nenhum secret e ecoado pelo script.
  *
  *   node scripts/tracken_credential.mjs list
  *     Lista as credenciais existentes (sem expor segredos).
  *
+ *   node scripts/tracken_credential.mjs set-environment <api_key> sandbox
+ *     Reclassifica uma credencial somente ANTES da migration 025. Usado para
+ *     manter a credencial atual da homologacao como sandbox.
+ *
  *   node scripts/tracken_credential.mjs revoke <api_key>
  *     Desativa uma credencial.
  *
- *   node scripts/tracken_credential.mjs webhook <api_key> <url> [secret]
- *     Grava o destino das notificacoes de saida. Sem `secret`, as entregas
- *     saem sem `X-FNVJ-Signature`. Use `--clear` no lugar da url para apagar.
+ *   node scripts/tracken_credential.mjs webhook <api_key> <url>
+ *     Grava o destino das notificacoes de saida. Se
+ *     TRACKEN_WEBHOOK_SECRET estiver definido, cifra e substitui o secret;
+ *     sem a variavel, preserva o valor ja gravado. Use `--clear` no lugar da
+ *     URL para apagar ambos. O secret nunca vira argumento/historico do shell.
  *
  * Conexao: usa process.env.DATABASE_URL (o mesmo que a aplicacao usa em
  * lib/db.ts). Nao use o client do Supabase aqui: o .env.local aponta para um
@@ -33,6 +40,73 @@ import dotenv from "dotenv";
 import pg from "pg";
 
 dotenv.config({ path: ".env.local" });
+
+const TRACKEN_WEBHOOK_URLS = Object.freeze({
+  production:
+    "https://seller.tracken.app.br/api/ferramentas/controle-reputacao/webhooks/fnvj",
+  sandbox:
+    "https://homologasellercore.tracken.dev.br/api/ferramentas/controle-reputacao/webhooks/fnvj",
+});
+
+const LOCAL_WEBHOOK_HOSTS = new Set([
+  "localhost",
+  "127.0.0.1",
+  "::1",
+  "[::1]",
+]);
+
+const ALLOW_LOCAL_SANDBOX_WEBHOOK =
+  process.env.TRACKEN_ALLOW_LOCAL_SANDBOX_WEBHOOK === "true";
+
+function sanitizeWebhookEndpoint(value) {
+  if (!value) return null;
+  try {
+    const parsed = new URL(value);
+    return `${parsed.origin}${parsed.pathname}`;
+  } catch {
+    return "URL invalida";
+  }
+}
+
+function validateWebhookUrl(value, environment) {
+  const canonical = TRACKEN_WEBHOOK_URLS[environment];
+  if (!canonical) {
+    throw new Error(`Ambiente Tracken invalido: ${environment}`);
+  }
+
+  if (value === canonical) {
+    return value;
+  }
+
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error("URL de webhook invalida.");
+  }
+
+  const local = LOCAL_WEBHOOK_HOSTS.has(parsed.hostname);
+  const http = parsed.protocol === "http:" || parsed.protocol === "https:";
+
+  if (
+    environment === "sandbox" &&
+    ALLOW_LOCAL_SANDBOX_WEBHOOK &&
+    local &&
+    http &&
+    !parsed.username &&
+    !parsed.password
+  ) {
+    return parsed.toString();
+  }
+
+  const label = environment === "production" ? "production" : "sandbox";
+  throw new Error(
+    `A credencial ${label} aceita exatamente ${canonical}` +
+      (environment === "sandbox"
+        ? " (localhost exige TRACKEN_ALLOW_LOCAL_SANDBOX_WEBHOOK=true)."
+        : ".")
+  );
+}
 
 const sha256 = (value) =>
   crypto.createHash("sha256").update(value, "utf8").digest("hex");
@@ -90,6 +164,11 @@ function connect() {
 }
 
 async function create(name, environment) {
+  if (!name?.trim() || !environment) {
+    throw new Error(
+      'Uso: node scripts/tracken_credential.mjs create "<nome>" <production|sandbox>. Nome e ambiente sao obrigatorios.'
+    );
+  }
   if (!["production", "sandbox"].includes(environment)) {
     console.error('environment deve ser "production" ou "sandbox"');
     process.exit(1);
@@ -97,7 +176,15 @@ async function create(name, environment) {
 
   const prefix = environment === "production" ? "fnvj_live" : "fnvj_test";
   const apiKey = `${prefix}_${crypto.randomBytes(18).toString("hex")}`;
-  const secret = crypto.randomBytes(32).toString("base64url");
+  const secret = process.env.TRACKEN_CREDENTIAL_SECRET?.trim();
+
+  // O operador fornece o valor por variavel de ambiente e o entrega por canal
+  // seguro. Gerar e imprimir aqui faria o secret parar em terminal/CI/log.
+  if (!secret || !/^[A-Za-z0-9_-]{32,}$/.test(secret)) {
+    throw new Error(
+      "TRACKEN_CREDENTIAL_SECRET ausente ou invalido: informe ao menos 32 caracteres base64url; o script nunca imprime esse valor."
+    );
+  }
 
   const encryptionKey = resolveEncryptionKey();
   if (!encryptionKey) {
@@ -121,15 +208,16 @@ async function create(name, environment) {
          $5, true, true
        )
        RETURNING id, name, api_key, environment, require_signature, created_at`,
-      [name, apiKey, sha256(secret), secretEncrypted, environment]
+      [name.trim(), apiKey, sha256(secret), secretEncrypted, environment]
     );
 
     console.log("\nCredencial criada.\n");
     console.log(JSON.stringify(rows[0], null, 2));
-    console.log("\n--- ENTREGAR PARA A TRACKEN (exibido uma unica vez) ---");
+    console.log("\n--- ENTREGAR PARA A TRACKEN POR CANAL SEGURO ---");
     console.log(`api_key : ${apiKey}`);
-    console.log(`secret  : ${secret}`);
-    console.log(`\nAuthorization: Bearer ${apiKey}.${secret}`);
+    console.log(
+      "secret  : use o valor de TRACKEN_CREDENTIAL_SECRET (nao exibido)"
+    );
 
     console.log(
       "\nAssinatura HMAC EXIGIDA. Headers obrigatorios em cada chamada:\n" +
@@ -153,7 +241,7 @@ async function list() {
               webhook_url,
               (webhook_secret IS NOT NULL
                AND btrim(webhook_secret) <> '') AS webhook_assinado,
-              is_active, last_used_at, created_at
+              is_active, last_used_at, expires_at, created_at
          FROM tracken_api_credentials
         ORDER BY created_at DESC`
     );
@@ -162,7 +250,115 @@ async function list() {
       console.log("Nenhuma credencial cadastrada.");
       return;
     }
-    console.log(JSON.stringify(rows, null, 2));
+
+    // Nunca imprime webhook_secret nem query string que possa carregar token.
+    const publicRows = rows.map(({ webhook_url, ...row }) => {
+      let webhookUrlValid = false;
+      let webhookBlockedReason = null;
+      if (webhook_url) {
+        try {
+          validateWebhookUrl(webhook_url, row.environment);
+          webhookUrlValid = true;
+        } catch (error) {
+          webhookBlockedReason = error.message ?? String(error);
+        }
+      }
+
+      const expired = Boolean(
+        row.expires_at && new Date(row.expires_at).getTime() <= Date.now()
+      );
+      return {
+        ...row,
+        expired,
+        expected_webhook_endpoint: TRACKEN_WEBHOOK_URLS[row.environment] ?? null,
+        webhook_endpoint: sanitizeWebhookEndpoint(webhook_url),
+        webhook_url_valid: webhookUrlValid,
+        webhook_usable: Boolean(
+          row.is_active &&
+            !expired &&
+            webhookUrlValid &&
+            (!row.require_signature || row.webhook_assinado)
+        ),
+        webhook_blocked_reason: webhookBlockedReason,
+      };
+    });
+    console.log(JSON.stringify(publicRows, null, 2));
+  } finally {
+    await client.end().catch(() => {});
+  }
+}
+
+async function setEnvironment(apiKey, environment) {
+  if (!apiKey || !["production", "sandbox"].includes(environment)) {
+    throw new Error(
+      "Uso: node scripts/tracken_credential.mjs set-environment <api_key> <production|sandbox>"
+    );
+  }
+
+  const client = connect();
+  await client.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Depois da 025 o ambiente fica congelado por trigger. Recusar aqui gera
+    // uma mensagem clara antes de depender do erro interno do PostgreSQL.
+    const migrated = await client.query(
+      `SELECT 1
+         FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = 'tracken_tickets'
+          AND column_name = 'environment'`
+    );
+    if (migrated.rowCount > 0) {
+      throw new Error(
+        "A migration 025 ja foi aplicada: environment e imutavel. Nao reclassifique credenciais depois do backfill."
+      );
+    }
+
+    const current = await client.query(
+      `SELECT id, name, environment, webhook_url, is_active
+         FROM tracken_api_credentials
+        WHERE api_key = $1
+        FOR UPDATE`,
+      [apiKey]
+    );
+    const credential = current.rows[0];
+    if (!credential) throw new Error("Credencial nao encontrada.");
+
+    if (credential.webhook_url) {
+      validateWebhookUrl(credential.webhook_url, environment);
+    }
+
+    const conflict = await client.query(
+      `SELECT name
+         FROM tracken_api_credentials
+        WHERE environment = $1
+          AND id <> $2
+          AND is_active = true
+          AND webhook_url IS NOT NULL
+          AND btrim(webhook_url) <> ''
+        LIMIT 1`,
+      [environment, credential.id]
+    );
+    if (conflict.rowCount > 0) {
+      throw new Error(
+        `Ja existe destino ativo em ${environment}: ${conflict.rows[0].name}.`
+      );
+    }
+
+    const updated = await client.query(
+      `UPDATE tracken_api_credentials
+          SET environment = $2, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+        RETURNING name, api_key, environment, is_active, expires_at`,
+      [credential.id, environment]
+    );
+    await client.query("COMMIT");
+    console.log("\nAmbiente da credencial atualizado antes da migration 025.\n");
+    console.log(JSON.stringify(updated.rows[0], null, 2));
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw error;
   } finally {
     await client.end().catch(() => {});
   }
@@ -204,81 +400,113 @@ async function revoke(apiKey) {
  * primeiro, producao depois), entao as duas sao definidas de uma vez para nao
  * existir estado pela metade.
  */
-async function webhook(apiKey, url, secret) {
+async function webhook(apiKey, url) {
+  const secret = process.env.TRACKEN_WEBHOOK_SECRET?.trim() || null;
   if (!apiKey) {
     console.error(
       "Informe a api_key da credencial.\n" +
-        '  node scripts/tracken_credential.mjs webhook <api_key> <url> [secret]'
+        "  node scripts/tracken_credential.mjs webhook <api_key> <url>"
     );
     process.exit(1);
   }
 
   const limpar = url === "--clear";
-
-  if (!limpar) {
-    if (!url) {
-      console.error(
-        "Informe a URL de destino, ou --clear para apagar o destino atual."
-      );
-      process.exit(1);
-    }
-
-    let parsed;
-    try {
-      parsed = new URL(url);
-    } catch {
-      console.error(`URL invalida: ${url}`);
-      process.exit(1);
-    }
-
-    // Mesma regra do worker (lib/tracken/webhook.ts). Checar aqui evita gravar
-    // um destino que o dispatch vai recusar depois, quando o erro aparece so
-    // como fila parada na tela de Configuracoes.
-    const local = ["localhost", "127.0.0.1", "::1"].includes(parsed.hostname);
-    if (parsed.protocol !== "https:" && !local) {
-      console.error(
-        `A URL precisa usar https (recebido ${parsed.protocol}//).\n` +
-          "O corpo leva dado de comprador e vendedor, e o header leva assinatura."
-      );
-      process.exit(1);
-    }
+  if (!limpar && !url) {
+    console.error(
+      "Informe a URL de destino, ou --clear para apagar o destino atual."
+    );
+    process.exit(1);
   }
 
-  let webhookSecret = null;
-  if (!limpar && secret) {
-    const encryptionKey = resolveEncryptionKey();
-    if (!encryptionKey) {
-      // `readWebhookSecret` no worker aceita texto puro, por compatibilidade
-      // com o que a coluna foi criada para guardar. Gravar em claro por aqui
-      // seria escolher o pior caminho disponivel: a TRACKen reaproveita o
-      // secret da credencial, e em texto puro uma leitura do banco passa a
-      // permitir autenticar COMO ela na nossa API de entrada.
-      console.error(
-        "TRACKEN_ENCRYPTION_KEY nao definida: sem ela o segredo so poderia ser\n" +
-          "gravado em texto puro, e ele e o mesmo que autentica a TRACKen na\n" +
-          "entrada. Gere a chave com `node scripts/tracken_credential.mjs genkey`."
-      );
-      process.exit(1);
-    }
-
-    webhookSecret = encryptSecret(secret, encryptionKey);
-
-    // A coluna e VARCHAR(255). O formato cifrado de um secret de 32 bytes fica
-    // perto de 90 caracteres, entao isso so estoura com um segredo enorme --
-    // e nesse caso o Postgres recusaria com erro de tipo, sem dizer o motivo.
-    if (webhookSecret.length > 255) {
-      console.error(
-        `O segredo cifrado tem ${webhookSecret.length} caracteres e a coluna\n` +
-          "webhook_secret aceita 255. Use um segredo mais curto."
-      );
-      process.exit(1);
-    }
+  if (secret && secret.length < 32) {
+    throw new Error(
+      "TRACKEN_WEBHOOK_SECRET invalido: informe ao menos 32 caracteres; o valor nunca deve ser passado como argumento do comando."
+    );
   }
 
   const client = connect();
   await client.connect();
 
   try {
+    await client.query("BEGIN");
+
+    const { rows: credentialRows } = await client.query(
+      `SELECT id, name, api_key, environment, require_signature, is_active,
+              expires_at,
+              (webhook_secret IS NOT NULL
+               AND btrim(webhook_secret) <> '') AS tem_segredo
+         FROM tracken_api_credentials
+        WHERE api_key = $1
+        FOR UPDATE`,
+      [apiKey]
+    );
+
+    const credential = credentialRows[0];
+    if (!credential) {
+      throw new Error("Nenhuma credencial encontrada com essa api_key.");
+    }
+
+    let targetUrl = null;
+    let webhookSecret = null;
+
+    if (!limpar) {
+      // A validacao depende do ambiente persistido e acontece ANTES do UPDATE.
+      // Production aceita apenas o endpoint production; sandbox aceita apenas
+      // o endpoint sandbox, com excecao explicita para desenvolvimento local.
+      targetUrl = validateWebhookUrl(url, credential.environment);
+
+      if (secret) {
+        const encryptionKey = resolveEncryptionKey();
+        if (!encryptionKey) {
+          throw new Error(
+            "TRACKEN_ENCRYPTION_KEY nao definida: o segredo do webhook nao pode ser gravado em texto puro."
+          );
+        }
+
+        webhookSecret = encryptSecret(secret, encryptionKey);
+        if (webhookSecret.length > 255) {
+          throw new Error(
+            `O segredo cifrado tem ${webhookSecret.length} caracteres; webhook_secret aceita 255.`
+          );
+        }
+      }
+
+      // Omissao preserva o valor atual. Se a credencial exige HMAC e nao ha
+      // valor atual nem novo, recusa antes de criar um target inutilizavel.
+      if (
+        credential.require_signature &&
+        !credential.tem_segredo &&
+        !webhookSecret
+      ) {
+        throw new Error(
+          "A credencial exige assinatura e nao possui webhook_secret. Defina TRACKEN_WEBHOOK_SECRET antes de configurar o destino."
+        );
+      }
+
+      // Exatamente um target ativo por ambiente. O outro ambiente nao entra na
+      // consulta, portanto production e sandbox podem coexistir. A checagem e
+      // anterior ao UPDATE; o indice parcial da migration 025 cobre a corrida.
+      const { rows: conflicts } = await client.query(
+        `SELECT name
+           FROM tracken_api_credentials
+          WHERE environment = $1
+            AND id <> $2
+            AND is_active = true
+            AND webhook_url IS NOT NULL
+            AND btrim(webhook_url) <> ''
+          FOR UPDATE`,
+        [credential.environment, credential.id]
+      );
+
+      if (conflicts.length > 0) {
+        const names = conflicts.map((row) => row.name).join(", ");
+        throw new Error(
+          `Ja existe destino ativo em ${credential.environment}: ${names}. ` +
+            "Limpe ou revogue esse destino antes de configurar outro no mesmo ambiente."
+        );
+      }
+    }
+
     const { rows } = await client.query(
       `UPDATE tracken_api_credentials
           SET webhook_url = $2,
@@ -287,66 +515,50 @@ async function webhook(apiKey, url, secret) {
                 WHEN $3::text IS NOT NULL THEN $3
                 ELSE webhook_secret
               END
-        WHERE api_key = $1
-        RETURNING id, name, api_key, environment, is_active, webhook_url,
+        WHERE id = $1
+        RETURNING id, name, api_key, environment, is_active, expires_at,
                   (webhook_secret IS NOT NULL
                    AND btrim(webhook_secret) <> '') AS tem_segredo`,
-      [apiKey, limpar ? null : url, webhookSecret]
+      [credential.id, limpar ? null : targetUrl, webhookSecret]
     );
 
-    const credential = rows[0];
-    if (!credential) {
-      console.error("Nenhuma credencial encontrada com essa api_key.");
-      process.exitCode = 1;
-      return;
-    }
+    await client.query("COMMIT");
 
-    if (limpar) {
-      console.log("\nDestino do webhook apagado.\n");
-      console.log(JSON.stringify(credential, null, 2));
-      return;
-    }
-
-    console.log("\nDestino do webhook gravado.\n");
-    console.log(JSON.stringify(credential, null, 2));
-
-    if (!credential.is_active) {
-      console.log(
-        "\nAVISO: a credencial esta revogada. O worker so entrega em credencial\n" +
-          "ativa, entao a fila continua parada enquanto ela estiver assim."
-      );
-    }
-
-    if (!credential.tem_segredo) {
-      console.log(
-        "\nAVISO: sem segredo gravado as entregas saem SEM X-FNVJ-Signature.\n" +
-          "A TRACKen nao tem como distinguir a nossa chamada de uma forjada por\n" +
-          "quem descobrir a URL."
-      );
-    }
-
-    // O worker recusa entregar quando ha mais de um destino ativo, em vez de
-    // escolher um. Avisar aqui e melhor que descobrir pela fila parada.
-    const { rows: outros } = await client.query(
-      `SELECT name, api_key, environment, webhook_url
-         FROM tracken_api_credentials
-        WHERE is_active = true
-          AND webhook_url IS NOT NULL
-          AND btrim(webhook_url) <> ''
-          AND api_key <> $1`,
-      [apiKey]
+    const updated = rows[0];
+    console.log(
+      limpar
+        ? "\nDestino do webhook apagado.\n"
+        : "\nDestino do webhook gravado.\n"
+    );
+    // Nao inclui secret, ciphertext nem query string da URL.
+    console.log(
+      JSON.stringify(
+        {
+          ...updated,
+          webhook_endpoint: limpar
+            ? null
+            : sanitizeWebhookEndpoint(targetUrl),
+        },
+        null,
+        2
+      )
     );
 
-    if (outros.length > 0) {
+    if (!updated.is_active) {
       console.log(
-        "\nATENCAO: outra credencial ativa tambem tem destino configurado.\n" +
-          "O worker nao escolhe entre dois destinos: ele para a fila e informa a\n" +
-          "ambiguidade, para nao mandar evento de producao para homologacao.\n" +
-          "Apague o destino que nao vale mais com:\n" +
-          "  node scripts/tracken_credential.mjs webhook <api_key> --clear\n"
+        "\nAVISO: a credencial esta revogada; o worker nao usa este destino."
       );
-      console.log(JSON.stringify(outros, null, 2));
+    } else if (
+      updated.expires_at &&
+      new Date(updated.expires_at).getTime() <= Date.now()
+    ) {
+      console.log(
+        "\nAVISO: a credencial esta expirada; o worker nao usa este destino."
+      );
     }
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw error;
   } finally {
     await client.end().catch(() => {});
   }
@@ -363,11 +575,15 @@ async function main() {
       break;
 
     case "create":
-      await create(args[0] ?? "Tracken Producao", args[1] ?? "production");
+      await create(args[0], args[1]);
       break;
 
     case "list":
       await list();
+      break;
+
+    case "set-environment":
+      await setEnvironment(args[0], args[1]);
       break;
 
     case "revoke":
@@ -375,7 +591,12 @@ async function main() {
       break;
 
     case "webhook":
-      await webhook(args[0], args[1], args[2]);
+      if (args[2]) {
+        throw new Error(
+          "Nao passe secret na linha de comando. Use TRACKEN_WEBHOOK_SECRET para evitar historico/log do shell."
+        );
+      }
+      await webhook(args[0], args[1]);
       break;
 
     default:
@@ -384,8 +605,9 @@ async function main() {
           "  genkey\n" +
           "  create <nome> <production|sandbox>\n" +
           "  list\n" +
+          "  set-environment <api_key> <production|sandbox>\n" +
           "  revoke <api_key>\n" +
-          "  webhook <api_key> <url|--clear> [secret]"
+          "  webhook <api_key> <url|--clear>"
       );
       process.exitCode = 1;
   }

@@ -5,6 +5,7 @@ import {
 } from "@/lib/tracken/auth";
 import { trackenQuery } from "@/lib/tracken/db";
 import { badRequest, notFound, toErrorResponse } from "@/lib/tracken/errors";
+import { requireTrackenEnvironment } from "@/lib/tracken/filters";
 import { getStatusMap } from "@/lib/tracken/tickets";
 
 /**
@@ -36,9 +37,10 @@ export async function GET(request: NextRequest) {
   try {
     await authenticatePanelUser(request);
 
+    const searchParams = new URL(request.url).searchParams;
+    const environment = requireTrackenEnvironment(searchParams);
     // A tela de Transportadoras precisa ver tambem as inativas.
-    const includeInactive =
-      new URL(request.url).searchParams.get("includeInactive") === "true";
+    const includeInactive = searchParams.get("includeInactive") === "true";
 
     const carriers = await trackenQuery<CarrierWithVolume>(
       `SELECT c.id, c.code, c.name, c.color, c.is_active,
@@ -52,11 +54,14 @@ export async function GET(request: NextRequest) {
               )::text AS overdue_tickets,
               MAX(t.received_at)::text AS last_received_at
          FROM tracken_carriers c
-         LEFT JOIN tracken_tickets t ON t.carrier_id = c.id
+         LEFT JOIN tracken_tickets t
+           ON t.carrier_id = c.id
+          AND t.environment = $1
          LEFT JOIN tracken_status_map sm ON sm.code = t.status
         ${includeInactive ? "" : "WHERE c.is_active = true"}
         GROUP BY c.id, c.code, c.name, c.color, c.is_active
-        ORDER BY c.code`
+        ORDER BY c.code`,
+      [environment]
     );
 
     const statuses = await getStatusMap();

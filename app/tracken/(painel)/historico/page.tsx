@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowRightLeft,
@@ -18,6 +18,7 @@ import type { LucideIcon } from "lucide-react";
 import { CarrierBadge, StatusBadge } from "@/components/tracken/Badges";
 import MercadoLivreIcon from "@/components/tracken/MercadoLivreIcon";
 import Pagination from "@/components/tracken/Pagination";
+import TrackenEnvironmentSelect from "@/components/tracken/TrackenEnvironmentSelect";
 import {
   Card,
   EmptyState,
@@ -29,6 +30,7 @@ import {
 } from "@/components/tracken/PageShell";
 import { useTrackenCatalogs } from "@/components/tracken/useTrackenCatalogs";
 import { formatDate, formatTime, toInputDate } from "@/lib/tracken/format";
+import type { TrackenEnvironment } from "@/lib/tracken/types";
 
 /**
  * Tela "Historico de Status": trilha de auditoria.
@@ -113,7 +115,12 @@ const hoje = new Date();
 const seteDiasAtras = new Date(hoje.getTime() - 7 * 24 * 3_600_000);
 
 export default function HistoricoPage() {
-  const { carriers, statuses } = useTrackenCatalogs();
+  const [environment, setEnvironment] =
+    useState<TrackenEnvironment>("production");
+  const { carriers, statuses } = useTrackenCatalogs({
+    environment,
+    withAttendants: false,
+  });
 
   const [startDate, setStartDate] = useState(toInputDate(seteDiasAtras));
   const [endDate, setEndDate] = useState(toInputDate(hoje));
@@ -131,6 +138,8 @@ export default function HistoricoPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const generationRef = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
 
   // A busca espera o usuario parar de digitar.
   useEffect(() => {
@@ -142,7 +151,7 @@ export default function HistoricoPage() {
   }, [searchDraft]);
 
   const queryString = useMemo(() => {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({ environment });
     if (startDate) params.set("startDate", startDate);
     if (endDate) params.set("endDate", endDate);
     if (eventType) params.set("eventType", eventType);
@@ -150,12 +159,23 @@ export default function HistoricoPage() {
     if (carrier) params.set("carrier", carrier);
     if (search) params.set("search", search);
     return params.toString();
-  }, [startDate, endDate, eventType, status, carrier, search]);
+  }, [environment, startDate, endDate, eventType, status, carrier, search]);
 
   const loadEvents = useCallback(
     async (options?: { silent?: boolean }) => {
-      if (options?.silent) setIsRefreshing(true);
-      else setIsLoading(true);
+      const generation = ++generationRef.current;
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      if (options?.silent) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
+        setEvents([]);
+        setTotal(0);
+        setTotalPages(1);
+      }
       setError(null);
 
       const params = new URLSearchParams(queryString);
@@ -165,25 +185,30 @@ export default function HistoricoPage() {
       try {
         const response = await fetch(`/api/tracken/events?${params}`, {
           credentials: "include",
+          signal: controller.signal,
         });
         const data = await response.json();
 
         if (!response.ok) {
           throw new Error(data?.error?.message ?? "Falha ao carregar historico");
         }
+        if (generation !== generationRef.current) return;
 
         setEvents(data.events as EventRow[]);
         setTotal(data.total as number);
         setTotalPages(data.totalPages as number);
       } catch (loadError) {
+        if (controller.signal.aborted || generation !== generationRef.current) return;
         setError(
           loadError instanceof Error
             ? loadError.message
             : "Falha ao carregar historico"
         );
       } finally {
-        setIsLoading(false);
-        setIsRefreshing(false);
+        if (generation === generationRef.current) {
+          setIsLoading(false);
+          setIsRefreshing(false);
+        }
       }
     },
     [page, pageSize, queryString]
@@ -192,6 +217,8 @@ export default function HistoricoPage() {
   useEffect(() => {
     loadEvents();
   }, [loadEvents]);
+
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   return (
     <PageShell>
@@ -222,6 +249,17 @@ export default function HistoricoPage() {
 
       <Card className="mt-6">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-12">
+          <div className="xl:col-span-2">
+            <TrackenEnvironmentSelect
+              id="hist-environment"
+              value={environment}
+              onChange={(next) => {
+                setEnvironment(next);
+                setPage(1);
+              }}
+            />
+          </div>
+
           <div className="xl:col-span-3">
             <label className={LABEL} htmlFor="hist-inicio">Periodo</label>
             <div className="flex items-center gap-2">

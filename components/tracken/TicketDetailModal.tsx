@@ -37,6 +37,7 @@ import CopyableId from "./CopyableId";
 import DeadlineCell from "./DeadlineCell";
 import ShippedCell from "./ShippedCell";
 import type { PanelStatus, PanelTicket } from "./panel-types";
+import type { TrackenEnvironment } from "@/lib/tracken/types";
 import {
   DENIAL_REASONS,
   STATUS_REQUIRING_DENIAL_REASON,
@@ -168,6 +169,7 @@ function Field({
 
 type Props = {
   ticketId: string;
+  environment: TrackenEnvironment;
   statuses: PanelStatus[];
   onClose: () => void;
   onUpdated: () => void;
@@ -175,6 +177,7 @@ type Props = {
 
 export default function TicketDetailModal({
   ticketId,
+  environment,
   statuses,
   onClose,
   onUpdated,
@@ -203,9 +206,10 @@ export default function TicketDetailModal({
     setError(null);
 
     try {
-      const response = await fetch(`/api/tracken/tickets/${ticketId}`, {
-        credentials: "include",
-      });
+      const response = await fetch(
+        `/api/tracken/tickets/${ticketId}?environment=${environment}`,
+        { credentials: "include" }
+      );
       const data = await response.json();
 
       if (!response.ok) {
@@ -224,7 +228,7 @@ export default function TicketDetailModal({
     } finally {
       setIsLoading(false);
     }
-  }, [ticketId]);
+  }, [environment, ticketId]);
 
   useEffect(() => {
     loadTicket();
@@ -270,18 +274,21 @@ export default function TicketDetailModal({
     setError(null);
 
     try {
-      const response = await fetch(`/api/tracken/tickets/${ticketId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          action: "status",
-          status: targetStatus,
-          note: note.trim() || null,
-          mlClaimId: mlClaimId.trim() || null,
-          denialReason: isDenying ? denialReason : null,
-        }),
-      });
+      const response = await fetch(
+        `/api/tracken/tickets/${ticketId}?environment=${environment}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            action: "status",
+            status: targetStatus,
+            note: note.trim() || null,
+            mlClaimId: mlClaimId.trim() || null,
+            denialReason: isDenying ? denialReason : null,
+          }),
+        }
+      );
 
       const data = await response.json();
       if (!response.ok) {

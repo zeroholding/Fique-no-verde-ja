@@ -112,7 +112,10 @@ export async function POST(request: NextRequest) {
 
     const outcome =
       validItems.length > 0
-        ? await createTicketsBatch(validItems, { credentialId: credential.id })
+        ? await createTicketsBatch(validItems, {
+            credentialId: credential.id,
+            environment: credential.environment,
+          })
         : {
             received: 0,
             created: 0,
@@ -184,14 +187,14 @@ type PublicTicketRow = {
 
 export async function GET(request: NextRequest) {
   try {
-    await authenticateMachineRequest(request, {
+    const credential = await authenticateMachineRequest(request, {
       rawBody: "",
       requiredScope: "tickets:read",
     });
 
     const { searchParams } = new URL(request.url);
-    const conditions: string[] = [];
-    const params: unknown[] = [];
+    const conditions: string[] = ["t.environment = $1"];
+    const params: unknown[] = [credential.environment];
 
     const status = searchParams.get("status");
     if (status) {

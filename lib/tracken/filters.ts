@@ -8,6 +8,12 @@
  * banco guarda TIMESTAMPTZ, entao a conversao e explicita.
  */
 
+import { badRequest } from "./errors";
+import {
+  isTrackenEnvironment,
+  type TrackenEnvironment,
+} from "./types";
+
 export const PANEL_TIMEZONE = "America/Sao_Paulo";
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
@@ -21,6 +27,8 @@ export type DeadlineBucket =
   | "no_deadline";
 
 export type PanelFilters = {
+  /** Fronteira obrigatoria: nunca existe painel agregado entre ambientes. */
+  environment: TrackenEnvironment;
   startDate: string | null;
   endDate: string | null;
   carrierCode: string | null;
@@ -48,6 +56,26 @@ const UUID_REGEX =
 /** Sentinela do filtro de atendente para "ninguem assumiu ainda". */
 export const UNASSIGNED = "unassigned";
 
+/** Ambiente obrigatorio. Ausencia nunca significa "todos" nem production. */
+export function requireTrackenEnvironment(
+  searchParams: URLSearchParams
+): TrackenEnvironment {
+  const value = searchParams.get("environment");
+  if (!value) {
+    throw badRequest(
+      "MISSING_ENVIRONMENT",
+      'O parametro environment e obrigatorio ("production" ou "sandbox").'
+    );
+  }
+  if (!isTrackenEnvironment(value)) {
+    throw badRequest(
+      "INVALID_ENVIRONMENT",
+      'environment deve ser "production" ou "sandbox".'
+    );
+  }
+  return value;
+}
+
 export function parsePanelFilters(searchParams: URLSearchParams): PanelFilters {
   const rawStart = searchParams.get("startDate");
   const rawEnd = searchParams.get("endDate");
@@ -65,6 +93,7 @@ export function parsePanelFilters(searchParams: URLSearchParams): PanelFilters {
       : null;
 
   return {
+    environment: requireTrackenEnvironment(searchParams),
     startDate,
     // Intervalo invertido seria silenciosamente vazio; alinhar evita relatorio
     // em branco sem explicacao.
@@ -116,6 +145,10 @@ export function buildTicketFilters(
   /** Meia-noite local do dia informado, como instante absoluto. */
   const localMidnight = (placeholder: string, addDays = 0) =>
     `((${placeholder}::date + ${addDays})::timestamp AT TIME ZONE '${PANEL_TIMEZONE}')`;
+
+  // Primeira condicao e sempre o ambiente; nenhuma rota que usa este builder
+  // consegue esquecer o isolamento ou tratar ausencia como todos.
+  conditions.push(`(t.environment = ${push(filters.environment)})`);
 
   // O periodo recorta pelo LIMITE DE ENVIO, nao pela data de recebimento.
   //

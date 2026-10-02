@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticatePanelUser } from "@/lib/tracken/auth";
 import { trackenQuery } from "@/lib/tracken/db";
 import { toErrorResponse } from "@/lib/tracken/errors";
-import { PANEL_TIMEZONE } from "@/lib/tracken/filters";
+import {
+  PANEL_TIMEZONE,
+  requireTrackenEnvironment,
+} from "@/lib/tracken/filters";
 
 /**
  * GET /api/tracken/events
@@ -55,6 +58,9 @@ export async function GET(request: NextRequest) {
       params.push(value);
       return `$${params.length}`;
     };
+
+    const environment = requireTrackenEnvironment(searchParams);
+    conditions.push(`t.environment = ${push(environment)}`);
 
     const startDate = searchParams.get("startDate");
     if (startDate && DATE_REGEX.test(startDate)) {

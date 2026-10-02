@@ -3,6 +3,7 @@
 import { CalendarClock, Search, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { SHIPPING_MODE_OPTIONS } from "@/lib/tracken/shipping";
+import { isTrackenEnvironment } from "@/lib/tracken/types";
 import type {
   PanelAttendant,
   PanelCarrier,
@@ -135,6 +136,28 @@ export default function TrackenFilters({
     <section className="tk-card tk-raised overflow-hidden">
       {/* ---------- Linha sempre visivel ---------- */}
       <div className="flex flex-col gap-2.5 p-3 sm:flex-row sm:items-end">
+        <div className="shrink-0">
+          <label className={LABEL} htmlFor="tk-environment">
+            Ambiente
+          </label>
+          <select
+            id="tk-environment"
+            value={filters.environment}
+            onChange={(event) => {
+              const environment = event.target.value;
+              if (isTrackenEnvironment(environment)) onChange({ environment });
+            }}
+            className={`${FIELD} min-w-[146px] font-semibold ${
+              filters.environment === "sandbox"
+                ? "border-amber-300 bg-amber-50 text-amber-900"
+                : "border-emerald-300 bg-emerald-50 text-emerald-900"
+            }`}
+          >
+            <option value="production">Produção</option>
+            <option value="sandbox">Homologação</option>
+          </select>
+        </div>
+
         <div className="relative min-w-0 flex-1">
           <Search
             className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"

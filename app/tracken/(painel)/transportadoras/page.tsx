@@ -22,9 +22,11 @@ import {
   StatTile,
 } from "@/components/tracken/PageShell";
 import { useTrackenCatalogs } from "@/components/tracken/useTrackenCatalogs";
+import TrackenEnvironmentSelect from "@/components/tracken/TrackenEnvironmentSelect";
 import type { PanelCarrier } from "@/components/tracken/panel-types";
 import { formatDate, formatNumber } from "@/lib/tracken/format";
 import { DOT_CLASSES, normalizeColor } from "@/components/tracken/tokens";
+import type { TrackenEnvironment } from "@/lib/tracken/types";
 
 /**
  * Tela "Transportadoras": quem envia atendimentos pela TRACKen, quanto volume
@@ -50,8 +52,12 @@ type CarrierWithExtras = PanelCarrier & {
 };
 
 export default function TransportadorasPage() {
+  const [environment, setEnvironment] =
+    useState<TrackenEnvironment>("production");
   const { carriers, isLoading, error, reload } = useTrackenCatalogs({
+    environment,
     includeInactive: true,
+    withAttendants: false,
   });
 
   const [editing, setEditing] = useState<string | null>(null);
@@ -108,6 +114,20 @@ export default function TransportadorasPage() {
 
       {error && <ErrorBanner message={error} />}
       {saveError && <ErrorBanner message={saveError} />}
+
+      <Card className="mt-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <TrackenEnvironmentSelect
+            id="carrier-environment"
+            value={environment}
+            onChange={setEnvironment}
+          />
+          <p className="max-w-2xl text-[13.5px] text-slate-500">
+            Volumes e prazos respeitam o ambiente selecionado. Nome, cor e
+            situacao da transportadora sao cadastro global e afetam os dois.
+          </p>
+        </div>
+      </Card>
 
       {isLoading ? (
         <LoadingState label="Carregando transportadoras..." />

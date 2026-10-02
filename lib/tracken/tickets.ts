@@ -9,6 +9,7 @@ import {
 import { TrackenApiError, notFound, unprocessable } from "./errors";
 import type {
   TrackenCarrierRow,
+  TrackenEnvironment,
   TrackenItemResult,
   TrackenStatusRow,
 } from "./types";
@@ -55,11 +56,19 @@ export async function enqueueOutboxEvent(
   eventType: string,
   payload: Record<string, unknown>
 ): Promise<void> {
-  await client.query(
-    `INSERT INTO tracken_outbox (ticket_id, event_type, payload)
-     VALUES ($1, $2, $3::jsonb)`,
+  const inserted = await client.query(
+    `INSERT INTO tracken_outbox (ticket_id, environment, event_type, payload)
+     SELECT t.id, t.environment, $2, $3::jsonb
+       FROM tracken_tickets t
+      WHERE t.id = $1`,
     [ticketId, eventType, JSON.stringify(payload)]
   );
+
+  if (inserted.rowCount !== 1) {
+    throw new Error(
+      `TRACKEN_OUTBOX_TICKET_NOT_FOUND: ticket ${ticketId} nao existe`
+    );
+  }
 }
 
 /**
@@ -202,12 +211,13 @@ async function criarTransportadora(
  * Cada item roda em um SAVEPOINT proprio: um envio invalido nao derruba os
  * demais do lote, e a operacao inteira usa um unico client dedicado.
  *
- * Idempotencia: `shipment_id` repetido nao cria duplicado nem devolve erro,
- * apenas informa o registro existente. Isso torna o retry da Tracken seguro.
+ * Idempotencia: `shipment_id` repetido no mesmo ambiente nao cria duplicado
+ * nem devolve erro, apenas informa o registro existente. O mesmo identificador
+ * pode existir uma vez em production e uma vez em sandbox sem cruzar dados.
  */
 export async function createTicketsBatch(
   items: Array<{ normalized: NormalizedItem; rawPayload: unknown }>,
-  context: { credentialId: string | null }
+  context: { credentialId: string; environment: TrackenEnvironment }
 ): Promise<BatchOutcome> {
   const statuses = await getStatusMap();
   const initialStatus =
@@ -322,12 +332,12 @@ export async function createTicketsBatch(
              sale_date, shipping_deadline, shipped_at, shipping_mode,
              status, service_type,
              tracking_number, pack_id, delay_reason, requested_by,
-             payload_raw, credential_id
+             payload_raw, credential_id, environment
            ) VALUES (
              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
-             $13, $14, $15, $16, $17, $18, $19::jsonb, $20
+             $13, $14, $15, $16, $17, $18, $19::jsonb, $20, $21
            )
-           ON CONFLICT (shipment_id) DO NOTHING
+           ON CONFLICT (environment, shipment_id) DO NOTHING
            RETURNING id, status`,
           [
             normalized.shipmentId,
@@ -352,13 +362,16 @@ export async function createTicketsBatch(
             normalized.requestedBy,
             JSON.stringify(rawPayload ?? {}),
             context.credentialId,
+            context.environment,
           ]
         );
 
         if (inserted.rowCount === 0) {
           const existing = await client.query<{ id: string; status: string }>(
-            `SELECT id, status FROM tracken_tickets WHERE shipment_id = $1`,
-            [normalized.shipmentId]
+            `SELECT id, status
+               FROM tracken_tickets
+              WHERE environment = $1 AND shipment_id = $2`,
+            [context.environment, normalized.shipmentId]
           );
 
           // A corrida de idempotencia pode acontecer depois de uma transportadora
@@ -489,6 +502,7 @@ export async function createTicketsBatch(
 
 export type StatusChangeInput = {
   ticketId: string;
+  environment: TrackenEnvironment;
   toStatus: string;
   actorUserId: string;
   actorIsAdmin: boolean;
@@ -574,9 +588,9 @@ export async function changeTicketStatus(input: StatusChangeInput) {
     }>(
       `SELECT id, shipment_id, order_id, tracken_ref, status, assigned_user_id
          FROM tracken_tickets
-        WHERE id = $1
+        WHERE id = $1 AND environment = $2
         FOR UPDATE`,
-      [input.ticketId]
+      [input.ticketId, input.environment]
     );
 
     const ticket = current.rows[0];
@@ -639,7 +653,7 @@ export async function changeTicketStatus(input: StatusChangeInput) {
               -- atendimento reaberto e depois removido continuaria carregando
               -- a justificativa de uma negativa que nao vale mais.
               denial_reason = $9
-        WHERE id = $1
+        WHERE id = $1 AND environment = $10
         RETURNING id, status, started_at, finished_at, assigned_user_id,
                   denial_reason`,
       [
@@ -652,6 +666,7 @@ export async function changeTicketStatus(input: StatusChangeInput) {
         input.note ?? null,
         input.mlClaimId ?? null,
         reason,
+        input.environment,
       ]
     );
 
@@ -735,13 +750,16 @@ export async function changeTicketStatus(input: StatusChangeInput) {
  */
 export async function assignTicket(
   ticketId: string,
+  environment: TrackenEnvironment,
   actorUserId: string,
   targetUserId: string | null
 ) {
   return withTransaction(async (client) => {
     const current = await client.query<{ assigned_user_id: string | null }>(
-      `SELECT assigned_user_id FROM tracken_tickets WHERE id = $1 FOR UPDATE`,
-      [ticketId]
+      `SELECT assigned_user_id FROM tracken_tickets
+        WHERE id = $1 AND environment = $2
+        FOR UPDATE`,
+      [ticketId, environment]
     );
 
     if (current.rowCount === 0) {
@@ -754,9 +772,9 @@ export async function assignTicket(
     }>(
       `UPDATE tracken_tickets
           SET assigned_user_id = $2
-        WHERE id = $1
+        WHERE id = $1 AND environment = $3
         RETURNING id, assigned_user_id`,
-      [ticketId, targetUserId]
+      [ticketId, targetUserId, environment]
     );
 
     await recordEvent(client, {

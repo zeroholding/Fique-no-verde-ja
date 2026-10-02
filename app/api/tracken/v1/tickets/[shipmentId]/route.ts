@@ -37,7 +37,7 @@ export async function GET(
   context: { params: Promise<{ shipmentId: string }> }
 ) {
   try {
-    await authenticateMachineRequest(request, {
+    const credential = await authenticateMachineRequest(request, {
       rawBody: "",
       requiredScope: "tickets:read",
     });
@@ -56,8 +56,8 @@ export async function GET(
          LEFT JOIN tracken_carriers c ON c.id = t.carrier_id
          LEFT JOIN tracken_status_map sm ON sm.code = t.status
          LEFT JOIN users u ON u.id = t.assigned_user_id
-        WHERE t.shipment_id = $1`,
-      [shipmentId]
+        WHERE t.environment = $1 AND t.shipment_id = $2`,
+      [credential.environment, shipmentId]
     );
 
     const ticket = result.rows[0];

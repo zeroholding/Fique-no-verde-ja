@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarDays,
   Download,
@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { StatusBadge } from "@/components/tracken/Badges";
 import { statusIcon } from "@/components/tracken/tokens";
+import TrackenEnvironmentSelect from "@/components/tracken/TrackenEnvironmentSelect";
 import {
   Card,
   ErrorBanner,
@@ -28,6 +29,7 @@ import {
   formatShortDate,
   toInputDate,
 } from "@/lib/tracken/format";
+import type { TrackenEnvironment } from "@/lib/tracken/types";
 
 /**
  * Tela "Relatorios": resumo consolidado do periodo com exportacao.
@@ -52,7 +54,12 @@ const ATALHOS = [
 const hoje = new Date();
 
 export default function RelatoriosPage() {
-  const { carriers, statuses } = useTrackenCatalogs();
+  const [environment, setEnvironment] =
+    useState<TrackenEnvironment>("production");
+  const { carriers, statuses } = useTrackenCatalogs({
+    environment,
+    withAttendants: false,
+  });
 
   const [startDate, setStartDate] = useState(
     toInputDate(new Date(hoje.getTime() - 29 * 24 * 3_600_000))
@@ -64,45 +71,58 @@ export default function RelatoriosPage() {
   const [stats, setStats] = useState<PanelStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const generationRef = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
 
   const queryString = useMemo(() => {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({ environment });
     if (startDate) params.set("startDate", startDate);
     if (endDate) params.set("endDate", endDate);
     if (carrier) params.set("carrier", carrier);
     if (status) params.set("status", status);
     return params.toString();
-  }, [startDate, endDate, carrier, status]);
+  }, [environment, startDate, endDate, carrier, status]);
 
   const load = useCallback(async () => {
+    const generation = ++generationRef.current;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setIsLoading(true);
+    setStats(null);
     setError(null);
 
     try {
       const response = await fetch(`/api/tracken/stats?${queryString}`, {
         credentials: "include",
+        signal: controller.signal,
       });
       const payload = await response.json();
 
       if (!response.ok) {
         throw new Error(payload?.error?.message ?? "Falha ao gerar o relatorio");
       }
+      if (generation !== generationRef.current) return;
 
       setStats(payload as PanelStats);
     } catch (loadError) {
+      if (controller.signal.aborted || generation !== generationRef.current) return;
       setError(
         loadError instanceof Error
           ? loadError.message
           : "Falha ao gerar o relatorio"
       );
     } finally {
-      setIsLoading(false);
+      if (generation === generationRef.current) setIsLoading(false);
     }
   }, [queryString]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   const aplicarAtalho = (days: number) => {
     const fim = new Date();
@@ -143,7 +163,13 @@ export default function RelatoriosPage() {
       {error && <ErrorBanner message={error} />}
 
       <Card className="mt-6">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+          <TrackenEnvironmentSelect
+            id="rel-environment"
+            value={environment}
+            onChange={setEnvironment}
+          />
+
           <div className="xl:col-span-2">
             {/* O recorte e pelo LIMITE DE ENVIO, nao pela data de recebimento. */}
             <label className={LABEL} htmlFor="rel-inicio">

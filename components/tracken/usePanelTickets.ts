@@ -44,6 +44,8 @@ export function usePanelTickets(options: {
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
+    // Obrigatorio mesmo em production: ausencia nunca significa "todos".
+    params.set("environment", filters.environment);
     if (filters.startDate) params.set("startDate", filters.startDate);
     if (filters.endDate) params.set("endDate", filters.endDate);
     if (filters.carrier) params.set("carrier", filters.carrier);
@@ -66,8 +68,16 @@ export function usePanelTickets(options: {
       const controller = new AbortController();
       abortRef.current = controller;
 
-      if (loadOptions?.silent) setIsRefreshing(true);
-      else setIsLoading(true);
+      if (loadOptions?.silent) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
+        // Nao mantenha linhas/KPIs do ambiente anterior sob o novo seletor.
+        setTickets([]);
+        setStats(null);
+        setTotal(0);
+        setTotalPages(1);
+      }
       setError(null);
 
       const listParams = new URLSearchParams(queryString);

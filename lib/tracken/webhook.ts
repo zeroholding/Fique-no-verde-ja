@@ -1,6 +1,14 @@
 import { buildSignature, decryptSecret } from "./crypto";
 import { logTrackenRequest, trackenQuery, withTransaction } from "./db";
 import { recordEvent } from "./tickets";
+import {
+  validateTrackenWebhookUrl,
+} from "./environments";
+import {
+  TRACKEN_ENVIRONMENTS,
+  isTrackenEnvironment,
+  type TrackenEnvironment,
+} from "./types";
 
 /**
  * Worker de saida da integracao Tracken.
@@ -14,12 +22,13 @@ import { recordEvent } from "./tickets";
  *   2. Entrega precisa de retry, e retry precisa de estado duravel. HTTP dentro
  *      da transacao do ticket nao tem onde anotar "tentar de novo em 4 minutos".
  *
- * Assinatura: o mesmo esquema que a Tracken ja usa para ENTRAR aqui
- * (`X-FNVJ-Timestamp` + `X-FNVJ-Signature` sobre `<timestamp>.<corpo>`), so na
- * direcao contraria. Assim o dev do outro lado reaproveita o codigo que ja tem.
+ * Production e sandbox compartilham o worker, mas nunca o destino: cada linha
+ * carrega seu ambiente imutavel e so e reclamada quando aquele ambiente tem
+ * exatamente um target utilizavel. Falha de configuracao de um ambiente nao
+ * interrompe o outro.
  */
 
-/** Itens reivindicados por execucao. */
+/** Itens reivindicados por execucao, somando todos os ambientes. */
 const BATCH_SIZE = 10;
 
 /** Teto por requisicao HTTP. */
@@ -41,8 +50,6 @@ const RUN_BUDGET_MS = 45_000;
  * Enquanto o POST acontece o item nao esta mais protegido por lock de
  * transacao: a transacao do claim ja commitou (ver `claimBatch`). O que impede
  * outra execucao de pegar o mesmo item e este empurrao no `next_attempt_at`.
- * Se o processo morrer no meio do envio, o item volta a ser elegivel sozinho
- * depois desse prazo, sem intervencao manual.
  */
 const LEASE_MINUTES = 2;
 
@@ -55,9 +62,14 @@ const BACKOFF_MAX_SECONDS = 6 * 60 * 60;
 /** Corte do corpo da resposta guardado em log. */
 const MAX_LOGGED_RESPONSE = 2000;
 
+/** Excecao somente para desenvolvimento local de homologacao. */
+const ALLOW_LOCAL_SANDBOX_WEBHOOK =
+  process.env.TRACKEN_ALLOW_LOCAL_SANDBOX_WEBHOOK === "true";
+
 type OutboxRow = {
   id: string;
   ticket_id: string;
+  environment: string;
   event_type: string;
   payload: Record<string, unknown> | null;
   attempts: number;
@@ -68,20 +80,39 @@ type OutboxRow = {
 
 type WebhookTarget = {
   credentialId: string;
+  environment: TrackenEnvironment;
   url: string;
-  /**
-   * Destino sem query string, para gravar no log.
-   *
-   * Ha servico que autentica webhook por token na propria URL. Guardar a URL
-   * inteira em `tracken_request_log` deixaria esse token em texto puro numa
-   * tabela que a tela de Configuracoes exibe.
-   */
+  /** Destino sem query string, seguro para auditoria e diagnostico. */
   logLabel: string;
   secret: string | null;
 };
 
+type TargetCandidate = {
+  id: string;
+  name: string;
+  environment: string;
+  webhook_url: string;
+  webhook_secret: string | null;
+  require_signature: boolean;
+};
+
+type TargetResolution =
+  | { target: WebhookTarget }
+  | { reason: string };
+
+export type EnvironmentDispatchOutcome = {
+  claimed: number;
+  sent: number;
+  retried: number;
+  dead: number;
+  released: number;
+  pending: number;
+  signed: boolean;
+  skippedReason: string | null;
+};
+
 export type DispatchOutcome = {
-  /** Itens reivindicados nesta execucao. */
+  /** Itens reivindicados nesta execucao, somando os ambientes. */
   claimed: number;
   /** Entregues com 2xx. */
   sent: number;
@@ -91,21 +122,22 @@ export type DispatchOutcome = {
   dead: number;
   /** Devolvidos sem tentar: orcamento de tempo ou ordem do ticket. */
   released: number;
-  /** Quantos continuam aguardando depois desta execucao. */
+  /** Backlog nao terminal total, inclusive linha de ambiente desconhecido. */
   pending: number;
-  /** Preenchido quando nao ha destino utilizavel configurado. */
+  /** So existe quando nenhum ambiente tem destino utilizavel. */
   skippedReason?: string;
-  /** false quando a credencial nao tem `webhook_secret` gravado. */
+  /** true quando todos os targets utilizaveis assinam as entregas. */
   signed: boolean;
+  /** Metricas e diagnostico independentes de production e sandbox. */
+  byEnvironment: Record<TrackenEnvironment, EnvironmentDispatchOutcome>;
 };
 
 /**
  * Le o segredo de assinatura da credencial.
  *
- * A coluna e `VARCHAR(255)` e foi criada para texto puro, diferente de
- * `secret_encrypted`. Aceitar os dois formatos permite passar a gravar cifrado
- * (o formato `v1.<iv>.<tag>.<dados>` cabe folgado em 255 caracteres) sem
- * migration e sem quebrar o que ja estiver gravado em claro.
+ * A coluna e `VARCHAR(255)` e foi criada para texto puro. Aceitar os dois
+ * formatos permite guardar cifrado sem quebrar o legado. Valor cifrado ilegivel
+ * falha fechado: nunca vira autorizacao para enviar sem assinatura.
  */
 function readWebhookSecret(stored: string | null): string | null {
   const raw = stored?.trim();
@@ -119,94 +151,43 @@ function readWebhookSecret(stored: string | null): string | null {
       "[TRACKEN] webhook_secret parece cifrado mas nao pode ser decifrado:",
       error
     );
-    // Fail-closed: secret configurado mas ilegivel e configuracao quebrada, nao
-    // autorizacao para enviar sem assinatura. O destino sera recusado antes do
-    // claim, preservando todos os eventos pendentes para a proxima execucao.
     throw new Error("WEBHOOK_SECRET_DECRYPT_FAILED");
   }
 }
 
-/**
- * Descobre para onde enviar.
- *
- * `tracken_outbox` nao guarda credencial: o evento e do atendimento, nao de
- * quem vai receber. O destino e a credencial ativa que tenha `webhook_url` — na
- * pratica existe uma, a da Tracken.
- *
- * DOIS DESTINOS PARAM A FILA, de proposito. A versao anterior pegava a
- * credencial de `updated_at` mais recente, e isso escondia um acidente caro: o
- * ambiente nao entra na escolha, e a Tracken entregou primeiro a URL de
- * homologacao (`homologasellercore...`). Com a credencial de producao e uma de
- * sandbox configuradas ao mesmo tempo, qual das duas recebia o evento real
- * passava a depender de quem foi salva por ultimo — e o dado de comprador e
- * vendedor de um atendimento de verdade sairia para o servidor de teste deles,
- * sem nada na tela indicando isso.
- *
- * Fila parada aparece na tela de Configuracoes e no retorno do dispatch. Evento
- * entregue no lugar errado nao aparece em parte nenhuma.
- */
-async function resolveTarget(): Promise<
-  { target: WebhookTarget } | { reason: string }
-> {
-  const result = await trackenQuery<{
-    id: string;
-    name: string;
-    environment: string;
-    webhook_url: string;
-    webhook_secret: string | null;
-    require_signature: boolean;
-  }>(
-    `SELECT id, name, environment, webhook_url, webhook_secret,
-            require_signature
-       FROM tracken_api_credentials
-      WHERE is_active = true
-        AND webhook_url IS NOT NULL
-        AND btrim(webhook_url) <> ''
-        AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
-      ORDER BY updated_at DESC`
-  );
-
-  if (result.rows.length === 0) {
+/** Resolve exatamente um destino dentro de um unico ambiente. */
+function resolveEnvironmentTarget(
+  environment: TrackenEnvironment,
+  candidates: TargetCandidate[]
+): TargetResolution {
+  if (candidates.length === 0) {
     return {
       reason:
-        "Nenhuma credencial ativa tem webhook_url configurada. Grave o destino com: node scripts/tracken_credential.mjs webhook <api_key> <url> [secret]",
+        `Nenhuma credencial ativa e nao expirada tem webhook_url para ${environment}. ` +
+        "Configure o destino com scripts/tracken_credential.mjs.",
     };
   }
 
-  if (result.rows.length > 1) {
-    const candidatas = result.rows
-      .map((row) => `${row.name} (${row.environment})`)
-      .join(", ");
-
+  if (candidates.length > 1) {
     return {
       reason:
-        `Ha ${result.rows.length} credenciais ativas com webhook_url: ${candidatas}. ` +
-        "O destino ficaria indefinido, entao nada foi entregue. Deixe apenas uma: " +
-        "node scripts/tracken_credential.mjs webhook <api_key> --clear",
+        `Ha ${candidates.length} destinos ativos para ${environment}. ` +
+        "Nada deste ambiente foi entregue ate a ambiguidade ser removida.",
     };
   }
 
-  const row = result.rows[0];
-
-  let parsed: URL;
+  const row = candidates[0]!;
+  let validated: ReturnType<typeof validateTrackenWebhookUrl>;
   try {
-    parsed = new URL(row.webhook_url.trim());
-  } catch {
-    return { reason: `webhook_url invalida: ${row.webhook_url}` };
-  }
-
-  // O corpo leva dado de comprador e vendedor, e o header leva assinatura.
-  // Em claro na rede os dois vazam, e a assinatura interceptada pode ser
-  // reaproveitada dentro da janela de validade. Localhost fica liberado para
-  // teste local, onde nao ha rede no meio.
-  const isLocal =
-    parsed.hostname === "localhost" ||
-    parsed.hostname === "127.0.0.1" ||
-    parsed.hostname === "::1";
-
-  if (parsed.protocol !== "https:" && !isLocal) {
+    validated = validateTrackenWebhookUrl(row.webhook_url, environment, {
+      allowLocalSandbox: ALLOW_LOCAL_SANDBOX_WEBHOOK,
+    });
+  } catch (error) {
     return {
-      reason: `webhook_url precisa usar https (recebido ${parsed.protocol}//)`,
+      reason:
+        error instanceof Error
+          ? error.message
+          : `A webhook_url de ${environment} nao corresponde ao destino oficial.`,
     };
   }
 
@@ -216,53 +197,83 @@ async function resolveTarget(): Promise<
   } catch {
     return {
       reason:
-        "webhook_secret esta configurado, mas nao pode ser decifrado. Corrija TRACKEN_ENCRYPTION_KEY ou grave novamente o secret antes de entregar eventos.",
+        `O webhook_secret de ${environment} nao pode ser decifrado. ` +
+        "Corrija TRACKEN_ENCRYPTION_KEY ou grave novamente o secret.",
     };
   }
 
   if (row.require_signature && !secret) {
     return {
       reason:
-        "A credencial exige assinatura, mas webhook_secret esta ausente. Grave o secret antes de entregar eventos.",
+        `A credencial de ${environment} exige assinatura, mas ` +
+        "webhook_secret esta ausente.",
     };
   }
 
   return {
     target: {
       credentialId: row.id,
-      url: parsed.toString(),
-      logLabel: `${parsed.origin}${parsed.pathname}`,
+      environment,
+      url: validated.url,
+      logLabel: validated.endpoint,
       secret,
     },
   };
 }
 
 /**
- * Reivindica um lote para esta execucao.
+ * Resolve os dois ambientes de forma independente.
  *
- * `FOR UPDATE SKIP LOCKED` e a peca central: duas execucoes sobrepostas (cron
- * atrasado somado a um disparo manual) nao pegam o mesmo item — a segunda pula
- * o que a primeira travou em vez de entregar em dobro.
- *
- * Alem do lock, o `NOT EXISTS` abaixo implementa FIFO GLOBAL POR TICKET: uma
- * candidata so pode ser reclamada se nao existir predecessor `pending/failed`
- * do mesmo atendimento. O predecessor bloqueia mesmo com `next_attempt_at` no
- * futuro, pois esse futuro pode ser tanto backoff quanto lease de outro
- * dispatch ainda em voo. Assim dispatches concorrentes nunca ultrapassam o
- * evento nao terminal mais antigo de um ticket.
- *
- * `attempts` sobe aqui, no claim, e nao depois da resposta. Se subisse depois,
- * um evento que derruba o processo no meio do envio seria reivindicado para
- * sempre, sem nunca chegar ao limite de tentativas: um loop infinito silencioso
- * a cada rodada do cron. Contando na reivindicacao, esse caso caminha para
- * `dead` como qualquer outra falha.
+ * Uma configuracao quebrada em sandbox permanece visivel no retorno, mas nao
+ * impede production de ser reclamada. Credenciais com ambiente desconhecido
+ * nao entram em nenhum grupo e nunca se tornam fallback.
  */
-async function claimBatch(limit: number): Promise<OutboxRow[]> {
+async function resolveTargets(): Promise<
+  Record<TrackenEnvironment, TargetResolution>
+> {
+  const result = await trackenQuery<TargetCandidate>(
+    `SELECT id, name, environment, webhook_url, webhook_secret,
+            require_signature
+       FROM tracken_api_credentials
+      WHERE is_active = true
+        AND webhook_url IS NOT NULL
+        AND btrim(webhook_url) <> ''
+        AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+        AND environment = ANY($1::varchar[])
+      ORDER BY environment, updated_at DESC`,
+    [[...TRACKEN_ENVIRONMENTS]]
+  );
+
+  return Object.fromEntries(
+    TRACKEN_ENVIRONMENTS.map((environment) => [
+      environment,
+      resolveEnvironmentTarget(
+        environment,
+        result.rows.filter((row) => row.environment === environment)
+      ),
+    ])
+  ) as Record<TrackenEnvironment, TargetResolution>;
+}
+
+/**
+ * Reivindica um lote global limitado aos ambientes com target utilizavel.
+ *
+ * `FOR UPDATE SKIP LOCKED` impede duas execucoes de pegarem a mesma linha. O
+ * `NOT EXISTS` preserva FIFO por ticket inclusive durante lease/backoff. O
+ * limite e unico para a execucao: habilitar dois ambientes nao duplica o batch.
+ */
+async function claimBatch(
+  limit: number,
+  environments: TrackenEnvironment[]
+): Promise<OutboxRow[]> {
+  if (environments.length === 0) return [];
+
   const result = await trackenQuery<OutboxRow>(
     `WITH elegiveis AS (
        SELECT candidata.id
          FROM tracken_outbox candidata
-        WHERE candidata.status IN ('pending', 'failed')
+        WHERE candidata.environment = ANY($1::varchar[])
+          AND candidata.status IN ('pending', 'failed')
           AND candidata.next_attempt_at <= CURRENT_TIMESTAMP
           AND NOT EXISTS (
             SELECT 1
@@ -273,31 +284,23 @@ async function claimBatch(limit: number): Promise<OutboxRow[]> {
                    (candidata.created_at, candidata.id)
           )
         ORDER BY candidata.created_at, candidata.id
-        LIMIT $1
+        LIMIT $2
         FOR UPDATE OF candidata SKIP LOCKED
      )
      UPDATE tracken_outbox o
         SET attempts = o.attempts + 1,
-            next_attempt_at = CURRENT_TIMESTAMP + ($2 || ' minutes')::interval
+            next_attempt_at = CURRENT_TIMESTAMP + ($3 || ' minutes')::interval
        FROM elegiveis e
       WHERE o.id = e.id
-      RETURNING o.id, o.ticket_id, o.event_type, o.payload,
+      RETURNING o.id, o.ticket_id, o.environment, o.event_type, o.payload,
                 o.attempts, o.max_attempts, o.created_at,
                 (SELECT t.shipment_id
                    FROM tracken_tickets t
                   WHERE t.id = o.ticket_id) AS shipment_id`,
-    [limit, LEASE_MINUTES.toString()]
+    [[...environments], limit, LEASE_MINUTES.toString()]
   );
 
-  // O UPDATE ... FROM nao respeita o ORDER BY da CTE no RETURNING, entao a ordem
-  // e refeita aqui. Ela importa: dois eventos do mesmo atendimento fora de
-  // sequencia fazem a Tracken gravar status velho sobre status novo.
-  //
-  // `id` desempata porque `created_at` usa CURRENT_TIMESTAMP, que no Postgres e
-  // o instante de inicio da TRANSACAO: um lote de atendimentos gravado de uma vez
-  // sai com created_at identico em todas as linhas. Sao atendimentos distintos,
-  // onde a ordem entre eles nao muda nada, mas sem desempate a sequencia varia
-  // entre execucoes e um bug de ordem ficaria impossivel de reproduzir.
+  // UPDATE ... RETURNING nao preserva o ORDER BY da CTE.
   return result.rows.sort((a, b) => {
     const diff =
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
@@ -317,26 +320,26 @@ type SendResult = {
   httpStatus: number | null;
   responseBody: string | null;
   error: string | null;
-  /** false para erro que reenviar nao resolve (payload recusado, rota inexistente). */
+  /** false para erro que reenviar nao resolve. */
   retryable: boolean;
 };
 
 function buildBody(row: OutboxRow): string {
   return JSON.stringify({
     event: row.event_type,
-    // Identificador da ENTREGA, nao do evento de negocio. Serve para a Tracken
-    // reconhecer reenvio e para casar com o log dos dois lados.
+    // Identificador estavel da ENTREGA, usado para deduplicar reenvios.
     delivery_id: row.id,
-    // Quando o fato aconteceu aqui. Como o reenvio pode chegar depois de um
-    // evento mais novo, e por este campo que o outro lado decide o que
-    // descartar em vez de confiar na ordem de chegada.
     occurred_at: new Date(row.created_at).toISOString(),
     attempt: row.attempts,
     data: row.payload ?? {},
   });
 }
 
-async function send(target: WebhookTarget, row: OutboxRow, body: string): Promise<SendResult> {
+async function send(
+  target: WebhookTarget,
+  row: OutboxRow,
+  body: string
+): Promise<SendResult> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -359,8 +362,7 @@ async function send(target: WebhookTarget, row: OutboxRow, body: string): Promis
       headers,
       body,
       signal: controller.signal,
-      // Redirect automatico descartaria o corpo assinado no salto e a
-      // assinatura chegaria invalida no destino final, sem pista do motivo.
+      // Redirect automatico invalidaria a assinatura no destino final.
       redirect: "manual",
     });
 
@@ -377,9 +379,6 @@ async function send(target: WebhookTarget, row: OutboxRow, body: string): Promis
       };
     }
 
-    // 408 e 429 sao 4xx que pedem espera, nao correcao. 5xx e problema do
-    // outro lado e costuma passar. O resto (400, 401, 404, 422) continuaria
-    // dando o mesmo resultado nas oito tentativas.
     const retryable =
       response.status === 408 ||
       response.status === 429 ||
@@ -403,7 +402,6 @@ async function send(target: WebhookTarget, row: OutboxRow, body: string): Promis
         : error instanceof Error
           ? error.message
           : "Falha de rede",
-      // Rede e timeout sao transitorios por definicao.
       retryable: true,
     };
   } finally {
@@ -438,15 +436,7 @@ async function finalizeSent(row: OutboxRow, result: SendResult): Promise<void> {
   });
 }
 
-/**
- * Falha: reagenda ou desiste.
- *
- * O evento `webhook_failed` no historico entra so na desistencia. Registrar
- * cada tentativa encheria a linha do tempo do atendimento com ruido de
- * infraestrutura — o atendente veria vinte linhas de erro para um envio que no
- * fim deu certo. Tentativa isolada fica em `last_error` e no log de
- * requisicoes, que e o lugar de quem esta investigando.
- */
+/** Falha: reagenda ou desiste, sem poluir historico em retry intermediario. */
 async function finalizeFailure(
   row: OutboxRow,
   result: SendResult
@@ -504,13 +494,7 @@ async function finalizeFailure(
   return "dead";
 }
 
-/**
- * Devolve o item para a fila sem gastar tentativa.
- *
- * Usado quando nem se tentou enviar: acabou o orcamento de tempo, ou um evento
- * anterior do MESMO atendimento falhou nesta rodada. Como `attempts` sobe no
- * claim, aqui ele volta.
- */
+/** Devolve itens nao enviados sem gastar a tentativa consumida no claim. */
 async function release(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
   await trackenQuery(
@@ -522,47 +506,110 @@ async function release(ids: string[]): Promise<void> {
   );
 }
 
-async function countPending(): Promise<number> {
-  const result = await trackenQuery<{ total: string }>(
-    `SELECT COUNT(*)::text AS total
+type PendingCounts = {
+  total: number;
+  byEnvironment: Record<TrackenEnvironment, number>;
+};
+
+/** Conta backlog nao terminal por ambiente e no total. */
+async function countPending(): Promise<PendingCounts> {
+  const result = await trackenQuery<{ environment: string; total: string }>(
+    `SELECT environment, COUNT(*)::text AS total
        FROM tracken_outbox
-      WHERE status IN ('pending', 'failed')`
+      WHERE status IN ('pending', 'failed')
+      GROUP BY environment`
   );
-  return Number(result.rows[0]?.total ?? 0);
+
+  const counts: PendingCounts = {
+    total: 0,
+    byEnvironment: { production: 0, sandbox: 0 },
+  };
+
+  for (const row of result.rows) {
+    const total = Number(row.total);
+    counts.total += total;
+    if (isTrackenEnvironment(row.environment)) {
+      counts.byEnvironment[row.environment] = total;
+    }
+  }
+
+  return counts;
+}
+
+function environmentOutcome(
+  resolution: TargetResolution
+): EnvironmentDispatchOutcome {
+  return {
+    claimed: 0,
+    sent: 0,
+    retried: 0,
+    dead: 0,
+    released: 0,
+    pending: 0,
+    signed: "target" in resolution && resolution.target.secret !== null,
+    skippedReason: "reason" in resolution ? resolution.reason : null,
+  };
 }
 
 /**
  * Entrega o que estiver pendente na fila.
  *
- * Envio em serie, de proposito. O claim ja garante FIFO global por ticket,
- * inclusive entre dispatches concorrentes e durante backoff/lease. A execucao
- * continua serial para manter carga previsivel no destino e uma ordem global
- * deterministica entre os eventos efetivamente reclamados.
+ * O claim e envio continuam globais e seriais para preservar batch maximo,
+ * carga previsivel e ordem deterministica. A elegibilidade e que e recortada:
+ * somente ambientes com target utilizavel podem ser reivindicados.
  */
 export async function dispatchOutbox(
   options: { batchSize?: number } = {}
 ): Promise<DispatchOutcome> {
   const limit = Math.max(1, Math.min(options.batchSize ?? BATCH_SIZE, 100));
+  const resolutions = await resolveTargets();
+  const byEnvironment: Record<
+    TrackenEnvironment,
+    EnvironmentDispatchOutcome
+  > = {
+    production: environmentOutcome(resolutions.production),
+    sandbox: environmentOutcome(resolutions.sandbox),
+  };
 
-  const resolved = await resolveTarget();
-  if ("reason" in resolved) {
-    // Sai antes de reivindicar. Falta de configuracao nossa nao pode consumir
-    // as tentativas do evento nem empurrar `next_attempt_at` para frente.
+  const usableEnvironments = TRACKEN_ENVIRONMENTS.filter(
+    (environment) => "target" in resolutions[environment]
+  );
+
+  const pendingBeforeClaim =
+    usableEnvironments.length === 0 ? await countPending() : null;
+
+  if (usableEnvironments.length === 0) {
+    for (const environment of TRACKEN_ENVIRONMENTS) {
+      byEnvironment[environment].pending =
+        pendingBeforeClaim!.byEnvironment[environment];
+    }
+
     return {
       claimed: 0,
       sent: 0,
       retried: 0,
       dead: 0,
       released: 0,
-      pending: await countPending(),
-      skippedReason: resolved.reason,
+      pending: pendingBeforeClaim!.total,
       signed: false,
+      skippedReason: TRACKEN_ENVIRONMENTS.map((environment) => {
+        const resolution = resolutions[environment];
+        return `${environment}: ${"reason" in resolution ? resolution.reason : "sem target"}`;
+      }).join(" | "),
+      byEnvironment,
     };
   }
 
-  const { target } = resolved;
-  const rows = await claimBatch(limit);
+  for (const environment of usableEnvironments) {
+    const resolution = resolutions[environment];
+    if ("target" in resolution && !resolution.target.secret) {
+      console.warn(
+        `[TRACKEN] webhook_secret ausente em ${environment}: entregas sairao SEM assinatura HMAC`
+      );
+    }
+  }
 
+  const rows = await claimBatch(limit, [...usableEnvironments]);
   const outcome: DispatchOutcome = {
     claimed: rows.length,
     sent: 0,
@@ -570,36 +617,46 @@ export async function dispatchOutbox(
     dead: 0,
     released: 0,
     pending: 0,
-    signed: target.secret !== null,
+    signed: usableEnvironments.every((environment) => {
+      const resolution = resolutions[environment];
+      return "target" in resolution && resolution.target.secret !== null;
+    }),
+    byEnvironment,
   };
 
-  if (!target.secret) {
-    console.warn(
-      "[TRACKEN] webhook_secret ausente: entregas sairao SEM assinatura HMAC"
-    );
-  }
-
   const prazo = Date.now() + RUN_BUDGET_MS;
-  // Atendimento cujo evento falhou nesta rodada. Os proximos dele voltam para a
-  // fila sem tentar, senao a Tracken receberia a mudanca nova enquanto a
-  // anterior ainda esta em retry — exatamente a inversao de ordem que este
-  // worker existe para evitar.
   const travados = new Set<string>();
   const devolvidos: string[] = [];
+  const claimedById = new Map(rows.map((row) => [row.id, row]));
 
-  for (let i = 0; i < rows.length; i += 1) {
-    const row = rows[i];
+  for (const row of rows) {
+    // Defesa runtime adicional: a query ja limita aos dois ambientes, mas uma
+    // linha desconhecida jamais pode herdar target nem ser enviada por engano.
+    if (!isTrackenEnvironment(row.environment)) {
+      devolvidos.push(row.id);
+      continue;
+    }
+
+    const environment = row.environment;
+    const environmentMetrics = outcome.byEnvironment[environment];
+    environmentMetrics.claimed += 1;
+
+    const resolution = resolutions[environment];
+    if ("reason" in resolution) {
+      // Configuracao pode mudar entre resolucao e processamento. Sem fallback:
+      // devolve a linha ao mesmo ambiente sem gastar tentativa.
+      devolvidos.push(row.id);
+      continue;
+    }
+    const target = resolution.target;
 
     if (travados.has(row.ticket_id) || Date.now() >= prazo) {
       devolvidos.push(row.id);
       continue;
     }
 
-    // `attempts` sobe no claim. Se o processo anterior morreu depois de
-    // reivindicar a ultima tentativa, a recuperacao do lease chega aqui com
-    // attempts > max_attempts. Esse estado fecha em dead sem montar payload nem
-    // abrir HTTP: a tentativa excedente existe apenas para detectar o crash,
-    // nunca para produzir uma nona entrega.
+    // Claim excedente depois de crash fecha a linha sem produzir uma tentativa
+    // HTTP alem de max_attempts.
     if (row.attempts > row.max_attempts) {
       await finalizeFailure(row, {
         ok: false,
@@ -610,6 +667,7 @@ export async function dispatchOutbox(
         retryable: true,
       });
       outcome.dead += 1;
+      environmentMetrics.dead += 1;
       travados.add(row.ticket_id);
       continue;
     }
@@ -631,6 +689,7 @@ export async function dispatchOutbox(
         delivery_id: row.id,
         attempt: row.attempts,
         shipment_id: row.shipment_id,
+        environment,
       },
       responseBody: result.responseBody,
       durationMs: duracao,
@@ -640,25 +699,39 @@ export async function dispatchOutbox(
     if (result.ok) {
       await finalizeSent(row, result);
       outcome.sent += 1;
+      environmentMetrics.sent += 1;
       continue;
     }
 
     const desfecho = await finalizeFailure(row, result);
     if (desfecho === "retried") {
       outcome.retried += 1;
+      environmentMetrics.retried += 1;
     } else {
       outcome.dead += 1;
+      environmentMetrics.dead += 1;
     }
 
-    // Mesmo desistindo do evento, os seguintes do atendimento esperam a
-    // proxima rodada: mandar o status mais novo agora deixaria a Tracken com um
-    // salto de estado sem o passo intermediario.
+    // Mesmo em dead, os seguintes deste ticket esperam a proxima rodada.
     travados.add(row.ticket_id);
   }
 
   await release(devolvidos);
   outcome.released = devolvidos.length;
-  outcome.pending = await countPending();
+
+  for (const id of devolvidos) {
+    const row = claimedById.get(id);
+    if (row && isTrackenEnvironment(row.environment)) {
+      outcome.byEnvironment[row.environment].released += 1;
+    }
+  }
+
+  const pending = await countPending();
+  outcome.pending = pending.total;
+  for (const environment of TRACKEN_ENVIRONMENTS) {
+    outcome.byEnvironment[environment].pending =
+      pending.byEnvironment[environment];
+  }
 
   return outcome;
 }

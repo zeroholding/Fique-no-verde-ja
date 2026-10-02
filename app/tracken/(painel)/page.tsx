@@ -40,6 +40,7 @@ import { FLEX_MODE } from "@/lib/tracken/shipping";
 const today = toInputDate();
 
 const INITIAL_FILTERS: PanelFilterState = {
+  environment: "production",
   startDate: today,
   endDate: today,
   carrier: "",
@@ -62,7 +63,7 @@ export default function TrackenPanelPage() {
   const [openTicketId, setOpenTicketId] = useState<string | null>(null);
 
   const { carriers, statuses, attendants, unassignedOpen, error: catalogError } =
-    useTrackenCatalogs();
+    useTrackenCatalogs({ environment: filters.environment });
 
   const {
     tickets,
@@ -77,6 +78,9 @@ export default function TrackenPanelPage() {
   } = usePanelTickets({ filters, sort, page, pageSize, withStats: true });
 
   const handleFilterChange = (patch: Partial<PanelFilterState>) => {
+    if (patch.environment && patch.environment !== filters.environment) {
+      setOpenTicketId(null);
+    }
     setFilters((previous) => ({ ...previous, ...patch }));
     setPage(1);
   };
@@ -97,17 +101,20 @@ export default function TrackenPanelPage() {
       nextStatus: string,
       denialReason?: string | null
     ) => {
-      const response = await fetch(`/api/tracken/tickets/${ticketId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          action: "status",
-          status: nextStatus,
-          // Obrigatorio ao negar; a API recusa a negativa sem ele.
-          denialReason: denialReason ?? null,
-        }),
-      });
+      const response = await fetch(
+        `/api/tracken/tickets/${ticketId}?environment=${filters.environment}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            action: "status",
+            status: nextStatus,
+            // Obrigatorio ao negar; a API recusa a negativa sem ele.
+            denialReason: denialReason ?? null,
+          }),
+        }
+      );
 
       const data = await response.json();
       if (!response.ok) {
@@ -117,7 +124,7 @@ export default function TrackenPanelPage() {
 
       await reload({ silent: true });
     },
-    [reload]
+    [filters.environment, reload]
   );
 
   const kpiTotal = stats?.kpis.total ?? 0;
@@ -310,6 +317,7 @@ export default function TrackenPanelPage() {
           onReset={() =>
             setFilters({
               ...INITIAL_FILTERS,
+              environment: filters.environment,
               startDate: filters.startDate,
               endDate: filters.endDate,
             })
@@ -359,6 +367,7 @@ export default function TrackenPanelPage() {
       {openTicketId && (
         <TicketDetailModal
           ticketId={openTicketId}
+          environment={filters.environment}
           statuses={statuses}
           onClose={() => setOpenTicketId(null)}
           onUpdated={() => reload({ silent: true })}

@@ -163,7 +163,7 @@ export async function GET(request: NextRequest) {
     });
 
     const csv = `\uFEFF${lines.join("\r\n")}`;
-    const fileName = `atendimentos-tracken-${toInputDate()}.csv`;
+    const fileName = `atendimentos-tracken-${filters.environment}-${toInputDate()}.csv`;
 
     return new NextResponse(csv, {
       status: 200,

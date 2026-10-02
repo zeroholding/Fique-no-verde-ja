@@ -24,6 +24,7 @@ import {
   StatTile,
 } from "@/components/tracken/PageShell";
 import { formatDate, formatNumber, formatTime } from "@/lib/tracken/format";
+import type { TrackenEnvironment } from "@/lib/tracken/types";
 
 /**
  * Tela "Configuracoes": credenciais da API, mapa de status e fila de saida.
@@ -38,7 +39,7 @@ type Credential = {
   id: string;
   name: string;
   api_key: string;
-  environment: string;
+  environment: TrackenEnvironment;
   scopes: string[];
   require_signature: boolean;
   has_encrypted_secret: boolean;
@@ -66,6 +67,7 @@ type StatusRow = {
 type OutboxRow = {
   id: string;
   shipment_id: string;
+  environment: TrackenEnvironment;
   event_type: string;
   status: string;
   attempts: number;
@@ -77,29 +79,44 @@ type OutboxRow = {
   created_at: string;
 };
 
+type OutboxTotals = {
+  pending: number;
+  sent: number;
+  failed: number;
+  dead: number;
+};
+
+type WebhookHealth = {
+  configured: boolean;
+  signed: boolean;
+  destinations: number;
+  usable: boolean;
+  blockedReason: string | null;
+  /** Apenas origin + pathname; query string nunca chega ao navegador. */
+  endpoint: string | null;
+};
+
 type Settings = {
   canManage: boolean;
   credentials: Credential[];
   statuses: StatusRow[];
-  outbox: {
-    pending: number;
-    sent: number;
-    failed: number;
-    dead: number;
+  outbox: OutboxTotals & {
     recent: OutboxRow[];
+    byEnvironment: Record<TrackenEnvironment, OutboxTotals>;
   };
   requestLog: { last7Days: number; errors: number; lastAt: string | null };
-  webhook: {
-    configured: boolean;
-    signed: boolean;
-    /** Credenciais ativas, nao expiradas e com destino. Mais de uma para a fila. */
-    destinations: number;
-    /** Reflete as mesmas regras de selecao e seguranca do dispatcher. */
-    usable: boolean;
-    /** Motivo operacional seguro para exibicao, sem URL ou segredo. */
-    blockedReason: string | null;
+  webhook: Omit<WebhookHealth, "endpoint"> & {
+    byEnvironment: Record<TrackenEnvironment, WebhookHealth>;
   };
 };
+
+const ENVIRONMENTS: Array<{
+  value: TrackenEnvironment;
+  label: string;
+}> = [
+  { value: "production", label: "Producao" },
+  { value: "sandbox", label: "Homologacao" },
+];
 
 export default function ConfiguracoesPage() {
   const [data, setData] = useState<Settings | null>(null);
@@ -214,19 +231,112 @@ export default function ConfiguracoesPage() {
             />
           </div>
 
-          {data.webhook.usable === false && data.webhook.blockedReason && (
-            <p className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[15px] text-red-800">
-              <AlertTriangle
-                className="mt-0.5 h-4 w-4 shrink-0"
-                aria-hidden="true"
-                strokeWidth={1.75}
-              />
-              <span>
-                <strong>Webhook indisponivel.</strong>{" "}
-                {data.webhook.blockedReason}
-              </span>
-            </p>
-          )}
+          <Card
+            className="mt-4"
+            title="Saude dos webhooks por ambiente"
+            description="Cada fila tem destino, assinatura e backlog independentes"
+          >
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              {ENVIRONMENTS.map(({ value, label }) => {
+                const webhook = data.webhook.byEnvironment[value];
+                const outbox = data.outbox.byEnvironment[value];
+
+                return (
+                  <section
+                    key={value}
+                    aria-labelledby={`webhook-${value}`}
+                    className={`rounded-xl border p-4 ${
+                      webhook.usable
+                        ? "border-green-200 bg-green-50/60"
+                        : "border-red-200 bg-red-50/60"
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <h3
+                          id={`webhook-${value}`}
+                          className="text-[15px] font-bold text-slate-900"
+                        >
+                          {label}
+                        </h3>
+                        <p className="mt-0.5 text-[12.5px] text-slate-500">
+                          Ambiente <code>{value}</code>
+                        </p>
+                      </div>
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[12px] font-semibold ${
+                          webhook.usable
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {webhook.usable ? (
+                          <CheckCircle2
+                            className="h-3.5 w-3.5"
+                            aria-hidden="true"
+                            strokeWidth={1.75}
+                          />
+                        ) : (
+                          <AlertTriangle
+                            className="h-3.5 w-3.5"
+                            aria-hidden="true"
+                            strokeWidth={1.75}
+                          />
+                        )}
+                        {webhook.usable ? "Utilizavel" : "Indisponivel"}
+                      </span>
+                    </div>
+
+                    <div className="mt-3 rounded-lg bg-white/80 px-3 py-2">
+                      <p className="text-[11.5px] font-semibold uppercase tracking-wide text-slate-400">
+                        Endpoint sanitizado
+                      </p>
+                      <code className="mt-1 block break-all text-[12.5px] text-slate-700">
+                        {webhook.endpoint ?? "Nao configurado"}
+                      </code>
+                      <p className="mt-1 text-[12px] text-slate-500">
+                        {webhook.signed
+                          ? "Entregas assinadas com HMAC"
+                          : "Sem assinatura de saida utilizavel"}
+                      </p>
+                    </div>
+
+                    {!webhook.usable && webhook.blockedReason && (
+                      <p className="mt-3 flex items-start gap-1.5 text-[12.5px] leading-relaxed text-red-800">
+                        <AlertTriangle
+                          className="mt-0.5 h-3.5 w-3.5 shrink-0"
+                          aria-hidden="true"
+                          strokeWidth={1.75}
+                        />
+                        <span>{webhook.blockedReason}</span>
+                      </p>
+                    )}
+
+                    <dl className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {[
+                        { label: "Pendentes", value: outbox.pending },
+                        { label: "Enviadas", value: outbox.sent },
+                        { label: "Falhas", value: outbox.failed },
+                        { label: "Esgotadas", value: outbox.dead },
+                      ].map((item) => (
+                        <div
+                          key={item.label}
+                          className="rounded-lg bg-white/80 px-2 py-2 text-center"
+                        >
+                          <dt className="text-[10.5px] uppercase tracking-wide text-slate-400">
+                            {item.label}
+                          </dt>
+                          <dd className="mt-0.5 font-bold tabular-nums text-slate-800">
+                            {formatNumber(item.value)}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </section>
+                );
+              })}
+            </div>
+          </Card>
 
           <Card
             className="mt-4"
@@ -293,7 +403,7 @@ export default function ConfiguracoesPage() {
                           >
                             {credential.environment === "production"
                               ? "Producao"
-                              : "Sandbox"}
+                              : "Homologacao"}
                           </span>
                         </td>
 
@@ -353,17 +463,28 @@ export default function ConfiguracoesPage() {
               </p>
               <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all text-[12.5px] leading-relaxed text-slate-600">
 {`node scripts/tracken_credential.mjs genkey
+$env:TRACKEN_CREDENTIAL_SECRET="<secret-api-base64url>"
 node scripts/tracken_credential.mjs create "Tracken Producao" production
+node scripts/tracken_credential.mjs create "Tracken Homologacao" sandbox
 node scripts/tracken_credential.mjs list
+node scripts/tracken_credential.mjs set-environment <api_key-atual> sandbox
 node scripts/tracken_credential.mjs revoke <api_key>
-node scripts/tracken_credential.mjs webhook <api_key> <url> [secret]`}
+$env:TRACKEN_WEBHOOK_SECRET="<secret-hmac-webhook>"
+node scripts/tracken_credential.mjs webhook <api_key-production> https://seller.tracken.app.br/api/ferramentas/controle-reputacao/webhooks/fnvj
+node scripts/tracken_credential.mjs webhook <api_key-sandbox> https://homologasellercore.tracken.dev.br/api/ferramentas/controle-reputacao/webhooks/fnvj
+Remove-Item Env:TRACKEN_WEBHOOK_SECRET`}
               </pre>
               <p className="mt-2 text-[12.5px] text-slate-500">
-                O secret aparece uma unica vez, no terminal. Depois disso so
-                ficam gravados o hash e a copia cifrada, entao nao ha como
-                recupera-lo: perdido, emita outra credencial. O segredo do
-                webhook segue o mesmo caminho, por ser material de assinatura:
-                ele nunca passa pelo navegador, e a tela mostra apenas se existe.
+                O script le o secret da API em
+                <code className="mx-1 text-[11.5px]">
+                  TRACKEN_CREDENTIAL_SECRET
+                </code>
+                e o secret de assinatura de saida em
+                <code className="mx-1 text-[11.5px]">
+                  TRACKEN_WEBHOOK_SECRET
+                </code>
+                . Nenhum deles vira argumento, log ou resposta do script.
+                Omitir TRACKEN_WEBHOOK_SECRET preserva o valor ja configurado.
               </p>
             </div>
           </Card>
@@ -464,6 +585,17 @@ node scripts/tracken_credential.mjs webhook <api_key> <url> [secret]`}
                             <code className="text-[12.5px] text-slate-700">
                               {item.event_type}
                             </code>
+                            <span
+                              className={`ml-1.5 inline-flex rounded-full px-1.5 py-0.5 text-[10.5px] font-semibold ${
+                                item.environment === "production"
+                                  ? "bg-green-50 text-green-700"
+                                  : "bg-blue-50 text-blue-700"
+                              }`}
+                            >
+                              {item.environment === "production"
+                                ? "Producao"
+                                : "Homologacao"}
+                            </span>
                             <span className="block text-[11.5px] text-slate-400">
                               {formatDate(item.created_at)} {formatTime(item.created_at)}
                             </span>

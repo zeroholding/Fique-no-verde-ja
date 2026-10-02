@@ -32,6 +32,7 @@ const hoje = new Date();
 const trintaDiasAtras = new Date(hoje.getTime() - 30 * 24 * 3_600_000);
 
 const INITIAL_FILTERS: PanelFilterState = {
+  environment: "production",
   startDate: toInputDate(trintaDiasAtras),
   endDate: toInputDate(hoje),
   carrier: "",
@@ -44,10 +45,10 @@ const INITIAL_FILTERS: PanelFilterState = {
 };
 
 export default function AtendimentosPage() {
-  const { carriers, statuses, attendants, unassignedOpen, error: catalogError } =
-    useTrackenCatalogs();
-
   const [filters, setFilters] = useState<PanelFilterState>(INITIAL_FILTERS);
+  const { carriers, statuses, attendants, unassignedOpen, error: catalogError } =
+    useTrackenCatalogs({ environment: filters.environment });
+
   const [sort, setSort] = useState<SortState>({
     sortBy: "deadline",
     sortDir: "asc",
@@ -68,6 +69,9 @@ export default function AtendimentosPage() {
   } = usePanelTickets({ filters, sort, page, pageSize });
 
   const handleFilterChange = (patch: Partial<PanelFilterState>) => {
+    if (patch.environment && patch.environment !== filters.environment) {
+      setOpenTicketId(null);
+    }
     setFilters((previous) => ({ ...previous, ...patch }));
     setPage(1);
   };
@@ -78,17 +82,20 @@ export default function AtendimentosPage() {
       nextStatus: string,
       denialReason?: string | null
     ) => {
-      const response = await fetch(`/api/tracken/tickets/${ticketId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          action: "status",
-          status: nextStatus,
-          // Obrigatorio ao negar; a API recusa a negativa sem ele.
-          denialReason: denialReason ?? null,
-        }),
-      });
+      const response = await fetch(
+        `/api/tracken/tickets/${ticketId}?environment=${filters.environment}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            action: "status",
+            status: nextStatus,
+            // Obrigatorio ao negar; a API recusa a negativa sem ele.
+            denialReason: denialReason ?? null,
+          }),
+        }
+      );
 
       const data = await response.json();
       if (!response.ok) {
@@ -97,7 +104,7 @@ export default function AtendimentosPage() {
 
       await reload({ silent: true });
     },
-    [reload]
+    [filters.environment, reload]
   );
 
   return (
@@ -152,6 +159,7 @@ export default function AtendimentosPage() {
           onReset={() =>
             setFilters({
               ...INITIAL_FILTERS,
+              environment: filters.environment,
               startDate: filters.startDate,
               endDate: filters.endDate,
             })
@@ -198,6 +206,7 @@ export default function AtendimentosPage() {
       {openTicketId && (
         <TicketDetailModal
           ticketId={openTicketId}
+          environment={filters.environment}
           statuses={statuses}
           onClose={() => setOpenTicketId(null)}
           onUpdated={() => reload({ silent: true })}

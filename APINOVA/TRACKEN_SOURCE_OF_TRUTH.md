@@ -2,8 +2,8 @@
 
 > **Documento canônico e vivo.** Este arquivo define o contrato atualmente implementado e confirmado da integração entre Fique no Verde Já (FNVJ) e TRACKen.
 >
-> **Última atualização:** 25/09/2026  
-> **Estado:** homologação ativa; alinhamento de status aplicado no banco de produção em 25/09/2026  
+> **Última atualização:** 30/09/2026
+> **Estado:** migration 024 aplicada historicamente; isolamento production/sandbox validado localmente no código e preparado nas migrations 025/026, ainda não aplicado, publicado ou configurado em ambiente real.
 > **Responsabilidade:** atualizar este documento na mesma alteração de código, banco ou configuração que mude o contrato.
 
 ## 1. Como usar este documento
@@ -41,11 +41,11 @@ A TRACKen cria acionamentos no FNVJ pela API de máquina:
 POST /api/tracken/v1/tickets
 ```
 
-O FNVJ valida a credencial, valida cada item, cria o atendimento de forma idempotente por `shipment_id`, registra histórico e cria um evento de outbox.
+O FNVJ valida a credencial, deriva dela o ambiente, valida cada item, cria o atendimento de forma idempotente por `(environment, shipment_id)`, registra histórico e cria um evento de outbox no mesmo ambiente. Production e sandbox podem usar o mesmo `shipment_id` sem compartilhar o ticket.
 
 ### 2.2 Saída: FNVJ → TRACKen
 
-Quando o FNVJ recebe ou altera o status de um atendimento, grava um evento em `tracken_outbox`. O worker envia um `POST` para a URL de webhook configurada pela TRACKen.
+Quando o FNVJ recebe ou altera o status de um atendimento, grava um evento em `tracken_outbox` com o ambiente imutavel copiado do ticket. O worker resolve exatamente um destino utilizavel por ambiente e envia o `POST` correspondente. Configuracao quebrada em sandbox nao bloqueia production, e vice-versa; ambiente desconhecido nunca recebe fallback nem e enviado.
 
 Eventos implementados e observados:
 
@@ -56,35 +56,53 @@ Não presumir que eventos citados em documentos históricos (`ticket.assigned`, 
 
 ## 3. Ambientes e configuração
 
-### 3.1 Aplicação
+### 3.1 Aplicação e API de entrada
 
 - Painel humano: `https://fiquenoverdeja.com.br/tracken`
 - Documentação pública: `https://fiquenoverdeja.com.br/tracken/docapi`
 - API v1: `https://fiquenoverdeja.com.br/api/tracken/v1`
 
-### 3.2 Webhook de homologação da TRACKen
+A URL da API FNVJ e comum. O ambiente e determinado exclusivamente pela credencial autenticada (`production` ou `sandbox`), nunca por parametro do cliente. POST, GET de lista e GET por `shipment_id` ficam sempre no ambiente dessa credencial; consultar um identificador que existe apenas no outro ambiente devolve 404.
 
-URL informada pela TRACKen em homologação:
+### 3.2 Endpoints de webhook da TRACKen
 
-```text
-POST https://homologasellercore.tracken.dev.br/api/ferramentas/controle-reputacao/webhooks/fnvj
-```
+| Ambiente | Endpoint outbound canonico |
+|---|---|
+| Production | `https://seller.tracken.app.br/api/ferramentas/controle-reputacao/webhooks/fnvj` |
+| Sandbox / Homologacao | `https://homologasellercore.tracken.dev.br/api/ferramentas/controle-reputacao/webhooks/fnvj` |
 
-A URL não é segredo. O secret de assinatura é confidencial e não deve ser registrado aqui.
+O script, o worker e o diagnóstico do painel exigem exatamente a URL canônica do ambiente. Alterar a coluna diretamente por SQL não cria fallback: a configuração fica bloqueada antes do claim. Somente sandbox pode usar localhost para desenvolvimento, e ainda exige `TRACKEN_ALLOW_LOCAL_SANDBOX_WEBHOOK=true`; production nunca aceita localhost.
 
-### 3.3 Onde a configuração fica
+### 3.3 Fronteira de isolamento
 
-A URL e o secret do webhook ficam em `tracken_api_credentials`, vinculados à credencial ativa:
+- `tracken_tickets.environment` e derivado da credencial de entrada e imutavel;
+- a idempotencia e `(environment, shipment_id)`, nao global;
+- `tracken_outbox.environment` e copiado do ticket e protegido por FK composta;
+- o claim considera apenas eventos de ambientes com target utilizavel;
+- o batch maximo continua global por execucao, somando os dois ambientes;
+- FIFO, lease e retry continuam por ticket;
+- linhas com ambiente ausente/desconhecido falham no schema e, como defesa adicional, nunca sao enviadas pelo worker;
+- nao existe fallback de sandbox para production nem de production para sandbox.
+
+### 3.4 Onde a configuração fica
+
+A URL e o secret do webhook ficam em `tracken_api_credentials`, vinculados a uma credencial ativa do mesmo ambiente:
 
 - `webhook_url`;
-- `webhook_secret` preferencialmente cifrado; o worker ainda aceita texto puro apenas para compatibilidade com registros legados, que devem ser migrados;
+- `webhook_secret` preferencialmente cifrado; texto puro permanece aceito no worker apenas para compatibilidade legada;
 - `is_active`;
 - `expires_at`;
 - `environment`.
 
-A chave de criptografia fica em variável de ambiente. Secret cifrado configurado, mas indecifrável, bloqueia a entrega antes de reivindicar eventos; o sistema não faz downgrade silencioso para webhook sem HMAC. Não colocar secret em documentação, commit, screenshot ou log.
+Existe no maximo um destino ativo configurado por ambiente, garantido tambem por indice parcial. Uma credencial expirada com `is_active=true` deve ser revogada ou ter o destino limpo antes da substituicao, pois expiracao nao pode integrar o predicado temporal do indice.
 
-Administração operacional: `scripts/tracken_credential.mjs`. O comando `create` e fail-closed: sem `TRACKEN_ENCRYPTION_KEY` valida ele termina com erro antes do INSERT; com a chave, `secret_encrypted` e obrigatorio e toda credencial nova nasce com `require_signature=true`. Nao existe criacao silenciosa sem HMAC.
+A chave de criptografia fica em variavel de ambiente. Secret cifrado configurado, mas indecifravel, bloqueia somente o ambiente correspondente antes do claim; o sistema nao faz downgrade silencioso para webhook sem HMAC.
+
+Administracao operacional: `scripts/tracken_credential.mjs`. `create` exige nome e ambiente explícitos, `TRACKEN_ENCRYPTION_KEY` e `TRACKEN_CREDENTIAL_SECRET`; não existe default silencioso para production. `set-environment` só funciona antes da migration 025. O comando `webhook` lê um novo secret em `TRACKEN_WEBHOOK_SECRET` (nunca em argumento), preserva o atual quando a variável é omitida, valida ambiente/URL e recusa outro destino ativo no mesmo ambiente.
+
+O painel humano também exige ambiente explícito em toda leitura/mutação: abre em production, nunca oferece “todos” e filtra fila, KPI, SLA, relatório, histórico, exportação e contagens. PATCH de status/atendente valida o ambiente dentro do mesmo lock do ticket.
+
+> **Rollout pendente em duas fases:** aplicar a 025 aditiva, publicar o código composto, aplicar a 026 que remove a UNIQUE global e somente depois liberar a segunda credencial. Este documento não afirma que migrations, URLs ou credenciais tenham sido aplicadas em ambiente real.
 
 ## 4. Autenticação
 
@@ -247,7 +265,7 @@ Política atual:
 
 O claim usa `FOR UPDATE SKIP LOCKED` e so pode selecionar uma candidata quando nao existe predecessor do mesmo `ticket_id`, com status `pending`/`failed` e `(created_at,id)` menor. O predecessor bloqueia mesmo quando `next_attempt_at` esta no futuro por lease ou backoff. Assim, apenas o evento nao terminal mais antigo de cada ticket pode ser reclamado, inclusive entre dispatches concorrentes; tickets diferentes continuam progredindo.
 
-Eventos terminais (`sent`/`dead`) nao bloqueiam os seguintes. O envio permanece serial dentro de cada lote, mas a garantia por ticket vem do claim no banco, nao de memoria do processo.
+Eventos terminais (`sent`/`dead`) nao bloqueiam os seguintes. O envio permanece serial dentro de cada lote, mas a garantia por ticket vem do claim no banco, nao de memoria do processo. O claim recebe apenas a lista de ambientes com target utilizavel e aplica um unico limite total; por isso uma configuracao quebrada nao consome tentativas nem impede o outro ambiente de progredir.
 
 ### 8.2 Limite fail-closed depois de crash
 
@@ -257,7 +275,7 @@ A mudança de status não depende da disponibilidade da TRACKen: a transação g
 
 ## 9. Entrada de tickets
 
-A criação aceita item individual ou lote, conforme contrato da rota v1. O resultado é item a item:
+A criação aceita item individual ou lote, conforme contrato da rota v1. A credencial define o ambiente, e a chave idempotente e `(environment, shipment_id)`: retry no mesmo ambiente retorna `duplicated`, enquanto o mesmo `shipment_id` pode existir de forma independente no outro. O resultado é item a item:
 
 - `created`: criado;
 - `duplicated`: `shipment_id` já existia;
@@ -288,12 +306,20 @@ Tabelas principais:
 | `tracken_carriers` | transportadoras |
 | `tracken_status_map` | status, vocabulário e transições |
 | `tracken_api_credentials` | autenticação e webhook |
-| `tracken_tickets` | atendimento atual |
+| `tracken_tickets` | atendimento atual, com ambiente imutavel e idempotencia composta |
 | `tracken_ticket_events` | histórico imutável |
-| `tracken_outbox` | fila de saída |
+| `tracken_outbox` | fila de saída com snapshot/FK do ambiente do ticket |
 | `tracken_request_log` | auditoria HTTP |
 
-### 11.1 Fonte do status de saída
+### 11.1 Migrations 025/026 e compatibilidade de escrita
+
+`025_tracken_environment_isolation.sql` é aditiva: remove o default production da credencial, adiciona `environment` sem default a tickets/outbox, faz backfill credencial → ticket → outbox e aborta se alguma linha não puder ser classificada. Aplica `NOT NULL`, checks, chave composta, FK composta, índices e triggers de imutabilidade, mas mantém temporariamente a UNIQUE global de `shipment_id`. Assim, o código antigo e o novo permanecem compatíveis durante o deploy.
+
+Depois do código novo estar publicado, `026_tracken_environment_cutover.sql` verifica a chave composta e remove somente a UNIQUE global. A partir daí, o mesmo `shipment_id` pode existir uma vez em cada ambiente e não se pode voltar ao SQL antigo `ON CONFLICT (shipment_id)`.
+
+A 025 também valida a URL canônica das credenciais já configuradas e limita a um destino ativo por ambiente. Nenhuma das duas migrations foi executada nesta alteração local.
+
+### 11.2 Fonte do status de saída
 
 `lib/tracken/tickets.ts::changeTicketStatus` busca o destino em `tracken_status_map` e grava no payload:
 
@@ -303,12 +329,13 @@ tracken_status: target.tracken_status
 
 Por isso migration/configuração de `tracken_status_map` muda os próximos webhooks sem mudar o código da transição.
 
-### 11.2 Auditoria
+### 11.3 Auditoria
 
 Para verificar uma ocorrência real, consultar ticket, mapa e outbox. Exemplo somente leitura:
 
 ```sql
 SELECT
+  t.environment,
   t.shipment_id,
   t.order_id,
   t.status,
@@ -316,11 +343,13 @@ SELECT
   sm.tracken_status
 FROM tracken_tickets t
 LEFT JOIN tracken_status_map sm ON sm.code = t.status
-WHERE t.order_id = '<order_id>' OR t.shipment_id = '<shipment_id>';
+WHERE t.environment = '<production|sandbox>'
+  AND (t.order_id = '<order_id>' OR t.shipment_id = '<shipment_id>');
 ```
 
 ```sql
 SELECT
+  o.environment,
   o.event_type,
   o.status,
   o.last_http_status,
@@ -333,7 +362,8 @@ SELECT
   o.sent_at
 FROM tracken_outbox o
 JOIN tracken_tickets t ON t.id = o.ticket_id
-WHERE t.order_id = '<order_id>' OR t.shipment_id = '<shipment_id>'
+WHERE o.environment = '<production|sandbox>'
+  AND (t.order_id = '<order_id>' OR t.shipment_id = '<shipment_id>')
 ORDER BY o.created_at DESC;
 ```
 
@@ -376,15 +406,30 @@ Todos foram entregues com HTTP 200 na primeira tentativa. Essa sequência é evi
 
 ## 13. Teste ponta a ponta
 
-### 13.1 Preparação
+### 13.1 Rollout seguro do isolamento por ambiente
 
-1. confirmar exatamente uma credencial ativa com webhook no ambiente;
-2. confirmar URL de homologação;
-3. confirmar secret/HMAC sem expô-lo;
-4. confirmar transportadora do item de teste;
-5. usar pedido/envio explicitamente autorizado para teste.
+1. confirmar que a credencial atual pertence à Homologação e, antes da 025, reclassificá-la como `sandbox` se necessário;
+2. aplicar `025_tracken_environment_isolation.sql` e verificar o backfill; a UNIQUE global continua presente;
+3. publicar o código que usa `ON CONFLICT (environment, shipment_id)` e exige ambiente no painel;
+4. aplicar `026_tracken_environment_cutover.sql` e confirmar que só resta a UNIQUE composta;
+5. criar/configurar a credencial production nova com a URL nova e manter sandbox na URL antiga;
+6. confirmar `webhook.byEnvironment`, `outbox.byEnvironment`, constraints e backlog;
+7. liberar cada ambiente e testar Homologação antes de Produção.
 
-### 13.2 Cenário de status
+A divisão elimina a janela em que o código publicado ficaria sem índice compatível: a 025 aceita os dois SQLs; a 026 só roda depois do deploy. Até a 026, não se libera o segundo ambiente porque a UNIQUE global ainda impede IDs iguais.
+
+Nenhuma dessas etapas foi executada nesta alteração local. Em especial, nenhum banco real foi acessado e os endpoints continuam pendentes de configuração operacional.
+
+### 13.2 Preparação
+
+1. escolher explicitamente `production` ou `sandbox` para o teste;
+2. confirmar exatamente uma credencial/target utilizavel nesse ambiente;
+3. confirmar que o endpoint sanitizado corresponde ao canonico do ambiente;
+4. confirmar secret/HMAC sem expo-lo;
+5. confirmar transportadora do item de teste;
+6. usar pedido/envio explicitamente autorizado para teste e inexistente no ambiente escolhido.
+
+### 13.3 Cenário de status
 
 1. TRACKen envia ticket;
 2. FNVJ registra `recepcionado`;
@@ -395,7 +440,7 @@ Todos foram entregues com HTTP 200 na primeira tentativa. Essa sequência é evi
 7. confirmar HTTP 2xx;
 8. pedir confirmação do payload recebido pela TRACKen.
 
-### 13.3 Valores esperados depois da migration 024
+### 13.4 Valores esperados depois da migration 024
 
 | Ação | `to_status` | `tracken_status` | `denial_reason` |
 |---|---|---|---|
@@ -407,7 +452,7 @@ Todos foram entregues com HTTP 200 na primeira tentativa. Essa sequência é evi
 | Negado / bipagem | `negado` | `negado` | `bipagem_distante` |
 | Cancelado | `cancelado` | `cancelado` | `null` |
 
-### 13.4 Critério de aprovação
+### 13.5 Critério de aprovação
 
 Um teste só está aprovado quando:
 
@@ -421,14 +466,17 @@ Um teste só está aprovado quando:
 
 ## 14. Diagnóstico rápido
 
-A API `GET /api/tracken/settings` preserva `configured`, `signed` e `destinations` por compatibilidade e também informa `usable`/`blockedReason`, sem expor segredo nem a URL bruta (que pode conter token na query string). O conjunto de destinos exclui credenciais expiradas. O diagnóstico bloqueia zero destino, múltiplos destinos, URL inválida, HTTP fora de localhost e ausência de `webhook_secret` quando `require_signature=true`; a tela mostra `blockedReason` quando o webhook não é utilizável.
+A API `GET /api/tracken/settings` preserva os agregados legados `configured`, `signed`, `destinations`, `usable` e `blockedReason`. Tambem informa `webhook.byEnvironment` e `outbox.byEnvironment`, e cada item recente da outbox inclui `environment`. O endpoint exibido por ambiente contem somente `origin + pathname`: segredo, userinfo e query string nao atravessam para o navegador.
+
+O diagnostico valida cada ambiente isoladamente. Zero/multiplos destinos, URL/protocolo invalido ou HMAC ausente bloqueiam somente aquele ambiente; o outro pode continuar sendo entregue. A verificacao de decifragem final permanece no worker.
 
 ### Webhook não saiu
 
-- conferir se a transição criou `tracken_outbox`;
-- conferir se existe destino ativo e não expirado;
-- conferir se há mais de um destino ativo, situação que bloqueia escolha ambígua;
-- disparar/verificar worker de outbox.
+- conferir se a transição criou `tracken_outbox` no ambiente esperado;
+- conferir `webhook.byEnvironment[environment]` e o endpoint sanitizado;
+- conferir se existe exatamente um destino ativo e nao expirado no ambiente;
+- conferir se o ambiente esta entre os elegiveis do worker; desconhecido nao tem fallback;
+- disparar/verificar worker de outbox apenas quando formalmente autorizado.
 
 ### Webhook falhou
 
@@ -504,13 +552,30 @@ Ao alterar a integração:
 
 **Rollback, se formalmente autorizado:** restaurar os cinco aliases antigos no mapa. Não executar rollback por tentativa; confirmar primeiro o contrato com a TRACKen.
 
+### Isolamento production/sandbox — preparado, rollout pendente
+
+**Contexto:** credenciais ja distinguiam `production|sandbox`, mas tickets/outbox nao persistiam o ambiente, `shipment_id` era UNIQUE global, GETs M2M cruzavam dados e o worker exigia um unico destino global.
+
+**Decisao:** persistir ambiente imutavel no ticket/outbox, usar idempotencia composta, filtrar leituras pela credencial e resolver exatamente um target por ambiente sem fallback.
+
+**Implementacao local:** tipo compartilhado, backend M2M, worker com validação canônica, painel humano isolado, settings/UI, scripts seguros e migrations `025_tracken_environment_isolation.sql` + `026_tracken_environment_cutover.sql`.
+
+**Decisão operacional:** preservar a URL/credencial atual como Homologação (`sandbox`) e criar uma credencial nova para Produção (`production`). A classificação real da credencial atual ainda precisa ser auditada antes da 025.
+
+**Estado operacional:** PENDENTE. As migrations 025/026 não foram executadas, o código não foi deployado e endpoints/secrets não foram aplicados. Não interpretar este registro como confirmação de produção.
+
 ## 17. Pendências
 
-- publicar o código/documentação desta revisão na branch de deploy;
-- executar teste pós-deploy cobrindo `ticket.received` e `em_atendimento -> negado`, confirmar `tracken_status` em português, entrega HTTP 2xx e recebimento pela TRACKen;
-- depois da confirmação, marcar a decisão como homologada ponta a ponta;
-- dívida não bloqueadora: settings valida presença de HMAC, cardinalidade, expiração e URL, mas a prova criptográfica final continua no `resolveTarget` do worker;
-- dívida não bloqueadora: após eliminar todo `webhook_secret` legado em texto puro, remover a compatibilidade e aceitar somente formato cifrado versionado.
+- auditar a credencial atual e reclassificá-la como sandbox antes da 025, se necessário;
+- aplicar e verificar a migration 025 aditiva no ambiente autorizado;
+- publicar o código na branch/deploy autorizados;
+- aplicar a migration 026 e verificar a remoção da UNIQUE global;
+- criar/configurar exatamente um target production novo e manter o sandbox no endpoint antigo, com secrets confirmados pela TRACKen;
+- verificar constraints, `webhook.byEnvironment`, `outbox.byEnvironment` e backlog antes de liberar os dois ambientes;
+- executar teste pos-deploy isolado em sandbox cobrindo `ticket.received` e `em_atendimento -> negado`, confirmar `tracken_status`, HTTP 2xx e recebimento pela TRACKen;
+- executar teste production apenas com autorizacao explicita; depois da confirmacao, registrar o estado real sem retroagir este documento;
+- divida nao bloqueadora: settings valida presenca de HMAC, cardinalidade, expiracao e URL, mas a prova criptografica final continua no worker;
+- divida nao bloqueadora: apos eliminar todo `webhook_secret` legado em texto puro, remover a compatibilidade e aceitar somente formato cifrado versionado.
 
 ## 18. Mapa de arquivos
 
@@ -526,10 +591,13 @@ Ao alterar a integração:
 | Entrega de webhook | `lib/tracken/webhook.ts` |
 | Assinatura/cripto | `lib/tracken/crypto.ts` |
 | Autenticação | `lib/tracken/auth.ts` |
+| Tipos/ambientes compartilhados | `lib/tracken/types.ts`, `lib/tracken/environments.ts` |
 | Banco/pool | `lib/tracken/db.ts` |
 | Migration base | `database/migrations/019_create_tracken_integration.sql` |
 | Motivo de negativa | `database/migrations/023_tracken_denial_reason.sql` |
 | Alinhamento de status | `database/migrations/024_align_tracken_status_codes.sql` |
+| Isolamento por ambiente (aditivo) | `database/migrations/025_tracken_environment_isolation.sql` |
+| Corte da UNIQUE global | `database/migrations/026_tracken_environment_cutover.sql` |
 | Gestão de credencial | `scripts/tracken_credential.mjs` |
 | Diagnóstico de configurações | `app/api/tracken/settings/route.ts` |
 

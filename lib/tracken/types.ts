@@ -1,5 +1,18 @@
 /** Tipos compartilhados do modulo Tracken. */
 
+/** Ambientes isolados aceitos pela integracao Tracken. */
+export type TrackenEnvironment = "production" | "sandbox";
+
+/** Fonte runtime para iteracoes, validacoes e diagnosticos por ambiente. */
+export const TRACKEN_ENVIRONMENTS = ["production", "sandbox"] as const satisfies
+  readonly TrackenEnvironment[];
+
+export function isTrackenEnvironment(
+  value: unknown
+): value is TrackenEnvironment {
+  return TRACKEN_ENVIRONMENTS.some((environment) => environment === value);
+}
+
 export type TrackenServiceType = "atraso" | "reclamacao" | "cancelado";
 
 export type TrackenStatusRow = {

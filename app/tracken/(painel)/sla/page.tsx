@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -11,6 +11,7 @@ import {
   Timer,
 } from "lucide-react";
 import { CarrierBadge } from "@/components/tracken/Badges";
+import TrackenEnvironmentSelect from "@/components/tracken/TrackenEnvironmentSelect";
 import {
   Card,
   EmptyState,
@@ -25,6 +26,7 @@ import {
 } from "@/components/tracken/PageShell";
 import { useTrackenCatalogs } from "@/components/tracken/useTrackenCatalogs";
 import { formatNumber, formatPercent, toInputDate } from "@/lib/tracken/format";
+import type { TrackenEnvironment } from "@/lib/tracken/types";
 
 /**
  * Tela "SLA & Performance".
@@ -68,7 +70,12 @@ const hoje = new Date();
 const trintaDiasAtras = new Date(hoje.getTime() - 30 * 24 * 3_600_000);
 
 export default function SlaPage() {
-  const { carriers } = useTrackenCatalogs();
+  const [environment, setEnvironment] =
+    useState<TrackenEnvironment>("production");
+  const { carriers } = useTrackenCatalogs({
+    environment,
+    withAttendants: false,
+  });
 
   const [startDate, setStartDate] = useState(toInputDate(trintaDiasAtras));
   const [endDate, setEndDate] = useState(toInputDate(hoje));
@@ -78,39 +85,55 @@ export default function SlaPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const generationRef = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
 
   const queryString = useMemo(() => {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({ environment });
     if (startDate) params.set("startDate", startDate);
     if (endDate) params.set("endDate", endDate);
     if (carrier) params.set("carrier", carrier);
     return params.toString();
-  }, [startDate, endDate, carrier]);
+  }, [environment, startDate, endDate, carrier]);
 
   const load = useCallback(
     async (options?: { silent?: boolean }) => {
-      if (options?.silent) setIsRefreshing(true);
-      else setIsLoading(true);
+      const generation = ++generationRef.current;
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      if (options?.silent) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
+        setData(null);
+      }
       setError(null);
 
       try {
         const response = await fetch(`/api/tracken/sla?${queryString}`, {
           credentials: "include",
+          signal: controller.signal,
         });
         const payload = await response.json();
 
         if (!response.ok) {
           throw new Error(payload?.error?.message ?? "Falha ao carregar o SLA");
         }
+        if (generation !== generationRef.current) return;
 
         setData(payload as SlaResponse);
       } catch (loadError) {
+        if (controller.signal.aborted || generation !== generationRef.current) return;
         setError(
           loadError instanceof Error ? loadError.message : "Falha ao carregar o SLA"
         );
       } finally {
-        setIsLoading(false);
-        setIsRefreshing(false);
+        if (generation === generationRef.current) {
+          setIsLoading(false);
+          setIsRefreshing(false);
+        }
       }
     },
     [queryString]
@@ -119,6 +142,8 @@ export default function SlaPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   const atingiuMeta = (data?.overall.percentage ?? 0) >= (data?.target ?? 90);
 
@@ -242,7 +267,13 @@ export default function SlaPage() {
         {/* Eram tres colunas para dois filtros, deixando a terceira vazia e
             comprimindo o par de datas em um terco do card. O periodo agora
             ocupa duas colunas, que e o espaco que dois campos de data pedem. */}
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+          <TrackenEnvironmentSelect
+            id="sla-environment"
+            value={environment}
+            onChange={setEnvironment}
+          />
+
           <div className="md:col-span-2">
             {/* O recorte e pelo LIMITE DE ENVIO, nao pela data de recebimento. */}
             <label className={LABEL} htmlFor="sla-inicio">

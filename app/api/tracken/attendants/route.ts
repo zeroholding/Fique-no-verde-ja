@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticatePanelUser } from "@/lib/tracken/auth";
 import { trackenQuery } from "@/lib/tracken/db";
 import { toErrorResponse } from "@/lib/tracken/errors";
+import { requireTrackenEnvironment } from "@/lib/tracken/filters";
 
 /**
  * GET /api/tracken/attendants
@@ -26,6 +27,9 @@ type AttendantRow = {
 export async function GET(request: NextRequest) {
   try {
     const currentUser = await authenticatePanelUser(request);
+    const environment = requireTrackenEnvironment(
+      new URL(request.url).searchParams
+    );
 
     const result = await trackenQuery<AttendantRow>(
       `SELECT u.id,
@@ -40,11 +44,14 @@ export async function GET(request: NextRequest) {
                 WHERE COALESCE(sm.is_final, false) = false
               )::text AS open_tickets
          FROM users u
-         LEFT JOIN tracken_tickets t ON t.assigned_user_id = u.id
+         LEFT JOIN tracken_tickets t
+           ON t.assigned_user_id = u.id
+          AND t.environment = $1
          LEFT JOIN tracken_status_map sm ON sm.code = t.status
         WHERE u.is_active = true OR t.id IS NOT NULL
         GROUP BY u.id, u.first_name, u.last_name, u.email, u.is_active
-        ORDER BY u.is_active DESC, name`
+        ORDER BY u.is_active DESC, name`,
+      [environment]
     );
 
     // Quantos atendimentos ainda nao tem responsavel.
@@ -52,8 +59,10 @@ export async function GET(request: NextRequest) {
       `SELECT COUNT(*)::text AS total
          FROM tracken_tickets t
          LEFT JOIN tracken_status_map sm ON sm.code = t.status
-        WHERE t.assigned_user_id IS NULL
-          AND COALESCE(sm.is_final, false) = false`
+        WHERE t.environment = $1
+          AND t.assigned_user_id IS NULL
+          AND COALESCE(sm.is_final, false) = false`,
+      [environment]
     );
 
     return NextResponse.json({

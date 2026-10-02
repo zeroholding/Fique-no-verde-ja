@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { trackenQuery } from "./db";
 import { decryptSecret, sha256, timingSafeEqual, verifySignature } from "./crypto";
 import { forbidden, tooManyRequests, unauthorized } from "./errors";
+import type { TrackenEnvironment } from "./types";
 
 /**
  * Autenticacao do modulo Tracken.
@@ -23,7 +24,7 @@ export type TrackenCredential = {
   secret_hash: string;
   secret_encrypted: string | null;
   scopes: string[];
-  environment: string;
+  environment: TrackenEnvironment;
   allowed_ips: string[];
   require_signature: boolean;
   is_active: boolean;

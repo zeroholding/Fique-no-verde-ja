@@ -7,14 +7,28 @@
  *
  * Uso:
  *   $env:DATABASE_URL="postgresql://..."
+ *   $env:TRACKEN_DEMO_ENVIRONMENT="sandbox"
  *   node scripts/tracken_seed_demo.mjs seed
  *   node scripts/tracken_seed_demo.mjs purge
  *   node scripts/tracken_seed_demo.mjs status
+ *
+ * O seed e proibido em production. A variavel explicita evita que um comando
+ * copiado para o terminal errado contamine os indicadores reais.
  */
 
 import pg from "pg";
 
 const PREFIX = "DEMO";
+const DEMO_ENVIRONMENT = process.env.TRACKEN_DEMO_ENVIRONMENT?.trim();
+
+function requireSandboxEnvironment() {
+  if (DEMO_ENVIRONMENT !== "sandbox") {
+    throw new Error(
+      'Defina TRACKEN_DEMO_ENVIRONMENT="sandbox". Dados de demonstracao nunca podem usar production.'
+    );
+  }
+  return DEMO_ENVIRONMENT;
+}
 
 /** Proporcao de transportadoras do painel aprovado. */
 const CARRIER_MIX = [
@@ -119,6 +133,7 @@ function connect() {
 }
 
 async function seedDemo() {
+  const environment = requireSandboxEnvironment();
   const client = connect();
   await client.connect();
 
@@ -138,9 +153,26 @@ async function seedDemo() {
       throw new Error("Nenhum usuario ativo para atribuir os atendimentos.");
     }
 
+    const { rows: credentials } = await client.query(
+      `SELECT id
+         FROM tracken_api_credentials
+        WHERE environment = $1
+          AND is_active = true
+          AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+        ORDER BY created_at DESC`,
+      [environment]
+    );
+    if (credentials.length !== 1) {
+      throw new Error(
+        `O seed exige exatamente uma credencial sandbox ativa e nao expirada; encontradas: ${credentials.length}.`
+      );
+    }
+    const credentialId = credentials[0].id;
+
     const existentes = await client.query(
       `SELECT COUNT(*)::int AS total FROM tracken_tickets
-        WHERE shipment_id LIKE '${PREFIX}%'`
+        WHERE environment = $1 AND shipment_id LIKE $2`,
+      [environment, `${PREFIX}%`]
     );
     if (existentes.rows[0].total > 0) {
       console.log(
@@ -229,12 +261,14 @@ async function seedDemo() {
            sale_date, shipping_deadline, received_at,
            status, assigned_user_id, started_at, finished_at,
            ml_claim_id, service_type, tracking_number,
-           requested_by, payload_raw, shipping_mode, shipped_at
+           requested_by, payload_raw, shipping_mode, shipped_at,
+           credential_id, environment
          ) VALUES (
            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-           $11, $12, $13, $14, $15, $16, $17, $18, $19::jsonb, $20, $21
+           $11, $12, $13, $14, $15, $16, $17, $18, $19::jsonb, $20, $21,
+           $22, $23
          )
-         ON CONFLICT (shipment_id) DO NOTHING
+         ON CONFLICT (environment, shipment_id) DO NOTHING
          RETURNING id`,
         [
           `${PREFIX}${suffix}${Math.floor(random() * 900000 + 100000)}`,
@@ -258,6 +292,8 @@ async function seedDemo() {
           JSON.stringify({ origem: "seed de demonstracao" }),
           shippingMode,
           shippedAt ? shippedAt.toISOString() : null,
+          credentialId,
+          environment,
         ]
       );
 
@@ -306,7 +342,7 @@ async function seedDemo() {
 
     await client.query("COMMIT");
     console.log(`\n${criados} atendimentos de demonstracao criados.`);
-    await report(client);
+    await report(client, environment);
   } catch (error) {
     await client.query("ROLLBACK").catch(() => {});
     throw error;
@@ -315,35 +351,43 @@ async function seedDemo() {
   }
 }
 
-async function report(client) {
+async function report(client, environment) {
   const { rows: porStatus } = await client.query(
     `SELECT sm.label, COUNT(*)::int AS total
        FROM tracken_tickets t
        JOIN tracken_status_map sm ON sm.code = t.status
-      WHERE t.shipment_id LIKE '${PREFIX}%'
+      WHERE t.environment = $1
+        AND t.shipment_id LIKE $2
       GROUP BY sm.label, sm.sort_order
-      ORDER BY sm.sort_order`
+      ORDER BY sm.sort_order`,
+    [environment, `${PREFIX}%`]
   );
   const { rows: porCarrier } = await client.query(
     `SELECT c.code, COUNT(*)::int AS total
        FROM tracken_tickets t
        JOIN tracken_carriers c ON c.id = t.carrier_id
-      WHERE t.shipment_id LIKE '${PREFIX}%'
-      GROUP BY c.code ORDER BY total DESC`
+      WHERE t.environment = $1
+        AND t.shipment_id LIKE $2
+      GROUP BY c.code ORDER BY total DESC`,
+    [environment, `${PREFIX}%`]
   );
   const { rows: hoje } = await client.query(
     `SELECT COUNT(*)::int AS total FROM tracken_tickets
-      WHERE shipment_id LIKE '${PREFIX}%'
+      WHERE environment = $1
+        AND shipment_id LIKE $2
         AND (received_at AT TIME ZONE 'America/Sao_Paulo')::date
-          = (CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')::date`
+          = (CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')::date`,
+    [environment, `${PREFIX}%`]
   );
 
   const { rows: porModalidade } = await client.query(
     `SELECT COALESCE(shipping_mode, 'nao informada') AS modo,
             COUNT(*)::int AS total
        FROM tracken_tickets
-      WHERE shipment_id LIKE '${PREFIX}%'
-      GROUP BY shipping_mode ORDER BY total DESC`
+      WHERE environment = $1
+        AND shipment_id LIKE $2
+      GROUP BY shipping_mode ORDER BY total DESC`,
+    [environment, `${PREFIX}%`]
   );
   const { rows: enviados } = await client.query(
     `SELECT COUNT(*) FILTER (WHERE shipped_at IS NOT NULL)::int AS enviados,
@@ -351,7 +395,9 @@ async function report(client) {
               WHERE shipped_at IS NOT NULL AND shipped_at > shipping_deadline
             )::int AS fora_do_prazo
        FROM tracken_tickets
-      WHERE shipment_id LIKE '${PREFIX}%'`
+      WHERE environment = $1
+        AND shipment_id LIKE $2`,
+    [environment, `${PREFIX}%`]
   );
 
   console.log("\nPor status:");
@@ -367,28 +413,34 @@ async function report(client) {
 }
 
 async function purge() {
+  const environment = requireSandboxEnvironment();
   const client = connect();
   await client.connect();
   try {
     const { rowCount } = await client.query(
-      `DELETE FROM tracken_tickets WHERE shipment_id LIKE '${PREFIX}%'`
+      `DELETE FROM tracken_tickets
+        WHERE environment = $1 AND shipment_id LIKE $2`,
+      [environment, `${PREFIX}%`]
     );
-    console.log(`${rowCount} atendimentos de demonstracao removidos.`);
+    console.log(`${rowCount} atendimentos de demonstracao sandbox removidos.`);
 
     const { rows } = await client.query(
-      `SELECT COUNT(*)::int AS total FROM tracken_tickets`
+      `SELECT COUNT(*)::int AS total FROM tracken_tickets
+        WHERE environment = $1`,
+      [environment]
     );
-    console.log(`Atendimentos restantes na base: ${rows[0].total}`);
+    console.log(`Atendimentos sandbox restantes na base: ${rows[0].total}`);
   } finally {
     await client.end().catch(() => {});
   }
 }
 
 async function status() {
+  const environment = requireSandboxEnvironment();
   const client = connect();
   await client.connect();
   try {
-    await report(client);
+    await report(client, environment);
   } finally {
     await client.end().catch(() => {});
   }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticatePanelUser } from "@/lib/tracken/auth";
 import { trackenQuery } from "@/lib/tracken/db";
 import { badRequest, notFound, toErrorResponse } from "@/lib/tracken/errors";
+import { requireTrackenEnvironment } from "@/lib/tracken/filters";
 import { assignTicket, changeTicketStatus } from "@/lib/tracken/tickets";
 
 /**
@@ -20,6 +21,9 @@ export async function GET(
 ) {
   try {
     await authenticatePanelUser(request);
+    const environment = requireTrackenEnvironment(
+      new URL(request.url).searchParams
+    );
 
     const { id } = await context.params;
     if (!UUID_REGEX.test(id)) {
@@ -47,8 +51,8 @@ export async function GET(
          LEFT JOIN tracken_carriers c ON c.id = t.carrier_id
          LEFT JOIN tracken_status_map sm ON sm.code = t.status
          LEFT JOIN users u ON u.id = t.assigned_user_id
-        WHERE t.id = $1`,
-      [id]
+        WHERE t.environment = $1 AND t.id = $2`,
+      [environment, id]
     );
 
     const ticket = result.rows[0];
@@ -64,12 +68,13 @@ export async function GET(
               e.note, e.created_at,
               fs.label AS from_status_label, ts.label AS to_status_label
          FROM tracken_ticket_events e
+         JOIN tracken_tickets t ON t.id = e.ticket_id
          LEFT JOIN users u ON u.id = e.actor_user_id
          LEFT JOIN tracken_status_map fs ON fs.code = e.from_status
          LEFT JOIN tracken_status_map ts ON ts.code = e.to_status
-        WHERE e.ticket_id = $1
+        WHERE t.environment = $1 AND e.ticket_id = $2
         ORDER BY e.created_at DESC`,
-      [id]
+      [environment, id]
     );
 
     return NextResponse.json({ ticket, events: events.rows });
@@ -84,6 +89,9 @@ export async function PATCH(
 ) {
   try {
     const user = await authenticatePanelUser(request);
+    const environment = requireTrackenEnvironment(
+      new URL(request.url).searchParams
+    );
 
     const { id } = await context.params;
     if (!UUID_REGEX.test(id)) {
@@ -116,7 +124,12 @@ export async function PATCH(
         throw badRequest("INVALID_USER_ID", "assignedUserId invalido");
       }
 
-      const updated = await assignTicket(id, user.id, targetUserId);
+      const updated = await assignTicket(
+        id,
+        environment,
+        user.id,
+        targetUserId
+      );
       return NextResponse.json({ success: true, ticket: updated });
     }
 
@@ -128,6 +141,7 @@ export async function PATCH(
 
       const updated = await changeTicketStatus({
         ticketId: id,
+        environment,
         toStatus: status,
         actorUserId: user.id,
         actorIsAdmin: user.is_admin,

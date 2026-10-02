@@ -507,16 +507,16 @@ export default function TrackenApiDocsPage() {
                     strokeWidth={2}
                     aria-hidden="true"
                   />
-                  Fluxo 2 · ativo
+                  Fluxo 2 · isolado por ambiente
                 </p>
                 <p className="mt-2.5 text-[19px] font-bold leading-snug text-slate-900">
                   FNVJ devolve a mudança de status
                 </p>
                 <p className="mt-2 text-[16.5px] leading-relaxed text-slate-700">
-                  A cada mudança de status o Fique no Verde Já notifica a
-                  TRACKen pela URL de webhook configurada. A fila de saída
-                  preserva as mudanças e repete falhas temporárias sem bloquear o
-                  atendimento.
+                  A cada mudança de status o Fique no Verde Já grava uma
+                  notificação no mesmo ambiente do atendimento. Produção e
+                  Homologação têm filas e destinos independentes; uma falha de
+                  configuração em um ambiente não redireciona nem bloqueia o outro.
                 </p>
                 <p className="mt-3.5 font-mono text-[15px] font-semibold text-slate-500">
                   FNVJ → TRACKen
@@ -529,6 +529,15 @@ export default function TrackenApiDocsPage() {
               <code>secret</code> são entregues por canal privado e nunca
               aparecem nesta página.
             </Callout>
+
+            <Callout icon={ShieldAlert} title="Produção e Homologação são isoladas">
+              A mesma URL de API atende os dois ambientes; quem define o
+              ambiente é a credencial autenticada. Tickets, consultas,
+              idempotência e webhooks permanecem no ambiente da credencial, sem
+              parâmetro de troca e sem fallback entre eles. Os destinos de saída
+              são <code>seller.tracken.app.br</code> para Produção e{" "}
+              <code>homologasellercore.tracken.dev.br</code> para Homologação.
+            </Callout>
           </section>
 
           {/* ===== Autenticacao ===== */}
@@ -539,7 +548,10 @@ export default function TrackenApiDocsPage() {
           >
             <p>
               Toda chamada usa uma credencial de máquina. Não há login de
-              usuário nem sessão nesta API.
+              usuário nem sessão nesta API. A credencial também fixa o ambiente
+              <code className="ml-1">production</code> ou
+              <code className="ml-1">sandbox</code>; o cliente não envia nem
+              altera esse valor por query ou payload.
             </p>
 
             <SubTitle>Credencial</SubTitle>
@@ -627,11 +639,12 @@ export default function TrackenApiDocsPage() {
             </p>
 
             <Callout icon={KeyRound} title="Reenviar é seguro">
-              O <code>shipment_id</code> é a chave do atendimento. Reenviar um
-              valor já recebido não cria duplicado e não devolve erro: o item
-              volta marcado como <code>duplicated</code>, com o estado atual do
-              atendimento. Ou seja, dá para repetir o lote inteiro sem medo
-              depois de uma falha de rede.
+              O <code>shipment_id</code> é a chave do atendimento dentro do
+              ambiente da credencial. Reenviar no mesmo ambiente não cria
+              duplicado e não devolve erro: o item volta marcado como
+              <code className="ml-1">duplicated</code>, com o estado atual. O
+              mesmo valor pode existir uma vez em Produção e outra em
+              Homologação, sem compartilhar dados.
             </Callout>
 
             <CodeBlock language="JSON" label="Requisição" code={REQUEST_EXAMPLE} />
@@ -695,8 +708,10 @@ export default function TrackenApiDocsPage() {
           {/* ===== Consultar ===== */}
           <Section id="consultar" eyebrow="Opcional" title="Consultar atendimentos">
             <p>
-              Além de enviar, a credencial permite consultar o andamento. Útil
-              para conciliação, mesmo depois de o fluxo de volta estar ativo.
+              Além de enviar, a credencial permite consultar o andamento apenas
+              no próprio ambiente. Um <code>shipment_id</code> existente somente
+              no outro ambiente devolve <strong>404</strong>, sem revelar sua
+              existência.
             </p>
 
             <SubTitle>Um atendimento</SubTitle>
