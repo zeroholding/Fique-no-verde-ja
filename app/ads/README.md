@@ -2,7 +2,7 @@
 
 > **Documento vivo e obrigatório.** Toda mudança em rota, tela, importação, coluna, fórmula, banco, permissão ou procedimento do módulo Ads deve atualizar este arquivo na mesma alteração.
 >
-> **Última atualização:** 29/09/2026  
+> **Última atualização:** 13/10/2026  
 > **Estado:** Etapa 1 implementada localmente — fundação visual e pré-validação local de arquivos  
 > **Rota:** `/ads`
 
@@ -38,7 +38,7 @@ O módulo usa o mesmo login, cookie JWT, tabela `users` e PostgreSQL do FNVJ/Tra
 - mapeamento confirmado das 11 colunas do primeiro export, além de aliases PT/EN para IDs, campanha, conjunto, cliques, resultados e conversão;
 - nenhum dado fictício e nenhum envio ao servidor;
 - middleware reconhece `/ads` como área autenticada;
-- links de acesso no dashboard FNVJ e no painel Tracken;
+- link de acesso no menu do dashboard FNVJ (o menu do painel Tracken não aponta para o Ads);
 - modal e drawer com Escape, confinamento/restauração de foco e fundo inerte;
 - sidebar fixa no desktop e drawer no mobile.
 
@@ -266,6 +266,12 @@ Ao trabalhar no Ads:
 6. nunca colocar dados reais, IDs, tokens ou segredos aqui.
 
 ## 12. Changelog
+
+### 13/10/2026 — Ads fora do menu do Tracken
+
+- removido o item “Meta Ads” do menu lateral do painel Tracken (`components/tracken/TrackenSidebar.tsx`), grupo “Análise”;
+- o Ads continua acessível pela rota `/ads` e pelo menu do dashboard FNVJ (`components/Sidebar.tsx`);
+- o botão “Tracken” no rodapé do shell do Ads (volta ao Tracken) foi mantido.
 
 ### 29/09/2026 — Primeiro relatório real analisado
 
