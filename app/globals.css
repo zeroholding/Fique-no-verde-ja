@@ -170,33 +170,38 @@ body {
 /* ============================================================
    FNVJ Ads (/ads)
 
-   Produto visual proprio dentro da mesma sessao FNVJ. Geist (OFL) vem primeiro;
-   Helvetica/Arial ficam apenas como fallback de sistema para manter a leitura
-   proxima da interface Meta sem baixar ou copiar uma fonte proprietaria. Tokens ficam isolados sob .ads-root para nao
-   alterar Dashboard nem Tracken.
+   Visual neutro e sobrio: fundo cinza claro, cartoes brancos com borda fina,
+   um unico azul para acao e grafico, verde/vermelho so para variacao. Geist
+   (OFL) vem primeiro; Helvetica/Arial sao fallback de sistema. Tokens isolados
+   sob .ads-root para nao alterar Dashboard nem Tracken.
    ============================================================ */
 .ads-root {
   color-scheme: light;
   font-family: var(--font-geist-sans), "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --ads-blue: #0866ff;
-  --ads-blue-strong: #0757d7;
-  --ads-canvas: #f4f7fb;
+  --ads-blue: #2563eb;
+  --ads-blue-strong: #1d4ed8;
+  --ads-blue-soft: #eff4ff;
+  --ads-canvas: #f5f6f8;
   --ads-surface: #ffffff;
-  --ads-line: #e2e8f1;
-  --ads-ink: #18283f;
-  --ads-ink-soft: #718096;
+  --ads-subtle: #f9fafb;
+  --ads-line: #e4e7ec;
+  --ads-line-strong: #d0d5dd;
+  --ads-ink: #101828;
+  --ads-ink-soft: #475467;
+  --ads-ink-muted: #667085;
+  --ads-positive: #067647;
+  --ads-negative: #b42318;
   min-height: 100dvh;
   background: var(--ads-canvas);
   color: var(--ads-ink);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   font-feature-settings: "kern", "liga";
-  scroll-behavior: smooth;
 }
 
 .ads-root ::selection {
-  background: #cfe0ff;
-  color: #063a91;
+  background: #d1e0ff;
+  color: #102a56;
 }
 
 .ads-root *:focus-visible {
@@ -204,17 +209,7 @@ body {
   outline-offset: 2px;
 }
 
-.ads-root [id] {
-  scroll-margin-top: 80px;
-}
-
-/* O modal Ads vive em portal fora de .ads-root para poder tornar o app inerte. */
-.ads-portal {
-  font-family: var(--font-geist-sans), "Helvetica Neue", Helvetica, Arial, sans-serif;
-  color-scheme: light;
-}
-
-.ads-portal *:focus-visible {
-  outline: 2px solid #0866ff;
-  outline-offset: 2px;
+/* Modal nativo (<dialog>): fica na camada superior, mas herda os tokens. */
+.ads-root dialog::backdrop {
+  background: rgb(16 24 40 / 0.45);
 }
