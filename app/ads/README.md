@@ -59,7 +59,7 @@ Regra de linguagem: nada de termo técnico na tela. Sem “vinculado”, “comp
 6. **O envio mais novo vale para os dias que ele cobre** (seção 6). Substitui a regra antiga de “persistência desabilitada”, que existia porque o primeiro relatório não tinha IDs e a chave nome do anúncio + dia duplicaria ao renomear um anúncio.
 7. Métrica calculada só usa linhas em que as duas pontas existem (seção 7). Divisão por zero vira “—”, nunca zero ou infinito.
 8. Alcance diário nunca é somado em alcance do período: aparece como **Alcance médio por dia**.
-9. O relatório precisa estar **separado por dia** (Detalhamento › Por tempo › Dia) ou ter início igual ao fim em cada linha. Relatório de período inteiro é recusado com a instrução de como exportar de novo.
+9. O relatório precisa estar **separado por dia** (Detalhamento › Por tempo › Dia) ou ter início igual ao fim em cada linha. Relatório com o total do período inteiro é recusado, e o aviso mostra o período que o arquivo trouxe e como exportar de novo. Não se distribui o total pelos dias: isso seria inventar número que o Meta não informou.
 10. Não existe empresa/tenant no banco atual: os dados são globais, vistos por todo usuário ativo.
 
 ## 4. Contrato de relatório
@@ -128,11 +128,13 @@ Colunas que o Meta já entrega calculadas (CTR, CPC, CPM, custo por resultado, f
 
 ## 5. Como exportar do Meta (passo a passo mostrado na tela)
 
-1. No Gerenciador de Anúncios, aba **Anúncios**, escolha o período.
-2. **Detalhamento › Por tempo › Dia**.
-3. **Colunas › Desempenho e cliques**, ou inclua investimento, impressões, alcance, cliques no link e resultados. Para ver campanhas e conjuntos, inclua também **Nome da campanha** e **Nome do conjunto de anúncios**.
-4. **Exportar › Exportar dados da tabela**, em **CSV** ou **Excel (.xlsx)**.
+1. No Gerenciador de Anúncios, aba **Anúncios**, escolha o período (canto direito).
+2. Clique em **Detalhamento**, ao lado de “Colunas”, e escolha **Por tempo › Dia**. Sem isso o Meta exporta **um total único do período** (uma linha por anúncio) e o painel recusa o arquivo.
+3. Em **Colunas**, **Desempenho e cliques** traz o que o painel usa. Só **Desempenho** também funciona, mas sem cliques no link. Para ver campanhas e conjuntos, o arquivo precisa ter **Nome da campanha** e **Nome do conjunto de anúncios**.
+4. Abra o menu do ícone de download (a setinha ao lado dele) e escolha **Exportar como .csv** ou **Exportar como .xlsx**.
 5. Enviar em **Relatórios › Enviar relatório**.
+
+**Rótulos do Meta já vistos em captura de tela (13/10/2026):** botão “Detalhamento” ao lado de “Colunas: Desempenho”; menu do download com “Exportar como .csv”, “Exportar como .xlsx”, “Personalizar exportação”, “Programar exportação” e “Compartilhar link da tabela”. O caminho **Por tempo › Dia** dentro de “Detalhamento” **não** foi visto em captura; vem do nome usual do Meta e do primeiro arquivo real, que trazia a coluna `Dia`. Se o submenu tiver outro nome, ajuste aqui, em `relatorios/export-steps.tsx` e nas mensagens de `lib/ads/report-rows.ts`.
 
 ## 6. Regra de substituição
 
@@ -259,6 +261,13 @@ Ao trabalhar no Ads:
 7. testar com banco temporário, nunca contra o banco de produção.
 
 ## 14. Changelog
+
+### 13/10/2026 — Passo a passo corrigido e aviso de arquivo sem dia
+
+- primeiro uso real: o arquivo foi exportado sem “Detalhamento › Por tempo › Dia” e o painel recusou, como previsto;
+- o passo a passo citava “Exportar › Exportar dados da tabela”, que não existe no menu do Meta; agora usa os rótulos vistos na tela (“Exportar como .csv” e “Exportar como .xlsx”);
+- o aviso de arquivo sem dia agora diz o período que o arquivo trouxe (por exemplo, “total único de 14/09/2026 a 13/10/2026”) e o que fazer;
+- registrados quais rótulos do Meta foram vistos em captura e quais não.
 
 ### 13/10/2026 — Relatórios, banco e painel (Etapa 2)
 

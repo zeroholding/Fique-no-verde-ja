@@ -375,8 +375,16 @@ export type ParsedAdsReport = {
 
 const UNKNOWN_COLUMNS =
   "Não reconhecemos as colunas deste arquivo. Envie o relatório exportado do Gerenciador de Anúncios do Meta, sem mudar os títulos das colunas.";
-const NOT_DAILY =
-  "Este relatório não está separado por dia. No Gerenciador de Anúncios, abra Detalhamento › Por tempo › Dia e exporte de novo.";
+const NOT_DAILY_HOW_TO =
+  "No Gerenciador de Anúncios, clique em Detalhamento, escolha Por tempo › Dia e exporte de novo.";
+const NOT_DAILY = `Este relatório não está separado por dia. ${NOT_DAILY_HOW_TO}`;
+
+/** "2026-09-14" -> "14/09/2026" */
+const brDay = (day: string) => day.split("-").reverse().join("/");
+
+/** Arquivo exportado sem detalhamento: uma linha por anúncio com o total do período inteiro. */
+const notDailyTotalMessage = (start: string, end: string) =>
+  `Este arquivo traz um total único de ${brDay(start)} a ${brDay(end)}, e o painel precisa dos números dia a dia. ${NOT_DAILY_HOW_TO}`;
 const NO_ROWS =
   "Não encontramos linhas com dia e valores neste arquivo. Confira se o relatório foi exportado com Detalhamento › Por tempo › Dia.";
 
@@ -497,6 +505,7 @@ export function parseAdsReport(table: ReportTable): ParsedAdsReport {
   let rowsIgnored = 0;
   let rowsMerged = 0;
   let notDailyRows = 0;
+  let notDailyPeriod: { start: string; end: string } | null = null;
 
   for (let index = 0; index < dataRows.length; index++) {
     const cells = dataRows[index];
@@ -552,6 +561,7 @@ export function parseAdsReport(table: ReportTable): ParsedAdsReport {
       }
       if (start !== end) {
         notDailyRows += 1;
+        if (!notDailyPeriod) notDailyPeriod = { start, end };
         continue;
       }
       day = start;
@@ -642,7 +652,10 @@ export function parseAdsReport(table: ReportTable): ParsedAdsReport {
       `${intro} ${problems.join(" ")}${more} Exporte o relatório de novo, sem editar.`
     );
   }
-  if (notDailyRows > 0) throw new AdsReportError(NOT_DAILY);
+  if (notDailyRows > 0) {
+    const period: { start: string; end: string } | null = notDailyPeriod;
+    throw new AdsReportError(period ? notDailyTotalMessage(period.start, period.end) : NOT_DAILY);
+  }
   if (merged.size === 0) throw new AdsReportError(NO_ROWS);
   if (currencies.size > 1) {
     throw new AdsReportError(
