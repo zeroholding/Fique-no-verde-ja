@@ -1,0 +1,674 @@
+/* ============================================================
+   Painel ao vivo (/live)
+
+   Tela de TV, sem rolagem. Tudo escala por --lv-u: 1% da largura de um quadro
+   16:9 que cabe na janela. Assim o painel ocupa uma TV 4K e uma tela de
+   notebook com a mesma composição.
+
+   Cores da marca: o verde do "VERDE" do logotipo (#00c32f) e o fundo e os
+   textos escuros da landing (#0a0a0a, #f0f0f0, #a0a0a0). O ciano fica só para
+   Reclamações, como no modelo aprovado. Fontes da marca, as mesmas da
+   landing: Outfit (números e títulos) e Plus Jakarta Sans (textos).
+   ============================================================ */
+
+body:has(.lv-tela) {
+  background: #0a0a0a;
+}
+
+.lv-tela {
+  --lv-fundo: #0a0a0a;
+  --lv-texto: #f0f0f0;
+  --lv-texto-2: #c3c7cc;
+  --lv-texto-3: #a0a0a0;
+  --lv-texto-4: #73787f;
+  --lv-linha: rgba(255, 255, 255, 0.1);
+  --lv-verde: #00c32f;
+  --lv-ciano: #22d3ee;
+  --lv-ambar: #f5a524;
+  --lv-u: min(1vw, 1.7778vh);
+  --lv-display: var(--font-live-display), "Outfit", system-ui, sans-serif;
+  --lv-corpo: var(--font-live-texto), "Plus Jakarta Sans", system-ui, sans-serif;
+
+  position: relative;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  padding: calc(1.7 * var(--lv-u)) calc(2.6 * var(--lv-u)) calc(1.1 * var(--lv-u));
+  background:
+    radial-gradient(60% 50% at 50% 17%, rgba(0, 195, 47, 0.09), transparent 72%),
+    radial-gradient(70% 60% at 50% 118%, rgba(34, 211, 238, 0.045), transparent 70%),
+    var(--lv-fundo);
+  color: var(--lv-texto);
+  font-family: var(--lv-corpo);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  color-scheme: dark;
+}
+
+.lv-tela *,
+.lv-tela *::before,
+.lv-tela *::after {
+  box-sizing: border-box;
+}
+
+.lv-tela p,
+.lv-tela h1,
+.lv-tela h2 {
+  margin: 0;
+}
+
+.lv-sr {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------------------------- Topo ---------------------------- */
+
+.lv-topo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: calc(1.5 * var(--lv-u));
+}
+
+.lv-logo {
+  justify-self: start;
+  display: block;
+  height: max(30px, calc(3.4 * var(--lv-u)));
+  width: auto;
+}
+
+.lv-status {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65em;
+  padding: 0.52em 0.9em 0.52em 0.85em;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 195, 47, 0.3);
+  background: rgba(0, 195, 47, 0.08);
+  color: var(--lv-verde);
+  font-family: var(--lv-display);
+  font-size: max(12px, calc(1.02 * var(--lv-u)));
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.lv-status__ponto {
+  flex: none;
+  width: 0.62em;
+  height: 0.62em;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.lv-status--ao_vivo .lv-status__ponto {
+  animation: lv-pulsar 1.8s ease-out infinite;
+}
+
+.lv-status--reconectando {
+  border-color: rgba(245, 165, 36, 0.35);
+  background: rgba(245, 165, 36, 0.09);
+  color: var(--lv-ambar);
+}
+
+.lv-status--reconectando .lv-status__ponto {
+  animation: lv-piscar 1.2s ease-in-out infinite;
+}
+
+.lv-status--conectando {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--lv-texto-3);
+}
+
+@keyframes lv-pulsar {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 195, 47, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 0.75em rgba(0, 195, 47, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 195, 47, 0);
+  }
+}
+
+@keyframes lv-piscar {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.lv-relogio {
+  justify-self: end;
+  text-align: right;
+  line-height: 1.15;
+}
+
+.lv-relogio__linha {
+  font-size: max(13px, calc(1.42 * var(--lv-u)));
+  color: var(--lv-texto-2);
+  white-space: nowrap;
+  /* Algarismos tabulares da fonte: o relógio não treme a cada segundo. */
+  font-variant-numeric: tabular-nums;
+}
+
+.lv-relogio__hora {
+  margin-left: 0.15em;
+  color: #fff;
+  font-weight: 700;
+}
+
+.lv-relogio__fuso {
+  margin-top: 0.3em;
+  font-size: max(10px, calc(0.78 * var(--lv-u)));
+  color: var(--lv-texto-3);
+}
+
+/* --------------------------- Receita --------------------------- */
+
+.lv-receita {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: calc(1.5 * var(--lv-u));
+  text-align: center;
+}
+
+.lv-rotulo {
+  padding-left: 0.32em;
+  font-family: var(--lv-display);
+  font-size: max(12px, calc(1.32 * var(--lv-u)));
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--lv-texto-2);
+}
+
+.lv-receita__valor {
+  margin-top: 0.06em;
+  font-family: var(--lv-display);
+  font-size: max(44px, calc(10.4 * var(--lv-u)));
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.025em;
+  color: var(--lv-verde);
+  white-space: nowrap;
+  filter: drop-shadow(0 0 0.32em rgba(0, 195, 47, 0.26));
+}
+
+.lv-receita__sub {
+  position: relative;
+  margin-top: 0.5em;
+  font-size: max(12px, calc(1.12 * var(--lv-u)));
+  color: var(--lv-texto-3);
+}
+
+.lv-acrescimo {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 0.9em);
+  display: inline-flex;
+  align-items: center;
+  padding: 0.32em 0.8em;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 195, 47, 0.32);
+  background: rgba(0, 195, 47, 0.14);
+  color: var(--lv-verde);
+  font-family: var(--lv-display);
+  font-weight: 700;
+  white-space: nowrap;
+  transform: translateY(-50%);
+  animation: lv-entrar 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes lv-entrar {
+  from {
+    opacity: 0;
+    transform: translate(-0.6em, -50%);
+  }
+}
+
+/* ---- Número em rolinho (placar): cada algarismo rola até o valor novo ---- */
+
+.lv-odo {
+  --lv-odo-h: 1.08em;
+  display: inline-flex;
+  align-items: flex-start;
+  height: var(--lv-odo-h);
+  line-height: var(--lv-odo-h);
+}
+
+/* A largura de cada coluna é a do algarismo que ela mostra (medida na fonte
+   pelo componente), então "114" não fica "1 1 4". */
+.lv-odo__coluna {
+  display: inline-block;
+  height: var(--lv-odo-h);
+  overflow: hidden;
+}
+
+.lv-odo__faixa {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Só anima depois da primeira medida: a tela não "rola" ao abrir. */
+.lv-odo--animar .lv-odo__coluna {
+  transition: width 1.1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lv-odo--animar .lv-odo__faixa {
+  transition: transform 1.1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lv-odo__faixa > span {
+  display: block;
+  height: var(--lv-odo-h);
+  line-height: var(--lv-odo-h);
+  text-align: center;
+}
+
+.lv-odo__sinal {
+  display: inline-block;
+  height: var(--lv-odo-h);
+  line-height: var(--lv-odo-h);
+  white-space: pre;
+}
+
+/* ---------------------------- Números ---------------------------- */
+
+.lv-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(100%, calc(76 * var(--lv-u)));
+  margin: calc(2.1 * var(--lv-u)) auto 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lv-kpi {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 calc(1.2 * var(--lv-u));
+  text-align: center;
+}
+
+.lv-kpi + .lv-kpi::before {
+  content: "";
+  position: absolute;
+  top: 8%;
+  bottom: 8%;
+  left: 0;
+  width: 1px;
+  background: var(--lv-linha);
+}
+
+.lv-kpi__valor {
+  font-family: var(--lv-display);
+  font-size: max(30px, calc(4.9 * var(--lv-u)));
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.lv-kpi__rotulo {
+  margin-top: 0.6em;
+  font-size: max(12px, calc(1.18 * var(--lv-u)));
+  color: var(--lv-texto-2);
+}
+
+/* Número que acabou de subir: acende em verde e volta. Duas animações iguais
+   com nomes diferentes, para a segunda subida seguida também acender. */
+.lv-pulso-a {
+  animation: lv-subiu-a 1.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.lv-pulso-b {
+  animation: lv-subiu-b 1.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes lv-subiu-a {
+  from {
+    color: var(--lv-verde);
+    transform: scale(1.07);
+    filter: drop-shadow(0 0 0.3em rgba(0, 195, 47, 0.55));
+  }
+}
+
+@keyframes lv-subiu-b {
+  from {
+    color: var(--lv-verde);
+    transform: scale(1.07);
+    filter: drop-shadow(0 0 0.3em rgba(0, 195, 47, 0.55));
+  }
+}
+
+/* A receita já é verde: na subida ela só brilha mais. */
+.lv-receita__valor.lv-pulso-a {
+  animation-name: lv-brilho-a;
+}
+
+.lv-receita__valor.lv-pulso-b {
+  animation-name: lv-brilho-b;
+}
+
+@keyframes lv-brilho-a {
+  from {
+    transform: scale(1.025);
+    filter: drop-shadow(0 0 0.55em rgba(0, 195, 47, 0.75));
+  }
+}
+
+@keyframes lv-brilho-b {
+  from {
+    transform: scale(1.025);
+    filter: drop-shadow(0 0 0.55em rgba(0, 195, 47, 0.75));
+  }
+}
+
+/* ---------------------------- Gráfico ---------------------------- */
+
+.lv-grafico {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  margin-top: calc(2.4 * var(--lv-u));
+}
+
+.lv-grafico__topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1em;
+}
+
+.lv-grafico__titulo {
+  font-family: var(--lv-display);
+  font-size: max(16px, calc(1.8 * var(--lv-u)));
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #fff;
+}
+
+.lv-legenda {
+  display: flex;
+  gap: calc(1.7 * var(--lv-u));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: max(12px, calc(0.98 * var(--lv-u)));
+  color: var(--lv-texto-2);
+}
+
+.lv-legenda__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+}
+
+.lv-legenda__item::before {
+  content: "";
+  width: 0.72em;
+  height: 0.72em;
+  border-radius: 50%;
+  background: var(--lv-cor);
+}
+
+.lv-grafico__area {
+  position: relative;
+  min-height: 0;
+  margin-top: calc(0.6 * var(--lv-u));
+}
+
+.lv-grafico__aviso {
+  position: absolute;
+  inset: 0 0 12% 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  font-size: max(13px, calc(1.1 * var(--lv-u)));
+  color: var(--lv-texto-3);
+}
+
+.lv-ponto-agora {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lv-ponto 1.8s ease-out infinite;
+}
+
+@keyframes lv-ponto {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2.7);
+    opacity: 0;
+  }
+}
+
+.lv-dica {
+  min-width: 190px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(10, 10, 10, 0.92);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  font-family: var(--lv-corpo);
+  font-size: 13px;
+  color: var(--lv-texto-2);
+}
+
+.lv-dica__titulo {
+  margin-bottom: 6px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.lv-dica__linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.lv-dica__linha + .lv-dica__linha {
+  margin-top: 4px;
+}
+
+.lv-dica__nome {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lv-dica__nome::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--lv-cor, var(--lv-texto-3));
+}
+
+.lv-dica__valor {
+  font-weight: 700;
+  color: #fff;
+}
+
+/* ----------------------------- Rodapé ----------------------------- */
+
+.lv-rodape {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1em;
+  margin-top: calc(0.5 * var(--lv-u));
+  font-size: max(11px, calc(0.8 * var(--lv-u)));
+  color: var(--lv-texto-4);
+}
+
+.lv-rodape__estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+}
+
+.lv-rodape__estado::before {
+  content: "";
+  width: 0.55em;
+  height: 0.55em;
+  border-radius: 50%;
+  background: var(--lv-verde);
+}
+
+.lv-rodape__estado--alerta {
+  color: var(--lv-ambar);
+}
+
+.lv-rodape__estado--alerta::before {
+  background: var(--lv-ambar);
+}
+
+.lv-rodape__estado--neutro::before {
+  background: var(--lv-texto-4);
+}
+
+/* -------------- Controles (aparecem quando o mouse mexe) -------------- */
+
+.lv-controles {
+  position: absolute;
+  bottom: calc(3.2 * var(--lv-u));
+  left: 50%;
+  z-index: 5;
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 14px;
+  border: 1px solid var(--lv-linha);
+  background: rgba(20, 20, 20, 0.85);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+  transition: opacity 0.25s ease;
+}
+
+.lv-controles--visiveis,
+.lv-controles:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.lv-botao {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--lv-texto);
+  font-family: var(--lv-corpo);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.lv-botao:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.lv-botao:focus-visible {
+  outline: 2px solid var(--lv-verde);
+  outline-offset: 2px;
+}
+
+.lv-sem-cursor,
+.lv-sem-cursor * {
+  cursor: none !important;
+}
+
+/* ---------------------- Celular / tela em pé ---------------------- */
+
+@media (max-aspect-ratio: 1/1) {
+  .lv-tela {
+    --lv-u: 1.15vw;
+    grid-template-rows: auto auto auto minmax(300px, 52vh) auto;
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+    padding: 18px 16px 14px;
+  }
+
+  .lv-topo {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
+  .lv-status {
+    justify-self: center;
+  }
+
+  .lv-receita {
+    margin-top: 28px;
+  }
+
+  .lv-kpis {
+    margin-top: 26px;
+  }
+
+  .lv-grafico {
+    margin-top: 30px;
+  }
+
+  .lv-acrescimo {
+    top: calc(100% + 0.5em);
+    left: 50%;
+    transform: translateX(-50%);
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lv-odo--animar .lv-odo__coluna,
+  .lv-odo--animar .lv-odo__faixa {
+    transition: none;
+  }
+
+  .lv-status__ponto,
+  .lv-ponto-agora,
+  .lv-pulso-a,
+  .lv-pulso-b,
+  .lv-acrescimo {
+    animation: none !important;
+  }
+
+  .lv-controles,
+  .lv-status {
+    transition: none;
+  }
+}
