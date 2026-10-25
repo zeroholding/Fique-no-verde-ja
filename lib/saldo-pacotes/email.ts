@@ -3,8 +3,9 @@
  *
  * Mostra o que a tela "Contas de Pacotes" mostra, numa leitura de um minuto:
  * os três totais do topo da tela e uma linha por cliente parceiro, com o saldo
- * em créditos e em reais. Negativo e zerado ganham cor E texto ("Saldo
- * negativo", "Sem saldo"), para não depender só da cor.
+ * em créditos e em reais. Lista TODOS os clientes com pacote, do menor para o
+ * maior saldo, mesmo que o e-mail fique longo. Negativo e zerado ganham cor E
+ * texto ("Saldo negativo", "Sem saldo"), para não depender só da cor.
  *
  * Feito para cliente de e-mail, não para navegador: layout em tabela, estilo
  * inline, 600px e nada que o Gmail ou o Outlook descartem. O logotipo é o PNG
@@ -202,7 +203,8 @@ export function montarEmailSaldos(entrada: EntradaEmailSaldos): EmailMontado {
   const lista =
     total === 0
       ? `<p style="margin:0;padding:16px 0;border-top:1px solid ${COR.fio};font-family:${FONTE};font-size:14px;line-height:22px;color:${COR.suave};">Nenhum cliente parceiro com pacote cadastrado.</p>`
-      : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      : `<p style="margin:0 0 14px;font-family:${FONTE};font-size:13px;line-height:20px;color:${COR.suave};">Todos os ${total} ${plural(total, "cliente parceiro", "clientes parceiros")}, do menor para o maior saldo.</p>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
                 <td style="padding:0 0 8px;font-family:${FONTE};font-size:11.5px;line-height:16px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:${COR.fraco};">Cliente parceiro</td>
                 <td align="right" style="padding:0 0 8px 16px;font-family:${FONTE};font-size:11.5px;line-height:16px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:${COR.fraco};white-space:nowrap;">Saldo (qtde) · R$</td>
@@ -306,7 +308,9 @@ ${htmlDoAviso(resumo)}
       : []),
     ...(zerados.length ? [`Sem saldo: ${listaDeNomes(zerados, false)}.`] : []),
     ...(negativos.length || zerados.length ? [""] : []),
-    total === 0 ? "Nenhum cliente parceiro com pacote cadastrado." : `Clientes parceiros (${total}):`,
+    total === 0
+      ? "Nenhum cliente parceiro com pacote cadastrado."
+      : `Todos os ${total} ${plural(total, "cliente parceiro", "clientes parceiros")}, do menor para o maior saldo:`,
     ...resumo.clientes.map(
       (cliente) =>
         `- ${cliente.nome}: ${inteiro(cliente.saldoQtde)} ${plural(Math.abs(cliente.saldoQtde), "crédito", "créditos")} · ${moeda(cliente.saldoFinanceiro)} · ${detalheDoCliente(cliente)}`,

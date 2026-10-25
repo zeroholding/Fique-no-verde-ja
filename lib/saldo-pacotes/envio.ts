@@ -21,8 +21,16 @@
  * resposta (o e-mail pode ter saído), a nova tentativa reusa a mesma chave e o
  * Brevo não entrega duas vezes.
  *
+ * CONFERÊNCIA PÓS-DEPLOY: na primeira subida do servidor com o Brevo
+ * configurado, o mesmo e-mail (dados reais) sai UMA vez para
+ * `CONFERENCIA_POS_DEPLOY.para`, com "[CONFERÊNCIA]" no assunto, para conferir
+ * que tudo chega certo sem esperar as 9h. Fica registrado em
+ * `package_balance_email_checks`; reinícios não repetem. Para conferir de novo,
+ * troque a `chave`.
+ *
  * Variáveis de ambiente:
- *   BREVO_API_KEY, BREVO_SENDER_EMAIL     obrigatórias (ver lib/email/brevo.ts)
+ *   BREVO_API_KEY                         obrigatória (ver lib/email/brevo.ts)
+ *   BREVO_SENDER_EMAIL                    opcional, padrão adm@fiquenoverdeja.com.br
  *   SALDO_PACOTES_EMAIL_PARA              opcional; vírgula separa vários.
  *                                         Padrão: gianlucca.florencio@zeroholding.com.br
  *   SALDO_PACOTES_EMAIL_DESLIGADO=1       desliga a agenda
@@ -54,6 +62,13 @@ const RESERVA_ABANDONADA_MIN = 15;
 const INTERVALO_DA_AGENDA_MS = 60_000;
 /** Primeira verificação logo depois de subir: cobre o deploy feito depois das 9h. */
 const PRIMEIRA_VERIFICACAO_MS = 20_000;
+
+/** E-mail de conferência que sai uma única vez depois do deploy. */
+export const CONFERENCIA_POS_DEPLOY = {
+  chave: "conferencia-saldo-pacotes-2026-10",
+  para: ["gerenciamorais@gmail.com"],
+} as const;
+const MAXIMO_TENTATIVAS_CONFERENCIA = 3;
 
 /* -------------------------------------------------------------------------- */
 /*                                  Tabela                                    */
@@ -116,13 +131,56 @@ UPDATE package_balance_email_runs
 
 const SQL_SITUACAO_DO_DIA = `SELECT status, attempts FROM package_balance_email_runs WHERE run_date = $1::date`;
 
+/**
+ * Envios avulsos que devem sair uma vez só (a conferência pós-deploy).
+ * Mesmo SQL de `database/migrations/029_create_package_balance_email_checks.sql`.
+ */
+export const SQL_TABELA_CONFERENCIAS = `
+CREATE TABLE IF NOT EXISTS package_balance_email_checks (
+  check_key VARCHAR(80) PRIMARY KEY,
+  status VARCHAR(20) NOT NULL CHECK (status IN ('sending', 'sent', 'failed')),
+  attempts INTEGER NOT NULL DEFAULT 0,
+  recipients TEXT,
+  message_id TEXT,
+  last_error TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+)`;
+
+/** Mesma reserva do envio do dia, pela chave da conferência. */
+const SQL_RESERVAR_CONFERENCIA = `
+INSERT INTO package_balance_email_checks AS r (check_key, status, attempts, recipients, updated_at)
+VALUES ($1, 'sending', 1, $2, now())
+ON CONFLICT (check_key) DO UPDATE
+   SET status = 'sending',
+       attempts = r.attempts + 1,
+       recipients = EXCLUDED.recipients,
+       updated_at = now()
+ WHERE r.attempts < $3::int
+   AND (
+        (r.status = 'failed' AND r.updated_at < now() - make_interval(mins => $4::int))
+     OR (r.status = 'sending' AND r.updated_at < now() - make_interval(mins => $5::int))
+   )
+RETURNING r.attempts AS tentativa`;
+
+const SQL_CONFERENCIA_ENVIADA = `
+UPDATE package_balance_email_checks
+   SET status = 'sent', message_id = $2, last_error = NULL, updated_at = now()
+ WHERE check_key = $1`;
+
+const SQL_CONFERENCIA_FALHOU = `
+UPDATE package_balance_email_checks SET status = 'failed', last_error = $2, updated_at = now() WHERE check_key = $1`;
+
+const SQL_SITUACAO_DA_CONFERENCIA = `SELECT status, attempts FROM package_balance_email_checks WHERE check_key = $1`;
+
 const tabelasProntas = new WeakMap<Executor, Promise<void>>();
 
-/** Cria a tabela uma vez por processo; se falhar, a próxima chamada tenta de novo. */
+/** Cria as tabelas uma vez por processo; se falhar, a próxima chamada tenta de novo. */
 export function garantirTabela(executar: Executor): Promise<void> {
   let pronta = tabelasProntas.get(executar);
   if (!pronta) {
     pronta = executar(SQL_TABELA_ENVIOS)
+      .then(() => executar(SQL_TABELA_CONFERENCIAS))
       .then(() => undefined)
       .catch((erro: unknown) => {
         tabelasProntas.delete(executar);
@@ -218,25 +276,31 @@ export type OpcoesDoEnvio = {
   ambiente?: Ambiente;
   chaveIdempotencia?: string;
   fetchImpl?: typeof fetch;
+  /** Outros destinatários no lugar dos do envio diário (a conferência). */
+  para?: readonly string[];
+  /** Vai na frente do assunto, como "[CONFERÊNCIA] ". */
+  prefixoAssunto?: string;
 };
 
 /** Monta com o saldo de agora e envia. Sem registro do dia: é o envio manual. */
 export async function enviarSaldoAgora(config: ConfigBrevo, opcoes: OpcoesDoEnvio = {}): Promise<EnvioFeito> {
-  const { resumo, email, para } = await montarEmailDoMomento(opcoes.executar, opcoes.agora, opcoes.ambiente);
+  const momento = await montarEmailDoMomento(opcoes.executar, opcoes.agora, opcoes.ambiente);
+  const para = opcoes.para ? [...opcoes.para] : momento.para;
   if (para.length === 0) throw new Error("Nenhum destinatário válido em SALDO_PACOTES_EMAIL_PARA.");
+  const assunto = `${opcoes.prefixoAssunto ?? ""}${momento.email.assunto}`;
   const { messageId } = await enviarEmailBrevo(
     config,
     {
       para: para.map((email) => ({ email })),
-      assunto: email.assunto,
-      html: email.html,
-      texto: email.texto,
+      assunto,
+      html: momento.email.html,
+      texto: momento.email.texto,
       tags: ["saldo-pacotes"],
       chaveIdempotencia: opcoes.chaveIdempotencia,
     },
     opcoes.fetchImpl,
   );
-  return { messageId, para, assunto: email.assunto, resumo };
+  return { messageId, para, assunto, resumo: momento.resumo };
 }
 
 export type DesfechoDoDia =
@@ -311,6 +375,64 @@ export async function processarEnvioDoDia(deps: DependenciasDoEnvio = {}): Promi
   return { tipo: "ENVIADO", dia, tentativa, messageId: envio.messageId };
 }
 
+export type DesfechoDaConferencia =
+  | { tipo: "SEM_CONFIGURACAO"; motivo: string }
+  | { tipo: "ENVIADO"; tentativa: number; messageId: string | null; para: string[] }
+  | { tipo: "JA_ENVIADO" }
+  | { tipo: "AGUARDANDO" }
+  | { tipo: "FALHOU"; tentativa: number; erro: string }
+  | { tipo: "DESISTIU"; tentativas: number };
+
+/**
+ * Envia a conferência pós-deploy, se ainda não saiu. Não depende do horário:
+ * roda na primeira verificação depois que o servidor sobe com o Brevo
+ * configurado.
+ */
+export async function processarConferencia(
+  deps: DependenciasDoEnvio = {},
+  conferencia: { chave: string; para: readonly string[] } = CONFERENCIA_POS_DEPLOY,
+): Promise<DesfechoDaConferencia> {
+  const executar = deps.executar ?? executarNoPool;
+  const ambiente = deps.ambiente ?? process.env;
+  const config = deps.config !== undefined ? deps.config : configBrevo(ambiente);
+  if (!config) return { tipo: "SEM_CONFIGURACAO", motivo: motivoConfigBrevoAusente(ambiente) };
+
+  await garantirTabela(executar);
+  const { rows } = await executar(SQL_RESERVAR_CONFERENCIA, [
+    conferencia.chave,
+    conferencia.para.join(", "),
+    MAXIMO_TENTATIVAS_CONFERENCIA,
+    ESPERA_ENTRE_TENTATIVAS_MIN,
+    RESERVA_ABANDONADA_MIN,
+  ]);
+  const reserva = rows[0];
+  if (!reserva) {
+    const situacao = (await executar(SQL_SITUACAO_DA_CONFERENCIA, [conferencia.chave])).rows[0];
+    if (situacao?.status === "sent") return { tipo: "JA_ENVIADO" };
+    const tentativas = Number(situacao?.attempts ?? 0);
+    if (tentativas >= MAXIMO_TENTATIVAS_CONFERENCIA) return { tipo: "DESISTIU", tentativas };
+    return { tipo: "AGUARDANDO" };
+  }
+
+  const tentativa = Number(reserva.tentativa);
+  try {
+    const envio = await enviarSaldoAgora(config, {
+      executar,
+      agora: deps.agora,
+      ambiente,
+      fetchImpl: deps.fetchImpl,
+      para: conferencia.para,
+      prefixoAssunto: "[CONFERÊNCIA] ",
+    });
+    await executar(SQL_CONFERENCIA_ENVIADA, [conferencia.chave, envio.messageId]);
+    return { tipo: "ENVIADO", tentativa, messageId: envio.messageId, para: envio.para };
+  } catch (erro) {
+    const mensagem = (erro instanceof Error ? erro.message : String(erro)).slice(0, 500);
+    await executar(SQL_CONFERENCIA_FALHOU, [conferencia.chave, mensagem]).catch(() => undefined);
+    return { tipo: "FALHOU", tentativa, erro: mensagem };
+  }
+}
+
 /* -------------------------------------------------------------------------- */
 /*                                  Agenda                                    */
 /* -------------------------------------------------------------------------- */
@@ -320,6 +442,8 @@ type EstadoDaAgenda = {
   rodando: Promise<void> | null;
   /** Dia já resolvido neste processo (enviado ou desistido): não consulta mais o banco. */
   diaResolvido: string | null;
+  /** Conferência pós-deploy já resolvida neste processo. */
+  conferenciaResolvida: boolean;
   avisos: Set<string>;
 };
 
@@ -333,6 +457,7 @@ const estado: EstadoDaAgenda = (escopo.__fnvjSaldoPacotes ??= {
   intervalo: null,
   rodando: null,
   diaResolvido: null,
+  conferenciaResolvida: false,
   avisos: new Set<string>(),
 });
 
@@ -381,12 +506,46 @@ function registrarDesfecho(desfecho: DesfechoDoDia): void {
   }
 }
 
+function registrarConferencia(desfecho: DesfechoDaConferencia): void {
+  switch (desfecho.tipo) {
+    case "AGUARDANDO":
+    case "SEM_CONFIGURACAO": // o aviso de configuração já sai pelo envio do dia
+      return;
+    case "ENVIADO":
+      estado.conferenciaResolvida = true;
+      console.log(
+        `[saldo-pacotes] Conferência pós-deploy enviada para ${desfecho.para.join(", ")} ` +
+          `(messageId ${desfecho.messageId ?? "-"}).`,
+      );
+      return;
+    case "JA_ENVIADO":
+      estado.conferenciaResolvida = true;
+      return;
+    case "DESISTIU":
+      estado.conferenciaResolvida = true;
+      avisarUmaVez(
+        "conferencia:desistiu",
+        `[saldo-pacotes] Conferência pós-deploy não saiu depois de ${desfecho.tentativas} tentativas. ` +
+          "O motivo está em package_balance_email_checks.last_error.",
+        "error",
+      );
+      return;
+    case "FALHOU":
+      console.error(`[saldo-pacotes] Falha na conferência pós-deploy (tentativa ${desfecho.tentativa}): ${desfecho.erro}`);
+      return;
+  }
+}
+
+async function verificar(dia: string): Promise<void> {
+  if (!estado.conferenciaResolvida) registrarConferencia(await processarConferencia());
+  if (estado.diaResolvido !== dia) registrarDesfecho(await processarEnvioDoDia());
+}
+
 function verificarAgora(): void {
   if (estado.rodando) return;
   const { dia } = relogioDeBrasilia(new Date());
-  if (estado.diaResolvido === dia) return;
-  estado.rodando = processarEnvioDoDia()
-    .then(registrarDesfecho)
+  if (estado.diaResolvido === dia && estado.conferenciaResolvida) return;
+  estado.rodando = verificar(dia)
     .catch((erro: unknown) => {
       // Banco fora, por exemplo. A verificação do próximo minuto tenta de novo;
       // o mesmo erro só vai para o log uma vez por dia.

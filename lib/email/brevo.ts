@@ -9,9 +9,9 @@
  *
  * Configuração (variáveis de ambiente):
  *   BREVO_API_KEY       obrigatória
- *   BREVO_SENDER_EMAIL  obrigatória — remetente VALIDADO no Brevo (Senders,
- *                       Domains & Dedicated IPs). Remetente não validado faz o
- *                       Brevo recusar o envio com 400.
+ *   BREVO_SENDER_EMAIL  opcional, padrão adm@fiquenoverdeja.com.br (remetente
+ *                       ativo na conta, domínio autenticado). Outro remetente
+ *                       precisa estar VALIDADO no Brevo, senão o envio volta 400.
  *   BREVO_SENDER_NAME   opcional, padrão "Fique no Verde Já"
  *   BREVO_REPLY_TO      opcional — para onde vai a resposta
  *   BREVO_SANDBOX=1     opcional — o Brevo valida a requisição e NÃO entrega
@@ -33,11 +33,14 @@ type Ambiente = Record<string, string | undefined>;
 
 export const EMAIL_VALIDO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/** Remetente ativo na conta do Brevo, no domínio autenticado do site. */
+export const REMETENTE_PADRAO = "adm@fiquenoverdeja.com.br";
+
 /** Configuração lida do ambiente, ou `null` quando falta o essencial. */
 export function configBrevo(ambiente: Ambiente = process.env): ConfigBrevo | null {
   const apiKey = ambiente.BREVO_API_KEY?.trim();
-  const remetenteEmail = ambiente.BREVO_SENDER_EMAIL?.trim();
-  if (!apiKey || !remetenteEmail || !EMAIL_VALIDO.test(remetenteEmail)) return null;
+  const remetenteEmail = ambiente.BREVO_SENDER_EMAIL?.trim() || REMETENTE_PADRAO;
+  if (!apiKey || !EMAIL_VALIDO.test(remetenteEmail)) return null;
 
   const responderPara = ambiente.BREVO_REPLY_TO?.trim();
   return {
@@ -57,8 +60,7 @@ export function configBrevo(ambiente: Ambiente = process.env): ConfigBrevo | nul
 export function motivoConfigBrevoAusente(ambiente: Ambiente = process.env): string {
   if (!ambiente.BREVO_API_KEY?.trim()) return "BREVO_API_KEY não configurada";
   const remetente = ambiente.BREVO_SENDER_EMAIL?.trim();
-  if (!remetente) return "BREVO_SENDER_EMAIL não configurado";
-  if (!EMAIL_VALIDO.test(remetente)) return "BREVO_SENDER_EMAIL inválido";
+  if (remetente && !EMAIL_VALIDO.test(remetente)) return "BREVO_SENDER_EMAIL inválido";
   return "";
 }
 

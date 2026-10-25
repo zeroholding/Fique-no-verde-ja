@@ -13,6 +13,9 @@
  * contasse diferente, o número das 9h não bateria com o da tela e ninguém
  * confiaria em nenhum dos dois. Saldo negativo é permitido no sistema (o
  * consumo não trava sem saldo) e aparece como está.
+ *
+ * TODOS os clientes com pacote entram, inclusive zerados e negativos, em ordem
+ * CRESCENTE de saldo (quantidade): quem precisa de recarga fica no topo.
  */
 
 import { pool } from "@/lib/db";
@@ -83,7 +86,11 @@ export function resumirSaldos(linhas: Record<string, unknown>[]): ResumoSaldos {
     };
   });
 
-  clientes.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }));
+  // Menor saldo primeiro; empate, pelo nome, para a ordem não mudar de um dia
+  // para o outro sem o saldo mudar.
+  clientes.sort(
+    (a, b) => a.saldoQtde - b.saldoQtde || a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }),
+  );
 
   const totalQtde = clientes.reduce((soma, cliente) => soma + cliente.saldoQtde, 0);
   const totalCentavos = clientes.reduce((soma, cliente) => soma + Math.round(cliente.saldoFinanceiro * 100), 0);
