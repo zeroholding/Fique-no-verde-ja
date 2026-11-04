@@ -170,38 +170,39 @@ body {
 /* ============================================================
    FNVJ Ads (/ads)
 
-   Visual neutro e sobrio: fundo cinza claro, cartoes brancos com borda fina,
-   um unico azul para acao e grafico, verde/vermelho so para variacao. Geist
-   (OFL) vem primeiro; Helvetica/Arial sao fallback de sistema. Tokens isolados
-   sob .ads-root para nao alterar Dashboard nem Tracken.
+   Design moderno, limpo, alta usabilidade:
+   Tipografia Montserrat via Google Fonts, cards elegantes com
+   sombras suaves e bordas precisas.
+   Tokens isolados sob .ads-root para nao alterar Dashboard nem Tracken.
    ============================================================ */
 .ads-root {
   color-scheme: light;
-  font-family: var(--font-geist-sans), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: 'Montserrat', var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
   --ads-blue: #2563eb;
   --ads-blue-strong: #1d4ed8;
-  --ads-blue-soft: #eff4ff;
-  --ads-canvas: #f5f6f8;
+  --ads-blue-soft: #eff6ff;
+  --ads-canvas: #f8fafc;
   --ads-surface: #ffffff;
-  --ads-subtle: #f9fafb;
-  --ads-line: #e4e7ec;
-  --ads-line-strong: #d0d5dd;
-  --ads-ink: #101828;
-  --ads-ink-soft: #475467;
-  --ads-ink-muted: #667085;
-  --ads-positive: #067647;
-  --ads-negative: #b42318;
+  --ads-subtle: #f8fafc;
+  --ads-line: #e2e8f0;
+  --ads-line-strong: #cbd5e1;
+  --ads-ink: #0f172a;
+  --ads-ink-soft: #475569;
+  --ads-ink-muted: #64748b;
+  --ads-positive: #059669;
+  --ads-negative: #dc2626;
   min-height: 100dvh;
   background: var(--ads-canvas);
   color: var(--ads-ink);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  font-feature-settings: "kern", "liga";
+  font-feature-settings: "kern", "liga", "cv02", "cv03", "cv04", "cv11";
 }
 
 .ads-root ::selection {
-  background: #d1e0ff;
-  color: #102a56;
+  background: #bfdbfe;
+  color: #1e3a8a;
 }
 
 .ads-root *:focus-visible {
@@ -209,7 +210,8 @@ body {
   outline-offset: 2px;
 }
 
-/* Modal nativo (<dialog>): fica na camada superior, mas herda os tokens. */
+/* Modal nativo (<dialog>): fica na camada superior, herda os tokens. */
 .ads-root dialog::backdrop {
-  background: rgb(16 24 40 / 0.45);
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
 }

@@ -1,19 +1,19 @@
 "use client";
 
 import { useId, useState, type FormEvent } from "react";
+import { Calendar, Check } from "lucide-react";
 
 import { ADS_PERIOD_PRESETS, isIsoDay, type AdsDayRange, type AdsPeriodPreset } from "@/lib/ads/dates";
 
 import { Button } from "./ui";
 
 const selectClasses =
-  "h-9 rounded-md border border-[var(--ads-line-strong)] bg-white px-2.5 text-[14px] text-[var(--ads-ink)] disabled:opacity-60";
+  "h-9.5 rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-[13.5px] font-semibold text-slate-800 shadow-xs hover:border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-60 cursor-pointer";
 const dateClasses =
-  "h-9 rounded-md border border-[var(--ads-line-strong)] bg-white px-2 text-[14px] text-[var(--ads-ink)] tabular-nums";
+  "h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-[13px] font-medium text-slate-800 shadow-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors tabular-nums";
 
 /**
- * Escolha do período: atalhos e, em "Personalizado", duas datas com Aplicar.
- * Só avisa a tela quando há um período completo e válido.
+ * Escolha do período: atalhos e, em "Personalizado", duas datas com botão Aplicar.
  */
 export function PeriodPicker({
   preset,
@@ -61,11 +61,12 @@ export function PeriodPicker({
   };
 
   return (
-    <div className="flex flex-col items-stretch gap-2 sm:items-end">
-      <div className="flex items-center gap-2">
-        <label htmlFor={selectId} className="text-[13px] text-[var(--ads-ink-muted)]">
-          Período
+    <div className="flex flex-col items-stretch gap-2.5 sm:items-end">
+      <div className="relative flex items-center">
+        <label htmlFor={selectId} className="sr-only">
+          Período de análise
         </label>
+        <Calendar className="pointer-events-none absolute left-3 size-4 text-slate-400" aria-hidden />
         <select
           id={selectId}
           className={selectClasses}
@@ -82,9 +83,13 @@ export function PeriodPicker({
       </div>
 
       {customOpen ? (
-        <form onSubmit={applyCustom} className="flex flex-wrap items-end gap-2" noValidate>
+        <form
+          onSubmit={applyCustom}
+          className="flex flex-wrap items-end gap-2 p-2.5 rounded-xl border border-slate-200 bg-white shadow-sm"
+          noValidate
+        >
           <div className="flex flex-col gap-1">
-            <label htmlFor={fromId} className="text-[12.5px] text-[var(--ads-ink-muted)]">
+            <label htmlFor={fromId} className="text-[11.5px] font-semibold text-slate-500 uppercase tracking-wider">
               De
             </label>
             <input
@@ -96,7 +101,7 @@ export function PeriodPicker({
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label htmlFor={toId} className="text-[12.5px] text-[var(--ads-ink-muted)]">
+            <label htmlFor={toId} className="text-[11.5px] font-semibold text-slate-500 uppercase tracking-wider">
               Até
             </label>
             <input
@@ -107,11 +112,12 @@ export function PeriodPicker({
               onChange={(event) => setDraft((current) => ({ ...current, to: event.target.value }))}
             />
           </div>
-          <Button type="submit" variant="primary" disabled={disabled}>
-            Aplicar
+          <Button type="submit" variant="primary" size="sm" disabled={disabled} className="gap-1">
+            <Check className="size-3.5" aria-hidden />
+            <span>Aplicar</span>
           </Button>
           {error ? (
-            <p role="alert" className="w-full text-[12.5px] text-[var(--ads-negative)] sm:text-right">
+            <p role="alert" className="w-full text-[12px] font-semibold text-rose-600 sm:text-right">
               {error}
             </p>
           ) : null}

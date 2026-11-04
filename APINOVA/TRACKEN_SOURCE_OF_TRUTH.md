@@ -2,8 +2,8 @@
 
 > **Documento canônico e vivo.** Este arquivo define o contrato atualmente implementado e confirmado da integração entre Fique no Verde Já (FNVJ) e TRACKen.
 >
-> **Última atualização:** 30/09/2026
-> **Estado:** migration 024 aplicada historicamente; isolamento production/sandbox validado localmente no código e preparado nas migrations 025/026, ainda não aplicado, publicado ou configurado em ambiente real.
+> **Última atualização:** 01/10/2026
+> **Estado:** isolamento production/sandbox ATIVO em produção desde 01/10/2026 (~22h44, -03:00): código `843f004` publicado, migrations 025/026 aplicadas, credencial antiga reclassificada como Homologação e credencial nova de Produção configurada. Registro completo em 16; pendências em 17.
 > **Responsabilidade:** atualizar este documento na mesma alteração de código, banco ou configuração que mude o contrato.
 
 ## 1. Como usar este documento
@@ -102,7 +102,7 @@ Administracao operacional: `scripts/tracken_credential.mjs`. `create` exige nome
 
 O painel humano também exige ambiente explícito em toda leitura/mutação: abre em production, nunca oferece “todos” e filtra fila, KPI, SLA, relatório, histórico, exportação e contagens. PATCH de status/atendente valida o ambiente dentro do mesmo lock do ticket.
 
-> **Rollout pendente em duas fases:** aplicar a 025 aditiva, publicar o código composto, aplicar a 026 que remove a UNIQUE global e somente depois liberar a segunda credencial. Este documento não afirma que migrations, URLs ou credenciais tenham sido aplicadas em ambiente real.
+> **Rollout concluído em 01/10/2026:** 025 e 026 aplicadas, código publicado e as duas credenciais configuradas (registro em 16). Push na branch `coolify-deploy` dispara deploy automático no Coolify: qualquer migration exigida pelo código novo precisa estar aplicada ANTES do push.
 
 ## 4. Autenticação
 
@@ -317,7 +317,7 @@ Tabelas principais:
 
 Depois do código novo estar publicado, `026_tracken_environment_cutover.sql` verifica a chave composta e remove somente a UNIQUE global. A partir daí, o mesmo `shipment_id` pode existir uma vez em cada ambiente e não se pode voltar ao SQL antigo `ON CONFLICT (shipment_id)`.
 
-A 025 também valida a URL canônica das credenciais já configuradas e limita a um destino ativo por ambiente. Nenhuma das duas migrations foi executada nesta alteração local.
+A 025 também valida a URL canônica das credenciais já configuradas e limita a um destino ativo por ambiente. Ambas foram aplicadas em produção em 01/10/2026; a 025 aplicada inclui duas correções encontradas no ensaio (ver 16).
 
 ### 11.2 Fonte do status de saída
 
@@ -418,7 +418,7 @@ Todos foram entregues com HTTP 200 na primeira tentativa. Essa sequência é evi
 
 A divisão elimina a janela em que o código publicado ficaria sem índice compatível: a 025 aceita os dois SQLs; a 026 só roda depois do deploy. Até a 026, não se libera o segundo ambiente porque a UNIQUE global ainda impede IDs iguais.
 
-Nenhuma dessas etapas foi executada nesta alteração local. Em especial, nenhum banco real foi acessado e os endpoints continuam pendentes de configuração operacional.
+Etapas 1 a 6 executadas em 01/10/2026, com a publicação do código (etapa 3) ocorrendo antes da 025 por deploy automático (ver 16). A etapa 7 segue pendente: entrega real de webhook com ticket de cada ambiente.
 
 ### 13.2 Preparação
 
@@ -562,20 +562,32 @@ Ao alterar a integração:
 
 **Decisão operacional:** preservar a URL/credencial atual como Homologação (`sandbox`) e criar uma credencial nova para Produção (`production`). A classificação real da credencial atual ainda precisa ser auditada antes da 025.
 
-**Estado operacional:** PENDENTE. As migrations 025/026 não foram executadas, o código não foi deployado e endpoints/secrets não foram aplicados. Não interpretar este registro como confirmação de produção.
+**Estado operacional:** APLICADO em 01/10/2026. Ver o registro seguinte.
+
+### 01/10/2026 — ativação do isolamento em produção
+
+**Incidente:** o push de `843f004` na `coolify-deploy` (22h02, -03:00) disparou deploy automático no Coolify antes da 025. O código novo consultava `tracken_tickets.environment`, ainda inexistente, e o módulo Tracken ficou com erro de ~22h05 a ~22h42. `tracken_request_log` (que registra sucesso e erro do POST) não tem nenhuma chamada da TRACKen no intervalo. **Regra:** push na `coolify-deploy` é deploy; aplicar a migration antes do push.
+
+**Auditoria (somente leitura):** uma credencial ativa, `environment=production` por default antigo, webhook na URL canônica de Homologação e `webhook_secret` igual ao secret da API. 275 tickets: 19 criados pela credencial e 256 do seed de demonstração de 29/08, sem `credential_id`.
+
+**Correções na 025 antes de aplicar (achadas no ensaio):** `ADD COLUMN` e `DROP DEFAULT` em comandos separados, pois no mesmo `ALTER TABLE` o PostgreSQL falhava com a coluna ainda inexistente; os tickets do seed demo (`requested_by = 'demo@tracken.local'` e `payload_raw.origem = 'seed de demonstracao'`) passam a ser classificados como sandbox. Qualquer outra linha sem credencial continua abortando a migration.
+
+**Execução:** backup JSON das tabelas `tracken_*` fora do repositório; ensaio 025+026 na mesma transação com `ROLLBACK`; `set-environment` da credencial atual para sandbox; 025 com `COMMIT`; 026 com `COMMIT`; credencial antiga renomeada para `TRACKen Homologacao`; credencial nova `TRACKen Producao` criada e ligada ao webhook de produção, assinado com o secret da própria credencial.
+
+**Resultado:** 275 tickets e 51 eventos de outbox em sandbox, zero incoerências; só resta a UNIQUE `(environment, shipment_id)`; um destino utilizável por ambiente (sandbox → `homologasellercore.tracken.dev.br`, production → `seller.tracken.app.br`).
+
+**Verificação na API real:** GET assinado em `/statuses` e `/tickets` respondeu 200 nos dois ambientes; Homologação lista 275 tickets e Produção lista 0, confirmando isolamento e que a aplicação decifra as duas credenciais.
+
+**Não verificado:** entrega real de webhook em produção (ocorre no primeiro ticket da TRACKen em produção) e o painel humano com sessão logada.
 
 ## 17. Pendências
 
-- auditar a credencial atual e reclassificá-la como sandbox antes da 025, se necessário;
-- aplicar e verificar a migration 025 aditiva no ambiente autorizado;
-- publicar o código na branch/deploy autorizados;
-- aplicar a migration 026 e verificar a remoção da UNIQUE global;
-- criar/configurar exatamente um target production novo e manter o sandbox no endpoint antigo, com secrets confirmados pela TRACKen;
-- verificar constraints, `webhook.byEnvironment`, `outbox.byEnvironment` e backlog antes de liberar os dois ambientes;
+- confirmar com a TRACKen o primeiro ticket de produção e o webhook 2xx em `seller.tracken.app.br`;
 - executar teste pos-deploy isolado em sandbox cobrindo `ticket.received` e `em_atendimento -> negado`, confirmar `tracken_status`, HTTP 2xx e recebimento pela TRACKen;
 - executar teste production apenas com autorizacao explicita; depois da confirmacao, registrar o estado real sem retroagir este documento;
 - divida nao bloqueadora: settings valida presenca de HMAC, cardinalidade, expiracao e URL, mas a prova criptografica final continua no worker;
 - divida nao bloqueadora: apos eliminar todo `webhook_secret` legado em texto puro, remover a compatibilidade e aceitar somente formato cifrado versionado.
+- seguranca (preexistente): varios `scripts/*.js` trazem a connection string do Postgres de producao, com usuario `postgres`, em texto; mover para variavel de ambiente e rotacionar a senha.
 
 ## 18. Mapa de arquivos
 

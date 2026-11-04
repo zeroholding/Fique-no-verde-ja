@@ -471,9 +471,16 @@ async function loadRanking(
   run: AdsRunner,
   level: AdsRankingLevel,
   range: DayInterval,
-  totalSpend: number | null
+  totalSpend: number | null,
+  account?: string | null
 ): Promise<AdsRanking> {
   const sql = LEVEL_SQL[level];
+  const params: unknown[] = [range.from, range.to];
+  let accountFilter = "";
+  if (account) {
+    params.push(account);
+    accountFilter = ` AND (account_name = $3 OR account_id = $3)`;
+  }
   const result = await run<RankingSqlRow>(
     `SELECT ${sql.key} AS entity_key,
             COALESCE(NULLIF(account_id, ''), account_name) AS account_key,
@@ -483,11 +490,11 @@ async function loadRanking(
             (ARRAY_AGG(account_name ORDER BY day DESC))[1] AS account_name,
             ${AGGREGATE_COLUMNS}
        FROM ads_daily
-      WHERE day BETWEEN $1::date AND $2::date
+      WHERE day BETWEEN $1::date AND $2::date${accountFilter}
       GROUP BY 1, 2
       ORDER BY SUM(spend) DESC NULLS LAST, entity_name ASC
       LIMIT ${RANKING_LIMIT + 1}`,
-    [range.from, range.to]
+    params
   );
 
   const rows = result.rows.slice(0, RANKING_LIMIT).map((row) => {
@@ -536,7 +543,7 @@ function emptyDashboard(today: string, lastImport: AdsDashboardData["lastImport"
  */
 export async function loadDashboard(
   run: AdsRunner,
-  query: { from: string | null; to: string | null },
+  query: { from: string | null; to: string | null; account?: string | null },
   today: string
 ): Promise<AdsDashboardData> {
   const latest = await run<{ file_name: string; created_at: unknown }>(
@@ -564,32 +571,54 @@ export async function loadDashboard(
   const length = daysBetween(range.from, range.to) + 1;
   const previousRange = { from: addDays(range.from, -length), to: addDays(range.from, -1) };
 
+  const account = query.account?.trim() || null;
+  const currentParams: unknown[] = [range.from, range.to];
+  let currentAccountWhere = "";
+  if (account) {
+    currentParams.push(account);
+    currentAccountWhere = " AND (account_name = $3 OR account_id = $3)";
+  }
+
   const currentResult = await run(
     `SELECT ${AGGREGATE_COLUMNS},
             (COUNT(*) FILTER (WHERE campaign_id <> '' OR campaign_name <> ''))::int AS with_campaign,
             (COUNT(*) FILTER (WHERE adset_id <> '' OR adset_name <> ''))::int AS with_adset,
             (COUNT(*) FILTER (WHERE ad_id <> '' OR ad_name <> ''))::int AS with_ad
        FROM ads_daily
-      WHERE day BETWEEN $1::date AND $2::date`,
-    [range.from, range.to]
+      WHERE day BETWEEN $1::date AND $2::date${currentAccountWhere}`,
+    currentParams
   );
   const currentRow = currentResult.rows[0] ?? {};
   const current = readAggregate(currentRow);
   const totals = computeIndicators(current);
 
+  const previousParams: unknown[] = [previousRange.from, previousRange.to];
+  let previousAccountWhere = "";
+  if (account) {
+    previousParams.push(account);
+    previousAccountWhere = " AND (account_name = $3 OR account_id = $3)";
+  }
+
   const previousResult = await run(
-    `SELECT ${AGGREGATE_COLUMNS} FROM ads_daily WHERE day BETWEEN $1::date AND $2::date`,
-    [previousRange.from, previousRange.to]
+    `SELECT ${AGGREGATE_COLUMNS} FROM ads_daily WHERE day BETWEEN $1::date AND $2::date${previousAccountWhere}`,
+    previousParams
   );
   const previousAggregate = readAggregate(previousResult.rows[0]);
+
+  const dailyParams: unknown[] = [range.from, range.to];
+  let dailyAccountWhere = "";
+  if (account) {
+    dailyParams.push(account);
+    dailyAccountWhere = " AND (account_name = $3 OR account_id = $3)";
+  }
 
   const dailyResult = await run<SqlRow & { day: string }>(
     `SELECT to_char(day, 'YYYY-MM-DD') AS day, ${AGGREGATE_COLUMNS}
        FROM ads_daily
-      WHERE day BETWEEN $1::date AND $2::date
+      WHERE day BETWEEN $1::date AND $2::date${dailyAccountWhere}
       GROUP BY day
       ORDER BY day`,
-    [range.from, range.to]
+    dailyParams
   );
   const byDay = new Map<string, SqlRow>(dailyResult.rows.map((row) => [row.day, row]));
   const isCovered = (day: string) => covered.some((span) => day >= span.from && day <= span.to);
@@ -618,7 +647,7 @@ export async function loadDashboard(
   const rankings: AdsRanking[] = [];
   for (const level of LEVEL_ORDER) {
     if ((toNumber(currentRow[LEVEL_SQL[level].presence]) ?? 0) > 0) {
-      rankings.push(await loadRanking(run, level, range, totals.spend));
+      rankings.push(await loadRanking(run, level, range, totals.spend, account));
     }
   }
 
@@ -670,6 +699,7 @@ export async function loadDashboard(
     missingRanges: missingRanges.slice(0, 5),
     rankings,
     accounts: accountsResult.rows.map((row) => row.account),
+    selectedAccount: account,
     resultTypes: resultTypesResult.rows.map((row) => row.result_type),
     currency: currencies[0] ?? "BRL",
     currencies,

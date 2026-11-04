@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { LogOut } from "lucide-react";
+import { ArrowLeft, FileSpreadsheet, LayoutDashboard, LogOut, User } from "lucide-react";
 
 import { FnvjMark } from "@/components/tracken/BrandLogo";
 
@@ -11,29 +11,37 @@ import { AdsViewerProvider, type AdsViewer } from "./_components/viewer-context"
 
 /**
  * Moldura do /ads: barra superior com a marca, as duas abas (Painel e
- * Relatórios) e a saída. Sem menu lateral: o módulo tem só duas telas.
+ * Relatórios) e a saída. Sem menu lateral, com estética limpa e profissional.
  */
 
 const TABS = [
-  { href: "/ads", label: "Painel" },
-  { href: "/ads/relatorios", label: "Relatórios" },
+  { href: "/ads", label: "Painel", icon: LayoutDashboard },
+  { href: "/ads/relatorios", label: "Relatórios", icon: FileSpreadsheet },
 ] as const;
 
-function TabLink({ href, label, active }: { href: string; label: string; active: boolean }) {
+function TabLink({
+  href,
+  label,
+  icon: Icon,
+  active,
+}: {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  active: boolean;
+}) {
   return (
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`relative inline-flex items-center px-3 text-[14px] font-medium transition-colors ${
+      className={`group relative inline-flex items-center gap-2 px-3.5 py-1.5 text-[13.5px] font-semibold transition-all duration-150 rounded-lg ${
         active
-          ? "text-[var(--ads-ink)]"
-          : "text-[var(--ads-ink-muted)] hover:text-[var(--ads-ink)]"
+          ? "bg-blue-50/80 text-blue-700 shadow-xs border border-blue-100/60"
+          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
       }`}
     >
-      {label}
-      {active ? (
-        <span aria-hidden className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-[var(--ads-blue)]" />
-      ) : null}
+      <Icon className={`size-4 transition-colors ${active ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600"}`} aria-hidden />
+      <span>{label}</span>
     </Link>
   );
 }
@@ -60,46 +68,66 @@ export default function AdsShell({ viewer, children }: { viewer: AdsViewer; chil
     <AdsViewerProvider viewer={viewer}>
       <a
         href="#ads-conteudo"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:bg-white focus:px-3 focus:py-2 focus:text-[14px] focus:shadow"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:bg-white focus:px-3 focus:py-2 focus:text-[14px] focus:shadow-md focus:border focus:border-slate-200"
       >
         Pular para o conteúdo
       </a>
 
-      <header className="border-b border-[var(--ads-line)] bg-white">
-        <div className="mx-auto flex h-14 w-full max-w-[1240px] items-stretch gap-6 px-4 sm:px-6">
-          <Link href="/ads" className="flex shrink-0 items-center gap-2.5">
-            <FnvjMark className="h-7 w-7" />
-            <span className="text-[14.5px] font-semibold text-[var(--ads-ink)]">Fique no Verde</span>
-            <span aria-hidden className="hidden h-4 w-px bg-[var(--ads-line-strong)] min-[420px]:block" />
-            <span className="hidden text-[14.5px] text-[var(--ads-ink-soft)] min-[420px]:inline">
-              Tráfego pago
-            </span>
-          </Link>
+      <header className="sticky top-0 z-40 border-b border-slate-200/90 bg-white/95 backdrop-blur-md">
+        <div className="mx-auto flex h-15 w-full max-w-[1360px] items-center justify-between gap-6 px-4 sm:px-6">
+          {/* Logo & Seções */}
+          <div className="flex items-center gap-6">
+            <Link href="/ads" className="flex shrink-0 items-center gap-2.5 group">
+              <FnvjMark className="h-7 w-7 transition-transform group-hover:scale-105" />
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <span className="text-[14.5px] font-bold tracking-tight text-slate-900">Fique no Verde</span>
+                  <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700 border border-blue-100">
+                    Ads
+                  </span>
+                </div>
+              </div>
+            </Link>
 
-          <nav aria-label="Seções do tráfego pago" className="hidden items-stretch gap-1 md:flex">
-            {TABS.map((tab) => (
-              <TabLink key={tab.href} href={tab.href} label={tab.label} active={isActive(tab.href)} />
-            ))}
-          </nav>
+            <span aria-hidden className="hidden h-5 w-px bg-slate-200 sm:block" />
 
-          <div className="ml-auto flex items-center gap-1 sm:gap-3">
+            <nav aria-label="Seções do tráfego pago" className="hidden items-center gap-1.5 md:flex">
+              {TABS.map((tab) => (
+                <TabLink key={tab.href} href={tab.href} label={tab.label} icon={tab.icon} active={isActive(tab.href)} />
+              ))}
+            </nav>
+          </div>
+
+          {/* Ações à direita */}
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/dashboard"
-              className="hidden text-[13.5px] text-[var(--ads-ink-soft)] transition-colors hover:text-[var(--ads-ink)] sm:inline"
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 border border-transparent hover:border-slate-200"
             >
-              Voltar ao sistema
+              <ArrowLeft className="size-3.5" aria-hidden />
+              <span>Voltar ao sistema</span>
             </Link>
+
             {viewer.name ? (
-              <span className="hidden max-w-[200px] truncate border-l border-[var(--ads-line)] pl-3 text-[13.5px] text-[var(--ads-ink-soft)] lg:inline">
-                {viewer.name}
-              </span>
+              <div className="hidden lg:inline-flex items-center gap-2 rounded-full border border-slate-200/90 bg-slate-50/80 px-2.5 py-1 text-[12.5px] font-medium text-slate-700">
+                <span className="grid size-5.5 place-items-center rounded-full bg-slate-200 text-slate-700">
+                  <User className="size-3" aria-hidden />
+                </span>
+                <span className="max-w-[150px] truncate">{viewer.name}</span>
+                {viewer.isAdmin ? (
+                  <span className="rounded bg-blue-100/80 px-1.5 py-0.2 text-[10px] font-semibold text-blue-700">
+                    Admin
+                  </span>
+                ) : null}
+              </div>
             ) : null}
+
             <button
               type="button"
               onClick={logout}
               disabled={leaving}
               aria-label="Sair da conta"
-              className="inline-flex h-8 items-center gap-1.5 rounded-md px-2 text-[13.5px] text-[var(--ads-ink-soft)] transition-colors hover:bg-[#eef0f3] hover:text-[var(--ads-ink)] disabled:opacity-60"
+              className="inline-flex h-8.5 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium text-slate-600 transition-colors hover:bg-rose-50 hover:text-rose-600 disabled:opacity-60"
             >
               <LogOut className="size-4" aria-hidden />
               <span className="hidden sm:inline">Sair</span>
@@ -107,18 +135,22 @@ export default function AdsShell({ viewer, children }: { viewer: AdsViewer; chil
           </div>
         </div>
 
+        {/* Mobile Nav */}
         <nav
-          aria-label="Seções do tráfego pago"
-          className="flex h-11 items-stretch gap-1 border-t border-[var(--ads-line)] px-1 md:hidden"
+          aria-label="Seções do tráfego pago móvel"
+          className="flex h-11 items-center justify-between border-t border-slate-200/80 bg-slate-50/60 px-3 md:hidden"
         >
-          {TABS.map((tab) => (
-            <TabLink key={tab.href} href={tab.href} label={tab.label} active={isActive(tab.href)} />
-          ))}
+          <div className="flex items-center gap-1">
+            {TABS.map((tab) => (
+              <TabLink key={tab.href} href={tab.href} label={tab.label} icon={tab.icon} active={isActive(tab.href)} />
+            ))}
+          </div>
           <Link
             href="/dashboard"
-            className="ml-auto inline-flex items-center px-3 text-[13.5px] text-[var(--ads-ink-soft)] sm:hidden"
+            className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[12.5px] font-medium text-slate-600 sm:hidden"
           >
-            Sistema
+            <ArrowLeft className="size-3" aria-hidden />
+            <span>Sistema</span>
           </Link>
         </nav>
       </header>
@@ -126,7 +158,7 @@ export default function AdsShell({ viewer, children }: { viewer: AdsViewer; chil
       <main
         id="ads-conteudo"
         tabIndex={-1}
-        className="mx-auto w-full max-w-[1240px] px-4 py-6 focus:outline-none sm:px-6 sm:py-8"
+        className="mx-auto w-full max-w-[1360px] px-4 py-6 focus:outline-none sm:px-6 sm:py-8"
       >
         {children}
       </main>

@@ -12,5 +12,6 @@ Em toda solicitação relacionada a TRACKen, FNVJ × TRACKen, `/tracken`, `/api/
 8. Toda leitura, idempotencia e entrega Tracken deve manter `production` e `sandbox` isolados pelo ambiente autenticado/persistido. Nunca introduza fallback silencioso entre ambientes nem default para production.
 9. Migration, deploy e configuracao operacional sao etapas distintas. Nao afirme que as migrations 025/026 ou os endpoints por ambiente foram aplicados sem evidencia autorizada do ambiente real.
 10. Rollout obrigatorio em duas fases: aplicar a 025 aditiva, publicar o codigo composto, aplicar a 026 que remove a UNIQUE global e somente depois liberar o segundo ambiente. Nunca inverter essa ordem.
+11. Push na branch `coolify-deploy` dispara deploy automatico no Coolify. Toda migration exigida pelo codigo novo precisa estar aplicada no banco ANTES do push; avise o usuario disso sempre que ele pedir push.
 
 #[[file:APINOVA/TRACKEN_SOURCE_OF_TRUTH.md]]

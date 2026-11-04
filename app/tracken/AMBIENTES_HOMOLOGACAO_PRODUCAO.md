@@ -2,34 +2,36 @@
 
 > **Documento vivo.** Registra a separação `sandbox` (Homologação) × `production` da integração FNVJ × TRACKen.
 >
-> **Última atualização:** 30/09/2026  
-> **Estado:** código preparado localmente no branch `coolify-deploy`; migrations, credenciais, URLs e deploy **não aplicados em ambiente real**.  
+> **Última atualização:** 01/10/2026  
+> **Estado:** **ativo em produção** desde 01/10/2026 (~22h44, -03:00). Código `843f004` publicado, migrations 025/026 aplicadas, credenciais e webhooks dos dois ambientes configurados e verificados na API real.  
 > **Contrato canônico:** `APINOVA/TRACKEN_SOURCE_OF_TRUTH.md`.
 
 ## 1. Decisão
 
-A URL antiga continua sendo **Homologação** e a URL nova será **Produção**. A mesma API de entrada atende os dois ambientes; a credencial usada pela TRACKen define o ambiente e nunca existe fallback entre eles.
+A URL antiga continua sendo **Homologação** e a URL nova é **Produção**. A mesma API de entrada atende os dois ambientes; a credencial usada pela TRACKen define o ambiente e nunca existe fallback entre eles.
 
-| Ambiente | `environment` | Webhook FNVJ → TRACKen |
-|---|---|---|
-| Produção | `production` | `https://seller.tracken.app.br/api/ferramentas/controle-reputacao/webhooks/fnvj` |
-| Homologação | `sandbox` | `https://homologasellercore.tracken.dev.br/api/ferramentas/controle-reputacao/webhooks/fnvj` |
+| Ambiente | `environment` | Credencial | Webhook FNVJ → TRACKen |
+|---|---|---|---|
+| Produção | `production` | `TRACKen Producao` (nova, 01/10/2026) | `https://seller.tracken.app.br/api/ferramentas/controle-reputacao/webhooks/fnvj` |
+| Homologação | `sandbox` | `TRACKen Homologacao` (a que a TRACKen já usava) | `https://homologasellercore.tracken.dev.br/api/ferramentas/controle-reputacao/webhooks/fnvj` |
 
 API de entrada comum: `https://fiquenoverdeja.com.br/api/tracken/v1`.
 
-## 2. Estratégia escolhida para as credenciais
+Nos dois ambientes o webhook é assinado com o secret da própria credencial, no mesmo esquema HMAC da entrada. Os valores nunca são registrados neste arquivo.
+
+## 2. Estratégia aplicada para as credenciais
 
 **Opção B — preservar a Homologação atual.**
 
-1. Auditar a credencial atual com `list`.
-2. Se ela estiver marcada como `production`, reclassificá-la como `sandbox` **antes da migration 025**.
-3. Manter nela a URL antiga de Homologação.
-4. Criar uma credencial nova `production` e apontá-la para a URL nova.
-5. Entregar a credencial nova ao ambiente de produção da TRACKen por canal seguro.
+1. A auditoria encontrou uma única credencial, marcada `production` pelo default antigo, com webhook na URL de Homologação.
+2. Ela foi reclassificada como `sandbox` **antes da migration 025** e renomeada para `TRACKen Homologacao`.
+3. A URL antiga de Homologação foi mantida nela.
+4. Uma credencial nova `production` foi criada e apontada para a URL nova.
+5. A credencial nova é entregue ao ambiente de produção da TRACKen por canal privado.
 
-Assim, o histórico existente acompanha a Homologação e a produção começa limpa. A identidade real da credencial atual ainda precisa ser confirmada por consulta somente leitura; nenhuma consulta foi feita nesta implementação.
+O histórico existente acompanha a Homologação e a produção começa limpa.
 
-## 3. O que está implementado localmente
+## 3. O que está implementado
 
 ### Banco e isolamento
 
@@ -39,8 +41,8 @@ Assim, o histórico existente acompanha a Homologação e a produção começa l
 - `environment` obrigatório, sem default silencioso para produção.
 - Um destino ativo configurado por ambiente.
 - Migrations separadas:
-  - `025_tracken_environment_isolation.sql`: fase aditiva; mantém temporariamente a UNIQUE global para o código antigo continuar funcionando.
-  - `026_tracken_environment_cutover.sql`: depois do deploy novo, remove a UNIQUE global e libera IDs iguais nos dois ambientes.
+  - `025_tracken_environment_isolation.sql`: fase aditiva; manteve temporariamente a UNIQUE global.
+  - `026_tracken_environment_cutover.sql`: removeu a UNIQUE global e liberou IDs iguais nos dois ambientes.
 
 ### API e worker
 
@@ -53,7 +55,7 @@ Assim, o histórico existente acompanha a Homologação e a produção começa l
 
 ### Painel humano
 
-- Produção é a seleção inicial, mas sempre aparece explicitamente.
+- Produção é a seleção inicial, mas sempre aparece explicitamente. Os tickets de teste ficam em **Homologação**.
 - Não existe opção “Todos os ambientes”.
 - Fila, KPIs, SLA, relatórios, histórico, exportação, transportadoras e atendentes ficam no ambiente escolhido.
 - Detalhes, mudança de status e atribuição conferem o ambiente dentro da transação/lock.
@@ -62,62 +64,59 @@ Assim, o histórico existente acompanha a Homologação e a produção começa l
 ### Scripts
 
 - `tracken_credential.mjs create` exige nome e ambiente explícitos; não assume produção.
-- `set-environment` reclassifica a credencial atual somente antes da 025.
+- `set-environment` reclassifica uma credencial somente antes da 025 (depois dela o ambiente é imutável por trigger).
 - `list` mostra expiração, endpoint esperado, validade e usabilidade sem expor secrets/query strings.
 - Secret da API vem de `TRACKEN_CREDENTIAL_SECRET`.
 - Secret HMAC de saída vem de `TRACKEN_WEBHOOK_SECRET`; não é aceito como argumento do shell.
 - `tracken_seed_demo.mjs` funciona somente com `TRACKEN_DEMO_ENVIRONMENT=sandbox` e nunca toca produção.
 
-## 4. Estado comprovado nesta sessão
+## 4. Estado comprovado
 
 | Item | Estado |
 |---|---|
-| Branch/base | `coolify-deploy`, base `37c2392` |
-| TypeScript (`npx tsc --noEmit`) | passou |
-| ESLint direcionado aos arquivos alterados | passou |
-| Sintaxe dos scripts Node | passou |
-| Build Next.js | pendente na atualização deste registro |
-| Migration 025 | criada, **não aplicada** |
-| Migration 026 | criada, **não aplicada** |
-| Banco real | **não acessado** |
-| Webhook real | **não alterado** |
-| Commit/push desta mudança | **não feito** |
+| Código | `843f004` publicado na `coolify-deploy` (deploy automático do Coolify) |
+| TypeScript, ESLint direcionado, sintaxe dos scripts | passaram antes do commit |
+| Backup das tabelas `tracken_*` | feito em JSON, fora do repositório, antes de qualquer escrita |
+| Ensaio 025 + 026 com `ROLLBACK` | passou (depois de duas correções na 025) |
+| Migration 025 | **aplicada** em 01/10/2026 |
+| Migration 026 | **aplicada** em 01/10/2026 |
+| Tickets / outbox | 275 tickets e 51 eventos em `sandbox`, zero incoerências |
+| Índice de idempotência | só `uq_tracken_tickets_environment_shipment_id` |
+| Credenciais | as duas ativas, sem expiração, HMAC obrigatório, webhook utilizável |
+| API real (GET assinado) | 200 nos dois ambientes; Homologação lista 275, Produção lista 0 |
+| Entrega real de webhook em produção | **pendente** (primeiro ticket da TRACKen em produção) |
+| Painel com sessão logada | não testado |
 
-## 5. Ordem obrigatória de ativação
+## 5. Ordem de ativação executada
 
 ### Preparação
 
-- [ ] Confirmar com a TRACKen que a credencial atual pertence à Homologação.
-- [ ] Confirmar se o secret HMAC do webhook é o mesmo secret da API ou outro valor.
-- [ ] Configurar `TRACKEN_ENCRYPTION_KEY` idêntica à usada pela aplicação.
-- [ ] Executar `list` (somente leitura) e conferir ambiente, expiração, URL e usabilidade.
-- [ ] Conferir backlog `pending`/`failed` e fazer backup das tabelas `tracken_*`.
-- [ ] Preparar commit, artefato e rollback antes de qualquer migration.
+- [x] Auditar a credencial atual (somente leitura): era a de Homologação.
+- [x] Confirmar o secret HMAC: o webhook usa o mesmo secret da credencial.
+- [x] Confirmar que a `TRACKEN_ENCRYPTION_KEY` local é a da aplicação (decifra a credencial e o hash confere).
+- [x] Conferir backlog: nenhum evento `pending`/`failed`.
+- [x] Backup das tabelas `tracken_*`.
 
-### Fase 1 — compatível com código antigo
+### Fase 1
 
-- [ ] Se necessário, executar `set-environment <api_key_atual> sandbox` antes da 025.
-- [ ] Garantir que a credencial sandbox use a URL antiga.
-- [ ] Aplicar `025_tracken_environment_isolation.sql`.
-- [ ] Rodar as consultas de verificação no final da 025.
-
-A 025 mantém a UNIQUE global de `shipment_id`, então o código antigo continua criando tickets. Ainda não libere o segundo ambiente: IDs iguais continuam bloqueados globalmente até a 026.
+- [x] `set-environment <api_key_atual> sandbox` antes da 025.
+- [x] Credencial sandbox mantida na URL antiga.
+- [x] Aplicar `025_tracken_environment_isolation.sql` e verificar.
 
 ### Deploy e corte
 
-- [ ] Publicar o código novo.
-- [ ] Verificar API/painel com o ambiente atual.
-- [ ] Aplicar `026_tracken_environment_cutover.sql`.
-- [ ] Confirmar que só resta a UNIQUE `(environment, shipment_id)`.
-- [ ] Criar a credencial `production` nova.
-- [ ] Configurar Produção com a URL nova e Homologação com a URL antiga.
-- [ ] Conferir `/tracken/configuracoes`: ambos “Utilizável”, HMAC configurado e endpoints corretos.
-- [ ] Liberar o ambiente de produção da TRACKen.
+- [x] Código novo publicado (antes da 025, por deploy automático; ver histórico).
+- [x] Aplicar `026_tracken_environment_cutover.sql`.
+- [x] Confirmar que só resta a UNIQUE `(environment, shipment_id)`.
+- [x] Criar a credencial `production` nova.
+- [x] Configurar Produção com a URL nova e Homologação com a URL antiga.
+- [x] Verificar a API real nos dois ambientes.
+- [ ] Liberar o ambiente de produção da TRACKen (entregar a credencial nova).
 
 ### Testes
 
 - [ ] Homologação: criar ticket, consultar, mudar `em_atendimento → negado` com motivo e confirmar HTTP 2xx no webhook antigo.
-- [ ] Produção: somente com autorização explícita, repetir no endpoint novo.
+- [ ] Produção: primeiro ticket real da TRACKen e webhook 2xx no endpoint novo.
 - [ ] Confirmar em `tracken_request_log` e `tracken_outbox` que ambiente e endpoint são correspondentes.
 
 ## 6. Comandos de referência
@@ -128,43 +127,31 @@ Rodar na raiz, somente com `DATABASE_URL` autorizado. Nunca registrar secrets ne
 # Somente leitura
 node scripts/tracken_credential.mjs list
 
-# ANTES da migration 025: preservar a credencial atual como Homologação
-node scripts/tracken_credential.mjs set-environment <api_key_atual> sandbox
+# Trocar/limpar destino de uma credencial (sem variável, preserva o secret atual)
+node scripts/tracken_credential.mjs webhook <api_key> "<url canônica do ambiente>"
+node scripts/tracken_credential.mjs webhook <api_key> --clear
 
-# Garantir a URL antiga na credencial sandbox; sem variável, preserva o secret atual
-node scripts/tracken_credential.mjs webhook <api_key_sandbox> "https://homologasellercore.tracken.dev.br/api/ferramentas/controle-reputacao/webhooks/fnvj"
-
-# DEPOIS do deploy/026: criar a credencial nova de produção
-$env:TRACKEN_CREDENTIAL_SECRET = node -e "process.stdout.write(require('crypto').randomBytes(32).toString('base64url'))"
-node scripts/tracken_credential.mjs create "Tracken Producao" production
-
-# Só definir se for gravar/substituir o HMAC de saída
-$env:TRACKEN_WEBHOOK_SECRET = "<secret-confirmado-com-a-TRACKen>"
-node scripts/tracken_credential.mjs webhook <api_key_production> "https://seller.tracken.app.br/api/ferramentas/controle-reputacao/webhooks/fnvj"
-
-Remove-Item Env:TRACKEN_CREDENTIAL_SECRET -ErrorAction SilentlyContinue
-Remove-Item Env:TRACKEN_WEBHOOK_SECRET -ErrorAction SilentlyContinue
+# Revogar uma credencial
+node scripts/tracken_credential.mjs revoke <api_key>
 ```
 
 ## 7. Reversão
 
-- Antes da 025: código local pode ser descartado; nada mudou no banco.
-- Depois da 025 e antes da 026: o código antigo ainda é compatível; corrigir classificação/URL e reaplicar o deploy sem liberar o segundo ambiente.
 - Depois da 026: não voltar ao código com `ON CONFLICT (shipment_id)`. Recriar a UNIQUE global só é possível se não houver IDs repetidos entre ambientes.
 - Para parar um destino: `webhook <api_key> --clear` ou revogar a credencial.
 - Nunca apontar production para Homologação como “fallback”.
 
-## 8. Pendências externas
+## 8. Pendências
 
-- Confirmar qual sistema da TRACKen usa a credencial atual.
-- Confirmar o secret HMAC de cada webhook.
-- Autorizar acesso ao banco real, migrations e deploy.
-- Registrar data, responsável e resultado de cada etapa acima.
+- Entregar a credencial de produção à TRACKen e acompanhar o primeiro ticket + webhook em produção.
+- Rodar o teste de status em Homologação descrito em 5.
 
 ## 9. Histórico
 
 | Data | Evento |
 |---|---|
 | 30/09/2026 | TRACKen pediu URL nova de produção e manutenção da URL antiga em Homologação. |
-| 30/09/2026 | Isolamento por credencial/ticket/outbox, worker por ambiente e documentação inicial preparados localmente. |
-| 30/09/2026 | Rollout dividido em 025/026; URL canônica passou a ser validada em worker/settings; painel e scripts foram isolados por ambiente. Nada aplicado em banco real. |
+| 30/09/2026 | Isolamento por credencial/ticket/outbox, worker por ambiente, rollout 025/026, painel e scripts preparados localmente. |
+| 01/10/2026 22h02 | Push de `843f004` na `coolify-deploy` disparou deploy automático antes da 025; módulo Tracken com erro de ~22h05 a ~22h42. Nenhuma chamada da TRACKen registrada no intervalo. |
+| 01/10/2026 ~22h40 | Backup, ensaio com `ROLLBACK`, reclassificação da credencial atual, 025 e 026 aplicadas. A 025 recebeu duas correções achadas no ensaio: `ADD COLUMN`/`DROP DEFAULT` separados e classificação do seed demo de 29/08 como sandbox. |
+| 01/10/2026 22h44 | Credencial `TRACKen Producao` criada com webhook de produção; API real verificada nos dois ambientes. |

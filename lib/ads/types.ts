@@ -49,6 +49,7 @@ export type AdsDashboardData = {
   missingRanges: { from: string; to: string }[];
   rankings: AdsRanking[];
   accounts: string[];
+  selectedAccount?: string | null;
   resultTypes: string[];
   currency: string;
   currencies: string[];

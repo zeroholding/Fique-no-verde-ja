@@ -2,8 +2,8 @@
 
 > **Documento vivo e obrigatório.** Toda mudança em rota, tela, importação, coluna, fórmula, banco, permissão ou procedimento do módulo Ads deve atualizar este arquivo na mesma alteração.
 >
-> **Última atualização:** 13/10/2026  
-> **Estado:** Etapa 2 implementada — envio de relatório (CSV/Excel), histórico, banco e painel de resultados  
+> **Última atualização:** 03/11/2026  
+> **Estado:** Etapa 3 implementada — filtro por conta, exportação CSV para Excel, redesign visual completo com Montserrat e SVG  
 > **Rotas:** `/ads` (Painel) e `/ads/relatorios` (Relatórios)
 
 ## 1. Do que se trata
@@ -16,6 +16,8 @@ O módulo usa o mesmo login, cookie JWT, tabela `users` e PostgreSQL do FNVJ/Tra
 
 Regra de linguagem: nada de termo técnico na tela. Sem “vinculado”, “competência”, “payload” e semelhantes. Siglas do mercado de anúncios (CPC, CTR, CPM, CPL, ROAS) aparecem sempre junto do nome por extenso.
 
+Regra de design: interface no padrão SaaS moderno (Linear/Vercel/Stripe), tipografia **Montserrat** (carregada via Google Fonts `<link>`), ícones estritamente em **SVG** (`lucide-react`) e **absolutamente nenhum emoji** no código ou na interface.
+
 ## 2. Estado implementado
 
 ### Etapa 1 — fundação (29/09/2026)
@@ -25,13 +27,24 @@ Regra de linguagem: nada de termo técnico na tela. Sem “vinculado”, “comp
 
 ### Etapa 2 — relatórios e painel (13/10/2026)
 
-**Telas**
-
 - cabeçalho com a marca e duas abas: **Painel** e **Relatórios** (sem menu lateral);
 - Painel: período (atalhos e datas livres), indicadores com comparação com o período anterior, evolução por dia (uma métrica por vez) e tabela de desempenho por campanha, conjunto ou anúncio, com busca e ordenação;
 - Relatórios: histórico de envios para todos; para administradores, também envio, exclusão e o passo a passo da exportação;
 - envio em duas etapas: o arquivo é conferido e a tela mostra o que muda no painel antes de salvar;
 - estado vazio, carregamento, erro com “Tentar de novo” e aviso de dias sem relatório.
+
+### Etapa 3 — filtro de contas, exportação CSV e redesign SaaS (03/11/2026)
+
+- **Filtro por conta de anúncios:** seletor dropdown no painel que permite filtrar métricas consolidadas, série diária e ranking por uma conta específica ou "Todas as contas";
+- **Exportação CSV:** geração de arquivos CSV formatados com separador ponto e vírgula e cabeçalho UTF-8 BOM (`\uFEFF`) compatível direto com Microsoft Excel em português:
+  - Exportação do ranking de campanhas, conjuntos ou anúncios com investimento, impressões, cliques, resultados e taxas;
+  - Exportação da evolução diária das métricas selecionadas do período;
+- **Tipografia e Design System:**
+  - Tipografia **Montserrat** integrada no layout via Google Fonts `<link>` com fallbacks seguros;
+  - Ícones em SVG nativos (`lucide-react`) em todas as telas, cards, botões, modais e avisos;
+  - Cards de KPIs com visual refinado, badges com percentual de variação e microinterações de seleção;
+  - Breadcrumbs de navegação hierárquica no ranking (Campanha › Conjunto › Anúncio);
+  - Barra de proporção de investimento e modais acessíveis com backdrop blur.
 
 **Arquivos aceitos**
 
@@ -44,16 +57,14 @@ Regra de linguagem: nada de termo técnico na tela. Sem “vinculado”, “comp
 ### Ainda não implementado / pendente
 
 - integração automática com a Meta Marketing API;
-- exportação do recorte do painel;
 - objetivo, status e janela de atribuição como filtros;
-- relatório real com campanha, conjunto, cliques e resultados para confirmar os apelidos dessas colunas (seção 4.2);
-- filtro por conta quando houver mais de uma (hoje os números somam todas).
+- relatório real com campanha, conjunto, cliques e resultados para confirmar os apelidos dessas colunas (seção 4.2).
 
 ## 3. Decisões vigentes
 
 1. A URL pública interna é `/ads`, separada de `/tracken/ads`. O Ads não aparece no menu do Tracken.
 2. A autenticação é a sessão FNVJ (`token` HttpOnly). O layout valida o JWT e confere o usuário no banco (ativo ou não). Cada API autentica sozinha, porque o middleware só olha se o cookie existe.
-3. Visual sóbrio de propósito: fundo cinza claro, cartões brancos com borda fina, um azul para ação e gráfico, verde/vermelho só para variação. Sem gradiente, selo decorativo, brilho ou texto de marketing.
+3. Visual no padrão SaaS limpo e profissional: tipografia Montserrat, fundo neutro, cartões brancos com sombras sutis, badges em verde/vermelho apenas para métricas de variação positiva/negativa, ícones exclusivamente em SVG (`lucide-react`), sem emojis decorativos.
 4. **Excel sem biblioteca.** O leitor de `.xlsx` usa `node:zlib` (`lib/ads/report-file.ts`). Descartados: `xlsx@0.18.5` (vulnerabilidades conhecidas sem correção no npm), `exceljs` (dependências pesadas) e pacote fora do npm. CSV continua sendo o formato recomendado.
 5. **O arquivo é lido no servidor.** O envio vai em multipart para `/api/ads/imports`; com `?preview=1` só confere e devolve o resumo, e na confirmação o mesmo arquivo vai de novo para gravar. O arquivo não é guardado: ficam o nome, o tamanho, o hash SHA-256 e as linhas interpretadas.
 6. **O envio mais novo vale para os dias que ele cobre** (seção 6). Substitui a regra antiga de “persistência desabilitada”, que existia porque o primeiro relatório não tinha IDs e a chave nome do anúncio + dia duplicaria ao renomear um anúncio.
@@ -178,7 +189,8 @@ Regras:
 - períodos: 7, 30 e 90 dias contados **do último dia com dados** (não de hoje, porque o relatório chega depois que os dias passam); “Este mês” e “Mês passado” pelo calendário (America/Sao_Paulo); “Todo o período” e “Personalizado”. Padrão: últimos 30 dias com dados;
 - o gráfico mostra uma métrica por vez, para não misturar escalas. Quantidades viram barras; taxas e custos viram linha;
 - na tabela, nome vazio aparece como “Não informado”. Sem ID, conjuntos e anúncios de mesmo nome em campanhas diferentes não se misturam;
-- a tabela mostra até 500 linhas por nível (as de maior investimento) e carrega 20 por vez.
+- a tabela mostra até 500 linhas por nível (as de maior investimento) e carrega 20 por vez;
+- permite exportação direta de todas as linhas de qualquer nível para CSV compatível com Excel.
 
 ## 8. Modelo de dados
 
@@ -203,7 +215,7 @@ Todas autenticam pelo cookie `token` (ou `Authorization: Bearer`). Erros seguem 
 
 | Método e rota | Quem | O que faz |
 | --- | --- | --- |
-| `GET /api/ads/dashboard?from=&to=` | usuário | Números do painel do período (`AAAA-MM-DD`; sem período, últimos 30 dias com dados; máximo de ~5 anos). |
+| `GET /api/ads/dashboard?from=&to=&account=` | usuário | Números do painel do período (`AAAA-MM-DD`; sem período, últimos 30 dias com dados; máximo de ~5 anos). Suporta filtro opcional por conta (`account`). |
 | `GET /api/ads/imports` | usuário | Histórico de envios e se o usuário pode gerenciar. |
 | `POST /api/ads/imports` | admin | Multipart, campo `file`. Confere e grava (201). |
 | `POST /api/ads/imports?preview=1` | admin | Confere e devolve o resumo, sem gravar. |
@@ -227,19 +239,20 @@ Códigos: 401 sessão, 403 permissão, 400 período ou arquivo ausente, 404 envi
 
 **Telas** (`app/ads/`)
 
-- `layout.tsx` — valida o JWT, lê o usuário no banco e monta o cabeçalho;
-- `ads-shell.tsx` — cabeçalho, abas Painel/Relatórios, “Voltar ao sistema”, sair;
-- `page.tsx` + `ads-dashboard.tsx` — Painel;
+- `layout.tsx` — valida o JWT, lê o usuário no banco, injeta fonte Google Montserrat e monta a casca da página;
+- `ads-shell.tsx` — cabeçalho de navegação, abas Painel/Relatórios, “Voltar ao sistema”, perfil e sair;
+- `page.tsx` + `ads-dashboard.tsx` — Painel interativo com seletor de contas, período, cartões e exportação;
 - `relatorios/page.tsx` + `reports-manager.tsx` — histórico, envio e exclusão;
-- `relatorios/upload-dialog.tsx` — envio em duas etapas;
-- `relatorios/export-steps.tsx` — passo a passo da exportação;
-- `_components/` — `ui.tsx` (botão, cartão, aviso, janela), `kpi-cards.tsx`, `daily-chart.tsx`, `ranking-table.tsx`, `period-picker.tsx`, `viewer-context.tsx`.
+- `relatorios/upload-dialog.tsx` — envio em duas etapas com pré-visualização de impacto;
+- `relatorios/export-steps.tsx` — guia ilustrado com passos para exportação no Meta;
+- `_components/` — `ui.tsx` (botão, cartão, aviso, diálogo), `kpi-cards.tsx`, `daily-chart.tsx`, `ranking-table.tsx`, `period-picker.tsx`, `viewer-context.tsx`.
 
 **Regras de negócio** (`lib/ads/`)
 
 - `report-file.ts` — abre CSV e `.xlsx` com segurança;
 - `report-rows.ts` — reconhece colunas, lê números e datas, monta as linhas diárias;
-- `store.ts` — consultas: prévia, salvar, listar, excluir, dados do painel;
+- `store.ts` — consultas: prévia, salvar, listar, excluir, dados do painel e ranking filtrado por conta;
+- `export.ts` — gerador de CSV para Excel em português com BOM UTF-8 para ranking e série diária;
 - `db.ts` — conexões e criação das tabelas; `schema.ts` — SQL das tabelas;
 - `metrics.ts` — catálogo de métricas e fórmulas; `dates.ts` — datas e períodos;
 - `format.ts`, `client.ts`, `types.ts`, `preview.ts`, `report-error.ts`.
@@ -261,6 +274,14 @@ Ao trabalhar no Ads:
 7. testar com banco temporário, nunca contra o banco de produção.
 
 ## 14. Changelog
+
+### 03/11/2026 — Filtro de contas, exportação CSV e modernização visual SaaS com Montserrat
+
+- Adicionado filtro por conta de anúncios no painel e na rota `/api/ads/dashboard?account=...`, filtrando métricas diárias, consolidadas e ranking;
+- Criado gerador de exportação CSV (`lib/ads/export.ts`) com suporte nativo ao Excel brasileiro (ponto e vírgula e UTF-8 BOM);
+- Adicionado botão de exportação CSV de ranking por campanha, conjunto e anúncio e botão de exportação diária de métricas;
+- Redesenho completo de UI com estética SaaS refinada: tipografia **Montserrat** via Google Fonts `<link>`, ícones estritamente em **SVG** (`lucide-react`) e zero emojis;
+- Navegação melhorada com breadcrumbs e seleção dinâmica de colunas e métricas.
 
 ### 13/10/2026 — Passo a passo corrigido e aviso de arquivo sem dia
 

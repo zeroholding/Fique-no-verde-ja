@@ -1,18 +1,14 @@
 "use client";
 
 import { useId, useState } from "react";
-import { ArrowDown, ArrowUp, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, ChevronRight, Download, Search, X } from "lucide-react";
 
+import { exportRankingToCsv } from "@/lib/ads/export";
 import { formatCount, formatIndicator, formatPercent } from "@/lib/ads/format";
 import { ADS_INDICATORS, type AdsIndicatorKey, type AdsIndicatorValues } from "@/lib/ads/metrics";
 import type { AdsRanking, AdsRankingLevel, AdsRankingRow } from "@/lib/ads/types";
 
 import { Button, Card } from "./ui";
-
-/**
- * Tabela de desempenho por campanha, conjunto ou anúncio. Só aparecem os
- * níveis e as colunas que os relatórios enviados permitem.
- */
 
 const TABLE_PRIORITY: AdsIndicatorKey[] = [
   "spend",
@@ -39,11 +35,10 @@ const LEVEL_LABELS: Record<AdsRankingLevel, { tab: string; title: string; column
   ad: { tab: "Anúncios", title: "Desempenho por anúncio", column: "Anúncio" },
 };
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 25;
 
 type ColumnId = AdsIndicatorKey | "share" | "days" | "name";
 type SortState = { column: ColumnId; direction: "asc" | "desc" };
-
 type Column = { id: ColumnId; label: string; title?: string };
 
 function buildColumns(totals: AdsIndicatorValues): Column[] {
@@ -53,7 +48,7 @@ function buildColumns(totals: AdsIndicatorValues): Column[] {
     const definition = ADS_INDICATORS[key];
     columns.push({ id: key, label: definition.short, title: definition.label });
     if (key === "spend") {
-      columns.push({ id: "share", label: "Participação", title: "Parte do investimento do período" });
+      columns.push({ id: "share", label: "Participação", title: "Fatia do investimento do período" });
     }
   }
   columns.push({ id: "days", label: "Dias no ar", title: "Dias com veiculação no período" });
@@ -73,7 +68,6 @@ function sortValue(row: AdsRankingRow, column: ColumnId): number | string | null
 function compareRows(left: AdsRankingRow, right: AdsRankingRow, sort: SortState): number {
   const a = sortValue(left, sort.column);
   const b = sortValue(right, sort.column);
-  // Sem valor vai sempre para o fim, nos dois sentidos.
   if (a === null && b === null) return 0;
   if (a === null) return 1;
   if (b === null) return -1;
@@ -82,14 +76,6 @@ function compareRows(left: AdsRankingRow, right: AdsRankingRow, sort: SortState)
       ? a - b
       : String(a).localeCompare(String(b), "pt-BR");
   return sort.direction === "asc" ? result : -result;
-}
-
-function contextLine(row: AdsRankingRow, level: AdsRankingLevel, showAccount: boolean): string {
-  const parts: string[] = [];
-  if (showAccount && row.account) parts.push(row.account);
-  if (level !== "campaign" && row.campaign) parts.push(row.campaign);
-  if (level === "ad" && row.adset) parts.push(row.adset);
-  return parts.join(" › ");
 }
 
 function SortableHeader({
@@ -104,23 +90,23 @@ function SortableHeader({
   alignLeft?: boolean;
 }) {
   const active = sort.column === column.id;
-  const Icon = sort.direction === "asc" ? ArrowUp : ArrowDown;
+  const Icon = !active ? ArrowUpDown : sort.direction === "asc" ? ArrowUp : ArrowDown;
   return (
     <th
       scope="col"
       aria-sort={active ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}
-      className={`whitespace-nowrap px-3 py-2 font-medium ${alignLeft ? "pl-4 text-left sm:pl-5" : "text-right"}`}
+      className={`whitespace-nowrap px-3.5 py-3 font-semibold ${alignLeft ? "pl-5 text-left" : "text-right"}`}
     >
       <button
         type="button"
         onClick={() => onSort(column.id)}
         title={column.title}
-        className={`inline-flex items-center gap-1 rounded hover:text-[var(--ads-ink)] ${
-          active ? "text-[var(--ads-ink)]" : ""
+        className={`group inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
+          active ? "text-blue-700 font-bold" : "text-slate-600 hover:text-slate-900"
         }`}
       >
-        {column.label}
-        {active ? <Icon className="size-3.5" aria-hidden /> : null}
+        <span>{column.label}</span>
+        <Icon className={`size-3.5 transition-opacity ${active ? "opacity-100 text-blue-600" : "opacity-40 group-hover:opacity-75"}`} aria-hidden />
       </button>
     </th>
   );
@@ -132,19 +118,19 @@ function CellValue({ row, column, currency }: { row: AdsRankingRow; column: Colu
     const percent = row.spendShare * 100;
     return (
       <span className="inline-flex items-center justify-end gap-2">
-        <span className="h-1.5 w-14 overflow-hidden rounded-full bg-[#eef0f3]" aria-hidden>
+        <span className="h-1.5 w-12 overflow-hidden rounded-full bg-slate-100" aria-hidden>
           <span
-            className="block h-full rounded-full bg-[var(--ads-blue)]"
+            className="block h-full rounded-full bg-blue-600"
             style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
           />
         </span>
-        {formatPercent(percent, 1)}
+        <span className="font-semibold">{formatPercent(percent, 1)}</span>
       </span>
     );
   }
-  if (column === "days") return <>{formatCount(row.days)}</>;
+  if (column === "days") return <span className="font-medium text-slate-600">{formatCount(row.days)}</span>;
   if (column === "name") return null;
-  return <>{formatIndicator(row.values[column], ADS_INDICATORS[column].format, currency)}</>;
+  return <span className="font-semibold text-slate-800">{formatIndicator(row.values[column], ADS_INDICATORS[column].format, currency)}</span>;
 }
 
 export function RankingTable({
@@ -152,11 +138,13 @@ export function RankingTable({
   totals,
   currency,
   showAccount,
+  periodSlug = "periodo",
 }: {
   rankings: AdsRanking[];
   totals: AdsIndicatorValues;
   currency: string;
   showAccount: boolean;
+  periodSlug?: string;
 }) {
   const titleId = useId();
   const searchId = useId();
@@ -197,18 +185,28 @@ export function RankingTable({
     setVisible(PAGE_SIZE);
   };
 
+  const handleExport = () => {
+    exportRankingToCsv(
+      { ...ranking, rows: filtered },
+      columns,
+      currency,
+      periodSlug
+    );
+  };
+
   return (
-    <Card aria-labelledby={titleId}>
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--ads-line)] px-4 py-3 sm:px-5">
-        <h2 id={titleId} className="text-[15px] font-semibold text-[var(--ads-ink)]">
-          {labels.title}
-        </h2>
-        <div className="flex flex-wrap items-center gap-2">
+    <Card aria-labelledby={titleId} className="overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/40 px-5 py-3.5 sm:px-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 id={titleId} className="text-[15.5px] font-bold tracking-tight text-slate-900">
+            {labels.title}
+          </h2>
+
           {rankings.length > 1 ? (
             <div
               role="group"
-              aria-label="Ver por"
-              className="inline-flex rounded-md border border-[var(--ads-line-strong)] bg-white p-0.5"
+              aria-label="Nível de detalhamento"
+              className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-xs"
             >
               {rankings.map((item) => {
                 const selected = item.level === level;
@@ -218,24 +216,31 @@ export function RankingTable({
                     type="button"
                     aria-pressed={selected}
                     onClick={() => chooseLevel(item.level)}
-                    className={`h-7 rounded px-2.5 text-[13px] font-medium transition-colors ${
+                    className={`inline-flex items-center gap-1.5 h-7.5 rounded-md px-3 text-[12.5px] font-semibold transition-all cursor-pointer ${
                       selected
-                        ? "bg-[#eef0f3] text-[var(--ads-ink)]"
-                        : "text-[var(--ads-ink-muted)] hover:text-[var(--ads-ink)]"
+                        ? "bg-blue-50 text-blue-700 shadow-xs border border-blue-100"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                     }`}
                   >
-                    {LEVEL_LABELS[item.level].tab}
+                    <span>{LEVEL_LABELS[item.level].tab}</span>
+                    <span className={`rounded-full px-1.5 py-0.2 text-[10.5px] font-bold ${selected ? "bg-blue-200/60 text-blue-800" : "bg-slate-100 text-slate-500"}`}>
+                      {item.rows.length}
+                    </span>
                   </button>
                 );
               })}
             </div>
           ) : null}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Campo de Busca */}
           <div className="relative">
             <label htmlFor={searchId} className="sr-only">
               Buscar por nome
             </label>
             <Search
-              className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-[var(--ads-ink-muted)]"
+              className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-slate-400"
               aria-hidden
             />
             <input
@@ -246,16 +251,32 @@ export function RankingTable({
                 setSearch(event.target.value);
                 setVisible(PAGE_SIZE);
               }}
-              placeholder="Buscar por nome"
-              className="h-9 w-[220px] rounded-md border border-[var(--ads-line-strong)] bg-white pl-8 pr-2.5 text-[14px] text-[var(--ads-ink)] placeholder:text-[var(--ads-ink-muted)]"
+              placeholder={`Filtrar ${labels.tab.toLowerCase()}…`}
+              className="h-9 w-[220px] rounded-lg border border-slate-200 bg-white pl-8.5 pr-8 text-[13px] font-medium text-slate-800 placeholder:text-slate-400 shadow-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
             />
+            {search ? (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                aria-label="Limpar busca"
+              >
+                <X className="size-3.5" />
+              </button>
+            ) : null}
           </div>
+
+          {/* Botão de Exportar CSV */}
+          <Button size="sm" variant="secondary" onClick={handleExport} className="gap-1.5" title="Exportar dados da tabela para CSV">
+            <Download className="size-3.5 text-slate-500" aria-hidden />
+            <span>Exportar CSV</span>
+          </Button>
         </div>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px] border-collapse text-[13.5px]">
-          <thead className="bg-[var(--ads-subtle)] text-[12.5px] text-[var(--ads-ink-soft)]">
+        <table className="w-full min-w-[700px] border-collapse text-[13px]">
+          <thead className="border-b border-slate-200/90 bg-slate-50/80 text-[12px] uppercase tracking-wider text-slate-500">
             <tr>
               <SortableHeader
                 column={{ id: "name", label: labels.column }}
@@ -268,30 +289,43 @@ export function RankingTable({
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-slate-100">
             {shown.map((row) => {
-              const context = contextLine(row, level, showAccount);
               return (
-                <tr key={row.key} className="border-t border-[var(--ads-line)] hover:bg-[var(--ads-subtle)]">
-                  <th scope="row" className="max-w-[340px] py-2.5 pl-4 pr-3 text-left font-normal sm:pl-5">
+                <tr key={row.key} className="transition-colors hover:bg-slate-50/70">
+                  <th scope="row" className="max-w-[340px] py-3 pl-5 pr-3 text-left font-normal">
                     <span
-                      className={`block truncate ${
-                        row.name ? "font-medium text-[var(--ads-ink)]" : "italic text-[var(--ads-ink-muted)]"
+                      className={`block truncate text-[13.5px] ${
+                        row.name ? "font-bold text-slate-900" : "italic text-slate-400"
                       }`}
                       title={row.name || undefined}
                     >
                       {row.name || "Não informado"}
                     </span>
-                    {context ? (
-                      <span className="mt-0.5 block truncate text-[12px] text-[var(--ads-ink-muted)]" title={context}>
-                        {context}
-                      </span>
-                    ) : null}
+
+                    {/* Hierarquia com chevrons */}
+                    <div className="mt-1 flex flex-wrap items-center gap-1 text-[11.5px] font-medium text-slate-400">
+                      {showAccount && row.account ? (
+                        <>
+                          <span className="truncate max-w-[130px] text-slate-500">{row.account}</span>
+                          <ChevronRight className="size-3 shrink-0 text-slate-300" aria-hidden />
+                        </>
+                      ) : null}
+                      {level !== "campaign" && row.campaign ? (
+                        <>
+                          <span className="truncate max-w-[150px] text-slate-500">{row.campaign}</span>
+                          {level === "ad" ? <ChevronRight className="size-3 shrink-0 text-slate-300" aria-hidden /> : null}
+                        </>
+                      ) : null}
+                      {level === "ad" && row.adset ? (
+                        <span className="truncate max-w-[150px] text-slate-500">{row.adset}</span>
+                      ) : null}
+                    </div>
                   </th>
                   {columns.map((column) => (
                     <td
                       key={column.id}
-                      className="whitespace-nowrap px-3 py-2.5 text-right text-[var(--ads-ink)] tabular-nums"
+                      className="whitespace-nowrap px-3.5 py-3 text-right tabular-nums text-slate-800"
                     >
                       <CellValue row={row} column={column.id} currency={currency} />
                     </td>
@@ -304,20 +338,22 @@ export function RankingTable({
       </div>
 
       {rows.length === 0 ? (
-        <p className="border-t border-[var(--ads-line)] px-5 py-6 text-center text-[13.5px] text-[var(--ads-ink-muted)]">
-          {term ? `Nada encontrado para “${search.trim()}”.` : "Sem linhas neste período."}
-        </p>
+        <div className="border-t border-slate-100 px-5 py-8 text-center text-[13.5px] text-slate-400 font-medium">
+          {term ? `Nenhum resultado encontrado para “${search.trim()}”.` : "Sem dados para este nível no período."}
+        </div>
       ) : null}
 
       {rows.length > 0 ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--ads-line)] px-4 py-2.5 text-[12.5px] text-[var(--ads-ink-muted)] sm:px-5">
-          <span>
-            Mostrando {formatCount(shown.length)} de {formatCount(rows.length)}
-            {ranking.truncated ? " (os 500 com maior investimento)" : ""}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/50 px-5 py-3 text-[12.5px] text-slate-500 sm:px-6">
+          <span className="font-medium">
+            Exibindo <strong className="font-semibold text-slate-800">{formatCount(shown.length)}</strong> de{" "}
+            <strong className="font-semibold text-slate-800">{formatCount(rows.length)}</strong>
+            {ranking.truncated ? " (limitado aos 500 maiores investimentos)" : ""}
           </span>
           {shown.length < rows.length ? (
-            <Button size="sm" onClick={() => setVisible((current) => current + PAGE_SIZE)}>
-              Mostrar mais
+            <Button size="sm" variant="secondary" onClick={() => setVisible((current) => current + PAGE_SIZE)} className="gap-1">
+              <span>Carregar mais</span>
+              <ChevronDown className="size-3.5" aria-hidden />
             </Button>
           ) : null}
         </div>

@@ -23,7 +23,8 @@ export async function GET(request: NextRequest) {
     const params = request.nextUrl.searchParams;
     const from = params.get("from");
     const to = params.get("to");
-    let period: { from: string | null; to: string | null } = { from: null, to: null };
+    const account = params.get("account") || null;
+    let period: { from: string | null; to: string | null; account?: string | null } = { from: null, to: null, account };
 
     if (from || to) {
       if (!from || !to || !isIsoDay(from) || !isIsoDay(to)) {
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
       if (daysBetween(from, to) + 1 > ADS_MAX_RANGE_DAYS) {
         throw badRequest("PERIODO_INVALIDO", "Escolha um período de até 5 anos.");
       }
-      period = { from, to };
+      period = { from, to, account };
     }
 
     const data = await withAdsClient((run) => loadDashboard(run, period, todayInSaoPaulo()));

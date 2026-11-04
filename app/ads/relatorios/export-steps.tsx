@@ -1,57 +1,91 @@
 import { useId } from "react";
+import { Download, FileSpreadsheet, Filter, Layers, UploadCloud } from "lucide-react";
 
 import { Card, CardHeader } from "../_components/ui";
 
 /**
- * Passo a passo da exportação no Gerenciador de Anúncios.
- *
- * Os nomes seguem a tela do Meta vista em 13/10/2026: botão “Detalhamento” ao
- * lado de “Colunas” e, no menu do ícone de download, “Exportar como .csv” e
- * “Exportar como .xlsx”. Se o Meta mudar os rótulos, ajuste aqui e no README.
+ * Passo a passo da exportação no Gerenciador de Anúncios da Meta.
+ * Design limpo, profissional, sem emojis e com ícones SVG.
  */
 export function ExportSteps() {
   const titleId = useId();
   const steps = [
-    <>
-      No Gerenciador de Anúncios, abra a aba <strong>Anúncios</strong> e escolha o período no canto direito.
-    </>,
-    <>
-      Clique em <strong>Detalhamento</strong>, ao lado de “Colunas”, e escolha <strong>Por tempo › Dia</strong>.
-      Sem isso o Meta exporta um total único do período, e o painel não consegue mostrar dia a dia.
-    </>,
-    <>
-      Em <strong>Colunas</strong>, escolha <strong>Desempenho e cliques</strong>. Só <strong>Desempenho</strong>{" "}
-      também funciona, mas sem os cliques no link.
-    </>,
-    <>
-      Abra o menu do ícone de download (a setinha ao lado dele) e escolha <strong>Exportar como .csv</strong> ou{" "}
-      <strong>Exportar como .xlsx</strong>.
-    </>,
-    <>Envie o arquivo aqui. Reenviar um período troca os dados dele, sem duplicar.</>,
+    {
+      icon: Filter,
+      title: "Selecione o período",
+      desc: (
+        <>
+          No Gerenciador de Anúncios, acesse a aba <strong>Anúncios</strong> e escolha o período desejado no canto superior direito.
+        </>
+      ),
+    },
+    {
+      icon: Layers,
+      title: "Detalhamento por dia (Obrigatório)",
+      desc: (
+        <>
+          Clique em <strong>Detalhamento</strong> (ao lado de “Colunas”) e selecione <strong>Por tempo › Dia</strong>. Sem isso o Meta gera um total único acumulado e o sistema não aceita.
+        </>
+      ),
+    },
+    {
+      icon: FileSpreadsheet,
+      title: "Colunas de desempenho",
+      desc: (
+        <>
+          Em <strong>Colunas</strong>, escolha <strong>Desempenho e cliques</strong> para incluir cliques, impressões e resultados.
+        </>
+      ),
+    },
+    {
+      icon: Download,
+      title: "Exportar arquivo",
+      desc: (
+        <>
+          Abra o menu de download e selecione <strong>Exportar como .csv</strong> ou <strong>Exportar como .xlsx</strong>.
+        </>
+      ),
+    },
+    {
+      icon: UploadCloud,
+      title: "Enviar no painel",
+      desc: (
+        <>
+          Envie o arquivo aqui. Se o período já existia, o sistema atualiza os dados automaticamente sem duplicar.
+        </>
+      ),
+    },
   ];
 
   return (
-    <Card aria-labelledby={titleId}>
-      <CardHeader title="Como exportar do Meta" titleId={titleId} />
-      <ol className="space-y-3 px-4 py-4 text-[13.5px] leading-relaxed text-[var(--ads-ink-soft)] sm:px-5">
-        {steps.map((step, index) => (
-          <li key={index} className="flex gap-3">
-            <span
-              aria-hidden
-              className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border border-[var(--ads-line-strong)] text-[11.5px] font-semibold text-[var(--ads-ink)]"
-            >
-              {index + 1}
-            </span>
-            <span className="[&_strong]:font-medium [&_strong]:text-[var(--ads-ink)]">{step}</span>
-          </li>
-        ))}
+    <Card aria-labelledby={titleId} className="overflow-hidden">
+      <CardHeader title="Como exportar do Meta Ads" titleId={titleId} />
+      <ol className="divide-y divide-slate-100 px-5 py-2">
+        {steps.map((step, index) => {
+          const Icon = step.icon;
+          return (
+            <li key={index} className="flex gap-3.5 py-3.5">
+              <span
+                aria-hidden
+                className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-blue-50 text-blue-700 border border-blue-100 text-[11px] font-bold"
+              >
+                {index + 1}
+              </span>
+              <div className="min-w-0 text-[13px] leading-relaxed text-slate-600">
+                <p className="font-semibold text-slate-800 text-[13.5px]">{step.title}</p>
+                <div className="mt-0.5 font-normal text-slate-500 [&_strong]:font-semibold [&_strong]:text-slate-800">
+                  {step.desc}
+                </div>
+              </div>
+            </li>
+          );
+        })}
       </ol>
-      <p className="border-t border-[var(--ads-line)] px-4 py-3 text-[12.5px] leading-relaxed text-[var(--ads-ink-muted)] sm:px-5">
-        Para ver campanhas e conjuntos no painel, o arquivo precisa ter as colunas{" "}
-        <strong className="font-medium">Nome da campanha</strong> e{" "}
-        <strong className="font-medium">Nome do conjunto de anúncios</strong>. Sem elas, o painel mostra só por
-        anúncio.
-      </p>
+      <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-3.5 text-[12px] leading-relaxed text-slate-500 font-medium">
+        Para ver campanhas e conjuntos no painel, garanta que o relatório contenha as colunas{" "}
+        <strong className="font-bold text-slate-700">Nome da campanha</strong> e{" "}
+        <strong className="font-bold text-slate-700">Nome do conjunto de anúncios</strong>.
+      </div>
     </Card>
   );
 }

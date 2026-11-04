@@ -19,8 +19,8 @@ const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-this";
 const secret = new TextEncoder().encode(JWT_SECRET);
 
 export const metadata: Metadata = {
-  title: { default: "Tráfego pago | Fique no Verde Já", template: "%s | Tráfego pago" },
-  description: "Resultados das campanhas do Meta Ads da Fique no Verde Já",
+  title: { default: "Meta Ads | Fique no Verde Já", template: "%s | Meta Ads" },
+  description: "Central de inteligência e performance de Meta Ads da Fique no Verde Já",
 };
 
 type Session = { userId: string; isAdmin: boolean };
@@ -83,8 +83,16 @@ export default async function AdsLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="ads-root">
-      <AdsShell viewer={lookup.viewer}>{children}</AdsShell>
-    </div>
+    <>
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300..900;1,300..900&display=swap"
+        rel="stylesheet"
+      />
+      <div className="ads-root font-sans">
+        <AdsShell viewer={lookup.viewer}>{children}</AdsShell>
+      </div>
+    </>
   );
 }

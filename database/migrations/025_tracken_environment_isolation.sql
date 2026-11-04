@@ -20,12 +20,17 @@ ALTER TABLE tracken_api_credentials
   ALTER COLUMN environment DROP DEFAULT;
 
 -- Idempotente mesmo se alguem tiver criado as colunas manualmente com default.
+-- ADD e DROP DEFAULT ficam em comandos separados: no mesmo ALTER TABLE o
+-- PostgreSQL executa o DROP DEFAULT antes do ADD COLUMN e falha quando a
+-- coluna ainda nao existe.
 ALTER TABLE tracken_tickets
-  ADD COLUMN IF NOT EXISTS environment VARCHAR(20),
+  ADD COLUMN IF NOT EXISTS environment VARCHAR(20);
+ALTER TABLE tracken_tickets
   ALTER COLUMN environment DROP DEFAULT;
 
 ALTER TABLE tracken_outbox
-  ADD COLUMN IF NOT EXISTS environment VARCHAR(20),
+  ADD COLUMN IF NOT EXISTS environment VARCHAR(20);
+ALTER TABLE tracken_outbox
   ALTER COLUMN environment DROP DEFAULT;
 
 -- O ticket herda o ambiente da credencial que autenticou sua criacao.
@@ -34,6 +39,17 @@ UPDATE tracken_tickets t
   FROM tracken_api_credentials c
  WHERE t.environment IS NULL
    AND t.credential_id = c.id;
+
+-- O seed de demonstracao anterior ao isolamento (scripts/tracken_seed_demo.mjs)
+-- gravava tickets sem credential_id. Dado de demonstracao e sempre sandbox.
+-- O predicado exige a assinatura exata do seed; qualquer outra linha sem
+-- credencial continua sem classificacao e aborta a migration abaixo.
+UPDATE tracken_tickets
+   SET environment = 'sandbox'
+ WHERE environment IS NULL
+   AND credential_id IS NULL
+   AND requested_by = 'demo@tracken.local'
+   AND payload_raw->>'origem' = 'seed de demonstracao';
 
 DO $migration$
 DECLARE
