@@ -214,7 +214,7 @@ export type AdsFileInfo = {
   name: string;
   size: number;
   hash: string;
-  format: "csv" | "xlsx";
+  format: "csv" | "xlsx" | "api";
 };
 
 type DailyColumn = {

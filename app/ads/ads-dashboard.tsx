@@ -8,6 +8,7 @@ import {
   Calendar,
   Download,
   FileSpreadsheet,
+  RefreshCw,
   RotateCw,
   Sparkles,
   UploadCloud,
@@ -48,7 +49,7 @@ function PageTitle({ children }: { children?: ReactNode }) {
         <h1 className="text-[22px] font-extrabold tracking-tight text-slate-900">{PAGE_TITLE}</h1>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
           <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" aria-hidden />
-          <span>Relatório Ativo</span>
+          Atualizado
         </span>
       </div>
       {children}
@@ -58,18 +59,21 @@ function PageTitle({ children }: { children?: ReactNode }) {
 
 function DashboardSkeleton() {
   return (
-    <div className="space-y-6" aria-busy="true">
-      <PageTitle>
-        <p className="mt-1 text-[13.5px] text-slate-400 font-medium">
-          <Spinner label="Carregando os resultados das campanhas…" />
-        </p>
-      </PageTitle>
-      <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-4" aria-hidden>
-        {[0, 1, 2, 3].map((item) => (
-          <div key={item} className="h-[108px] animate-pulse rounded-xl border border-slate-200/70 bg-white" />
+    <div className="space-y-6 animate-pulse" aria-busy="true" aria-label="Carregando painel">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-2">
+          <div className="h-7 w-56 rounded-md bg-slate-200" />
+          <div className="h-4 w-72 rounded-md bg-slate-100" />
+        </div>
+        <div className="h-9 w-64 rounded-md bg-slate-200" />
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="h-28 rounded-xl border border-slate-100 bg-white p-4 shadow-xs" />
         ))}
       </div>
-      <div className="h-[350px] animate-pulse rounded-xl border border-slate-200/70 bg-white" aria-hidden />
+      <div className="h-80 rounded-xl border border-slate-100 bg-white shadow-xs" />
+      <div className="h-96 rounded-xl border border-slate-100 bg-white shadow-xs" />
     </div>
   );
 }
@@ -107,7 +111,15 @@ function DashboardError({
   );
 }
 
-function EmptyState({ isAdmin }: { isAdmin: boolean }) {
+function EmptyState({
+  isAdmin,
+  onSync,
+  syncing,
+}: {
+  isAdmin: boolean;
+  onSync: () => void;
+  syncing: boolean;
+}) {
   return (
     <div className="space-y-6">
       <PageTitle />
@@ -115,16 +127,21 @@ function EmptyState({ isAdmin }: { isAdmin: boolean }) {
         <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-blue-50 text-blue-600 border border-blue-100">
           <UploadCloud className="size-7" aria-hidden />
         </span>
-        <h2 className="mt-4 text-[17px] font-bold text-slate-900">Nenhum relatório importado ainda</h2>
+        <h2 className="mt-4 text-[17px] font-bold text-slate-900">Nenhum dado importado ainda</h2>
         <p className="mx-auto mt-1.5 max-w-md text-[14px] text-slate-500 font-medium">
-          Envie o relatório exportado do Gerenciador de Anúncios da Meta (.csv ou .xlsx) para visualizar todos os
-          indicadores e gráficos de desempenho.
+          Sincronize diretamente via Meta Marketing API ou envie o relatório exportado (.csv ou .xlsx) para visualizar os indicadores e gráficos de desempenho.
         </p>
         {isAdmin ? (
-          <Link href="/ads/relatorios" className={`${buttonClasses("primary")} mt-6 gap-2`}>
-            <FileSpreadsheet className="size-4" aria-hidden />
-            <span>Importar primeiro relatório</span>
-          </Link>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <Button onClick={onSync} disabled={syncing} className="gap-2">
+              <RefreshCw className={`size-4 ${syncing ? "animate-spin" : ""}`} aria-hidden />
+              <span>{syncing ? "Sincronizando..." : "Sincronizar Meta Ads"}</span>
+            </Button>
+            <Link href="/ads/relatorios" className={`${buttonClasses("secondary")} gap-2`}>
+              <FileSpreadsheet className="size-4" aria-hidden />
+              <span>Importar arquivo</span>
+            </Link>
+          </div>
         ) : (
           <p className="mt-4 text-[13px] text-slate-400 font-medium">
             Os relatórios são importados pelo gestor de tráfego ou administrador.
@@ -146,6 +163,9 @@ export default function AdsDashboard() {
   const [attempt, setAttempt] = useState(0);
   const [preset, setPreset] = useState<AdsPeriodPreset>("30d");
   const [chartMetric, setChartMetric] = useState<AdsIndicatorKey>("spend");
+  const [syncing, setSyncing] = useState(false);
+  const [syncNotice, setSyncNotice] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+
   const [view, setView] = useState<ViewState>({
     key: "",
     data: null,
@@ -153,44 +173,59 @@ export default function AdsDashboard() {
     sessionExpired: false,
   });
 
-  const query = new URLSearchParams(paramsMap).toString();
-  const requestKey = `${query}#${attempt}`;
-  const loading = view.key !== requestKey;
+  const queryKey = `${paramsMap.from ?? ""}|${paramsMap.to ?? ""}|${paramsMap.account ?? ""}|${attempt}`;
+  const loading = view.key !== queryKey;
 
   useEffect(() => {
     const controller = new AbortController();
-    adsRequest<AdsDashboardData>(`/api/ads/dashboard${query ? `?${query}` : ""}`, {
-      signal: controller.signal,
-    })
-      .then((data) => setView({ key: requestKey, data, error: null, sessionExpired: false }))
+    const query = new URLSearchParams();
+    if (paramsMap.from) query.set("from", paramsMap.from);
+    if (paramsMap.to) query.set("to", paramsMap.to);
+    if (paramsMap.account) query.set("account", paramsMap.account);
+    const qs = query.toString();
+    const url = `/api/ads/dashboard${qs ? `?${qs}` : ""}`;
+
+    adsRequest<AdsDashboardData>(url, { signal: controller.signal })
+      .then((data) =>
+        setView({
+          key: queryKey,
+          data,
+          error: null,
+          sessionExpired: false,
+        })
+      )
       .catch((error: unknown) => {
         if (controller.signal.aborted || isAbortError(error)) return;
         setView((current) => ({
-          key: requestKey,
-          data: current.data,
+          ...current,
+          key: queryKey,
           error: errorMessage(error),
           sessionExpired: isSessionError(error),
         }));
       });
+
     return () => controller.abort();
-  }, [query, requestKey]);
+  }, [queryKey, paramsMap]);
 
-  const applyRange = (range: AdsDayRange) => {
-    setParamsMap((prev) => {
-      const next = { ...prev, from: range.from, to: range.to };
-      return next;
-    });
-  };
-
-  const choosePreset = (next: Exclude<AdsPeriodPreset, "custom">) => {
-    setPreset(next);
-    const coverage = view.data?.coverage;
-    if (coverage) applyRange(resolvePresetRange(next, coverage, todayInSaoPaulo()));
+  const choosePreset = (nextPreset: AdsPeriodPreset) => {
+    setPreset(nextPreset);
+    if (nextPreset === "custom") return;
+    if (!view.data?.coverage) return;
+    const resolved = resolvePresetRange(nextPreset, view.data.coverage, todayInSaoPaulo());
+    setParamsMap((prev) => ({
+      ...prev,
+      from: resolved.from,
+      to: resolved.to,
+    }));
   };
 
   const chooseCustom = (range: AdsDayRange) => {
     setPreset("custom");
-    applyRange(range);
+    setParamsMap((prev) => ({
+      ...prev,
+      from: range.from,
+      to: range.to,
+    }));
   };
 
   const handleAccountChange = (accountName: string) => {
@@ -207,6 +242,23 @@ export default function AdsDashboard() {
 
   const retry = () => setAttempt((current) => current + 1);
 
+  const handleSyncMeta = async () => {
+    if (syncing) return;
+    setSyncing(true);
+    setSyncNotice(null);
+    try {
+      const res = await adsRequest<{ success: boolean; message: string }>("/api/ads/sync", {
+        method: "POST",
+      });
+      setSyncNotice({ tone: "success", text: res.message });
+      retry();
+    } catch (err) {
+      setSyncNotice({ tone: "error", text: errorMessage(err) });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const data = view.data;
   if (!data) {
     if (!loading && view.error) {
@@ -214,7 +266,9 @@ export default function AdsDashboard() {
     }
     return <DashboardSkeleton />;
   }
-  if (!data.hasData || !data.coverage) return <EmptyState isAdmin={viewer.isAdmin} />;
+  if (!data.hasData || !data.coverage) {
+    return <EmptyState isAdmin={viewer.isAdmin} onSync={handleSyncMeta} syncing={syncing} />;
+  }
 
   const coverage = data.coverage;
   const hasRows = data.rowsInRange > 0;
@@ -245,7 +299,7 @@ export default function AdsDashboard() {
           </p>
           {data.lastImport ? (
             <p className="mt-0.5 text-[12px] text-slate-400 font-medium">
-              Último envio: {data.lastImport.fileName} ({formatDateTime(data.lastImport.createdAt)})
+              Último envio/sincronização: {data.lastImport.fileName} ({formatDateTime(data.lastImport.createdAt)})
             </p>
           ) : null}
         </PageTitle>
@@ -253,6 +307,21 @@ export default function AdsDashboard() {
         <div className="flex flex-wrap items-center gap-2.5">
           {loading ? (
             <Spinner label="Atualizando…" className="text-[12.5px] text-slate-400 mr-1" />
+          ) : null}
+
+          {/* Sincronização direta com a Meta */}
+          {viewer.isAdmin ? (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handleSyncMeta}
+              disabled={syncing || loading}
+              className="h-9.5 gap-1.5 shadow-xs"
+              title="Sincronizar métricas recentes via Meta Marketing API"
+            >
+              <RefreshCw className={`size-4 text-indigo-600 ${syncing ? "animate-spin" : ""}`} aria-hidden />
+              <span className="hidden sm:inline">{syncing ? "Sincronizando..." : "Sincronizar Meta"}</span>
+            </Button>
           ) : null}
 
           {/* Filtro por Conta de Anúncios */}
@@ -293,6 +362,19 @@ export default function AdsDashboard() {
         </div>
       </div>
 
+      {syncNotice ? (
+        <Notice
+          tone={syncNotice.tone}
+          action={
+            <Button size="sm" variant="ghost" onClick={() => setSyncNotice(null)}>
+              Fechar
+            </Button>
+          }
+        >
+          {syncNotice.text}
+        </Notice>
+      ) : null}
+
       {view.error && !loading ? (
         <Notice
           tone="error"
@@ -312,81 +394,49 @@ export default function AdsDashboard() {
         </Notice>
       ) : null}
 
-      {hasRows && data.missingDays > 0 ? (
-        <Notice
-          tone="warning"
-          action={
-            viewer.isAdmin ? (
-              <Link href="/ads/relatorios" className={buttonClasses("secondary", "sm")}>
-                Enviar relatório
-              </Link>
-            ) : undefined
-          }
-        >
-          Faltam relatórios de {pluralize(data.missingDays, "dia", "dias")} deste período (
-          {describeRanges(data.missingRanges)}). Os números consideram apenas os dias informados.
+      {/* Avisos de lacunas no período */}
+      {data.missingDays > 0 ? (
+        <Notice tone="info">
+          {pluralize(data.missingDays, "dia deste período não tem", "dias deste período não têm")} relatório
+          ou sincronização: {describeRanges(data.missingRanges)}. O gráfico mostra lacuna nesses dias. Para preencher,
+          sincronize via API ou envie o relatório correspondente em{" "}
+          <Link href="/ads/relatorios" className="font-semibold underline underline-offset-2">
+            Relatórios
+          </Link>
+          .
         </Notice>
       ) : null}
 
-      {data.currencies.length > 1 ? (
-        <Notice tone="warning">
-          Há relatórios com moedas distintas ({data.currencies.join(", ")}). Os totais somam os valores diretamente.
-        </Notice>
+      {/* Cartões de Indicadores */}
+      <KpiCards
+        indicators={kpis}
+        totals={data.totals}
+        previous={data.previous}
+        currency={data.currency}
+      />
+
+      {/* Gráfico de Evolução Diária */}
+      {chartOptions.length > 0 ? (
+        <DailyChart
+          daily={data.daily}
+          metric={metric}
+          options={chartOptions}
+          onMetricChange={setChartMetric}
+          total={data.totals[metric]}
+          currency={data.currency}
+        />
       ) : null}
 
-      {hasRows ? (
-        <div className={`space-y-6 transition-opacity duration-200 ${loading ? "opacity-60" : ""}`}>
-          {/* Cards de Métricas Principais */}
-          <KpiCards
-            indicators={kpis}
-            totals={data.totals}
-            previous={data.previous}
-            currency={data.currency}
-          />
-
-          {data.totals.results !== null && data.resultTypes.length > 1 ? (
-            <p className="text-[12px] font-medium text-slate-400">
-              * “Resultados” agrega diferentes eventos reportados: {data.resultTypes.join(", ")}.
-            </p>
-          ) : null}
-
-          {/* Gráfico de Evolução Diária */}
-          {chartOptions.length > 0 ? (
-            <DailyChart
-              daily={data.daily}
-              metric={metric}
-              options={chartOptions}
-              onMetricChange={setChartMetric}
-              total={data.totals[metric]}
-              currency={data.currency}
-            />
-          ) : null}
-
-          {/* Tabela de Ranking por Nível */}
-          {data.rankings.length > 0 ? (
-            <RankingTable
-              rankings={data.rankings}
-              totals={data.totals}
-              currency={data.currency}
-              showAccount={data.accounts.length > 1 && !data.selectedAccount}
-              periodSlug={periodSlug}
-            />
-          ) : null}
-        </div>
-      ) : (
-        <Card className="px-6 py-12 text-center">
-          <span className="mx-auto grid size-12 place-items-center rounded-xl bg-slate-100 text-slate-500">
-            <Calendar className="size-6" aria-hidden />
-          </span>
-          <h2 className="mt-3 text-[15.5px] font-bold text-slate-900">Sem resultados para o período selecionado</h2>
-          <p className="mx-auto mt-1 max-w-md text-[13.5px] text-slate-500 font-medium">
-            Os relatórios importados cobrem {formatDayRange(coverage.firstDay, coverage.lastDay)}.
-          </p>
-          <Button className="mt-5" onClick={() => choosePreset("all")}>
-            Ver todo o período disponível
-          </Button>
-        </Card>
-      )}
+      {/* Tabela de Desempenho e Ranking */}
+      {data.rankings.length > 0 ? (
+        <RankingTable
+          rankings={data.rankings}
+          totals={data.totals}
+          currency={data.currency}
+          showAccount={data.accounts.length > 1}
+          periodSlug={periodSlug}
+        />
+      ) : null}
     </div>
   );
 }

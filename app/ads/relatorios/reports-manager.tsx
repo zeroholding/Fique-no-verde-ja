@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useId, useState, type ReactNode } from "react";
-import { FileSpreadsheet, FileText, FileUp, Trash2, Calendar, HardDrive, RefreshCw } from "lucide-react";
+import { FileSpreadsheet, FileText, FileUp, Trash2, Calendar, RefreshCw } from "lucide-react";
 
 import { adsRequest, errorMessage, isAbortError } from "@/lib/ads/client";
 import {
@@ -21,7 +21,7 @@ import { UploadDialog } from "./upload-dialog";
 
 /**
  * Tela de relatórios: histórico de envios para todos e, para administradores,
- * o envio de arquivo, a exclusão e o passo a passo da exportação no Meta.
+ * sincronização via Meta Marketing API, envio de arquivo e exclusão.
  */
 
 type ListState = {
@@ -78,7 +78,7 @@ export function HistoryTable({
         <thead className="border-b border-[var(--ads-line)] bg-slate-50/70 text-[11.5px] font-semibold uppercase tracking-wider text-[var(--ads-ink-soft)]">
           <tr>
             <th scope="col" className="py-3 pl-4 pr-3 text-left sm:pl-5">
-              Arquivo e contas
+              Origem e contas
             </th>
             <th scope="col" className="px-3 py-3 text-left">
               Período coberto
@@ -87,7 +87,7 @@ export function HistoryTable({
               Linhas
             </th>
             <th scope="col" className="px-3 py-3 text-left">
-              Enviado em
+              Sincronizado em
             </th>
             <th scope="col" className="px-3 py-3 text-left">
               Situação
@@ -107,6 +107,8 @@ export function HistoryTable({
                   <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 shadow-xs">
                     {item.format === "xlsx" ? (
                       <FileSpreadsheet className="size-3.5 text-emerald-600" />
+                    ) : item.format === "api" ? (
+                      <RefreshCw className="size-3.5 text-indigo-600" />
                     ) : (
                       <FileText className="size-3.5 text-blue-600" />
                     )}
@@ -116,8 +118,14 @@ export function HistoryTable({
                       {item.fileName}
                     </p>
                     <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11.5px] text-[var(--ads-ink-muted)]">
-                      <span className="rounded bg-slate-100 px-1.5 py-0.2 font-mono uppercase text-[10px] font-semibold text-slate-700">
-                        {item.format}
+                      <span
+                        className={`rounded px-1.5 py-0.2 font-mono uppercase text-[10px] font-semibold ${
+                          item.format === "api"
+                            ? "bg-indigo-50 text-indigo-700 border border-indigo-100"
+                            : "bg-slate-100 text-slate-700"
+                        }`}
+                      >
+                        {item.format === "api" ? "API Meta" : item.format}
                       </span>
                       <span>·</span>
                       <span>{formatFileSize(item.fileSize)}</span>
@@ -185,6 +193,7 @@ export default function ReportsManager() {
   const [pendingDelete, setPendingDelete] = useState<AdsImportItem | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
 
   const loading = list.key !== attempt;
 
@@ -208,6 +217,31 @@ export default function ReportsManager() {
   const openUpload = () => {
     setNotice(null);
     setUploadOpen(true);
+  };
+
+  const handleSyncMeta = async () => {
+    if (syncing) return;
+    setSyncing(true);
+    setNotice(null);
+    try {
+      const res = await adsRequest<{ success: boolean; message: string }>("/api/ads/sync", {
+        method: "POST",
+      });
+      setNotice({
+        tone: "success",
+        text: res.message,
+        showPanelLink: true,
+      });
+      reload();
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        text: errorMessage(error),
+        showPanelLink: false,
+      });
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const handleSaved = (saved: AdsImportSaved) => {
@@ -279,9 +313,9 @@ export default function ReportsManager() {
         <div className="flex size-11 items-center justify-center rounded-full bg-slate-100 text-slate-400 mb-2.5">
           <FileSpreadsheet className="size-5" />
         </div>
-        <p className="font-semibold text-[var(--ads-ink)]">Nenhum relatório enviado ainda</p>
+        <p className="font-semibold text-[var(--ads-ink)]">Nenhum relatório ou sincronização ainda</p>
         <p className="mt-1 text-xs text-[var(--ads-ink-muted)] max-w-sm">
-          Envie os relatórios exportados do Gerenciador de Anúncios do Meta para começar a visualizar as métricas no painel.
+          Sincronize diretamente via Meta Marketing API ou envie um relatório CSV/Excel exportado.
         </p>
       </div>
     );
@@ -297,14 +331,26 @@ export default function ReportsManager() {
             Relatórios e Importações
           </h1>
           <p className="mt-1 text-[13px] text-[var(--ads-ink-soft)] max-w-2xl">
-            Arquivos CSV ou Excel exportados do Gerenciador de Anúncios da Meta. Para cada dia e conta, o painel consolida sempre o envio mais recente.
+            Sincronização automática via Meta Marketing API ou arquivos CSV/Excel exportados manualmente. Para cada dia e conta, o painel consolida sempre os dados mais recentes.
           </p>
         </div>
         {canManage ? (
-          <Button variant="primary" onClick={openUpload} className="shrink-0 shadow-sm">
-            <FileUp className="size-4" aria-hidden />
-            Enviar relatório
-          </Button>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Button
+              variant="secondary"
+              onClick={handleSyncMeta}
+              disabled={syncing || loading}
+              className="shrink-0 shadow-sm"
+              title="Buscar dados mais recentes da conta configurada na Meta Marketing API"
+            >
+              <RefreshCw className={`size-4 text-indigo-600 ${syncing ? "animate-spin" : ""}`} aria-hidden />
+              <span>{syncing ? "Sincronizando Meta..." : "Sincronizar Meta Ads"}</span>
+            </Button>
+            <Button variant="primary" onClick={openUpload} className="shrink-0 shadow-sm">
+              <FileUp className="size-4" aria-hidden />
+              Enviar relatório
+            </Button>
+          </div>
         ) : null}
       </div>
 
@@ -326,9 +372,9 @@ export default function ReportsManager() {
       <div className={canManage ? "grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start" : ""}>
         <Card aria-labelledby={historyTitleId} aria-busy={loading} className="overflow-hidden">
           <CardHeader
-            title="Histórico de Envios"
+            title="Histórico de Registros"
             titleId={historyTitleId}
-            description={imports && imports.length > 0 ? pluralize(imports.length, "envio registrado", "envios registrados") : undefined}
+            description={imports && imports.length > 0 ? pluralize(imports.length, "registro", "registros") : undefined}
             actions={
               loading && imports ? (
                 <Spinner label="Atualizando..." className="text-[12px] text-[var(--ads-ink-muted)]" />
@@ -367,11 +413,11 @@ export default function ReportsManager() {
           <div className="space-y-3 text-[13.5px] leading-relaxed text-[var(--ads-ink-soft)]">
             {deleteError ? <Notice tone="error">{deleteError}</Notice> : null}
             <p>
-              O relatório <span className="font-semibold text-[var(--ads-ink)]">{pendingDelete.fileName}</span> (
+              O registro <span className="font-semibold text-[var(--ads-ink)]">{pendingDelete.fileName}</span> (
               {formatDayRange(pendingDelete.firstDay, pendingDelete.lastDay)}) será removido do histórico, e seus dados serão retirados do painel.
             </p>
             <p className="rounded-lg bg-amber-50 p-3 text-[12.5px] text-amber-800 border border-amber-200">
-              Dados de envios anteriores que foram substituídos por este não retornam automaticamente. Caso queira restabelecer o período, envie novamente o arquivo correspondente.
+              Dados de envios anteriores que foram substituídos por este não retornam automaticamente. Caso queira restabelecer o período, sincronize ou envie novamente o arquivo correspondente.
             </p>
           </div>
         </Dialog>
