@@ -658,8 +658,11 @@ export async function fetchMetaCreatives(adIds: string[]): Promise<MetaCreativeO
     const video = item.videoId ? videos.get(item.videoId) : undefined;
     return {
       ...item,
-      // Sem miniatura do vídeo, a do criativo é um quadro parado — serve de reserva.
-      videoThumbnailUrl: video?.picture ?? (item.format === "video" ? item.thumbnailUrl : null),
+      // Sem capa do vídeo, a arte do criativo é um quadro parado — serve de
+      // reserva. A arte em tamanho cheio vem antes da miniatura de 64px.
+      videoThumbnailUrl:
+        video?.picture ??
+        (item.format === "video" ? (item.imageUrl ?? item.thumbnailUrl) : null),
       videoUrl: video?.source ?? null,
     };
   });

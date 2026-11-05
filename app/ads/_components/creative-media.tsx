@@ -39,7 +39,11 @@ export function CreativeThumb({
   className?: string;
 }) {
   const [failed, setFailed] = useState(false);
-  const url = creative?.videoThumbnailUrl || creative?.thumbnailUrl || creative?.imageUrl;
+  // Ordem de qualidade, não de campo: capa do vídeo (tamanho cheio), depois a
+  // arte original (tamanho cheio) e só no fim a miniatura, que sem dimensão
+  // pedida vem em 64x64. Antes a miniatura vinha primeiro e borrava a tela
+  // mesmo quando a arte grande estava disponível.
+  const url = creative?.videoThumbnailUrl || creative?.imageUrl || creative?.thumbnailUrl;
 
   if (!url || failed) {
     return (
@@ -95,7 +99,9 @@ export function CreativeMedia({
   const [playing, setPlaying] = useState(false);
   const [failed, setFailed] = useState(false);
 
-  const poster = creative?.videoThumbnailUrl || creative?.thumbnailUrl || creative?.imageUrl;
+  // Mesma ordem de qualidade do card grande: capa do vídeo, arte original e,
+  // por último, a miniatura pequena.
+  const poster = creative?.videoThumbnailUrl || creative?.imageUrl || creative?.thumbnailUrl;
   const canPlay = creative?.format === "video" && Boolean(creative.videoUrl);
   const isVideo = creative?.format === "video";
 
