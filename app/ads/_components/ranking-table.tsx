@@ -8,7 +8,6 @@ import {
   ChevronDown,
   ChevronRight,
   Download,
-  ImageIcon,
   Search,
   X,
 } from "lucide-react";
@@ -24,6 +23,7 @@ import {
 import type { AdsRanking, AdsRankingLevel, AdsRankingRow } from "@/lib/ads/types";
 
 import { Button, Card, Dialog } from "./ui";
+import { CreativeMedia, CreativeThumb as MiniCreative, CreativeFormatBadge } from "./creative-media";
 
 const TABLE_PRIORITY: AdsIndicatorKey[] = [
   "spend",
@@ -159,39 +159,10 @@ function CellValue({ row, column, currency }: { row: AdsRankingRow; column: Colu
  * Miniatura do criativo.
  *
  * A URL vem do CDN da Meta e expira: quando falha, o espaço vira um ícone
- * neutro, nunca um quadrado quebrado. `referrerPolicy` evita bloqueio por
- * referenciador.
+ * neutro, nunca um quadrado quebrado.
  */
 function CreativeThumb({ row, size = 40 }: { row: AdsRankingRow; size?: number }) {
-  const [failed, setFailed] = useState(false);
-  const url = row.thumbnailUrl ?? row.imageUrl;
-
-  if (!url || failed) {
-    return (
-      <span
-        aria-hidden
-        style={{ width: size, height: size }}
-        className="grid shrink-0 place-items-center rounded-lg border border-slate-200 bg-slate-50 text-slate-300"
-      >
-        <ImageIcon className="size-4" />
-      </span>
-    );
-  }
-
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={url}
-      alt=""
-      width={size}
-      height={size}
-      loading="lazy"
-      onError={() => setFailed(true)}
-      referrerPolicy="no-referrer"
-      style={{ width: size, height: size }}
-      className="shrink-0 rounded-lg border border-slate-200 bg-slate-50 object-cover"
-    />
-  );
+  return <MiniCreative creative={row.creative} size={size} />;
 }
 
 /** Painel de detalhes: tudo o que existe daquele recorte, sem esconder nada. */
@@ -218,13 +189,24 @@ function RowDetail({
       size="lg"
     >
       <div className="flex flex-col gap-5">
-        <div className="flex items-start gap-4">
-          <CreativeThumb row={row} size={96} />
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          <div className="w-full shrink-0 sm:w-[180px]">
+            <CreativeMedia creative={row.creative} aspect="aspect-square" />
+          </div>
           <div className="min-w-0 flex-1">
             <p className="text-[13px] font-medium text-slate-500">
-              {[row.account, row.campaign, row.adset].filter(Boolean).join(" › ") || "Sem hierarquia informada"}
+              {[row.campaign, row.adset].filter(Boolean).join(" › ") || "Sem hierarquia informada"}
             </p>
+            {row.creative?.title ? (
+              <p className="mt-1 text-[13.5px] font-bold text-slate-800">{row.creative.title}</p>
+            ) : null}
+            {row.creative?.body ? (
+              <p className="mt-1 whitespace-pre-line text-[12.5px] font-medium leading-relaxed text-slate-500 line-clamp-4">
+                {row.creative.body}
+              </p>
+            ) : null}
             <div className="mt-2 flex flex-wrap gap-2">
+              {row.creative ? <CreativeFormatBadge format={row.creative.format} /> : null}
               <span className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[12px] font-semibold text-slate-700">
                 {formatCount(row.days)} {row.days === 1 ? "dia no ar" : "dias no ar"}
               </span>
@@ -234,6 +216,16 @@ function RowDetail({
                 </span>
               ) : null}
             </div>
+            {row.creative?.permalinkUrl ? (
+              <a
+                href={row.creative.permalinkUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="mt-2 inline-flex items-center gap-1 text-[12px] font-bold text-blue-700 hover:underline"
+              >
+                Abrir no Gerenciador de Anúncios
+              </a>
+            ) : null}
           </div>
         </div>
 

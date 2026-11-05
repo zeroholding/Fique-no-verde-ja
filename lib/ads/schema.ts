@@ -87,9 +87,26 @@ CREATE INDEX IF NOT EXISTS idx_ads_coverage_import_id
 CREATE TABLE IF NOT EXISTS ads_creatives (
   ad_id TEXT PRIMARY KEY,
   title TEXT NOT NULL DEFAULT '',
+  body TEXT NOT NULL DEFAULT '',
   object_type TEXT NOT NULL DEFAULT '',
+  format TEXT NOT NULL DEFAULT '',
   thumbnail_url TEXT,
   image_url TEXT,
+  video_id TEXT,
+  video_thumbnail_url TEXT,
+  video_url TEXT,
+  effective_status TEXT NOT NULL DEFAULT '',
+  permalink_url TEXT,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Colunas acrescentadas depois da criação da tabela: bancos que já rodaram a
+-- versão anterior recebem as novas sem perder linha.
+ALTER TABLE ads_creatives ADD COLUMN IF NOT EXISTS body TEXT NOT NULL DEFAULT '';
+ALTER TABLE ads_creatives ADD COLUMN IF NOT EXISTS format TEXT NOT NULL DEFAULT '';
+ALTER TABLE ads_creatives ADD COLUMN IF NOT EXISTS video_id TEXT;
+ALTER TABLE ads_creatives ADD COLUMN IF NOT EXISTS video_thumbnail_url TEXT;
+ALTER TABLE ads_creatives ADD COLUMN IF NOT EXISTS video_url TEXT;
+ALTER TABLE ads_creatives ADD COLUMN IF NOT EXISTS effective_status TEXT NOT NULL DEFAULT '';
+ALTER TABLE ads_creatives ADD COLUMN IF NOT EXISTS permalink_url TEXT;
 `;

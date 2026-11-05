@@ -48,11 +48,33 @@ export type ParsedAdsReport = {
   warnings: string[];
 };
 
-/** Criativo de um anúncio, para a tela mostrar a imagem. */
+/**
+ * Criativo de um anúncio: a peça visual que a pessoa vê no feed.
+ *
+ * Nada aqui é métrica. Se a Meta não devolver, a linha continua existindo com
+ * os números — só a peça visual fica vazia.
+ */
 export type AdCreative = {
   adId: string;
+  /** Título do anúncio no criativo (headline), quando existe. */
   title: string;
+  /** Texto principal do anúncio (body). */
+  body: string;
+  /** O que está sendo anunciado: `VIDEO`, `PHOTO`, `PAGE`... */
+  objectType: string;
+  /** `image`, `video`, `carousel`, `collection`, `text` — define como a tela desenha. */
+  format: AdCreativeFormat;
   thumbnailUrl: string | null;
   imageUrl: string | null;
-  objectType: string;
+  videoId: string | null;
+  /** Miniatura do vídeo. É o que aparece no lugar do frame parado. */
+  videoThumbnailUrl: string | null;
+  /** `.mp4` que abre no player da própria tela. */
+  videoUrl: string | null;
+  /** Como aparece no Gerenciador de Anúncios: Ativo, Pausado, Arquivado, Em análise. */
+  effectiveStatus: string;
+  /** Link do anúncio, para abrir no Gerenciador. */
+  permalinkUrl: string | null;
 };
+
+export type AdCreativeFormat = "image" | "video" | "carousel" | "collection" | "text";

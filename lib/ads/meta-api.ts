@@ -3,7 +3,12 @@ import { addDays, isIsoDay, todayInSaoPaulo } from "./dates";
 import { withAdsTransaction } from "./db";
 import { formatDayRange, pluralize } from "./format";
 import { ADS_METRIC_KEYS, type AdsMetricKey, type AdsMetricValues } from "./metrics";
-import type { AdCreative, AdsReportRow, ParsedAdsReport } from "./report";
+import type {
+  AdCreative,
+  AdCreativeFormat,
+  AdsReportRow,
+  ParsedAdsReport,
+} from "./report";
 import { saveCreatives, saveImport } from "./store";
 import type { AdsImportSaved } from "./types";
 
@@ -74,6 +79,43 @@ type MetaInsightsResponse = {
     error_subcode?: number;
     fbtrace_id?: string;
   };
+};
+
+/**
+ * Nó do anúncio na Graph API, só com o que a tela usa.
+ *
+ * Tudo opcional porque a Meta devolve cada anúncio do jeito que o criativo dele
+ * permite: anúncio antigo de publicação de Página não tem `object_story_spec`,
+ * e anúncio sem permissão de leitura volta sem `creative`.
+ */
+type MetaObjectStorySpec = {
+  link_data?: {
+    message?: string;
+    name?: string;
+    picture?: string;
+    child_attachments?: unknown[];
+    call_to_action?: { type?: string };
+  };
+  video_data?: { message?: string; title?: string };
+  template_data?: unknown;
+};
+
+type MetaAdCreativeNode = {
+  id?: string;
+  title?: string;
+  body?: string;
+  object_type?: string;
+  thumbnail_url?: string;
+  image_url?: string;
+  video_id?: string | number;
+  object_story_spec?: MetaObjectStorySpec;
+};
+
+type MetaAdNode = {
+  id?: string;
+  effective_status?: string;
+  permalink_url?: string;
+  creative?: MetaAdCreativeNode;
 };
 
 function emptyMetricValues(): AdsMetricValues {
@@ -391,12 +433,18 @@ export async function fetchMetaInsights(params: {
 }
 
 /**
- * Busca a imagem de cada anúncio.
+ * Busca a peça visual de cada anúncio: imagem, vídeo, texto e status.
  *
  * É o único dado que a Meta não devolve junto do insights: precisa de uma
- * segunda chamada por lote de anúncios. Como imagem é enfeite de tela e não
- * número, TUDO aqui é best-effort: se a permissão não alcançar o criativo ou a
- * chamada falhar, a sincronização continua e a tabela fica sem foto.
+ * segunda chamada, em lote. Como peça visual é enfeite de tela e não número,
+ * TUDO aqui é best-effort: se a permissão não alcançar o criativo ou a chamada
+ * falhar, a sincronização continua e o anúncio aparece sem imagem.
+ *
+ * O que é pedido, e por quê:
+ * - `effective_status` define o filtro por situação (Ativo, Pausado...);
+ * - `creative.video_id` é o único jeito de saber que o anúncio é vídeo;
+ * - `creative.object_story_spec` traz o texto do anúncio (título e corpo);
+ * - a miniatura do vídeo vem em `/{video_id}?fields=picture,source`.
  */
 export async function fetchMetaCreatives(adIds: string[]): Promise<AdCreative[]> {
   const status = getMetaConfigStatus();
@@ -409,43 +457,155 @@ export async function fetchMetaCreatives(adIds: string[]): Promise<AdCreative[]>
     chunks.push(unique.slice(index, index + 25));
   }
 
-  const creatives: AdCreative[] = [];
+  const fields = [
+    "effective_status",
+    "permalink_url",
+    "creative{id,title,body,object_type,thumbnail_url,image_url,video_id,object_story_spec}",
+  ].join(",");
+
+  const partials: Array<Omit<AdCreative, "videoThumbnailUrl" | "videoUrl">> = [];
+
   for (const chunk of chunks) {
     const url =
       `https://graph.facebook.com/${status.apiVersion}/` +
       `?ids=${encodeURIComponent(chunk.join(","))}` +
-      `&fields=${encodeURIComponent("creative{thumbnail_url,image_url,object_type,title}")}` +
+      `&fields=${encodeURIComponent(fields)}` +
+      `&thumbnail_width=800&thumbnail_height=800` +
       `&access_token=${encodeURIComponent(accessToken)}`;
 
     try {
       const response = await fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" });
       if (!response.ok) continue;
-      const json = (await response.json()) as Record<
-        string,
-        { id?: string; creative?: { thumbnail_url?: string; image_url?: string; object_type?: string; title?: string } } | undefined
-      >;
+
+      const json = (await response.json()) as Record<string, MetaAdNode | undefined>;
 
       for (const adId of chunk) {
         const node = json[adId];
         const creative = node?.creative;
         if (!creative) continue;
-        const thumbnailUrl = creative.thumbnail_url || creative.image_url || null;
-        if (!thumbnailUrl) continue;
-        creatives.push({
+
+        const story = creative.object_story_spec;
+        const linkData = story?.link_data;
+        const videoData = story?.video_data;
+
+        const videoId = toId(creative.video_id);
+        const objectType = String(creative.object_type ?? "").toUpperCase();
+        const format = resolveCreativeFormat(creative, Boolean(videoId));
+
+        const imageUrl = creative.image_url || linkData?.picture || null;
+        const thumbnailUrl = creative.thumbnail_url || imageUrl;
+        const title = creative.title || linkData?.name || videoData?.title || "";
+        const body = creative.body || linkData?.message || videoData?.message || "";
+
+        if (!thumbnailUrl && !videoId) continue;
+
+        partials.push({
           adId,
-          title: creative.title ?? "",
-          objectType: creative.object_type ?? "",
+          title,
+          body,
+          objectType,
+          format,
           thumbnailUrl,
-          imageUrl: creative.image_url ?? null,
+          imageUrl,
+          videoId,
+          effectiveStatus: String(node?.effective_status ?? ""),
+          permalinkUrl: node?.permalink_url ?? null,
         });
       }
     } catch (error) {
-      console.warn("[ads] imagem dos anúncios não pôde ser lida:", error);
+      console.warn("[ads] criativo dos anúncios não pôde ser lido:", error);
       break;
     }
   }
 
-  return creatives;
+  // A miniatura e o arquivo do vídeo vêm do nó do vídeo, não do criativo.
+  const videos = await fetchVideoAssets(
+    partials.map((item) => item.videoId).filter((id): id is string => Boolean(id))
+  );
+
+  return partials.map((item) => {
+    const video = item.videoId ? videos.get(item.videoId) : undefined;
+    return {
+      ...item,
+      // Sem miniatura do vídeo, a do criativo é um quadro parado — serve de reserva.
+      videoThumbnailUrl: video?.picture ?? (item.format === "video" ? item.thumbnailUrl : null),
+      videoUrl: video?.source ?? null,
+    };
+  });
+}
+
+/** Um vídeo, quando tem: miniatura e arquivo. */
+async function fetchVideoAssets(
+  videoIds: string[]
+): Promise<Map<string, { picture: string | null; source: string | null }>> {
+  const assets = new Map<string, { picture: string | null; source: string | null }>();
+  if (videoIds.length === 0) return assets;
+
+  const status = getMetaConfigStatus();
+  const accessToken = process.env.META_ACCESS_TOKEN?.trim();
+  if (!accessToken) return assets;
+
+  const unique = Array.from(new Set(videoIds));
+  for (let index = 0; index < unique.length; index += 25) {
+    const chunk = unique.slice(index, index + 25);
+    const url =
+      `https://graph.facebook.com/${status.apiVersion}/` +
+      `?ids=${encodeURIComponent(chunk.join(","))}` +
+      `&fields=${encodeURIComponent("picture,source")}` +
+      `&access_token=${encodeURIComponent(accessToken)}`;
+
+    try {
+      const response = await fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" });
+      if (!response.ok) continue;
+
+      const json = (await response.json()) as Record<
+        string,
+        { picture?: string; source?: string } | undefined
+      >;
+
+      for (const videoId of chunk) {
+        const node = json[videoId];
+        if (!node) continue;
+        assets.set(videoId, { picture: node.picture ?? null, source: node.source ?? null });
+      }
+    } catch (error) {
+      // Vídeo é o enfeite do enfeite: falhou, o anúncio fica com a imagem do criativo.
+      console.warn("[ads] miniatura do vídeo não pôde ser lida:", error);
+      break;
+    }
+  }
+
+  return assets;
+}
+
+/** IDs da Graph API chegam como número ou texto; aqui sempre viram texto ou nulo. */
+function toId(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  const text = String(value).trim();
+  return text === "" || text === "0" ? null : text;
+}
+
+/**
+ * Formato da peça, para a tela saber como desenhar.
+ *
+ * A ordem importa: vídeo manda em tudo (um carrossel de vídeo ainda é vídeo),
+ * depois carrossel, depois coleção. Sem nada disso, é foto ou texto.
+ */
+function resolveCreativeFormat(
+  creative: { object_type?: string; object_story_spec?: MetaObjectStorySpec },
+  hasVideo: boolean
+): AdCreativeFormat {
+  if (hasVideo) return "video";
+  const spec = creative.object_story_spec;
+  if (spec?.link_data?.child_attachments && spec.link_data.child_attachments.length > 0) {
+    return "carousel";
+  }
+  if (spec?.template_data || spec?.link_data?.call_to_action?.type === "COLLECTION") return "collection";
+
+  const objectType = String(creative.object_type ?? "").toUpperCase();
+  if (objectType === "VIDEO") return "video";
+  if (objectType === "PHOTO" || objectType === "SHARE") return "image";
+  return "text";
 }
 
 export async function syncMetaAds(params: {

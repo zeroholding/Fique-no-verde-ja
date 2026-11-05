@@ -3,7 +3,7 @@
 > **Documento vivo e obrigatório.** Toda mudança em rota, tela, coluna, fórmula, banco, permissão ou procedimento do módulo Ads deve atualizar este arquivo na mesma alteração.
 >
 > **Última atualização:** 05/11/2026  
-> **Estado:** Etapa 5 — modo manual removido; a única entrada de dados é a Meta Marketing API. Conta única, painel detalhado e imagem dos anúncios.  
+> **Estado:** Etapa 6 — filtros completos, galeria de anúncios com imagem e vídeo, e painel reorganizado.  
 > **Rota:** `/ads` (tela única)
 
 ## 1. Do que se trata
@@ -42,6 +42,17 @@ Regra de design: interface no padrão SaaS moderno (Linear/Vercel/Stripe), tipog
 - rotas `POST /api/ads/sync` e `GET /api/ads/sync`;
 - botão **Sincronizar Meta Ads** no painel.
 
+### Etapa 6 — filtros completos, galeria e vídeo (05/11/2026)
+
+- **Barra de filtros única** no topo: Hoje, período (atalhos e datas), campanha (com o gasto de cada uma), situação do anúncio e busca por nome;
+- **"Hoje"** é um recorte de um dia dentro do período escolhido: não troca o período, só o retrato;
+- **Filtros valem para a tela inteira** — indicadores, gráfico, tabela e galeria. Filtro ativo aparece como etiqueta removível;
+- **Galeria de anúncios** com a peça visual de cada um: miniatura, título, texto, situação, gasto, resultados e custo por resultado. Clique abre o detalhe;
+- **Vídeo roda na própria tela**: o quadro parado aparece primeiro e o play troca pela reprodução (o arquivo não baixa antes de alguém pedir);
+- **Criativo completo na Meta**: título, texto, formato (imagem, vídeo, carrossel, coleção, texto), `video_id`, miniatura do vídeo, `.mp4` e o link do Gerenciador de Anúncios;
+- **Tabela** com miniatura e o mesmo painel de detalhes, agora com a peça grande;
+- **Layout** reorganizado: gráfico e galeria lado a lado no telão, filtros acima dos números.
+
 ### Etapa 5 — só automático, conta única e detalhe (05/11/2026)
 
 - **Modo manual removido:** saíram o envio de CSV/XLSX, o leitor de planilhas, a pré-visualização, o histórico de envios e a tela `/ads/relatorios`;
@@ -54,7 +65,7 @@ Regra de design: interface no padrão SaaS moderno (Linear/Vercel/Stripe), tipog
 
 ### Ainda não implementado / pendente
 
-- filtros por objetivo, status e janela de atribuição;
+- filtros por objetivo de campanha e por janela de atribuição (dependem de campos que a conta ainda não expõe no insights);
 - sincronização agendada (cron/webhook) para rodar de madrugada sem clique.
 
 ## 3. Decisões vigentes
@@ -68,7 +79,10 @@ Regra de design: interface no padrão SaaS moderno (Linear/Vercel/Stripe), tipog
 7. Métrica calculada só usa linhas em que as duas pontas existem (seção 6). Divisão por zero vira “—”, nunca zero ou infinito.
 8. Alcance diário nunca é somado em alcance do período: aparece como **Alcance médio por dia**.
 9. Não existe empresa/tenant no banco atual: os dados são globais, vistos por todo usuário ativo.
-10. **A imagem do anúncio é best-effort.** Se a Meta não devolver o criativo, a sincronização continua e a linha aparece sem foto. Imagem nunca bloqueia número.
+10. **A peça visual é best-effort.** Se a Meta não devolver o criativo, a sincronização continua e o anúncio aparece sem imagem. Peça visual nunca bloqueia número.
+11. **Vídeo só carrega quando alguém pede.** São dezenas de anúncios por tela; baixar todos os `.mp4` de uma vez travaria a página. O quadro parado vem sempre, o play vem no clique.
+12. **O status do anúncio vem do criativo, não da linha diária.** Por isso o filtro de situação usa `EXISTS`: um `JOIN` repetiria a linha diária e inflaria o investimento.
+13. **Filtro vale para a tela inteira.** Indicadores, gráfico, tabela e galeria respondem ao mesmo recorte — comparar números de recortes diferentes seria pior que não ter filtro.
 
 ## 4. Contrato da Meta
 
@@ -129,7 +143,7 @@ Criado por `database/migrations/027_create_ads_reports.sql`, `030_ads_creatives.
 - **`ads_imports`**: um registro por sincronização (`file_format = 'api'`).
 - **`ads_daily`**: uma linha por anúncio por dia.
 - **`ads_coverage`**: dias que cada sincronização cobre.
-- **`ads_creatives`**: uma linha por anúncio, com miniatura e imagem.
+- **`ads_creatives`**: uma linha por anúncio, com a peça visual — imagem, vídeo, miniatura do vídeo, título, texto, formato, situação e link do Gerenciador. As colunas novas entram por `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`, então banco que já rodou a versão anterior não perde dado.
 
 ## 8. Permissões
 
@@ -142,7 +156,7 @@ Todas autenticam pelo cookie `token` (ou `Authorization: Bearer`).
 
 | Método e rota | Quem | O que faz |
 | --- | --- | --- |
-| `GET /api/ads/dashboard?from=&to=` | usuário | Números do painel do período. |
+| `GET /api/ads/dashboard` | usuário | Números do recorte. Parâmetros: `from`, `to`, `today=1`, `status`, `campaign`, `q`. |
 | `POST /api/ads/sync` | admin | Busca na Meta e grava. Corpo opcional `{since, until}`. |
 | `GET /api/ads/sync` | usuário | Estado da configuração da Meta no ambiente. |
 
@@ -151,17 +165,24 @@ Todas autenticam pelo cookie `token` (ou `Authorization: Bearer`).
 **Telas** (`app/ads/`)
 - `layout.tsx` — valida sessão, injeta Montserrat;
 - `ads-shell.tsx` — barra superior com marca, selo Meta e saída;
-- `page.tsx` + `ads-dashboard.tsx` — painel com período, indicadores, gráfico, ranking e sincronização;
-- `_components/` — `ui.tsx`, `kpi-cards.tsx`, `daily-chart.tsx`, `ranking-table.tsx`, `period-picker.tsx`, `meta-button.tsx`.
+- `page.tsx` + `ads-dashboard.tsx` — painel: filtros, indicadores, gráfico, galeria, tabela e sincronização;
+- `_components/` — `ui.tsx`, `filter-bar.tsx`, `kpi-cards.tsx`, `daily-chart.tsx`, `ranking-table.tsx`, `creative-gallery.tsx`, `creative-media.tsx` (imagem e player de vídeo), `meta-button.tsx`.
 
 **Regras de negócio** (`lib/ads/`)
-- `meta-api.ts` — cliente da Graph API, parser de insights e busca das imagens;
-- `store.ts` — consultas, substituição por período, gravação transacional e criativos;
-- `report.ts` — contratos da coleta;
+- `meta-api.ts` — cliente da Graph API: insights, criativo e vídeo;
+- `store.ts` — consultas, filtros, substituição por período, gravação transacional, catálogo de criativos;
+- `report.ts` — contratos da coleta e da peça visual;
 - `export.ts` — CSV com ponto e vírgula e BOM UTF-8;
 - `db.ts`, `schema.ts`, `metrics.ts`, `dates.ts`, `format.ts`, `client.ts`, `types.ts`.
 
 ## 11. Changelog
+
+### 05/11/2026 — filtros completos, galeria e vídeo
+- Barra de filtros única (hoje, período, campanha, situação, busca) valendo para a tela inteira;
+- Galeria de anúncios com a peça visual e os números de cada um;
+- Imagem e vídeo trazidos da Meta, com player na própria tela;
+- Título, texto, formato, situação e link do Gerenciador no criativo;
+- Layout reorganizado com gráfico e galeria lado a lado.
 
 ### 05/11/2026 — só automático, conta única e detalhe
 - Removido o modo manual: envio de arquivo, leitor de planilha, pré-visualização, histórico de envios e a rota `/ads/relatorios`;

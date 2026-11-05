@@ -10,8 +10,10 @@ import {
   type AdsIndicatorValues,
   type AdsMetricValues,
 } from "./metrics";
-import type { AdCreative, AdsReportRow, ParsedAdsReport } from "./report";
+import type { AdCreative, AdCreativeFormat, AdsReportRow, ParsedAdsReport } from "./report";
 import type {
+  AdsCampaignOption,
+  AdsCreativeItem,
   AdsDailyPoint,
   AdsDashboardData,
   AdsImportSaved,
@@ -302,41 +304,246 @@ export async function saveImport(
 // ---------------------------------------------------------------
 
 /**
- * Grava ou atualiza a imagem de cada anúncio. Precisa rodar na mesma transação
- * da sincronização: imagem órfã (de um lote que falhou depois) não serve.
+ * Grava ou atualiza a peça visual de cada anúncio. Precisa rodar na mesma
+ * transação da sincronização: peça órfã (de um lote que falhou depois) não
+ * serve.
+ *
+ * `COALESCE` no vídeo e no link: a segunda chamada (vídeo) pode falhar e vir
+ * vazia numa rodada em que já tínhamos o dado. Apagar o que já era conhecido
+ * por causa de uma falha de rede seria pior do que ficar com o dado antigo.
  */
 export async function saveCreatives(run: AdsRunner, creatives: AdCreative[]): Promise<void> {
   if (creatives.length === 0) return;
   await run(
-    `INSERT INTO ads_creatives (ad_id, title, object_type, thumbnail_url, image_url, updated_at)
-     SELECT ad_id, title, object_type, thumbnail_url, image_url, NOW()
-       FROM UNNEST($1::text[], $2::text[], $3::text[], $4::text[], $5::text[])
-            AS t(ad_id, title, object_type, thumbnail_url, image_url)
+    `INSERT INTO ads_creatives (
+       ad_id, title, body, object_type, format, thumbnail_url, image_url,
+       video_id, video_thumbnail_url, video_url, effective_status, permalink_url, updated_at
+     )
+     SELECT ad_id, title, body, object_type, format, thumbnail_url, image_url,
+            video_id, video_thumbnail_url, video_url, effective_status, permalink_url, NOW()
+       FROM UNNEST(
+         $1::text[], $2::text[], $3::text[], $4::text[], $5::text[], $6::text[], $7::text[],
+         $8::text[], $9::text[], $10::text[], $11::text[], $12::text[]
+       ) AS t(
+         ad_id, title, body, object_type, format, thumbnail_url, image_url,
+         video_id, video_thumbnail_url, video_url, effective_status, permalink_url
+       )
      ON CONFLICT (ad_id) DO UPDATE
         SET title = EXCLUDED.title,
+            body = EXCLUDED.body,
             object_type = EXCLUDED.object_type,
+            format = EXCLUDED.format,
             thumbnail_url = EXCLUDED.thumbnail_url,
             image_url = EXCLUDED.image_url,
+            video_id = COALESCE(EXCLUDED.video_id, ads_creatives.video_id),
+            video_thumbnail_url = COALESCE(EXCLUDED.video_thumbnail_url, ads_creatives.video_thumbnail_url),
+            video_url = COALESCE(EXCLUDED.video_url, ads_creatives.video_url),
+            effective_status = EXCLUDED.effective_status,
+            permalink_url = COALESCE(EXCLUDED.permalink_url, ads_creatives.permalink_url),
             updated_at = NOW()`,
     [
       creatives.map((item) => item.adId),
       creatives.map((item) => item.title),
+      creatives.map((item) => item.body),
       creatives.map((item) => item.objectType),
+      creatives.map((item) => item.format),
       creatives.map((item) => item.thumbnailUrl),
       creatives.map((item) => item.imageUrl),
+      creatives.map((item) => item.videoId),
+      creatives.map((item) => item.videoThumbnailUrl),
+      creatives.map((item) => item.videoUrl),
+      creatives.map((item) => item.effectiveStatus),
+      creatives.map((item) => item.permalinkUrl),
     ]
   );
 }
 
-type CreativeRow = { ad_id: string; thumbnail_url: string | null; image_url: string | null };
+type CreativeRow = {
+  ad_id: string;
+  title: string;
+  body: string;
+  object_type: string;
+  format: string;
+  thumbnail_url: string | null;
+  image_url: string | null;
+  video_id: string | null;
+  video_thumbnail_url: string | null;
+  video_url: string | null;
+  effective_status: string;
+  permalink_url: string | null;
+};
+
+const CREATIVE_COLUMNS = `ad_id, title, body, object_type, format, thumbnail_url, image_url,
+       video_id, video_thumbnail_url, video_url, effective_status, permalink_url`;
 
 async function loadCreatives(run: AdsRunner, adIds: string[]): Promise<Map<string, CreativeRow>> {
   if (adIds.length === 0) return new Map();
   const result = await run<CreativeRow>(
-    `SELECT ad_id, thumbnail_url, image_url FROM ads_creatives WHERE ad_id = ANY($1::text[])`,
+    `SELECT ${CREATIVE_COLUMNS} FROM ads_creatives WHERE ad_id = ANY($1::text[])`,
     [adIds]
   );
   return new Map(result.rows.map((row) => [row.ad_id, row]));
+}
+
+const CREATIVE_FORMATS = new Set(["image", "video", "carousel", "collection", "text"]);
+
+/**
+ * O banco guarda `format` como texto livre; a tela só entende os cinco formatos
+ * conhecidos. O que não for reconhecido vira texto, nunca `undefined` — assim a
+ * galeria nunca fica sem desenhar a peça.
+ */
+function normalizeFormat(raw: string): AdCreativeFormat {
+  return (CREATIVE_FORMATS.has(raw) ? raw : "text") as AdCreativeFormat;
+}
+
+function toCreative(row: CreativeRow | undefined): AdCreative | null {
+  if (!row) return null;
+  return {
+    adId: row.ad_id,
+    title: row.title,
+    body: row.body,
+    objectType: row.object_type,
+    format: normalizeFormat(row.format),
+    thumbnailUrl: row.thumbnail_url,
+    imageUrl: row.image_url,
+    videoId: row.video_id,
+    videoThumbnailUrl: row.video_thumbnail_url,
+    videoUrl: row.video_url,
+    effectiveStatus: row.effective_status,
+    permalinkUrl: row.permalink_url,
+  };
+}
+
+/** Filtros de recorte aplicados na consulta. Tudo opcional. */
+export type AdsFilters = {
+  /** Só o que rodou neste dia (o atalho "Hoje"). */
+  day: string | null;
+  /** Nível de status do anúncio: "active", "paused" ou "archived". */
+  status: string | null;
+  campaignId: string | null;
+  /** Busca livre em nome do anúncio, campanha e conjunto. */
+  search: string | null;
+};
+
+export const ADS_STATUS_GROUPS = [
+  { value: "active", label: "Ativos" },
+  { value: "paused", label: "Pausados" },
+  { value: "archived", label: "Arquivados" },
+] as const;
+
+/**
+ * SQL dos filtros de status/busca, sobre `ads_daily` (alias `d`) cruzado com
+ * `ads_creatives` (alias `c`).
+ *
+ * O status do anúncio vive no criativo, não na linha diária: por isso o filtro
+ * usa `EXISTS` em vez de `JOIN`. `JOIN` repetiria a linha diária uma vez por
+ * criativo e inflaria o investimento.
+ */
+function filterSql(filters: AdsFilters, firstParam: number): { where: string; params: unknown[] } {
+  const clauses: string[] = [];
+  const params: unknown[] = [];
+
+  if (filters.campaignId) {
+    params.push(filters.campaignId);
+    clauses.push(`d.campaign_id = $${firstParam + params.length - 1}`);
+  }
+
+  if (filters.search) {
+    params.push(`%${filters.search.toLowerCase()}%`);
+    clauses.push(
+      `(LOWER(d.ad_name) LIKE $${firstParam + params.length - 1}
+        OR LOWER(d.campaign_name) LIKE $${firstParam + params.length - 1}
+        OR LOWER(d.adset_name) LIKE $${firstParam + params.length - 1})`
+    );
+  }
+
+  if (filters.status) {
+    params.push(filters.status);
+    const index = firstParam + params.length - 1;
+    clauses.push(
+      `EXISTS (
+         SELECT 1 FROM ads_creatives c
+          WHERE c.ad_id = d.ad_id
+            AND LOWER(c.effective_status) LIKE $${index} || '%'
+       )`
+    );
+  }
+
+  return { where: clauses.length > 0 ? ` AND ${clauses.join(" AND ")}` : "", params };
+}
+
+/**
+ * Catálogo de criativos do período: cada anúncio uma vez, com a peça visual e
+ * os números somados.
+ *
+ * A imagem e o vídeo são da peça, então não se somam por dia — a galeria mostra
+ * o anúncio, e o investimento é a soma dos dias em que ele rodou.
+ */
+async function loadCreativeCatalog(
+  run: AdsRunner,
+  range: DayInterval,
+  filters: AdsFilters
+): Promise<{ creatives: AdsCreativeItem[]; total: number; counts: Record<string, number> }> {
+  const extra = filterSql(filters, 3);
+  const params: unknown[] = [range.from, range.to, ...extra.params];
+
+  const result = await run<CatalogSqlRow>(
+    `SELECT d.ad_id,
+            (ARRAY_AGG(d.ad_name ORDER BY d.day DESC))[1] AS ad_name,
+            (ARRAY_AGG(d.campaign_name ORDER BY d.day DESC))[1] AS campaign_name,
+            (ARRAY_AGG(d.campaign_id ORDER BY d.day DESC))[1] AS campaign_id,
+            (ARRAY_AGG(d.adset_name ORDER BY d.day DESC))[1] AS adset_name,
+            ${AGGREGATE_COLUMNS}
+       FROM ads_daily d
+      WHERE d.day BETWEEN $1::date AND $2::date
+        AND d.ad_id <> ''
+        ${extra.where}
+      GROUP BY d.ad_id
+      ORDER BY SUM(d.spend) DESC NULLS LAST
+      LIMIT 120`,
+    params
+  );
+
+  const creativesMap = await loadCreatives(
+    run,
+    result.rows.map((row) => row.ad_id)
+  );
+
+  const creatives: AdsCreativeItem[] = result.rows.map((row) => {
+    const aggregate = readAggregate(row);
+    return {
+      adId: row.ad_id,
+      name: row.ad_name ?? "",
+      campaignName: row.campaign_name ?? "",
+      campaignId: row.campaign_id ?? "",
+      adsetName: row.adset_name ?? "",
+      days: aggregate.days,
+      creative: toCreative(creativesMap.get(row.ad_id)),
+      values: computeIndicators(aggregate),
+    };
+  });
+
+  // Contagem por situação para as abas da galeria: mostra quantos existem em
+  // cada aba antes de a pessoa clicar.
+  const countsResult = await run<{ effective_status: string; total: number }>(
+    `SELECT LOWER(c.effective_status) AS effective_status, COUNT(DISTINCT d.ad_id)::int AS total
+       FROM ads_daily d
+       JOIN ads_creatives c ON c.ad_id = d.ad_id
+      WHERE d.day BETWEEN $1::date AND $2::date
+        AND d.ad_id <> ''
+        AND c.effective_status <> ''
+      GROUP BY LOWER(c.effective_status)`,
+    [range.from, range.to]
+  );
+
+  const counts: Record<string, number> = { all: creatives.length };
+  for (const group of ADS_STATUS_GROUPS) {
+    counts[group.value] = countsResult.rows
+      .filter((row) => row.effective_status.startsWith(group.value))
+      .reduce((total, row) => total + Number(row.total), 0);
+  }
+
+  return { creatives, total: creatives.length, counts };
 }
 
 // ---------------------------------------------------------------
@@ -391,26 +598,36 @@ type RankingSqlRow = SqlRow & {
   account_name: string | null;
 };
 
+type CatalogSqlRow = SqlRow & {
+  ad_id: string;
+  ad_name: string | null;
+  campaign_name: string | null;
+  campaign_id: string | null;
+  adset_name: string | null;
+};
+
 async function loadRanking(
   run: AdsRunner,
   level: AdsRankingLevel,
   range: DayInterval,
-  totalSpend: number | null
+  totalSpend: number | null,
+  filters: AdsFilters = { day: null, status: null, campaignId: null, search: null }
 ): Promise<AdsRanking> {
   const sql = LEVEL_SQL[level];
-  const params: unknown[] = [range.from, range.to];
+  const extra = filterSql(filters, 3);
+  const params: unknown[] = [range.from, range.to, ...extra.params];
   const result = await run<RankingSqlRow>(
     `SELECT ${sql.key} AS entity_key,
-            COALESCE(NULLIF(account_id, ''), account_name) AS account_key,
-            (ARRAY_AGG(${sql.name} ORDER BY day DESC))[1] AS entity_name,
-            (ARRAY_AGG(campaign_name ORDER BY day DESC))[1] AS campaign_name,
-            (ARRAY_AGG(adset_name ORDER BY day DESC))[1] AS adset_name,
-            (ARRAY_AGG(account_name ORDER BY day DESC))[1] AS account_name,
+            COALESCE(NULLIF(d.account_id, ''), d.account_name) AS account_key,
+            (ARRAY_AGG(${sql.name} ORDER BY d.day DESC))[1] AS entity_name,
+            (ARRAY_AGG(d.campaign_name ORDER BY d.day DESC))[1] AS campaign_name,
+            (ARRAY_AGG(d.adset_name ORDER BY d.day DESC))[1] AS adset_name,
+            (ARRAY_AGG(d.account_name ORDER BY d.day DESC))[1] AS account_name,
             ${AGGREGATE_COLUMNS}
-       FROM ads_daily
-      WHERE day BETWEEN $1::date AND $2::date
+       FROM ads_daily d
+      WHERE d.day BETWEEN $1::date AND $2::date${extra.where}
       GROUP BY 1, 2
-      ORDER BY SUM(spend) DESC NULLS LAST, entity_name ASC
+      ORDER BY SUM(d.spend) DESC NULLS LAST, entity_name ASC
       LIMIT ${RANKING_LIMIT + 1}`,
     params
   );
@@ -444,8 +661,7 @@ async function loadRanking(
       days: aggregate.days,
       spendShare:
         values.spend !== null && totalSpend !== null && totalSpend > 0 ? values.spend / totalSpend : null,
-      thumbnailUrl: creative?.thumbnail_url ?? null,
-      imageUrl: creative?.image_url ?? null,
+      creative: toCreative(creative),
       values,
     };
   });
@@ -458,6 +674,7 @@ function emptyDashboard(today: string, lastImport: AdsDashboardData["lastImport"
     hasData: false,
     coverage: null,
     range: { from: today, to: today, days: 1 },
+    baseRange: { from: today, to: today, days: 1 },
     previousRange: null,
     totals: emptyIndicators(),
     previous: null,
@@ -466,6 +683,10 @@ function emptyDashboard(today: string, lastImport: AdsDashboardData["lastImport"
     missingDays: 0,
     missingRanges: [],
     rankings: [],
+    creatives: [],
+    creativeCounts: {},
+    campaigns: [],
+    filters: { status: null, campaignId: null, search: null, onlyToday: false },
     accounts: [],
     resultTypes: [],
     currency: "BRL",
@@ -477,12 +698,23 @@ function emptyDashboard(today: string, lastImport: AdsDashboardData["lastImport"
 /**
  * Dados do painel para um período. Sem período, usa os últimos 30 dias com
  * dados. `from`/`to` já chegam validados pela rota.
+ *
+ * Os filtros valem para TUDO que aparece na tela — indicadores, gráfico, tabela
+ * e galeria. Um recorte que muda o gráfico e não muda o total seria pior que
+ * não ter filtro: a pessoa compararia números de recortes diferentes.
  */
 export async function loadDashboard(
   run: AdsRunner,
-  query: { from: string | null; to: string | null },
+  query: { from: string | null; to: string | null } & AdsFilters,
   today: string
 ): Promise<AdsDashboardData> {
+  const filters: AdsFilters = {
+    day: query.day,
+    status: query.status,
+    campaignId: query.campaignId,
+    search: query.search,
+  };
+
   const latest = await run<{ file_name: string; created_at: unknown }>(
     `SELECT file_name, created_at FROM ads_imports ORDER BY created_at DESC LIMIT 1`
   );
@@ -501,39 +733,48 @@ export async function loadDashboard(
   const covered = mergeIntervals(spans.rows.map((row) => ({ from: row.first_day, to: row.last_day })));
   const coverage = { firstDay: covered[0].from, lastDay: covered[covered.length - 1].to };
 
-  const range =
+  const baseRange =
     query.from && query.to
       ? { from: query.from, to: query.to }
       : resolvePresetRange("30d", coverage, today);
-  const length = daysBetween(range.from, range.to) + 1;
-  const previousRange = { from: addDays(range.from, -length), to: addDays(range.from, -1) };
 
+  // "Hoje" é um recorte de UM dia dentro do período escolhido: ele não muda o
+  // período, muda o retrato. Assim os comparativos continuam coerentes.
+  const range = filters.day ? { from: filters.day, to: filters.day } : baseRange;
+  const length = daysBetween(baseRange.from, baseRange.to) + 1;
+  const previousRange = { from: addDays(baseRange.from, -length), to: addDays(baseRange.from, -1) };
+
+  const currentFilter = filterSql(filters, 3);
   const currentResult = await run(
     `SELECT ${AGGREGATE_COLUMNS},
-            (COUNT(*) FILTER (WHERE campaign_id <> '' OR campaign_name <> ''))::int AS with_campaign,
-            (COUNT(*) FILTER (WHERE adset_id <> '' OR adset_name <> ''))::int AS with_adset,
-            (COUNT(*) FILTER (WHERE ad_id <> '' OR ad_name <> ''))::int AS with_ad
-       FROM ads_daily
-      WHERE day BETWEEN $1::date AND $2::date`,
-    [range.from, range.to]
+            (COUNT(*) FILTER (WHERE d.campaign_id <> '' OR d.campaign_name <> ''))::int AS with_campaign,
+            (COUNT(*) FILTER (WHERE d.adset_id <> '' OR d.adset_name <> ''))::int AS with_adset,
+            (COUNT(*) FILTER (WHERE d.ad_id <> '' OR d.ad_name <> ''))::int AS with_ad
+       FROM ads_daily d
+      WHERE d.day BETWEEN $1::date AND $2::date${currentFilter.where}`,
+    [range.from, range.to, ...currentFilter.params]
   );
   const currentRow = currentResult.rows[0] ?? {};
   const current = readAggregate(currentRow);
   const totals = computeIndicators(current);
 
+  const previousFilter = filterSql(filters, 3);
   const previousResult = await run(
-    `SELECT ${AGGREGATE_COLUMNS} FROM ads_daily WHERE day BETWEEN $1::date AND $2::date`,
-    [previousRange.from, previousRange.to]
+    `SELECT ${AGGREGATE_COLUMNS}
+       FROM ads_daily d
+      WHERE d.day BETWEEN $1::date AND $2::date${previousFilter.where}`,
+    [previousRange.from, previousRange.to, ...previousFilter.params]
   );
   const previousAggregate = readAggregate(previousResult.rows[0]);
 
+  const dailyFilter = filterSql(filters, 3);
   const dailyResult = await run<SqlRow & { day: string }>(
-    `SELECT to_char(day, 'YYYY-MM-DD') AS day, ${AGGREGATE_COLUMNS}
-       FROM ads_daily
-      WHERE day BETWEEN $1::date AND $2::date
-      GROUP BY day
-      ORDER BY day`,
-    [range.from, range.to]
+    `SELECT to_char(d.day, 'YYYY-MM-DD') AS day, ${AGGREGATE_COLUMNS}
+       FROM ads_daily d
+      WHERE d.day BETWEEN $1::date AND $2::date${dailyFilter.where}
+      GROUP BY d.day
+      ORDER BY d.day`,
+    [range.from, range.to, ...dailyFilter.params]
   );
   const byDay = new Map<string, SqlRow>(dailyResult.rows.map((row) => [row.day, row]));
   const isCovered = (day: string) => covered.some((span) => day >= span.from && day <= span.to);
@@ -562,9 +803,28 @@ export async function loadDashboard(
   const rankings: AdsRanking[] = [];
   for (const level of LEVEL_ORDER) {
     if ((toNumber(currentRow[LEVEL_SQL[level].presence]) ?? 0) > 0) {
-      rankings.push(await loadRanking(run, level, range, totals.spend));
+      rankings.push(await loadRanking(run, level, range, totals.spend, filters));
     }
   }
+
+  const catalog = await loadCreativeCatalog(run, range, filters);
+
+  const campaignsResult = await run<{ id: string; name: string; spend: number | null }>(
+    `SELECT CASE WHEN campaign_id <> '' THEN campaign_id ELSE 'n:' || campaign_name END AS id,
+            (ARRAY_AGG(campaign_name ORDER BY day DESC))[1] AS name,
+            SUM(spend) AS spend
+       FROM ads_daily
+      WHERE day BETWEEN $1::date AND $2::date
+      GROUP BY 1
+      ORDER BY SUM(spend) DESC NULLS LAST, name
+      LIMIT 100`,
+    [baseRange.from, baseRange.to]
+  );
+  const campaigns: AdsCampaignOption[] = campaignsResult.rows.map((row) => ({
+    id: row.id,
+    name: row.name ?? "",
+    spend: toNumber(row.spend),
+  }));
 
   const accountsResult = await run<{ account: string }>(
     `SELECT COALESCE(NULLIF(account_name, ''), account_id) AS account
@@ -604,7 +864,8 @@ export async function loadDashboard(
   return {
     hasData: true,
     coverage,
-    range: { from: range.from, to: range.to, days: length },
+    range: { from: range.from, to: range.to, days: range === baseRange ? length : 1 },
+    baseRange: { from: baseRange.from, to: baseRange.to, days: length },
     previousRange: previousAggregate.rows > 0 ? previousRange : null,
     totals,
     previous: previousAggregate.rows > 0 ? computeIndicators(previousAggregate) : null,
@@ -613,6 +874,15 @@ export async function loadDashboard(
     missingDays,
     missingRanges: missingRanges.slice(0, 5),
     rankings,
+    creatives: catalog.creatives,
+    creativeCounts: catalog.counts,
+    campaigns,
+    filters: {
+      status: filters.status,
+      campaignId: filters.campaignId,
+      search: filters.search,
+      onlyToday: Boolean(filters.day),
+    },
     accounts: accountsResult.rows.map((row) => row.account),
     resultTypes: resultTypesResult.rows.map((row) => row.result_type),
     currency: currencies[0] ?? "BRL",

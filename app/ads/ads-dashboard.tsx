@@ -1,13 +1,22 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
-import { AlertCircle, CalendarRange, Download, Layers, Megaphone, RotateCw, Sparkles, Target } from "lucide-react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import {
+  AlertCircle,
+  CalendarRange,
+  Download,
+  Layers,
+  Megaphone,
+  RotateCw,
+  Sparkles,
+  Target,
+  TrendingUp,
+} from "lucide-react";
 
 import { adsRequest, errorMessage, isAbortError, isSessionError } from "@/lib/ads/client";
 import {
   resolvePresetRange,
   todayInSaoPaulo,
-  type AdsDayRange,
   type AdsPeriodPreset,
 } from "@/lib/ads/dates";
 import { exportDailyToCsv } from "@/lib/ads/export";
@@ -15,10 +24,11 @@ import { formatCount, formatDateTime, formatDayRange, pluralize } from "@/lib/ad
 import { ADS_INDICATOR_KEYS, type AdsIndicatorKey } from "@/lib/ads/metrics";
 import type { AdsDashboardData, AdsSyncResult } from "@/lib/ads/types";
 
+import { CreativeGallery } from "./_components/creative-gallery";
 import { DailyChart } from "./_components/daily-chart";
+import { FilterBar, type AdsFilters } from "./_components/filter-bar";
 import { KpiCards, pickKpis } from "./_components/kpi-cards";
 import { MetaConnectedBadge, MetaSyncButton } from "./_components/meta-button";
-import { PeriodPicker } from "./_components/period-picker";
 import { RankingTable } from "./_components/ranking-table";
 import { Button, Card, Notice, Spinner, buttonClasses } from "./_components/ui";
 import { useAdsViewer } from "./_components/viewer-context";
@@ -30,13 +40,13 @@ type ViewState = {
   sessionExpired: boolean;
 };
 
-const PAGE_TITLE = "Resultados do Meta Ads";
+const today = todayInSaoPaulo();
 
 function PageTitle({ children }: { children?: ReactNode }) {
   return (
     <div className="min-w-0">
       <div className="flex flex-wrap items-center gap-2.5">
-        <h1 className="text-[22px] font-extrabold tracking-tight text-slate-900">{PAGE_TITLE}</h1>
+        <h1 className="text-[22px] font-extrabold tracking-tight text-slate-900">Resultados do Meta Ads</h1>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
           <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" aria-hidden />
           Sincronizado
@@ -55,15 +65,15 @@ function DashboardSkeleton() {
           <div className="h-7 w-56 rounded-md bg-slate-200" />
           <div className="h-4 w-72 rounded-md bg-slate-100" />
         </div>
-        <div className="h-10 w-72 rounded-md bg-slate-200" />
+        <div className="h-10 w-64 rounded-md bg-slate-200" />
       </div>
-      <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-6">
-        {Array.from({ length: 6 }).map((_, index) => (
+      <div className="h-14 rounded-xl border border-slate-100 bg-white" />
+      <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+        {Array.from({ length: 12 }).map((_, index) => (
           <div key={index} className="h-28 rounded-xl border border-slate-100 bg-white p-4 shadow-xs" />
         ))}
       </div>
       <div className="h-80 rounded-xl border border-slate-100 bg-white shadow-xs" />
-      <div className="h-96 rounded-xl border border-slate-100 bg-white shadow-xs" />
     </div>
   );
 }
@@ -146,7 +156,7 @@ function SummaryChips({ data }: { data: AdsDashboardData }) {
     { icon: Megaphone, label: "Campanhas", value: counts.campaign ?? 0 },
     { icon: Layers, label: "Conjuntos", value: counts.adset ?? 0 },
     { icon: Target, label: "Anúncios", value: counts.ad ?? 0 },
-    { icon: CalendarRange, label: "Dias no período", value: data.range.days },
+    { icon: CalendarRange, label: "Dias no recorte", value: data.range.days },
   ];
 
   return (
@@ -175,9 +185,16 @@ function describeRanges(ranges: { from: string; to: string }[]): string {
 
 export default function AdsDashboard() {
   const viewer = useAdsViewer();
-  const [paramsMap, setParamsMap] = useState<Record<string, string>>({});
+  const [filters, setFilters] = useState<AdsFilters>({
+    preset: "30d",
+    range: { from: "", to: "" },
+    onlyToday: false,
+    campaignId: "",
+    status: "",
+    search: "",
+  });
+  const [initialized, setInitialized] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const [preset, setPreset] = useState<AdsPeriodPreset>("30d");
   const [chartMetric, setChartMetric] = useState<AdsIndicatorKey>("spend");
   const [syncing, setSyncing] = useState(false);
   const [syncNotice, setSyncNotice] = useState<{ tone: "success" | "error"; text: string } | null>(null);
@@ -189,26 +206,50 @@ export default function AdsDashboard() {
     sessionExpired: false,
   });
 
-  const queryKey = `${paramsMap.from ?? ""}|${paramsMap.to ?? ""}|${attempt}`;
+  const queryKey = [
+    filters.range.from,
+    filters.range.to,
+    filters.onlyToday ? "1" : "0",
+    filters.campaignId,
+    filters.status,
+    filters.search,
+    attempt,
+  ].join("|");
   const loading = view.key !== queryKey;
+
+  // O período inicial vem do servidor (últimos 30 dias com dados): sem isso, o
+  // primeiro pedido sairia sem data e o atalho escolhido se perderia.
+  useEffect(() => {
+    if (!initialized || !view.data?.coverage) return;
+    if (filters.range.from && filters.range.to) return;
+    const resolved = resolvePresetRange("30d", view.data.coverage, today);
+    setFilters((current) => ({ ...current, range: resolved }));
+  }, [initialized, view.data, filters.range.from, filters.range.to]);
 
   useEffect(() => {
     const controller = new AbortController();
     const query = new URLSearchParams();
-    if (paramsMap.from) query.set("from", paramsMap.from);
-    if (paramsMap.to) query.set("to", paramsMap.to);
+    if (filters.range.from) query.set("from", filters.range.from);
+    if (filters.range.to) query.set("to", filters.range.to);
+    if (filters.onlyToday) query.set("today", "1");
+    if (filters.status) query.set("status", filters.status);
+    if (filters.campaignId) query.set("campaign", filters.campaignId);
+    if (filters.search) query.set("q", filters.search);
     const qs = query.toString();
-    const url = `/api/ads/dashboard${qs ? `?${qs}` : ""}`;
 
-    adsRequest<AdsDashboardData>(url, { signal: controller.signal })
-      .then((data) =>
-        setView({
-          key: queryKey,
-          data,
-          error: null,
-          sessionExpired: false,
-        })
-      )
+    adsRequest<AdsDashboardData>(`/api/ads/dashboard${qs ? `?${qs}` : ""}`, {
+      signal: controller.signal,
+    })
+      .then((data) => {
+        setView({ key: queryKey, data, error: null, sessionExpired: false });
+        if (!initialized && data.coverage) {
+          const resolved = resolvePresetRange("30d", data.coverage, today);
+          setFilters((current) =>
+            current.range.from ? current : { ...current, range: resolved }
+          );
+          setInitialized(true);
+        }
+      })
       .catch((error: unknown) => {
         if (controller.signal.aborted || isAbortError(error)) return;
         setView((current) => ({
@@ -220,30 +261,20 @@ export default function AdsDashboard() {
       });
 
     return () => controller.abort();
-  }, [queryKey, paramsMap]);
+  }, [queryKey, filters, initialized]);
 
-  const choosePreset = (nextPreset: AdsPeriodPreset) => {
-    setPreset(nextPreset);
-    if (nextPreset === "custom") return;
-    if (!view.data?.coverage) return;
-    const resolved = resolvePresetRange(nextPreset, view.data.coverage, todayInSaoPaulo());
-    setParamsMap((prev) => ({
-      ...prev,
-      from: resolved.from,
-      to: resolved.to,
-    }));
-  };
+  const retry = useCallback(() => setAttempt((current) => current + 1), []);
 
-  const chooseCustom = (range: AdsDayRange) => {
-    setPreset("custom");
-    setParamsMap((prev) => ({
-      ...prev,
-      from: range.from,
-      to: range.to,
-    }));
-  };
-
-  const retry = () => setAttempt((current) => current + 1);
+  /** Troca o atalho de período mantendo o recorte atual. */
+  const handleFilters = useCallback((next: AdsFilters) => {
+    setFilters((current) => {
+      if (next.preset === current.preset || next.preset === "custom") return next;
+      const coverage = view.data?.coverage;
+      if (!coverage) return next;
+      const resolved = resolvePresetRange(next.preset as Exclude<AdsPeriodPreset, "custom">, coverage, today);
+      return { ...next, range: resolved };
+    });
+  }, [view.data]);
 
   const handleSyncMeta = async () => {
     if (syncing) return;
@@ -278,13 +309,14 @@ export default function AdsDashboard() {
   const periodSlug = `${data.range.from}_ate_${data.range.to}`;
   const periodLabel = formatDayRange(data.range.from, data.range.to);
   const accountName = data.accounts[0] ?? "";
+  const hasFilters = Boolean(filters.status || filters.campaignId || filters.search || filters.onlyToday);
 
   const handleExportDaily = () => {
     exportDailyToCsv(data.daily, chartOptions, data.currency, periodSlug);
   };
 
   return (
-    <div className="space-y-6" aria-busy={loading}>
+    <div className="space-y-5" aria-busy={loading}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <PageTitle>
           <p className="mt-1.5 flex flex-wrap items-center gap-2 text-[13.5px] font-medium text-slate-600">
@@ -292,8 +324,9 @@ export default function AdsDashboard() {
             {accountName ? <span className="text-slate-700">{accountName}</span> : null}
           </p>
           <p className="mt-1 text-[13px] font-medium text-slate-500">
+            {filters.onlyToday ? "Hoje, " : ""}
             {periodLabel}
-            {data.previousRange ? (
+            {data.previousRange && !filters.onlyToday ? (
               <span className="text-slate-400">
                 {" "}
                 · comparado com {formatDayRange(data.previousRange.from, data.previousRange.to)}
@@ -310,13 +343,6 @@ export default function AdsDashboard() {
         <div className="flex flex-wrap items-center gap-2.5">
           {loading ? <Spinner label="Atualizando…" className="mr-1 text-[12.5px] text-slate-400" /> : null}
 
-          <PeriodPicker
-            preset={preset}
-            range={{ from: data.range.from, to: data.range.to }}
-            onPreset={choosePreset}
-            onCustom={chooseCustom}
-          />
-
           {hasRows ? (
             <Button
               size="sm"
@@ -326,7 +352,7 @@ export default function AdsDashboard() {
               title="Exportar o dia a dia deste período em CSV"
             >
               <Download className="size-4 text-slate-500" aria-hidden />
-              <span className="hidden sm:inline">Exportar diário</span>
+              <span className="hidden sm:inline">Exportar</span>
             </Button>
           ) : null}
 
@@ -335,6 +361,14 @@ export default function AdsDashboard() {
           ) : null}
         </div>
       </div>
+
+      <FilterBar
+        value={filters}
+        campaigns={data.campaigns}
+        currency={data.currency}
+        loading={loading}
+        onChange={handleFilters}
+      />
 
       {syncNotice ? (
         <Notice
@@ -368,7 +402,7 @@ export default function AdsDashboard() {
         </Notice>
       ) : null}
 
-      {data.missingDays > 0 ? (
+      {data.missingDays > 0 && !filters.onlyToday ? (
         <Notice
           tone="info"
           action={
@@ -384,20 +418,52 @@ export default function AdsDashboard() {
         </Notice>
       ) : null}
 
-      <SummaryChips data={data} />
-
-      <KpiCards indicators={kpis} totals={data.totals} previous={data.previous} currency={data.currency} />
-
-      {chartOptions.length > 0 ? (
-        <DailyChart
-          daily={data.daily}
-          metric={metric}
-          options={chartOptions}
-          onMetricChange={setChartMetric}
-          total={data.totals[metric]}
-          currency={data.currency}
-        />
+      {filters.onlyToday && !hasRows ? (
+        <Notice tone="info">
+          Hoje ainda não tem veiculação registrada. A Meta fecha o dia com atraso — sincronize novamente
+          mais tarde.
+        </Notice>
       ) : null}
+
+      {hasRows ? <SummaryChips data={data} /> : null}
+
+      {hasRows ? (
+        <KpiCards indicators={kpis} totals={data.totals} previous={data.previous} currency={data.currency} />
+      ) : null}
+
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] xl:items-start">
+        {chartOptions.length > 0 && hasRows ? (
+          <DailyChart
+            daily={data.daily}
+            metric={metric}
+            options={chartOptions}
+            onMetricChange={setChartMetric}
+            total={data.totals[metric]}
+            currency={data.currency}
+          />
+        ) : (
+          <Card className="px-6 py-12 text-center">
+            <div className="mx-auto flex max-w-sm flex-col items-center gap-1.5">
+              <TrendingUp className="size-6 text-slate-300" aria-hidden />
+              <p className="text-[14px] font-semibold text-slate-600">
+                {hasFilters ? "Nenhum número com estes filtros" : "Nenhuma veiculação neste recorte"}
+              </p>
+              <p className="text-[12.5px] font-medium text-slate-400">
+                {hasFilters
+                  ? "Tire um filtro para ver mais anúncios."
+                  : "Ajuste o período ou sincronize novamente."}
+              </p>
+            </div>
+          </Card>
+        )}
+
+        <CreativeGallery
+          items={data.creatives}
+          counts={data.creativeCounts}
+          currency={data.currency}
+          periodLabel={periodLabel}
+        />
+      </div>
 
       {data.rankings.length > 0 ? (
         <RankingTable
@@ -409,7 +475,7 @@ export default function AdsDashboard() {
         />
       ) : null}
 
-      {!hasRows ? (
+      {!hasRows && !hasFilters ? (
         <Card className="px-6 py-10 text-center">
           <p className="flex items-center justify-center gap-2 text-[14px] font-medium text-slate-500">
             <Sparkles className="size-4 text-slate-400" aria-hidden />
