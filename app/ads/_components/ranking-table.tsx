@@ -1,14 +1,29 @@
 "use client";
 
 import { useId, useState } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, ChevronRight, Download, Search, X } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  ChevronDown,
+  ChevronRight,
+  Download,
+  ImageIcon,
+  Search,
+  X,
+} from "lucide-react";
 
 import { exportRankingToCsv } from "@/lib/ads/export";
 import { formatCount, formatIndicator, formatPercent } from "@/lib/ads/format";
-import { ADS_INDICATORS, type AdsIndicatorKey, type AdsIndicatorValues } from "@/lib/ads/metrics";
+import {
+  ADS_INDICATORS,
+  ADS_INDICATOR_KEYS,
+  type AdsIndicatorKey,
+  type AdsIndicatorValues,
+} from "@/lib/ads/metrics";
 import type { AdsRanking, AdsRankingLevel, AdsRankingRow } from "@/lib/ads/types";
 
-import { Button, Card } from "./ui";
+import { Button, Card, Dialog } from "./ui";
 
 const TABLE_PRIORITY: AdsIndicatorKey[] = [
   "spend",
@@ -101,12 +116,15 @@ function SortableHeader({
         type="button"
         onClick={() => onSort(column.id)}
         title={column.title}
-        className={`group inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
-          active ? "text-blue-700 font-bold" : "text-slate-600 hover:text-slate-900"
+        className={`group inline-flex cursor-pointer items-center gap-1.5 transition-colors ${
+          active ? "font-bold text-blue-700" : "text-slate-600 hover:text-slate-900"
         }`}
       >
         <span>{column.label}</span>
-        <Icon className={`size-3.5 transition-opacity ${active ? "opacity-100 text-blue-600" : "opacity-40 group-hover:opacity-75"}`} aria-hidden />
+        <Icon
+          className={`size-3.5 transition-opacity ${active ? "opacity-100 text-blue-600" : "opacity-40 group-hover:opacity-75"}`}
+          aria-hidden
+        />
       </button>
     </th>
   );
@@ -130,20 +148,132 @@ function CellValue({ row, column, currency }: { row: AdsRankingRow; column: Colu
   }
   if (column === "days") return <span className="font-medium text-slate-600">{formatCount(row.days)}</span>;
   if (column === "name") return null;
-  return <span className="font-semibold text-slate-800">{formatIndicator(row.values[column], ADS_INDICATORS[column].format, currency)}</span>;
+  return (
+    <span className="font-semibold text-slate-800">
+      {formatIndicator(row.values[column], ADS_INDICATORS[column].format, currency)}
+    </span>
+  );
+}
+
+/**
+ * Miniatura do criativo.
+ *
+ * A URL vem do CDN da Meta e expira: quando falha, o espaço vira um ícone
+ * neutro, nunca um quadrado quebrado. `referrerPolicy` evita bloqueio por
+ * referenciador.
+ */
+function CreativeThumb({ row, size = 40 }: { row: AdsRankingRow; size?: number }) {
+  const [failed, setFailed] = useState(false);
+  const url = row.thumbnailUrl ?? row.imageUrl;
+
+  if (!url || failed) {
+    return (
+      <span
+        aria-hidden
+        style={{ width: size, height: size }}
+        className="grid shrink-0 place-items-center rounded-lg border border-slate-200 bg-slate-50 text-slate-300"
+      >
+        <ImageIcon className="size-4" />
+      </span>
+    );
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={url}
+      alt=""
+      width={size}
+      height={size}
+      loading="lazy"
+      onError={() => setFailed(true)}
+      referrerPolicy="no-referrer"
+      style={{ width: size, height: size }}
+      className="shrink-0 rounded-lg border border-slate-200 bg-slate-50 object-cover"
+    />
+  );
+}
+
+/** Painel de detalhes: tudo o que existe daquele recorte, sem esconder nada. */
+function RowDetail({
+  row,
+  level,
+  currency,
+  periodLabel,
+  onClose,
+}: {
+  row: AdsRankingRow;
+  level: AdsRankingLevel;
+  currency: string;
+  periodLabel: string;
+  onClose: () => void;
+}) {
+  const present = ADS_INDICATOR_KEYS.filter((key) => row.values[key] !== null);
+
+  return (
+    <Dialog
+      title={row.name || "Não informado"}
+      description={`${LEVEL_LABELS[level].tab} · ${periodLabel}`}
+      onClose={onClose}
+      size="lg"
+    >
+      <div className="flex flex-col gap-5">
+        <div className="flex items-start gap-4">
+          <CreativeThumb row={row} size={96} />
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] font-medium text-slate-500">
+              {[row.account, row.campaign, row.adset].filter(Boolean).join(" › ") || "Sem hierarquia informada"}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <span className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[12px] font-semibold text-slate-700">
+                {formatCount(row.days)} {row.days === 1 ? "dia no ar" : "dias no ar"}
+              </span>
+              {row.spendShare !== null ? (
+                <span className="rounded-lg border border-blue-100 bg-blue-50 px-2 py-1 text-[12px] font-semibold text-blue-700">
+                  {formatPercent(row.spendShare * 100, 1)} do investimento
+                </span>
+              ) : null}
+            </div>
+          </div>
+        </div>
+
+        <dl className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+          {present.map((key) => {
+            const definition = ADS_INDICATORS[key];
+            return (
+              <div key={key} className="rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2.5">
+                <dt className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  {definition.short}
+                </dt>
+                <dd className="mt-0.5 text-[15px] font-extrabold tabular-nums text-slate-900">
+                  {formatIndicator(row.values[key], definition.format, currency)}
+                </dd>
+              </div>
+            );
+          })}
+        </dl>
+
+        {present.length === 0 ? (
+          <p className="text-[13.5px] font-medium text-slate-500">
+            Este recorte não tem métricas no período.
+          </p>
+        ) : null}
+      </div>
+    </Dialog>
+  );
 }
 
 export function RankingTable({
   rankings,
   totals,
   currency,
-  showAccount,
+  periodLabel,
   periodSlug = "periodo",
 }: {
   rankings: AdsRanking[];
   totals: AdsIndicatorValues;
   currency: string;
-  showAccount: boolean;
+  periodLabel: string;
   periodSlug?: string;
 }) {
   const titleId = useId();
@@ -152,6 +282,7 @@ export function RankingTable({
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortState>({ column: "spend", direction: "desc" });
   const [visible, setVisible] = useState(PAGE_SIZE);
+  const [detail, setDetail] = useState<AdsRankingRow | null>(null);
 
   const ranking = rankings.find((item) => item.level === levelChoice) ?? rankings[0];
   if (!ranking) return null;
@@ -186,12 +317,7 @@ export function RankingTable({
   };
 
   const handleExport = () => {
-    exportRankingToCsv(
-      { ...ranking, rows: filtered },
-      columns,
-      currency,
-      periodSlug
-    );
+    exportRankingToCsv({ ...ranking, rows: filtered }, columns, currency, periodSlug);
   };
 
   return (
@@ -216,14 +342,16 @@ export function RankingTable({
                     type="button"
                     aria-pressed={selected}
                     onClick={() => chooseLevel(item.level)}
-                    className={`inline-flex items-center gap-1.5 h-7.5 rounded-md px-3 text-[12.5px] font-semibold transition-all cursor-pointer ${
+                    className={`inline-flex h-7.5 cursor-pointer items-center gap-1.5 rounded-md px-3 text-[12.5px] font-semibold transition-all ${
                       selected
-                        ? "bg-blue-50 text-blue-700 shadow-xs border border-blue-100"
-                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                        ? "border border-blue-100 bg-blue-50 text-blue-700 shadow-xs"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                     }`}
                   >
                     <span>{LEVEL_LABELS[item.level].tab}</span>
-                    <span className={`rounded-full px-1.5 py-0.2 text-[10.5px] font-bold ${selected ? "bg-blue-200/60 text-blue-800" : "bg-slate-100 text-slate-500"}`}>
+                    <span
+                      className={`rounded-full px-1.5 py-0.2 text-[10.5px] font-bold ${selected ? "bg-blue-200/60 text-blue-800" : "bg-slate-100 text-slate-500"}`}
+                    >
                       {item.rows.length}
                     </span>
                   </button>
@@ -234,7 +362,6 @@ export function RankingTable({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Campo de Busca */}
           <div className="relative">
             <label htmlFor={searchId} className="sr-only">
               Buscar por nome
@@ -252,13 +379,13 @@ export function RankingTable({
                 setVisible(PAGE_SIZE);
               }}
               placeholder={`Filtrar ${labels.tab.toLowerCase()}…`}
-              className="h-9 w-[220px] rounded-lg border border-slate-200 bg-white pl-8.5 pr-8 text-[13px] font-medium text-slate-800 placeholder:text-slate-400 shadow-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+              className="h-9 w-[220px] rounded-lg border border-slate-200 bg-white pl-8.5 pr-8 text-[13px] font-medium text-slate-800 shadow-xs transition-colors placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
             {search ? (
               <button
                 type="button"
                 onClick={() => setSearch("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer text-slate-400 hover:text-slate-600"
                 aria-label="Limpar busca"
               >
                 <X className="size-3.5" />
@@ -266,7 +393,6 @@ export function RankingTable({
             ) : null}
           </div>
 
-          {/* Botão de Exportar CSV */}
           <Button size="sm" variant="secondary" onClick={handleExport} className="gap-1.5" title="Exportar dados da tabela para CSV">
             <Download className="size-3.5 text-slate-500" aria-hidden />
             <span>Exportar CSV</span>
@@ -290,55 +416,67 @@ export function RankingTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {shown.map((row) => {
-              return (
-                <tr key={row.key} className="transition-colors hover:bg-slate-50/70">
-                  <th scope="row" className="max-w-[340px] py-3 pl-5 pr-3 text-left font-normal">
-                    <span
-                      className={`block truncate text-[13.5px] ${
-                        row.name ? "font-bold text-slate-900" : "italic text-slate-400"
-                      }`}
-                      title={row.name || undefined}
+            {shown.map((row) => (
+              <tr
+                key={row.key}
+                className="group transition-colors hover:bg-slate-50/70"
+              >
+                <th scope="row" className="max-w-[360px] py-2.5 pl-5 pr-3 text-left font-normal">
+                  <div className="flex items-center gap-3">
+                    {level === "ad" ? <CreativeThumb row={row} /> : null}
+                    <button
+                      type="button"
+                      onClick={() => setDetail(row)}
+                      className="min-w-0 flex-1 cursor-pointer text-left"
+                      aria-label={`Ver detalhes de ${row.name || "registro sem nome"}`}
                     >
-                      {row.name || "Não informado"}
-                    </span>
+                      <span
+                        className={`block truncate text-[13.5px] ${
+                          row.name ? "font-bold text-slate-900 group-hover:text-blue-700" : "italic text-slate-400"
+                        }`}
+                        title={row.name || undefined}
+                      >
+                        {row.name || "Não informado"}
+                      </span>
 
-                    {/* Hierarquia com chevrons */}
-                    <div className="mt-1 flex flex-wrap items-center gap-1 text-[11.5px] font-medium text-slate-400">
-                      {showAccount && row.account ? (
-                        <>
-                          <span className="truncate max-w-[130px] text-slate-500">{row.account}</span>
-                          <ChevronRight className="size-3 shrink-0 text-slate-300" aria-hidden />
-                        </>
-                      ) : null}
-                      {level !== "campaign" && row.campaign ? (
-                        <>
-                          <span className="truncate max-w-[150px] text-slate-500">{row.campaign}</span>
-                          {level === "ad" ? <ChevronRight className="size-3 shrink-0 text-slate-300" aria-hidden /> : null}
-                        </>
-                      ) : null}
-                      {level === "ad" && row.adset ? (
-                        <span className="truncate max-w-[150px] text-slate-500">{row.adset}</span>
-                      ) : null}
-                    </div>
-                  </th>
-                  {columns.map((column) => (
-                    <td
-                      key={column.id}
-                      className="whitespace-nowrap px-3.5 py-3 text-right tabular-nums text-slate-800"
-                    >
-                      <CellValue row={row} column={column.id} currency={currency} />
-                    </td>
-                  ))}
-                </tr>
-              );
-            })}
+                      <span className="mt-0.5 flex flex-wrap items-center gap-1 text-[11.5px] font-medium text-slate-400">
+                        {row.account ? (
+                          <>
+                            <span className="max-w-[130px] truncate text-slate-500">{row.account}</span>
+                            <ChevronRight className="size-3 shrink-0 text-slate-300" aria-hidden />
+                          </>
+                        ) : null}
+                        {level !== "campaign" && row.campaign ? (
+                          <>
+                            <span className="max-w-[150px] truncate text-slate-500">{row.campaign}</span>
+                            {level === "ad" ? (
+                              <ChevronRight className="size-3 shrink-0 text-slate-300" aria-hidden />
+                            ) : null}
+                          </>
+                        ) : null}
+                        {level === "ad" && row.adset ? (
+                          <span className="max-w-[150px] truncate text-slate-500">{row.adset}</span>
+                        ) : null}
+                      </span>
+                    </button>
+                  </div>
+                </th>
+                {columns.map((column) => (
+                  <td
+                    key={column.id}
+                    className="whitespace-nowrap px-3.5 py-2.5 text-right tabular-nums text-slate-800"
+                  >
+                    <CellValue row={row} column={column.id} currency={currency} />
+                  </td>
+                ))}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
 
       {rows.length === 0 ? (
-        <div className="border-t border-slate-100 px-5 py-8 text-center text-[13.5px] text-slate-400 font-medium">
+        <div className="border-t border-slate-100 px-5 py-8 text-center text-[13.5px] font-medium text-slate-400">
           {term ? `Nenhum resultado encontrado para “${search.trim()}”.` : "Sem dados para este nível no período."}
         </div>
       ) : null}
@@ -351,12 +489,27 @@ export function RankingTable({
             {ranking.truncated ? " (limitado aos 500 maiores investimentos)" : ""}
           </span>
           {shown.length < rows.length ? (
-            <Button size="sm" variant="secondary" onClick={() => setVisible((current) => current + PAGE_SIZE)} className="gap-1">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setVisible((current) => current + PAGE_SIZE)}
+              className="gap-1"
+            >
               <span>Carregar mais</span>
               <ChevronDown className="size-3.5" aria-hidden />
             </Button>
           ) : null}
         </div>
+      ) : null}
+
+      {detail ? (
+        <RowDetail
+          row={detail}
+          level={level}
+          currency={currency}
+          periodLabel={periodLabel}
+          onClose={() => setDetail(null)}
+        />
       ) : null}
     </Card>
   );

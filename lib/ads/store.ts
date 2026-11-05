@@ -8,17 +8,13 @@ import {
   ratioPairKey,
   type AdsAggregate,
   type AdsIndicatorValues,
-  type AdsMetricKey,
   type AdsMetricValues,
 } from "./metrics";
-import type { AdsReportRow, ParsedAdsReport } from "./report-rows";
+import type { AdCreative, AdsReportRow, ParsedAdsReport } from "./report";
 import type {
   AdsDailyPoint,
   AdsDashboardData,
-  AdsImportItem,
-  AdsImportPreview,
   AdsImportSaved,
-  AdsImportStatus,
   AdsRanking,
   AdsRankingLevel,
 } from "./types";
@@ -147,8 +143,10 @@ type ReplacementScope = {
 
 function replacementScope(report: ParsedAdsReport): ReplacementScope {
   return {
-    from: report.firstDay,
-    to: report.lastDay,
+    // Período PEDIDO, não o dos dados: sincronizar 30 dias substitui os 30,
+    // mesmo que só 5 tenham veiculação.
+    from: report.requestedFirstDay,
+    to: report.requestedLastDay,
     everything: !report.levels.account,
     accountIds: report.accountIds,
     accountNames: report.accountNames,
@@ -164,50 +162,6 @@ const SCOPE_WHERE = `day BETWEEN $1::date AND $2::date
 
 function scopeParams(scope: ReplacementScope): unknown[] {
   return [scope.from, scope.to, scope.everything, scope.accountIds, scope.accountNames];
-}
-
-export async function previewReplacement(
-  run: AdsRunner,
-  report: ParsedAdsReport,
-  fileHash: string
-): Promise<Pick<AdsImportPreview, "replacement" | "sameFile">> {
-  const scope = replacementScope(report);
-  const params = scopeParams(scope);
-
-  const current = await run(`SELECT ${AGGREGATE_COLUMNS} FROM ads_daily WHERE ${SCOPE_WHERE}`, params);
-  const aggregate = readAggregate(current.rows[0]);
-
-  const affected = await run<{ file_name: string; created_at: unknown }>(
-    `SELECT i.file_name, i.created_at
-       FROM ads_imports i
-      WHERE EXISTS (SELECT 1 FROM ads_daily WHERE import_id = i.id AND ${SCOPE_WHERE})
-      ORDER BY i.created_at DESC
-      LIMIT 5`,
-    params
-  );
-
-  const same = await run<{ file_name: string; created_at: unknown }>(
-    `SELECT file_name, created_at
-       FROM ads_imports
-      WHERE file_hash = $1
-      ORDER BY created_at DESC
-      LIMIT 1`,
-    [fileHash]
-  );
-
-  return {
-    replacement: {
-      rows: aggregate.rows,
-      totals: aggregate.sums,
-      imports: affected.rows.map((row) => ({
-        fileName: row.file_name,
-        createdAt: toIso(row.created_at),
-      })),
-    },
-    sameFile: same.rows[0]
-      ? { fileName: same.rows[0].file_name, createdAt: toIso(same.rows[0].created_at) }
-      : null,
-  };
 }
 
 export type AdsFileInfo = {
@@ -312,8 +266,8 @@ export async function saveImport(
       report.accountIds,
       report.accountNames,
       report.currency,
-      report.firstDay,
-      report.lastDay,
+      report.requestedFirstDay,
+      report.requestedLastDay,
       report.rowsRead,
       report.rows.length,
       report.rowsIgnored,
@@ -327,7 +281,7 @@ export async function saveImport(
 
   await run(
     `INSERT INTO ads_coverage (import_id, day_from, day_to) VALUES ($1::uuid, $2::date, $3::date)`,
-    [importId, report.firstDay, report.lastDay]
+    [importId, report.requestedFirstDay, report.requestedLastDay]
   );
 
   for (let start = 0; start < report.rows.length; start += INSERT_CHUNK) {
@@ -338,81 +292,51 @@ export async function saveImport(
     id: importId,
     rowsImported: report.rows.length,
     rowsReplaced,
-    firstDay: report.firstDay,
-    lastDay: report.lastDay,
+    firstDay: report.requestedFirstDay,
+    lastDay: report.requestedLastDay,
   };
 }
 
-/** Exclui um envio e as linhas dele que ainda estão em uso. Precisa rodar em transação. */
-export async function deleteImport(run: AdsRunner, id: string): Promise<{ fileName: string } | null> {
-  await run(WRITE_LOCK_SQL);
-  const result = await run<{ file_name: string }>(
-    `DELETE FROM ads_imports WHERE id = $1::uuid RETURNING file_name`,
-    [id]
+// ---------------------------------------------------------------
+// Imagens dos anúncios
+// ---------------------------------------------------------------
+
+/**
+ * Grava ou atualiza a imagem de cada anúncio. Precisa rodar na mesma transação
+ * da sincronização: imagem órfã (de um lote que falhou depois) não serve.
+ */
+export async function saveCreatives(run: AdsRunner, creatives: AdCreative[]): Promise<void> {
+  if (creatives.length === 0) return;
+  await run(
+    `INSERT INTO ads_creatives (ad_id, title, object_type, thumbnail_url, image_url, updated_at)
+     SELECT ad_id, title, object_type, thumbnail_url, image_url, NOW()
+       FROM UNNEST($1::text[], $2::text[], $3::text[], $4::text[], $5::text[])
+            AS t(ad_id, title, object_type, thumbnail_url, image_url)
+     ON CONFLICT (ad_id) DO UPDATE
+        SET title = EXCLUDED.title,
+            object_type = EXCLUDED.object_type,
+            thumbnail_url = EXCLUDED.thumbnail_url,
+            image_url = EXCLUDED.image_url,
+            updated_at = NOW()`,
+    [
+      creatives.map((item) => item.adId),
+      creatives.map((item) => item.title),
+      creatives.map((item) => item.objectType),
+      creatives.map((item) => item.thumbnailUrl),
+      creatives.map((item) => item.imageUrl),
+    ]
   );
-  const row = result.rows[0];
-  return row ? { fileName: row.file_name } : null;
 }
 
-type ImportRow = {
-  id: string;
-  file_name: string;
-  file_size: number;
-  file_format: string;
-  account_ids: string[] | null;
-  account_names: string[] | null;
-  date_start: string;
-  date_end: string;
-  rows_imported: number;
-  rows_replaced: number;
-  rows_in_use: number;
-  metrics: string[] | null;
-  uploaded_by: string | null;
-  created_at: unknown;
-};
+type CreativeRow = { ad_id: string; thumbnail_url: string | null; image_url: string | null };
 
-const METRIC_KEY_SET: ReadonlySet<string> = new Set<string>(ADS_METRIC_KEYS);
-
-export async function listImports(run: AdsRunner): Promise<AdsImportItem[]> {
-  const result = await run<ImportRow>(
-    `SELECT i.id, i.file_name, i.file_size, i.file_format, i.account_ids, i.account_names,
-            to_char(i.date_start, 'YYYY-MM-DD') AS date_start,
-            to_char(i.date_end, 'YYYY-MM-DD') AS date_end,
-            i.rows_imported, i.rows_replaced, i.metrics, i.created_at,
-            COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.email, '') AS uploaded_by,
-            COALESCE(kept.rows_in_use, 0) AS rows_in_use
-       FROM ads_imports i
-       LEFT JOIN users u ON u.id = i.uploaded_by
-       LEFT JOIN LATERAL (
-         SELECT COUNT(*)::int AS rows_in_use FROM ads_daily WHERE import_id = i.id
-       ) kept ON true
-      ORDER BY i.created_at DESC
-      LIMIT 200`
+async function loadCreatives(run: AdsRunner, adIds: string[]): Promise<Map<string, CreativeRow>> {
+  if (adIds.length === 0) return new Map();
+  const result = await run<CreativeRow>(
+    `SELECT ad_id, thumbnail_url, image_url FROM ads_creatives WHERE ad_id = ANY($1::text[])`,
+    [adIds]
   );
-
-  return result.rows.map((row) => {
-    const rowsImported = Number(row.rows_imported) || 0;
-    const rowsInUse = Number(row.rows_in_use) || 0;
-    const status: AdsImportStatus =
-      rowsInUse === 0 ? "replaced" : rowsInUse < rowsImported ? "partial" : "in_use";
-    const names = (row.account_names ?? []).filter(Boolean);
-    return {
-      id: row.id,
-      fileName: row.file_name,
-      fileSize: Number(row.file_size) || 0,
-      format: row.file_format,
-      firstDay: row.date_start,
-      lastDay: row.date_end,
-      accounts: names.length > 0 ? names : (row.account_ids ?? []).filter(Boolean),
-      rowsImported,
-      rowsInUse,
-      rowsReplaced: Number(row.rows_replaced) || 0,
-      metrics: (row.metrics ?? []).filter((metric): metric is AdsMetricKey => METRIC_KEY_SET.has(metric)),
-      status,
-      uploadedBy: row.uploaded_by ?? "",
-      createdAt: toIso(row.created_at),
-    };
-  });
+  return new Map(result.rows.map((row) => [row.ad_id, row]));
 }
 
 // ---------------------------------------------------------------
@@ -471,16 +395,10 @@ async function loadRanking(
   run: AdsRunner,
   level: AdsRankingLevel,
   range: DayInterval,
-  totalSpend: number | null,
-  account?: string | null
+  totalSpend: number | null
 ): Promise<AdsRanking> {
   const sql = LEVEL_SQL[level];
   const params: unknown[] = [range.from, range.to];
-  let accountFilter = "";
-  if (account) {
-    params.push(account);
-    accountFilter = ` AND (account_name = $3 OR account_id = $3)`;
-  }
   const result = await run<RankingSqlRow>(
     `SELECT ${sql.key} AS entity_key,
             COALESCE(NULLIF(account_id, ''), account_name) AS account_key,
@@ -490,16 +408,33 @@ async function loadRanking(
             (ARRAY_AGG(account_name ORDER BY day DESC))[1] AS account_name,
             ${AGGREGATE_COLUMNS}
        FROM ads_daily
-      WHERE day BETWEEN $1::date AND $2::date${accountFilter}
+      WHERE day BETWEEN $1::date AND $2::date
       GROUP BY 1, 2
       ORDER BY SUM(spend) DESC NULLS LAST, entity_name ASC
       LIMIT ${RANKING_LIMIT + 1}`,
     params
   );
 
-  const rows = result.rows.slice(0, RANKING_LIMIT).map((row) => {
+  const kept = result.rows.slice(0, RANKING_LIMIT);
+
+  // Imagem só faz sentido no nível de anúncio: campanha e conjunto agrupam
+  // vários criativos e não têm uma foto que os represente.
+  const creatives =
+    level === "ad"
+      ? await loadCreatives(
+          run,
+          kept
+            .map((row) => row.entity_key)
+            .filter((key) => key.startsWith("i:"))
+            .map((key) => key.slice(2))
+        )
+      : new Map<string, CreativeRow>();
+
+  const rows = kept.map((row) => {
     const aggregate = readAggregate(row);
     const values = computeIndicators(aggregate);
+    const adId = level === "ad" && row.entity_key.startsWith("i:") ? row.entity_key.slice(2) : null;
+    const creative = adId ? creatives.get(adId) : undefined;
     return {
       key: `${row.entity_key}\u001f${row.account_key}`,
       name: row.entity_name ?? "",
@@ -509,6 +444,8 @@ async function loadRanking(
       days: aggregate.days,
       spendShare:
         values.spend !== null && totalSpend !== null && totalSpend > 0 ? values.spend / totalSpend : null,
+      thumbnailUrl: creative?.thumbnail_url ?? null,
+      imageUrl: creative?.image_url ?? null,
       values,
     };
   });
@@ -543,7 +480,7 @@ function emptyDashboard(today: string, lastImport: AdsDashboardData["lastImport"
  */
 export async function loadDashboard(
   run: AdsRunner,
-  query: { from: string | null; to: string | null; account?: string | null },
+  query: { from: string | null; to: string | null },
   today: string
 ): Promise<AdsDashboardData> {
   const latest = await run<{ file_name: string; created_at: unknown }>(
@@ -571,54 +508,32 @@ export async function loadDashboard(
   const length = daysBetween(range.from, range.to) + 1;
   const previousRange = { from: addDays(range.from, -length), to: addDays(range.from, -1) };
 
-  const account = query.account?.trim() || null;
-  const currentParams: unknown[] = [range.from, range.to];
-  let currentAccountWhere = "";
-  if (account) {
-    currentParams.push(account);
-    currentAccountWhere = " AND (account_name = $3 OR account_id = $3)";
-  }
-
   const currentResult = await run(
     `SELECT ${AGGREGATE_COLUMNS},
             (COUNT(*) FILTER (WHERE campaign_id <> '' OR campaign_name <> ''))::int AS with_campaign,
             (COUNT(*) FILTER (WHERE adset_id <> '' OR adset_name <> ''))::int AS with_adset,
             (COUNT(*) FILTER (WHERE ad_id <> '' OR ad_name <> ''))::int AS with_ad
        FROM ads_daily
-      WHERE day BETWEEN $1::date AND $2::date${currentAccountWhere}`,
-    currentParams
+      WHERE day BETWEEN $1::date AND $2::date`,
+    [range.from, range.to]
   );
   const currentRow = currentResult.rows[0] ?? {};
   const current = readAggregate(currentRow);
   const totals = computeIndicators(current);
 
-  const previousParams: unknown[] = [previousRange.from, previousRange.to];
-  let previousAccountWhere = "";
-  if (account) {
-    previousParams.push(account);
-    previousAccountWhere = " AND (account_name = $3 OR account_id = $3)";
-  }
-
   const previousResult = await run(
-    `SELECT ${AGGREGATE_COLUMNS} FROM ads_daily WHERE day BETWEEN $1::date AND $2::date${previousAccountWhere}`,
-    previousParams
+    `SELECT ${AGGREGATE_COLUMNS} FROM ads_daily WHERE day BETWEEN $1::date AND $2::date`,
+    [previousRange.from, previousRange.to]
   );
   const previousAggregate = readAggregate(previousResult.rows[0]);
-
-  const dailyParams: unknown[] = [range.from, range.to];
-  let dailyAccountWhere = "";
-  if (account) {
-    dailyParams.push(account);
-    dailyAccountWhere = " AND (account_name = $3 OR account_id = $3)";
-  }
 
   const dailyResult = await run<SqlRow & { day: string }>(
     `SELECT to_char(day, 'YYYY-MM-DD') AS day, ${AGGREGATE_COLUMNS}
        FROM ads_daily
-      WHERE day BETWEEN $1::date AND $2::date${dailyAccountWhere}
+      WHERE day BETWEEN $1::date AND $2::date
       GROUP BY day
       ORDER BY day`,
-    dailyParams
+    [range.from, range.to]
   );
   const byDay = new Map<string, SqlRow>(dailyResult.rows.map((row) => [row.day, row]));
   const isCovered = (day: string) => covered.some((span) => day >= span.from && day <= span.to);
@@ -647,7 +562,7 @@ export async function loadDashboard(
   const rankings: AdsRanking[] = [];
   for (const level of LEVEL_ORDER) {
     if ((toNumber(currentRow[LEVEL_SQL[level].presence]) ?? 0) > 0) {
-      rankings.push(await loadRanking(run, level, range, totals.spend, account));
+      rankings.push(await loadRanking(run, level, range, totals.spend));
     }
   }
 
@@ -699,7 +614,6 @@ export async function loadDashboard(
     missingRanges: missingRanges.slice(0, 5),
     rankings,
     accounts: accountsResult.rows.map((row) => row.account),
-    selectedAccount: account,
     resultTypes: resultTypesResult.rows.map((row) => row.result_type),
     currency: currencies[0] ?? "BRL",
     currencies,

@@ -1,18 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
-import {
-  AlertCircle,
-  Building2,
-  Calendar,
-  Download,
-  FileSpreadsheet,
-  RefreshCw,
-  RotateCw,
-  Sparkles,
-  UploadCloud,
-} from "lucide-react";
+import { AlertCircle, CalendarRange, Download, Layers, Megaphone, RotateCw, Sparkles, Target } from "lucide-react";
 
 import { adsRequest, errorMessage, isAbortError, isSessionError } from "@/lib/ads/client";
 import {
@@ -22,12 +11,13 @@ import {
   type AdsPeriodPreset,
 } from "@/lib/ads/dates";
 import { exportDailyToCsv } from "@/lib/ads/export";
-import { formatDateTime, formatDayRange, pluralize } from "@/lib/ads/format";
+import { formatCount, formatDateTime, formatDayRange, pluralize } from "@/lib/ads/format";
 import { ADS_INDICATOR_KEYS, type AdsIndicatorKey } from "@/lib/ads/metrics";
-import type { AdsDashboardData } from "@/lib/ads/types";
+import type { AdsDashboardData, AdsSyncResult } from "@/lib/ads/types";
 
 import { DailyChart } from "./_components/daily-chart";
 import { KpiCards, pickKpis } from "./_components/kpi-cards";
+import { MetaConnectedBadge, MetaSyncButton } from "./_components/meta-button";
 import { PeriodPicker } from "./_components/period-picker";
 import { RankingTable } from "./_components/ranking-table";
 import { Button, Card, Notice, Spinner, buttonClasses } from "./_components/ui";
@@ -45,11 +35,11 @@ const PAGE_TITLE = "Resultados do Meta Ads";
 function PageTitle({ children }: { children?: ReactNode }) {
   return (
     <div className="min-w-0">
-      <div className="flex items-center gap-2.5">
+      <div className="flex flex-wrap items-center gap-2.5">
         <h1 className="text-[22px] font-extrabold tracking-tight text-slate-900">{PAGE_TITLE}</h1>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
-          <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" aria-hidden />
-          Atualizado
+          <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" aria-hidden />
+          Sincronizado
         </span>
       </div>
       {children}
@@ -59,17 +49,17 @@ function PageTitle({ children }: { children?: ReactNode }) {
 
 function DashboardSkeleton() {
   return (
-    <div className="space-y-6 animate-pulse" aria-busy="true" aria-label="Carregando painel">
+    <div className="animate-pulse space-y-6" aria-busy="true" aria-label="Carregando painel">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           <div className="h-7 w-56 rounded-md bg-slate-200" />
           <div className="h-4 w-72 rounded-md bg-slate-100" />
         </div>
-        <div className="h-9 w-64 rounded-md bg-slate-200" />
+        <div className="h-10 w-72 rounded-md bg-slate-200" />
       </div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-28 rounded-xl border border-slate-100 bg-white p-4 shadow-xs" />
+      <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-6">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div key={index} className="h-28 rounded-xl border border-slate-100 bg-white p-4 shadow-xs" />
         ))}
       </div>
       <div className="h-80 rounded-xl border border-slate-100 bg-white shadow-xs" />
@@ -91,11 +81,11 @@ function DashboardError({
     <div className="space-y-6">
       <PageTitle />
       <Card className="px-6 py-12 text-center">
-        <span className="mx-auto grid size-12 place-items-center rounded-full bg-rose-50 text-rose-600 border border-rose-100">
+        <span className="mx-auto grid size-12 place-items-center rounded-full border border-rose-100 bg-rose-50 text-rose-600">
           <AlertCircle className="size-6" aria-hidden />
         </span>
         <h2 className="mt-4 text-[16px] font-bold text-slate-900">Não foi possível carregar os dados</h2>
-        <p className="mx-auto mt-1 max-w-md text-[13.5px] text-slate-500 font-medium">{message}</p>
+        <p className="mx-auto mt-1 max-w-md text-[13.5px] font-medium text-slate-500">{message}</p>
         {sessionExpired ? (
           <a href="/api/auth/logout?redirect=%2Fads" className={`${buttonClasses("primary")} mt-5`}>
             Entrar de novo
@@ -124,31 +114,57 @@ function EmptyState({
     <div className="space-y-6">
       <PageTitle />
       <Card className="px-6 py-16 text-center">
-        <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-blue-50 text-blue-600 border border-blue-100">
-          <UploadCloud className="size-7" aria-hidden />
+        <span className="mx-auto grid size-14 place-items-center rounded-2xl border border-[#0866FF]/20 bg-[#0866FF]/8 text-[#0866FF]">
+          <Layers className="size-7" aria-hidden />
         </span>
-        <h2 className="mt-4 text-[17px] font-bold text-slate-900">Nenhum dado importado ainda</h2>
-        <p className="mx-auto mt-1.5 max-w-md text-[14px] text-slate-500 font-medium">
-          Sincronize diretamente via Meta Marketing API ou envie o relatório exportado (.csv ou .xlsx) para visualizar os indicadores e gráficos de desempenho.
+        <h2 className="mt-4 text-[17px] font-bold text-slate-900">Ainda não há números sincronizados</h2>
+        <p className="mx-auto mt-1.5 max-w-md text-[14px] font-medium text-slate-500">
+          Os dados vêm direto da conta de anúncios pela integração com a Meta. Clique em sincronizar para
+          buscar os últimos 30 dias.
         </p>
         {isAdmin ? (
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-            <Button onClick={onSync} disabled={syncing} className="gap-2">
-              <RefreshCw className={`size-4 ${syncing ? "animate-spin" : ""}`} aria-hidden />
-              <span>{syncing ? "Sincronizando..." : "Sincronizar Meta Ads"}</span>
-            </Button>
-            <Link href="/ads/relatorios" className={`${buttonClasses("secondary")} gap-2`}>
-              <FileSpreadsheet className="size-4" aria-hidden />
-              <span>Importar arquivo</span>
-            </Link>
+            <MetaSyncButton onClick={onSync} syncing={syncing} />
           </div>
         ) : (
-          <p className="mt-4 text-[13px] text-slate-400 font-medium">
-            Os relatórios são importados pelo gestor de tráfego ou administrador.
+          <p className="mt-4 text-[13px] font-medium text-slate-400">
+            A sincronização é feita por um administrador.
           </p>
         )}
       </Card>
     </div>
+  );
+}
+
+function SummaryChips({ data }: { data: AdsDashboardData }) {
+  const counts = data.rankings.reduce<Record<string, number>>((accumulator, item) => {
+    accumulator[item.level] = item.rows.length;
+    return accumulator;
+  }, {});
+
+  const items = [
+    { icon: Megaphone, label: "Campanhas", value: counts.campaign ?? 0 },
+    { icon: Layers, label: "Conjuntos", value: counts.adset ?? 0 },
+    { icon: Target, label: "Anúncios", value: counts.ad ?? 0 },
+    { icon: CalendarRange, label: "Dias no período", value: data.range.days },
+  ];
+
+  return (
+    <ul className="flex flex-wrap gap-2">
+      {items.map((item) => {
+        const Icon = item.icon;
+        return (
+          <li
+            key={item.label}
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[12.5px] font-semibold text-slate-700 shadow-xs"
+          >
+            <Icon className="size-3.5 text-slate-400" aria-hidden />
+            <span className="tabular-nums text-slate-900">{formatCount(item.value)}</span>
+            <span className="font-medium text-slate-500">{item.label}</span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -173,7 +189,7 @@ export default function AdsDashboard() {
     sessionExpired: false,
   });
 
-  const queryKey = `${paramsMap.from ?? ""}|${paramsMap.to ?? ""}|${paramsMap.account ?? ""}|${attempt}`;
+  const queryKey = `${paramsMap.from ?? ""}|${paramsMap.to ?? ""}|${attempt}`;
   const loading = view.key !== queryKey;
 
   useEffect(() => {
@@ -181,7 +197,6 @@ export default function AdsDashboard() {
     const query = new URLSearchParams();
     if (paramsMap.from) query.set("from", paramsMap.from);
     if (paramsMap.to) query.set("to", paramsMap.to);
-    if (paramsMap.account) query.set("account", paramsMap.account);
     const qs = query.toString();
     const url = `/api/ads/dashboard${qs ? `?${qs}` : ""}`;
 
@@ -228,18 +243,6 @@ export default function AdsDashboard() {
     }));
   };
 
-  const handleAccountChange = (accountName: string) => {
-    setParamsMap((prev) => {
-      const next = { ...prev };
-      if (!accountName || accountName === "ALL") {
-        delete next.account;
-      } else {
-        next.account = accountName;
-      }
-      return next;
-    });
-  };
-
   const retry = () => setAttempt((current) => current + 1);
 
   const handleSyncMeta = async () => {
@@ -247,9 +250,7 @@ export default function AdsDashboard() {
     setSyncing(true);
     setSyncNotice(null);
     try {
-      const res = await adsRequest<{ success: boolean; message: string }>("/api/ads/sync", {
-        method: "POST",
-      });
+      const res = await adsRequest<AdsSyncResult>("/api/ads/sync", { method: "POST" });
       setSyncNotice({ tone: "success", text: res.message });
       retry();
     } catch (err) {
@@ -270,12 +271,13 @@ export default function AdsDashboard() {
     return <EmptyState isAdmin={viewer.isAdmin} onSync={handleSyncMeta} syncing={syncing} />;
   }
 
-  const coverage = data.coverage;
   const hasRows = data.rowsInRange > 0;
   const kpis = pickKpis(data.totals);
   const chartOptions = ADS_INDICATOR_KEYS.filter((key) => data.totals[key] !== null);
   const metric = chartOptions.includes(chartMetric) ? chartMetric : (chartOptions[0] ?? "spend");
   const periodSlug = `${data.range.from}_ate_${data.range.to}`;
+  const periodLabel = formatDayRange(data.range.from, data.range.to);
+  const accountName = data.accounts[0] ?? "";
 
   const handleExportDaily = () => {
     exportDailyToCsv(data.daily, chartOptions, data.currency, periodSlug);
@@ -283,68 +285,31 @@ export default function AdsDashboard() {
 
   return (
     <div className="space-y-6" aria-busy={loading}>
-      {/* Top Header & Controles */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <PageTitle>
-          <p className="mt-1.5 text-[13.5px] font-medium text-slate-600">
-            {formatDayRange(data.range.from, data.range.to)}
+          <p className="mt-1.5 flex flex-wrap items-center gap-2 text-[13.5px] font-medium text-slate-600">
+            <MetaConnectedBadge />
+            {accountName ? <span className="text-slate-700">{accountName}</span> : null}
+          </p>
+          <p className="mt-1 text-[13px] font-medium text-slate-500">
+            {periodLabel}
             {data.previousRange ? (
               <span className="text-slate-400">
                 {" "}
                 · comparado com {formatDayRange(data.previousRange.from, data.previousRange.to)}
               </span>
-            ) : (
-              ""
-            )}
+            ) : null}
           </p>
           {data.lastImport ? (
-            <p className="mt-0.5 text-[12px] text-slate-400 font-medium">
-              Último envio/sincronização: {data.lastImport.fileName} ({formatDateTime(data.lastImport.createdAt)})
+            <p className="mt-0.5 text-[12px] font-medium text-slate-400">
+              Última sincronização: {formatDateTime(data.lastImport.createdAt)}
             </p>
           ) : null}
         </PageTitle>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          {loading ? (
-            <Spinner label="Atualizando…" className="text-[12.5px] text-slate-400 mr-1" />
-          ) : null}
+          {loading ? <Spinner label="Atualizando…" className="mr-1 text-[12.5px] text-slate-400" /> : null}
 
-          {/* Sincronização direta com a Meta */}
-          {viewer.isAdmin ? (
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={handleSyncMeta}
-              disabled={syncing || loading}
-              className="h-9.5 gap-1.5 shadow-xs"
-              title="Sincronizar métricas recentes via Meta Marketing API"
-            >
-              <RefreshCw className={`size-4 text-indigo-600 ${syncing ? "animate-spin" : ""}`} aria-hidden />
-              <span className="hidden sm:inline">{syncing ? "Sincronizando..." : "Sincronizar Meta"}</span>
-            </Button>
-          ) : null}
-
-          {/* Filtro por Conta de Anúncios */}
-          {data.accounts.length > 1 ? (
-            <div className="relative inline-flex items-center">
-              <Building2 className="pointer-events-none absolute left-3 size-4 text-slate-400" aria-hidden />
-              <select
-                value={data.selectedAccount ?? "ALL"}
-                onChange={(e) => handleAccountChange(e.target.value)}
-                className="h-9.5 rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-[13.5px] font-semibold text-slate-800 shadow-xs hover:border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors cursor-pointer"
-                aria-label="Filtrar por conta de anúncios"
-              >
-                <option value="ALL">Todas as contas ({data.accounts.length})</option>
-                {data.accounts.map((acc) => (
-                  <option key={acc} value={acc}>
-                    {acc}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : null}
-
-          {/* Seletor de Período */}
           <PeriodPicker
             preset={preset}
             range={{ from: data.range.from, to: data.range.to }}
@@ -352,12 +317,21 @@ export default function AdsDashboard() {
             onCustom={chooseCustom}
           />
 
-          {/* Exportar Dados Diários */}
           {hasRows ? (
-            <Button size="sm" variant="secondary" onClick={handleExportDaily} className="h-9.5 gap-1.5" title="Exportar histórico diário deste período para CSV">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handleExportDaily}
+              className="h-9.5 gap-1.5"
+              title="Exportar o dia a dia deste período em CSV"
+            >
               <Download className="size-4 text-slate-500" aria-hidden />
-              <span className="hidden sm:inline">Exportar Diário</span>
+              <span className="hidden sm:inline">Exportar diário</span>
             </Button>
+          ) : null}
+
+          {viewer.isAdmin ? (
+            <MetaSyncButton onClick={handleSyncMeta} syncing={syncing} disabled={loading} />
           ) : null}
         </div>
       </div>
@@ -394,28 +368,26 @@ export default function AdsDashboard() {
         </Notice>
       ) : null}
 
-      {/* Avisos de lacunas no período */}
       {data.missingDays > 0 ? (
-        <Notice tone="info">
-          {pluralize(data.missingDays, "dia deste período não tem", "dias deste período não têm")} relatório
-          ou sincronização: {describeRanges(data.missingRanges)}. O gráfico mostra lacuna nesses dias. Para preencher,
-          sincronize via API ou envie o relatório correspondente em{" "}
-          <Link href="/ads/relatorios" className="font-semibold underline underline-offset-2">
-            Relatórios
-          </Link>
-          .
+        <Notice
+          tone="info"
+          action={
+            viewer.isAdmin ? (
+              <Button size="sm" variant="secondary" onClick={handleSyncMeta} disabled={syncing}>
+                Sincronizar agora
+              </Button>
+            ) : undefined
+          }
+        >
+          {pluralize(data.missingDays, "dia deste período está", "dias deste período estão")} sem sincronização:{" "}
+          {describeRanges(data.missingRanges)}. O gráfico mostra lacuna nesses dias.
         </Notice>
       ) : null}
 
-      {/* Cartões de Indicadores */}
-      <KpiCards
-        indicators={kpis}
-        totals={data.totals}
-        previous={data.previous}
-        currency={data.currency}
-      />
+      <SummaryChips data={data} />
 
-      {/* Gráfico de Evolução Diária */}
+      <KpiCards indicators={kpis} totals={data.totals} previous={data.previous} currency={data.currency} />
+
       {chartOptions.length > 0 ? (
         <DailyChart
           daily={data.daily}
@@ -427,15 +399,23 @@ export default function AdsDashboard() {
         />
       ) : null}
 
-      {/* Tabela de Desempenho e Ranking */}
       {data.rankings.length > 0 ? (
         <RankingTable
           rankings={data.rankings}
           totals={data.totals}
           currency={data.currency}
-          showAccount={data.accounts.length > 1}
+          periodLabel={periodLabel}
           periodSlug={periodSlug}
         />
+      ) : null}
+
+      {!hasRows ? (
+        <Card className="px-6 py-10 text-center">
+          <p className="flex items-center justify-center gap-2 text-[14px] font-medium text-slate-500">
+            <Sparkles className="size-4 text-slate-400" aria-hidden />
+            O período tem cobertura, mas nenhuma veiculação registrada.
+          </p>
+        </Card>
       ) : null}
     </div>
   );

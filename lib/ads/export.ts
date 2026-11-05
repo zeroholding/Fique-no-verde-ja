@@ -1,6 +1,6 @@
-import { formatCount, formatIndicator, formatPercent } from "./format";
+import { formatIndicator, formatPercent } from "./format";
 import { ADS_INDICATORS, type AdsIndicatorKey } from "./metrics";
-import type { AdsDailyPoint, AdsRanking, AdsRankingRow } from "./types";
+import type { AdsDailyPoint, AdsRanking } from "./types";
 
 /**
  * Utilitário de exportação de dados para CSV compatível com Excel no Brasil

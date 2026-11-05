@@ -3,8 +3,8 @@ import { addDays, isIsoDay, todayInSaoPaulo } from "./dates";
 import { withAdsTransaction } from "./db";
 import { formatDayRange, pluralize } from "./format";
 import { ADS_METRIC_KEYS, type AdsMetricKey, type AdsMetricValues } from "./metrics";
-import type { AdsReportRow, ParsedAdsReport } from "./report-rows";
-import { saveImport } from "./store";
+import type { AdCreative, AdsReportRow, ParsedAdsReport } from "./report";
+import { saveCreatives, saveImport } from "./store";
 import type { AdsImportSaved } from "./types";
 
 /**
@@ -184,6 +184,8 @@ export async function fetchMetaInsights(params: {
       levels: { account: true, campaign: false, adset: false, ad: false },
       firstDay: since,
       lastDay: until,
+      requestedFirstDay: since,
+      requestedLastDay: until,
       days: 0,
       accountIds: [status.adAccountId],
       accountNames: [resolvedAccountName],
@@ -363,6 +365,11 @@ export async function fetchMetaInsights(params: {
     },
     firstDay: minDay !== "9999-99-99" ? minDay : since,
     lastDay: maxDay !== "0000-00-00" ? maxDay : until,
+    // O período PEDIDO é o que vale para cobertura e substituição: sincronizar
+    // 30 dias e receber 5 dias de veiculação continua cobrindo os 30 dias. Sem
+    // isso os outros 25 apareciam como "sem relatório" e o painel mentia.
+    requestedFirstDay: since,
+    requestedLastDay: until,
     days: rows.length > 0 ? new Set(rows.map((r) => r.day)).size : 0,
     accountIds,
     accountNames,
@@ -383,6 +390,64 @@ export async function fetchMetaInsights(params: {
   return { report, rawPayload, accountName: resolvedAccountName };
 }
 
+/**
+ * Busca a imagem de cada anúncio.
+ *
+ * É o único dado que a Meta não devolve junto do insights: precisa de uma
+ * segunda chamada por lote de anúncios. Como imagem é enfeite de tela e não
+ * número, TUDO aqui é best-effort: se a permissão não alcançar o criativo ou a
+ * chamada falhar, a sincronização continua e a tabela fica sem foto.
+ */
+export async function fetchMetaCreatives(adIds: string[]): Promise<AdCreative[]> {
+  const status = getMetaConfigStatus();
+  const accessToken = process.env.META_ACCESS_TOKEN?.trim();
+  if (!accessToken || adIds.length === 0) return [];
+
+  const unique = Array.from(new Set(adIds.filter(Boolean)));
+  const chunks: string[][] = [];
+  for (let index = 0; index < unique.length; index += 25) {
+    chunks.push(unique.slice(index, index + 25));
+  }
+
+  const creatives: AdCreative[] = [];
+  for (const chunk of chunks) {
+    const url =
+      `https://graph.facebook.com/${status.apiVersion}/` +
+      `?ids=${encodeURIComponent(chunk.join(","))}` +
+      `&fields=${encodeURIComponent("creative{thumbnail_url,image_url,object_type,title}")}` +
+      `&access_token=${encodeURIComponent(accessToken)}`;
+
+    try {
+      const response = await fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" });
+      if (!response.ok) continue;
+      const json = (await response.json()) as Record<
+        string,
+        { id?: string; creative?: { thumbnail_url?: string; image_url?: string; object_type?: string; title?: string } } | undefined
+      >;
+
+      for (const adId of chunk) {
+        const node = json[adId];
+        const creative = node?.creative;
+        if (!creative) continue;
+        const thumbnailUrl = creative.thumbnail_url || creative.image_url || null;
+        if (!thumbnailUrl) continue;
+        creatives.push({
+          adId,
+          title: creative.title ?? "",
+          objectType: creative.object_type ?? "",
+          thumbnailUrl,
+          imageUrl: creative.image_url ?? null,
+        });
+      }
+    } catch (error) {
+      console.warn("[ads] imagem dos anúncios não pôde ser lida:", error);
+      break;
+    }
+  }
+
+  return creatives;
+}
+
 export async function syncMetaAds(params: {
   since?: string;
   until?: string;
@@ -392,37 +457,37 @@ export async function syncMetaAds(params: {
   saved: AdsImportSaved;
   accountName: string;
   message: string;
+  /** Quantos anúncios ganharam imagem nesta rodada. */
+  creatives: number;
 }> {
   const { report, rawPayload, accountName } = await fetchMetaInsights({
     since: params.since,
     until: params.until,
   });
 
-  if (report.rows.length === 0) {
-    throw new Error(
-      `Nenhum dado de anúncio retornado pela Meta para o período de ${formatDayRange(
-        report.firstDay,
-        report.lastDay
-      )}.`
-    );
-  }
-
   const payloadBuffer = Buffer.from(rawPayload, "utf-8");
   const fileHash = createHash("sha256").update(payloadBuffer).digest("hex");
 
   const fileName = `Meta API — ${accountName} (${formatDayRange(report.firstDay, report.lastDay)})`;
 
+  // Período sem veiculação é um resultado válido: grava a cobertura para o
+  // painel mostrar zero, e não "dia sem relatório".
+  const creatives =
+    report.rows.length > 0 ? await fetchMetaCreatives(report.rows.map((row) => row.adId)) : [];
+
   const saved = await withAdsTransaction(async (run) => {
-    return saveImport(run, {
+    const result = await saveImport(run, {
       report,
       file: {
         name: fileName,
         size: payloadBuffer.length,
         hash: fileHash,
-        format: "api" as any,
+        format: "api",
       },
       userId: params.userId,
     });
+    if (creatives.length > 0) await saveCreatives(run, creatives);
+    return result;
   });
 
   const replacedText =
@@ -430,16 +495,23 @@ export async function syncMetaAds(params: {
       ? `, substituindo ${pluralize(saved.rowsReplaced, "linha anterior", "linhas anteriores")}`
       : "";
 
-  const message = `Sincronização com a Meta concluída com sucesso: ${pluralize(
-    saved.rowsImported,
-    "linha diária importada",
-    "linhas diárias importadas"
-  )} de ${formatDayRange(saved.firstDay, saved.lastDay)}${replacedText}.`;
+  const message =
+    saved.rowsImported === 0
+      ? `Sincronização concluída: nenhuma veiculação no período de ${formatDayRange(
+          saved.firstDay,
+          saved.lastDay
+        )}. Os dias ficam cobertos e contam como zero.`
+      : `Sincronização com a Meta concluída: ${pluralize(
+          saved.rowsImported,
+          "linha diária importada",
+          "linhas diárias importadas"
+        )} de ${formatDayRange(saved.firstDay, saved.lastDay)}${replacedText}.`;
 
   return {
     success: true,
     saved,
     accountName,
     message,
+    creatives: creatives.length,
   };
 }

@@ -10,7 +10,7 @@ import { badRequest, toErrorResponse } from "@/lib/tracken/errors";
  * GET /api/ads/dashboard?from=YYYY-MM-DD&to=YYYY-MM-DD
  *
  * Números do painel para o período (qualquer usuário ativo). Sem período,
- * devolve os últimos 30 dias com dados.
+ * devolve os últimos 30 dias com dados. A conta é única: não há filtro.
  */
 
 export const runtime = "nodejs";
@@ -23,8 +23,7 @@ export async function GET(request: NextRequest) {
     const params = request.nextUrl.searchParams;
     const from = params.get("from");
     const to = params.get("to");
-    const account = params.get("account") || null;
-    let period: { from: string | null; to: string | null; account?: string | null } = { from: null, to: null, account };
+    let period: { from: string | null; to: string | null } = { from: null, to: null };
 
     if (from || to) {
       if (!from || !to || !isIsoDay(from) || !isIsoDay(to)) {
@@ -36,7 +35,7 @@ export async function GET(request: NextRequest) {
       if (daysBetween(from, to) + 1 > ADS_MAX_RANGE_DAYS) {
         throw badRequest("PERIODO_INVALIDO", "Escolha um período de até 5 anos.");
       }
-      period = { from, to, account };
+      period = { from, to };
     }
 
     const data = await withAdsClient((run) => loadDashboard(run, period, todayInSaoPaulo()));

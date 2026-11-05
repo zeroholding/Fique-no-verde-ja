@@ -27,7 +27,7 @@ import { ADS_INDICATORS, type AdsIndicatorKey, type AdsIndicatorValues } from "@
  * com ícones SVG funcionais e tipografia Montserrat.
  */
 
-const MAX_CARDS = 8;
+const MAX_CARDS = 12;
 
 const OUTCOME_COST: Record<"results" | "conversations" | "leads" | "purchases", AdsIndicatorKey> = {
   results: "cost_per_result",
@@ -120,7 +120,7 @@ export function KpiCards({
   currency: string;
 }) {
   return (
-    <ul className="grid grid-cols-2 gap-3.5 lg:grid-cols-4" aria-label="Indicadores do período">
+    <ul className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6" aria-label="Indicadores do período">
       {indicators.map((key) => {
         const definition = ADS_INDICATORS[key];
         const iconMeta = METRIC_ICONS[key] ?? { icon: DollarSign, bg: "bg-slate-50 border-slate-200", fg: "text-slate-600" };

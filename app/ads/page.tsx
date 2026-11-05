@@ -1,6 +1,6 @@
 import AdsDashboard from "./ads-dashboard";
 
-/** Painel de resultados do tráfego pago, alimentado pelos relatórios enviados em /ads/relatorios. */
+/** Painel de resultados do tráfego pago, alimentado pela sincronização com a Meta. */
 export default function AdsPage() {
   return <AdsDashboard />;
 }

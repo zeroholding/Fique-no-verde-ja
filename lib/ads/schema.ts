@@ -83,4 +83,13 @@ CREATE TABLE IF NOT EXISTS ads_coverage (
 
 CREATE INDEX IF NOT EXISTS idx_ads_coverage_import_id
   ON ads_coverage (import_id);
+
+CREATE TABLE IF NOT EXISTS ads_creatives (
+  ad_id TEXT PRIMARY KEY,
+  title TEXT NOT NULL DEFAULT '',
+  object_type TEXT NOT NULL DEFAULT '',
+  thumbnail_url TEXT,
+  image_url TEXT,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 `;
