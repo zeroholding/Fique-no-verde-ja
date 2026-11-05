@@ -42,17 +42,6 @@ Regra de design: interface no padrão SaaS moderno (Linear/Vercel/Stripe), tipog
 - rotas `POST /api/ads/sync` e `GET /api/ads/sync`;
 - botão **Sincronizar Meta Ads** no painel.
 
-### Etapa 6 — filtros completos, galeria e vídeo (05/11/2026)
-
-- **Barra de filtros única** no topo: Hoje, período (atalhos e datas), campanha (com o gasto de cada uma), situação do anúncio e busca por nome;
-- **"Hoje"** é um recorte de um dia dentro do período escolhido: não troca o período, só o retrato;
-- **Filtros valem para a tela inteira** — indicadores, gráfico, tabela e galeria. Filtro ativo aparece como etiqueta removível;
-- **Galeria de anúncios** com a peça visual de cada um: miniatura, título, texto, situação, gasto, resultados e custo por resultado. Clique abre o detalhe;
-- **Vídeo roda na própria tela**: o quadro parado aparece primeiro e o play troca pela reprodução (o arquivo não baixa antes de alguém pedir);
-- **Criativo completo na Meta**: título, texto, formato (imagem, vídeo, carrossel, coleção, texto), `video_id`, miniatura do vídeo, `.mp4` e o link do Gerenciador de Anúncios;
-- **Tabela** com miniatura e o mesmo painel de detalhes, agora com a peça grande;
-- **Layout** reorganizado: gráfico e galeria lado a lado no telão, filtros acima dos números.
-
 ### Etapa 5 — só automático, conta única e detalhe (05/11/2026)
 
 - **Modo manual removido:** saíram o envio de CSV/XLSX, o leitor de planilhas, a pré-visualização, o histórico de envios e a tela `/ads/relatorios`;
@@ -62,6 +51,26 @@ Regra de design: interface no padrão SaaS moderno (Linear/Vercel/Stripe), tipog
 - **Imagem dos anúncios:** nova tabela `ads_creatives`, preenchida em uma segunda chamada à Meta, best-effort;
 - **Painel detalhado:** até 12 indicadores, resumo de campanhas/conjuntos/anúncios, miniatura do criativo no ranking e painel de detalhes por linha;
 - **Botão Meta** com a marca, no cabeçalho e no estado vazio.
+
+### Etapa 6 — filtros completos, galeria e vídeo (05/11/2026)
+
+- **Barra de filtros única** no topo: Hoje, período (atalhos e datas), campanha (com o gasto de cada uma), situação do anúncio e busca por nome;
+- **“Hoje”** é um recorte de um dia dentro do período escolhido: não troca o período, só o retrato;
+- **Filtros valem para a tela inteira** — indicadores, gráfico, tabela e galeria. Filtro ativo aparece como etiqueta removível;
+- **Galeria de anúncios** com a peça visual de cada um: miniatura, título, texto, situação, gasto, resultados e custo por resultado. Clique abre o detalhe;
+- **Vídeo roda na própria tela**: o quadro parado aparece primeiro e o play troca pela reprodução (o arquivo não baixa antes de alguém pedir);
+- **Criativo completo na Meta**: título, texto, formato (imagem, vídeo, carrossel, coleção, texto), `video_id`, miniatura do vídeo, `.mp4` e o link do Gerenciador de Anúncios;
+- **Tabela** com miniatura e o mesmo painel de detalhes, agora com a peça grande;
+- **Layout** reorganizado: gráfico e galeria lado a lado no telão, filtros acima dos números.
+
+### Etapa 7 — imagem que aparece, tabela sem rolagem (05/11/2026)
+
+- **Busca da peça visual em dois caminhos**: lote por `?ids=` e, se não vier nada, a borda `ads` da conta (rota documentada). A expansão de campo do lote não vale em toda conta, e era aí que a imagem sumia;
+- **Erro da Meta deixa de ser silencioso**: quando nenhuma peça é lida, o motivo volta na mensagem da sincronização;
+- **Vídeo em duas tentativas**: se a Meta recusar o `.mp4`, a miniatura ainda vem;
+- **Tabela sem rolagem horizontal**: seletor de colunas, padrão curto, conta removida da hierarquia de cada linha;
+- **Gráfico e galeria em largura cheia**: a galeria tinha sido espremida numa coluna estreita e os cards ficavam ilegíveis;
+- **Cards da galeria mais baixos** (4:3 em vez de 4:5).
 
 ### Ainda não implementado / pendente
 
@@ -83,6 +92,8 @@ Regra de design: interface no padrão SaaS moderno (Linear/Vercel/Stripe), tipog
 11. **Vídeo só carrega quando alguém pede.** São dezenas de anúncios por tela; baixar todos os `.mp4` de uma vez travaria a página. O quadro parado vem sempre, o play vem no clique.
 12. **O status do anúncio vem do criativo, não da linha diária.** Por isso o filtro de situação usa `EXISTS`: um `JOIN` repetiria a linha diária e inflaria o investimento.
 13. **Filtro vale para a tela inteira.** Indicadores, gráfico, tabela e galeria respondem ao mesmo recorte — comparar números de recortes diferentes seria pior que não ter filtro.
+14. **A peça visual tem dois caminhos de busca.** O lote `?ids=` é rápido, mas a expansão de campo dentro dele não é garantida em toda conta; quando não devolve nada, a leitura vai para a borda `ads` da conta. Sem esse recuo, a galeria ficava vazia sem explicação.
+15. **Tabela não rola para o lado.** Colunas demais numa tabela de nove métricas obrigavam a arrastar para o lado no telão. Agora a pessoa escolhe as colunas e o padrão é curto.
 
 ## 4. Contrato da Meta
 
@@ -176,6 +187,13 @@ Todas autenticam pelo cookie `token` (ou `Authorization: Bearer`).
 - `db.ts`, `schema.ts`, `metrics.ts`, `dates.ts`, `format.ts`, `client.ts`, `types.ts`.
 
 ## 11. Changelog
+
+### 05/11/2026 — imagem que aparece, tabela sem rolagem
+- Peça visual buscada em dois caminhos: lote `?ids=` e, se vazio, a borda `ads` da conta;
+- Erro da Meta deixa de ser silencioso: o motivo volta na mensagem da sincronização;
+- Miniatura do vídeo com recuo: se a Meta recusar o `.mp4`, a `picture` ainda vem;
+- Tabela sem rolagem horizontal, com seletor de colunas e sem repetir a conta em cada linha;
+- Gráfico e galeria em largura cheia; cards da galeria em 4:3.
 
 ### 05/11/2026 — filtros completos, galeria e vídeo
 - Barra de filtros única (hoje, período, campanha, situação, busca) valendo para a tela inteira;

@@ -436,85 +436,216 @@ export async function fetchMetaInsights(params: {
  * Busca a peça visual de cada anúncio: imagem, vídeo, texto e status.
  *
  * É o único dado que a Meta não devolve junto do insights: precisa de uma
- * segunda chamada, em lote. Como peça visual é enfeite de tela e não número,
- * TUDO aqui é best-effort: se a permissão não alcançar o criativo ou a chamada
- * falhar, a sincronização continua e o anúncio aparece sem imagem.
+ * segunda chamada. A peça visual nunca bloqueia número — se falhar, a
+ * sincronização continua —, mas o motivo da falha VOLTA para a tela. Antes isso
+ * era um `continue` silencioso: o painel ficava sem imagem e ninguém sabia por
+ * quê.
  *
- * O que é pedido, e por quê:
- * - `effective_status` define o filtro por situação (Ativo, Pausado...);
- * - `creative.video_id` é o único jeito de saber que o anúncio é vídeo;
- * - `creative.object_story_spec` traz o texto do anúncio (título e corpo);
- * - a miniatura do vídeo vem em `/{video_id}?fields=picture,source`.
+ * DOIS CAMINHOS, de propósito:
+ * 1. `/?ids=` — rápido, uma chamada por lote de 25;
+ * 2. `/act_{id}/ads` — o caminho canônico, usado só se o primeiro não trouxer
+ *    NENHUMA peça. A expansão de campo dentro do `?ids=` não é garantida em
+ *    todas as contas, e era exatamente aí que a imagem sumia sem aviso.
+ *
+ * E, dentro de cada caminho, duas tentativas de campos: completa e mínima. Sem
+ * o recuo, um único campo sem permissão derrubava a peça de todo o lote.
+ *
+ * `thumbnail_width` não entra aqui: é parâmetro do criativo, não do lote, e
+ * fazia a chamada inteira voltar com erro. A imagem grande vem de `image_url`
+ * (foto) ou de `picture` (vídeo).
  */
-export async function fetchMetaCreatives(adIds: string[]): Promise<AdCreative[]> {
+export type MetaCreativeOutcome = {
+  creatives: AdCreative[];
+  /** Motivo devolvido pela Meta quando nenhuma peça pôde ser lida. */
+  error: string | null;
+};
+
+const CREATIVE_FIELDS_FULL = [
+  "effective_status",
+  "permalink_url",
+  "creative{id,title,body,object_type,thumbnail_url,image_url,video_id,object_story_spec}",
+].join(",");
+
+const CREATIVE_FIELDS_MIN = [
+  "effective_status",
+  "creative{id,title,thumbnail_url,image_url,object_type}",
+].join(",");
+
+/** Uma peça sem a parte de vídeo (que vem numa terceira chamada). */
+type CreativePartial = Omit<AdCreative, "videoThumbnailUrl" | "videoUrl">;
+
+/**
+ * Converte um nó da Meta na peça que a tela entende.
+ *
+ * Devolve `null` quando não há nem imagem nem vídeo: um card vazio não ajuda
+ * ninguém, e a linha do anúncio continua existindo na tabela.
+ */
+function buildCreativePartial(adId: string, node: MetaAdNode | undefined): CreativePartial | null {
+  const creative = node?.creative;
+  if (!creative) return null;
+
+  const story = creative.object_story_spec;
+  const linkData = story?.link_data;
+  const videoData = story?.video_data;
+
+  const videoId = toId(creative.video_id);
+  const format = resolveCreativeFormat(creative, Boolean(videoId));
+
+  // `image_url` é a arte em tamanho cheio; `thumbnail_url` é um selo de 64px.
+  // Por isso a ordem: arte grande primeiro, selo só como último recurso.
+  const imageUrl = creative.image_url || linkData?.picture || null;
+  const thumbnailUrl = creative.thumbnail_url || imageUrl;
+
+  if (!thumbnailUrl && !videoId) return null;
+
+  return {
+    adId,
+    title: creative.title || linkData?.name || videoData?.title || "",
+    body: creative.body || linkData?.message || videoData?.message || "",
+    objectType: String(creative.object_type ?? "").toUpperCase(),
+    format,
+    thumbnailUrl,
+    imageUrl,
+    videoId,
+    effectiveStatus: String(node?.effective_status ?? ""),
+    permalinkUrl: node?.permalink_url ?? null,
+  };
+}
+
+/**
+ * Caminho canônico: a borda `ads` da conta, com paginação.
+ *
+ * Mais lenta que o `?ids=`, mas é a rota documentada para ler criativo em
+ * massa. Só é usada quando o caminho rápido não devolveu nada.
+ */
+async function fetchAdsEdge(
+  wanted: Set<string>
+): Promise<{ nodes: Map<string, MetaAdNode>; error: string | null }> {
   const status = getMetaConfigStatus();
   const accessToken = process.env.META_ACCESS_TOKEN?.trim();
-  if (!accessToken || adIds.length === 0) return [];
+  const nodes = new Map<string, MetaAdNode>();
 
+  if (!accessToken || !status.adAccountId) {
+    return { nodes, error: "Token ou conta de anúncios não configurados no servidor." };
+  }
+
+  let url: string | null =
+    `https://graph.facebook.com/${status.apiVersion}/act_${status.adAccountId}/ads` +
+    `?fields=${encodeURIComponent(CREATIVE_FIELDS_FULL)}` +
+    `&limit=200` +
+    `&access_token=${encodeURIComponent(accessToken)}`;
+
+  let error: string | null = null;
+  let page = 0;
+
+  while (url && page < 10) {
+    page++;
+    try {
+      const response = await fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" });
+      const json = (await response.json()) as {
+        data?: MetaAdNode[];
+        paging?: { next?: string };
+        error?: { message?: string; code?: number };
+      };
+
+      if (!response.ok || json.error) {
+        error ??= describeMetaError(json);
+        break;
+      }
+
+      for (const node of json.data ?? []) {
+        if (node.id && wanted.has(node.id)) nodes.set(node.id, node);
+      }
+
+      // Já achou tudo o que interessava: parar de paginar economiza chamada.
+      if (nodes.size >= wanted.size) break;
+      url = json.paging?.next ?? null;
+    } catch (caught) {
+      error ??= caught instanceof Error ? caught.message : "Falha de rede ao falar com a Meta.";
+      break;
+    }
+  }
+
+  return { nodes, error: nodes.size > 0 ? null : error };
+}
+
+/** Mensagem da Meta em português de gente, com o código entre parênteses. */
+function describeMetaError(json: unknown): string {
+  const error = (json as { error?: { message?: string; code?: number } } | null)?.error;
+  if (!error) return "A Meta recusou o pedido da peça visual.";
+  const code = error.code ? ` (código ${error.code})` : "";
+  return `${error.message ?? "Pedido recusado pela Meta."}${code}`;
+}
+
+async function fetchAdBatch(
+  ids: string[],
+  fields: string
+): Promise<{ nodes: Record<string, MetaAdNode | undefined> | null; error: string | null }> {
+  const status = getMetaConfigStatus();
+  const accessToken = process.env.META_ACCESS_TOKEN?.trim();
+  if (!accessToken) return { nodes: null, error: "Token da Meta não configurado no servidor." };
+
+  const url =
+    `https://graph.facebook.com/${status.apiVersion}/` +
+    `?ids=${encodeURIComponent(ids.join(","))}` +
+    `&fields=${encodeURIComponent(fields)}` +
+    `&access_token=${encodeURIComponent(accessToken)}`;
+
+  try {
+    const response = await fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" });
+    const json = (await response.json()) as Record<string, MetaAdNode | undefined> & {
+      error?: { message?: string; code?: number };
+    };
+    if (!response.ok || json.error) return { nodes: null, error: describeMetaError(json) };
+    return { nodes: json, error: null };
+  } catch (error) {
+    return {
+      nodes: null,
+      error: error instanceof Error ? error.message : "Falha de rede ao falar com a Meta.",
+    };
+  }
+}
+
+export async function fetchMetaCreatives(adIds: string[]): Promise<MetaCreativeOutcome> {
   const unique = Array.from(new Set(adIds.filter(Boolean)));
+  if (unique.length === 0) return { creatives: [], error: null };
+
   const chunks: string[][] = [];
   for (let index = 0; index < unique.length; index += 25) {
     chunks.push(unique.slice(index, index + 25));
   }
 
-  const fields = [
-    "effective_status",
-    "permalink_url",
-    "creative{id,title,body,object_type,thumbnail_url,image_url,video_id,object_story_spec}",
-  ].join(",");
+  let partials: CreativePartial[] = [];
+  let firstError: string | null = null;
 
-  const partials: Array<Omit<AdCreative, "videoThumbnailUrl" | "videoUrl">> = [];
-
+  // Caminho rápido: um pedido por lote de 25.
   for (const chunk of chunks) {
-    const url =
-      `https://graph.facebook.com/${status.apiVersion}/` +
-      `?ids=${encodeURIComponent(chunk.join(","))}` +
-      `&fields=${encodeURIComponent(fields)}` +
-      `&thumbnail_width=800&thumbnail_height=800` +
-      `&access_token=${encodeURIComponent(accessToken)}`;
+    let attempt = await fetchAdBatch(chunk, CREATIVE_FIELDS_FULL);
 
-    try {
-      const response = await fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" });
-      if (!response.ok) continue;
+    if (!attempt.nodes) {
+      firstError ??= attempt.error;
+      attempt = await fetchAdBatch(chunk, CREATIVE_FIELDS_MIN);
+      if (!attempt.nodes) continue;
+    }
 
-      const json = (await response.json()) as Record<string, MetaAdNode | undefined>;
+    for (const adId of chunk) {
+      const partial = buildCreativePartial(adId, attempt.nodes[adId]);
+      if (partial) partials.push(partial);
+    }
+  }
 
-      for (const adId of chunk) {
-        const node = json[adId];
-        const creative = node?.creative;
-        if (!creative) continue;
-
-        const story = creative.object_story_spec;
-        const linkData = story?.link_data;
-        const videoData = story?.video_data;
-
-        const videoId = toId(creative.video_id);
-        const objectType = String(creative.object_type ?? "").toUpperCase();
-        const format = resolveCreativeFormat(creative, Boolean(videoId));
-
-        const imageUrl = creative.image_url || linkData?.picture || null;
-        const thumbnailUrl = creative.thumbnail_url || imageUrl;
-        const title = creative.title || linkData?.name || videoData?.title || "";
-        const body = creative.body || linkData?.message || videoData?.message || "";
-
-        if (!thumbnailUrl && !videoId) continue;
-
-        partials.push({
-          adId,
-          title,
-          body,
-          objectType,
-          format,
-          thumbnailUrl,
-          imageUrl,
-          videoId,
-          effectiveStatus: String(node?.effective_status ?? ""),
-          permalinkUrl: node?.permalink_url ?? null,
-        });
+  // Caminho de reserva: se o lote não devolveu NADA, a expansão de campo do
+  // `?ids=` não vale nesta conta. A borda `ads` é a rota documentada.
+  if (partials.length === 0) {
+    const edge = await fetchAdsEdge(new Set(unique));
+    if (edge.nodes.size > 0) {
+      partials = [];
+      for (const adId of unique) {
+        const partial = buildCreativePartial(adId, edge.nodes.get(adId));
+        if (partial) partials.push(partial);
       }
-    } catch (error) {
-      console.warn("[ads] criativo dos anúncios não pôde ser lido:", error);
-      break;
+    } else {
+      firstError ??= edge.error;
     }
   }
 
@@ -523,7 +654,7 @@ export async function fetchMetaCreatives(adIds: string[]): Promise<AdCreative[]>
     partials.map((item) => item.videoId).filter((id): id is string => Boolean(id))
   );
 
-  return partials.map((item) => {
+  const creatives = partials.map((item) => {
     const video = item.videoId ? videos.get(item.videoId) : undefined;
     return {
       ...item,
@@ -532,9 +663,20 @@ export async function fetchMetaCreatives(adIds: string[]): Promise<AdCreative[]>
       videoUrl: video?.source ?? null,
     };
   });
+
+  // Só reporta erro quando não veio NENHUMA peça: uma falha parcial não deve
+  // assustar quem está vendo a tela cheia de imagem.
+  return { creatives, error: creatives.length === 0 ? firstError : null };
 }
 
-/** Um vídeo, quando tem: miniatura e arquivo. */
+/**
+ * Um vídeo, quando tem: miniatura e arquivo.
+ *
+ * Duas tentativas de propósito. `source` (o `.mp4`) é o campo mais restrito dos
+ * dois; se a Meta recusar, ainda quero a `picture`, que é o que desenha o card.
+ * Pedir os dois juntos e desistir no erro deixaria todo anúncio de vídeo sem
+ * imagem — e aqui quase todo anúncio é vídeo.
+ */
 async function fetchVideoAssets(
   videoIds: string[]
 ): Promise<Map<string, { picture: string | null; source: string | null }>> {
@@ -546,22 +688,29 @@ async function fetchVideoAssets(
   if (!accessToken) return assets;
 
   const unique = Array.from(new Set(videoIds));
+
   for (let index = 0; index < unique.length; index += 25) {
     const chunk = unique.slice(index, index + 25);
-    const url =
-      `https://graph.facebook.com/${status.apiVersion}/` +
-      `?ids=${encodeURIComponent(chunk.join(","))}` +
-      `&fields=${encodeURIComponent("picture,source")}` +
-      `&access_token=${encodeURIComponent(accessToken)}`;
 
-    try {
+    const request = async (fields: string) => {
+      const url =
+        `https://graph.facebook.com/${status.apiVersion}/` +
+        `?ids=${encodeURIComponent(chunk.join(","))}` +
+        `&fields=${encodeURIComponent(fields)}` +
+        `&access_token=${encodeURIComponent(accessToken)}`;
       const response = await fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" });
-      if (!response.ok) continue;
-
       const json = (await response.json()) as Record<
         string,
         { picture?: string; source?: string } | undefined
-      >;
+      > & { error?: unknown };
+      if (!response.ok || json.error) return null;
+      return json;
+    };
+
+    try {
+      let json = await request("picture,source");
+      if (!json) json = await request("picture");
+      if (!json) continue;
 
       for (const videoId of chunk) {
         const node = json[videoId];
@@ -619,6 +768,8 @@ export async function syncMetaAds(params: {
   message: string;
   /** Quantos anúncios ganharam imagem nesta rodada. */
   creatives: number;
+  /** Motivo da Meta quando nenhuma peça visual pôde ser lida. */
+  creativeError: string | null;
 }> {
   const { report, rawPayload, accountName } = await fetchMetaInsights({
     since: params.since,
@@ -632,8 +783,11 @@ export async function syncMetaAds(params: {
 
   // Período sem veiculação é um resultado válido: grava a cobertura para o
   // painel mostrar zero, e não "dia sem relatório".
-  const creatives =
-    report.rows.length > 0 ? await fetchMetaCreatives(report.rows.map((row) => row.adId)) : [];
+  const creativeOutcome =
+    report.rows.length > 0
+      ? await fetchMetaCreatives(report.rows.map((row) => row.adId))
+      : { creatives: [], error: null };
+  const creatives = creativeOutcome.creatives;
 
   const saved = await withAdsTransaction(async (run) => {
     const result = await saveImport(run, {
@@ -655,6 +809,13 @@ export async function syncMetaAds(params: {
       ? `, substituindo ${pluralize(saved.rowsReplaced, "linha anterior", "linhas anteriores")}`
       : "";
 
+  // Avisa quando havia anúncio para ilustrar e a Meta não entregou a peça: sem
+  // isso a tela mostra "Sem peça visual" para sempre e parece defeito nosso.
+  const creativeNote =
+    creativeOutcome.error && saved.rowsImported > 0
+      ? ` As fotos e vídeos não puderam ser lidos: ${creativeOutcome.error}`
+      : "";
+
   const message =
     saved.rowsImported === 0
       ? `Sincronização concluída: nenhuma veiculação no período de ${formatDayRange(
@@ -665,7 +826,7 @@ export async function syncMetaAds(params: {
           saved.rowsImported,
           "linha diária importada",
           "linhas diárias importadas"
-        )} de ${formatDayRange(saved.firstDay, saved.lastDay)}${replacedText}.`;
+        )} de ${formatDayRange(saved.firstDay, saved.lastDay)}${replacedText}.${creativeNote}`;
 
   return {
     success: true,
@@ -673,5 +834,6 @@ export async function syncMetaAds(params: {
     accountName,
     message,
     creatives: creatives.length,
+    creativeError: creativeOutcome.error,
   };
 }

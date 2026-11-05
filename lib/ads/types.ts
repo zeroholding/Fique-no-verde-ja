@@ -109,4 +109,6 @@ export type AdsSyncResult = {
   accountName: string;
   message: string;
   creatives: number;
+  /** Motivo da Meta quando nenhuma peça visual pôde ser lida. */
+  creativeError: string | null;
 };

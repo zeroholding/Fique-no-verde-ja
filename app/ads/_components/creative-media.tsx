@@ -100,10 +100,13 @@ export function CreativeMedia({
 
   if (!creative) {
     return (
-      <div className={`${aspect} grid w-full place-items-center rounded-xl border border-dashed border-slate-200 bg-slate-50 text-slate-300`}>
-        <div className="flex flex-col items-center gap-1.5">
-          <ImageIcon className="size-6" aria-hidden />
-          <span className="text-[11.5px] font-semibold">Sem peça visual</span>
+      <div className={`${aspect} grid w-full place-items-center rounded-xl border border-dashed border-slate-200 bg-slate-50 text-slate-400`}>
+        <div className="flex flex-col items-center gap-1 px-2 text-center">
+          <ImageIcon className="size-5" aria-hidden />
+          <span className="text-[10.5px] font-semibold leading-tight">Sem peça visual</span>
+          <span className="text-[9.5px] font-medium leading-tight text-slate-400">
+            sincronize para buscar
+          </span>
         </div>
       </div>
     );

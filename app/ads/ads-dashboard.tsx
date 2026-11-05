@@ -197,7 +197,9 @@ export default function AdsDashboard() {
   const [attempt, setAttempt] = useState(0);
   const [chartMetric, setChartMetric] = useState<AdsIndicatorKey>("spend");
   const [syncing, setSyncing] = useState(false);
-  const [syncNotice, setSyncNotice] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+  const [syncNotice, setSyncNotice] = useState<{ tone: "success" | "warning" | "error"; text: string } | null>(
+    null
+  );
 
   const [view, setView] = useState<ViewState>({
     key: "",
@@ -282,7 +284,9 @@ export default function AdsDashboard() {
     setSyncNotice(null);
     try {
       const res = await adsRequest<AdsSyncResult>("/api/ads/sync", { method: "POST" });
-      setSyncNotice({ tone: "success", text: res.message });
+      // Erro só nas peças visuais não invalida a sincronização dos números, mas
+      // precisa aparecer: senão a galeria fica vazia e parece defeito nosso.
+      setSyncNotice({ tone: res.creativeError ? "warning" : "success", text: res.message });
       retry();
     } catch (err) {
       setSyncNotice({ tone: "error", text: errorMessage(err) });
@@ -431,7 +435,7 @@ export default function AdsDashboard() {
         <KpiCards indicators={kpis} totals={data.totals} previous={data.previous} currency={data.currency} />
       ) : null}
 
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] xl:items-start">
+      <div className="space-y-5">
         {chartOptions.length > 0 && hasRows ? (
           <DailyChart
             daily={data.daily}

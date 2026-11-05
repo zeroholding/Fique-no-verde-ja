@@ -193,7 +193,7 @@ export function CreativeGallery({
         </div>
       ) : (
         <>
-          <ul className="grid grid-cols-2 gap-3.5 p-4 sm:grid-cols-3 sm:p-5 lg:grid-cols-4">
+          <ul className="grid grid-cols-2 gap-3 p-3.5 sm:grid-cols-3 sm:p-4 lg:grid-cols-4 xl:grid-cols-5">
             {shown.map((item) => {
               const spend = item.values.spend;
               const results = item.values.results;
@@ -206,8 +206,8 @@ export function CreativeGallery({
                     className="group flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-xl border border-slate-200 bg-white text-left shadow-xs transition-all duration-150 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
                   >
                     <div className="relative">
-                      <CreativeMedia creative={item.creative} aspect="aspect-[4/5]" />
-                      <span className="absolute left-2 top-2 flex flex-wrap gap-1">
+                      <CreativeMedia creative={item.creative} aspect="aspect-[4/3]" />
+                      <span className="absolute left-1.5 top-1.5 flex flex-wrap gap-1">
                         {item.creative ? <CreativeFormatBadge format={item.creative.format} /> : null}
                       </span>
                     </div>
