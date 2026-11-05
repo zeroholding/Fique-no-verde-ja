@@ -97,6 +97,7 @@ export function CreativeMedia({
 
   const poster = creative?.videoThumbnailUrl || creative?.thumbnailUrl || creative?.imageUrl;
   const canPlay = creative?.format === "video" && Boolean(creative.videoUrl);
+  const isVideo = creative?.format === "video";
 
   if (!creative) {
     return (
@@ -143,12 +144,18 @@ export function CreativeMedia({
   return (
     <button
       type="button"
-      onClick={() => (canPlay ? setPlaying(true) : undefined)}
+      onClick={(event) => {
+        if (!canPlay) return;
+        // O card da galeria também é clicável (abre o detalhe). Sem parar aqui,
+        // apertar o play abriria o painel junto.
+        event.stopPropagation();
+        setPlaying(true);
+      }}
       disabled={!canPlay}
       aria-label={canPlay ? `Reproduzir vídeo de ${creative.title || "anúncio"}` : undefined}
-      className={`${aspect} group relative w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-100 ${
-        canPlay ? "cursor-pointer" : "cursor-default"
-      }`}
+      className={`${aspect} group relative w-full overflow-hidden rounded-xl border border-slate-200 ${
+        isVideo ? "bg-slate-900" : "bg-slate-100"
+      } ${canPlay ? "cursor-pointer" : "cursor-default"}`}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -157,7 +164,12 @@ export function CreativeMedia({
         loading="lazy"
         onError={() => setFailed(true)}
         referrerPolicy="no-referrer"
-        className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+        className={`size-full transition-transform duration-300 group-hover:scale-[1.03] ${
+          // Foto preenche a caixa. Vídeo vertical (9:16) numa caixa 4:3 seria
+          // cortado em quase todo o quadro, então ele aparece inteiro, com
+          // faixa escura nas laterais.
+          isVideo ? "object-contain" : "object-cover"
+        }`}
       />
       {canPlay ? (
         <>

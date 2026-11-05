@@ -193,70 +193,105 @@ export function CreativeGallery({
         </div>
       ) : (
         <>
-          <ul className="grid grid-cols-2 gap-3 p-3.5 sm:grid-cols-3 sm:p-4 lg:grid-cols-4 xl:grid-cols-5">
+          <ul className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {shown.map((item) => {
               const spend = item.values.spend;
               const results = item.values.results;
               const cost = item.values.cost_per_result;
+              const ctr = item.values.ctr;
+              const status = statusLabel(item.creative?.effectiveStatus ?? "");
+
               return (
                 <li key={item.adId}>
-                  <button
-                    type="button"
+                  {/*
+                   * O card é uma `div` com papel de botão, não um `<button>`:
+                   * dentro dele vive o botão de play do vídeo, e botão dentro de
+                   * botão é HTML inválido — o navegador desmancha a árvore e o
+                   * clique para de funcionar.
+                   */}
+                  <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => setOpen(item)}
-                    className="group flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-xl border border-slate-200 bg-white text-left shadow-xs transition-all duration-150 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setOpen(item);
+                      }
+                    }}
+                    aria-label={`Ver detalhes de ${item.name || "anúncio"}`}
+                    className="group flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-xl border border-slate-200 bg-white text-left shadow-xs transition-all duration-150 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
                   >
                     <div className="relative">
                       <CreativeMedia creative={item.creative} aspect="aspect-[4/3]" />
-                      <span className="absolute left-1.5 top-1.5 flex flex-wrap gap-1">
+                      <span className="absolute left-2 top-2 flex flex-wrap gap-1">
                         {item.creative ? <CreativeFormatBadge format={item.creative.format} /> : null}
                       </span>
-                    </div>
-
-                    <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-2.5">
-                      <p
-                        className="line-clamp-2 text-[12.5px] font-bold leading-snug text-slate-900 group-hover:text-blue-700"
-                        title={item.name}
-                      >
-                        {item.name || "Anúncio sem nome"}
-                      </p>
-                      <p className="truncate text-[11px] font-medium text-slate-400" title={item.campaignName}>
-                        {item.campaignName || "Sem campanha"}
-                      </p>
-
-                      <div className="mt-auto space-y-1 pt-1">
-                        <div className="flex items-baseline justify-between gap-1">
-                          <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
-                            Gasto
-                          </span>
-                          <span className="text-[12.5px] font-extrabold tabular-nums text-slate-900">
-                            {formatIndicator(spend, "money", currency)}
-                          </span>
-                        </div>
-                        <div className="flex items-baseline justify-between gap-1">
-                          <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
-                            Resultados
-                          </span>
-                          <span className="text-[12.5px] font-bold tabular-nums text-slate-700">
-                            {formatIndicator(results, "count", currency)}
-                          </span>
-                        </div>
-                        <div className="flex items-baseline justify-between gap-1">
-                          <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
-                            Custo/resultado
-                          </span>
-                          <span className="text-[12.5px] font-bold tabular-nums text-slate-700">
-                            {formatIndicator(cost, "money", currency)}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between gap-1 border-t border-slate-100 pt-1.5">
+                      {status ? (
+                        <span className="absolute right-2 top-2">
                           <StatusPill status={item.creative?.effectiveStatus ?? ""} />
-                          <span className="text-[10.5px] font-semibold text-slate-400">
-                            {item.values.ctr !== null ? `${formatPercent(item.values.ctr, 1)} CTR` : ""}
-                          </span>
-                        </div>
-                      </div>
+                        </span>
+                      ) : null}
                     </div>
-                  </button>
+
+                    <div className="flex min-w-0 flex-1 flex-col gap-2 p-3">
+                      <div className="min-w-0">
+                        <p
+                          className="line-clamp-2 text-[13.5px] font-bold leading-snug text-slate-900 group-hover:text-blue-700"
+                          title={item.name}
+                        >
+                          {item.name || "Anúncio sem nome"}
+                        </p>
+                        <p
+                          className="mt-0.5 line-clamp-1 text-[11.5px] font-medium text-slate-400"
+                          title={[item.campaignName, item.adsetName].filter(Boolean).join(" › ")}
+                        >
+                          {item.campaignName || "Sem campanha"}
+                          {item.adsetName ? ` › ${item.adsetName}` : ""}
+                        </p>
+                      </div>
+
+                      {/*
+                       * Rótulo em cima, número embaixo. Antes era rótulo à
+                       * esquerda e número à direita na mesma linha: em card
+                       * estreito o rótulo era cortado ("CUSTO/RESULTA…").
+                       */}
+                      <dl className="mt-auto grid grid-cols-2 gap-x-3 gap-y-2 border-t border-slate-100 pt-2.5">
+                        <div>
+                          <dt className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">
+                            Gasto
+                          </dt>
+                          <dd className="text-[13.5px] font-extrabold tabular-nums text-slate-900">
+                            {formatIndicator(spend, "money", currency)}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">
+                            Resultados
+                          </dt>
+                          <dd className="text-[13.5px] font-bold tabular-nums text-slate-800">
+                            {formatIndicator(results, "count", currency)}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">
+                            Custo/resultado
+                          </dt>
+                          <dd className="text-[13.5px] font-bold tabular-nums text-slate-800">
+                            {formatIndicator(cost, "money", currency)}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">
+                            CTR
+                          </dt>
+                          <dd className="text-[13.5px] font-bold tabular-nums text-slate-800">
+                            {ctr !== null ? formatPercent(ctr, 1) : "—"}
+                          </dd>
+                        </div>
+                      </dl>
+                    </div>
+                  </div>
                 </li>
               );
             })}
