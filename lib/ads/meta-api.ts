@@ -458,6 +458,8 @@ export type MetaCreativeOutcome = {
   creatives: AdCreative[];
   /** Motivo devolvido pela Meta quando nenhuma peça pôde ser lida. */
   error: string | null;
+  /** Quantas miniaturas foram trocadas pela versão em alta resolução. */
+  upgraded: number;
 };
 
 const CREATIVE_FIELDS_FULL = [
@@ -472,7 +474,10 @@ const CREATIVE_FIELDS_MIN = [
 ].join(",");
 
 /** Uma peça sem a parte de vídeo (que vem numa terceira chamada). */
-type CreativePartial = Omit<AdCreative, "videoThumbnailUrl" | "videoUrl">;
+type CreativePartial = Omit<AdCreative, "videoThumbnailUrl" | "videoUrl"> & {
+  /** Só serve para pedir a miniatura grande; não vai para o banco. */
+  creativeId: string | null;
+};
 
 /**
  * Converte um nó da Meta na peça que a tela entende.
@@ -491,8 +496,8 @@ function buildCreativePartial(adId: string, node: MetaAdNode | undefined): Creat
   const videoId = toId(creative.video_id);
   const format = resolveCreativeFormat(creative, Boolean(videoId));
 
-  // `image_url` é a arte em tamanho cheio; `thumbnail_url` é um selo de 64px.
-  // Por isso a ordem: arte grande primeiro, selo só como último recurso.
+  // `image_url` é a arte em tamanho cheio; `thumbnail_url` sem dimensão pedida
+  // vem em 64x64 (a doc manda passar `thumbnail_width`/`thumbnail_height`).
   const imageUrl = creative.image_url || linkData?.picture || null;
   const thumbnailUrl = creative.thumbnail_url || imageUrl;
 
@@ -500,6 +505,7 @@ function buildCreativePartial(adId: string, node: MetaAdNode | undefined): Creat
 
   return {
     adId,
+    creativeId: toId(creative.id),
     title: creative.title || linkData?.name || videoData?.title || "",
     body: creative.body || linkData?.message || videoData?.message || "",
     objectType: String(creative.object_type ?? "").toUpperCase(),
@@ -510,6 +516,58 @@ function buildCreativePartial(adId: string, node: MetaAdNode | undefined): Creat
     effectiveStatus: String(node?.effective_status ?? ""),
     permalinkUrl: node?.permalink_url ?? null,
   };
+}
+
+/** Teto de chamadas individuais por sincronização, para não estourar limite. */
+const MAX_THUMBNAIL_UPGRADES = 80;
+
+/**
+ * A miniatura do criativo em tamanho de verdade.
+ *
+ * A doc do criativo é explícita: "Forneça as dimensões para isto com
+ * `thumbnail_width` e `thumbnail_height`". Sem isso, a Meta devolve o padrão
+ * dela — os 64x64.
+ *
+ * E essas dimensões são parâmetro do NÓ DO CRIATIVO (`/{CREATIVE_ID}`), não do
+ * lote `?ids=`: é por isso que não podem ir na chamada em massa (foi o que
+ * derrubou tudo antes). Logo, aqui é uma chamada por anúncio — e só para quem
+ * NÃO tem arte em tamanho cheio, porque para os outros seria chamada jogada
+ * fora.
+ */
+async function fetchLargeThumbnails(
+  targets: Array<{ adId: string; creativeId: string }>
+): Promise<Map<string, string>> {
+  const upgraded = new Map<string, string>();
+  const status = getMetaConfigStatus();
+  const accessToken = process.env.META_ACCESS_TOKEN?.trim();
+  if (!accessToken || targets.length === 0) return upgraded;
+
+  const queue = targets.slice(0, MAX_THUMBNAIL_UPGRADES);
+  // Quatro em paralelo: o suficiente para não arrastar, longe do limite da Meta.
+  const workers = Array.from({ length: Math.min(4, queue.length) }, async () => {
+    for (;;) {
+      const item = queue.shift();
+      if (!item) return;
+
+      const url =
+        `https://graph.facebook.com/${status.apiVersion}/${item.creativeId}` +
+        `?fields=${encodeURIComponent("thumbnail_url")}` +
+        `&thumbnail_width=1080&thumbnail_height=1080` +
+        `&access_token=${encodeURIComponent(accessToken)}`;
+
+      try {
+        const response = await fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" });
+        const json = (await response.json()) as { thumbnail_url?: string; error?: unknown };
+        if (!response.ok || json.error || !json.thumbnail_url) continue;
+        upgraded.set(item.adId, json.thumbnail_url);
+      } catch {
+        // Miniatura é enfeite: falhou, o anúncio fica com a que já tinha.
+      }
+    }
+  });
+
+  await Promise.all(workers);
+  return upgraded;
 }
 
 /**
@@ -608,7 +666,7 @@ async function fetchAdBatch(
 
 export async function fetchMetaCreatives(adIds: string[]): Promise<MetaCreativeOutcome> {
   const unique = Array.from(new Set(adIds.filter(Boolean)));
-  if (unique.length === 0) return { creatives: [], error: null };
+  if (unique.length === 0) return { creatives: [], error: null, upgraded: 0 };
 
   const chunks: string[][] = [];
   for (let index = 0; index < unique.length; index += 25) {
@@ -654,22 +712,39 @@ export async function fetchMetaCreatives(adIds: string[]): Promise<MetaCreativeO
     partials.map((item) => item.videoId).filter((id): id is string => Boolean(id))
   );
 
+  // Quem não tem arte em tamanho cheio (`image_url`) fica com a miniatura
+  // padrão de 64x64. Para esses vale a chamada individual pedindo 1080 — é o
+  // único jeito documentado de pedir tamanho. A capa do vídeo (`picture`) não
+  // aceita dimensão e não tem tamanho garantido, então ela não dispensa o
+  // pedido: o 1080 explícito vale mais.
+  const needsUpgrade = partials.filter((item) => !item.imageUrl && Boolean(item.creativeId));
+
+  const largeThumbnails = await fetchLargeThumbnails(
+    needsUpgrade.map((item) => ({ adId: item.adId, creativeId: item.creativeId as string }))
+  );
+
   const creatives = partials.map((item) => {
     const video = item.videoId ? videos.get(item.videoId) : undefined;
+    const upgraded = largeThumbnails.get(item.adId);
+    const thumbnailUrl = upgraded ?? item.thumbnailUrl;
+    // Para vídeo, a melhor capa disponível: a que pedimos em 1080, depois a do
+    // nó do vídeo, depois a arte do criativo.
+    const cover = upgraded ?? video?.picture ?? item.imageUrl ?? item.thumbnailUrl;
     return {
       ...item,
-      // Sem capa do vídeo, a arte do criativo é um quadro parado — serve de
-      // reserva. A arte em tamanho cheio vem antes da miniatura de 64px.
-      videoThumbnailUrl:
-        video?.picture ??
-        (item.format === "video" ? (item.imageUrl ?? item.thumbnailUrl) : null),
+      thumbnailUrl,
+      videoThumbnailUrl: item.format === "video" ? cover : null,
       videoUrl: video?.source ?? null,
     };
   });
 
   // Só reporta erro quando não veio NENHUMA peça: uma falha parcial não deve
   // assustar quem está vendo a tela cheia de imagem.
-  return { creatives, error: creatives.length === 0 ? firstError : null };
+  return {
+    creatives,
+    error: creatives.length === 0 ? firstError : null,
+    upgraded: largeThumbnails.size,
+  };
 }
 
 /**
@@ -789,7 +864,7 @@ export async function syncMetaAds(params: {
   const creativeOutcome =
     report.rows.length > 0
       ? await fetchMetaCreatives(report.rows.map((row) => row.adId))
-      : { creatives: [], error: null };
+      : { creatives: [], error: null, upgraded: 0 };
   const creatives = creativeOutcome.creatives;
 
   const saved = await withAdsTransaction(async (run) => {
@@ -819,6 +894,15 @@ export async function syncMetaAds(params: {
       ? ` As fotos e vídeos não puderam ser lidos: ${creativeOutcome.error}`
       : "";
 
+  const upgradedNote =
+    creativeOutcome.upgraded > 0
+      ? ` ${pluralize(
+          creativeOutcome.upgraded,
+          "peça visual atualizada em alta resolução",
+          "peças visuais atualizadas em alta resolução"
+        )}.`
+      : "";
+
   const message =
     saved.rowsImported === 0
       ? `Sincronização concluída: nenhuma veiculação no período de ${formatDayRange(
@@ -829,7 +913,7 @@ export async function syncMetaAds(params: {
           saved.rowsImported,
           "linha diária importada",
           "linhas diárias importadas"
-        )} de ${formatDayRange(saved.firstDay, saved.lastDay)}${replacedText}.${creativeNote}`;
+        )} de ${formatDayRange(saved.firstDay, saved.lastDay)}${replacedText}.${creativeNote}${upgradedNote}`;
 
   return {
     success: true,
