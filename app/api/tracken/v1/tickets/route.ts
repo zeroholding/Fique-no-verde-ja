@@ -183,6 +183,8 @@ type PublicTicketRow = {
   started_at: string | null;
   finished_at: string | null;
   ml_claim_id: string | null;
+  /** Telefone de contato do cliente, so digitos. Nulo quando nao foi enviado. */
+  phone: string | null;
 };
 
 export async function GET(request: NextRequest) {
@@ -261,7 +263,7 @@ export async function GET(request: NextRequest) {
               sm.label AS status_label, t.service_type, t.shipping_mode,
               t.seller_name,
               t.sale_date, t.shipping_deadline, t.shipped_at, t.received_at,
-              t.started_at, t.finished_at, t.ml_claim_id
+              t.started_at, t.finished_at, t.ml_claim_id, t.phone
          FROM tracken_tickets t
          LEFT JOIN tracken_carriers c ON c.id = t.carrier_id
          LEFT JOIN tracken_status_map sm ON sm.code = t.status

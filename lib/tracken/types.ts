@@ -68,6 +68,8 @@ export type TrackenTicketRow = {
   pack_id: string | null;
   delay_reason: string | null;
   requested_by: string | null;
+  /** Telefone do cliente, so digitos. Nulo quando o acionamento nao trouxe. */
+  phone: string | null;
 };
 
 export type TrackenTicketEventRow = {
@@ -106,6 +108,16 @@ export type TrackenIncomingItem = {
   pack_id?: string | null;
   delay_reason?: string | null;
   requested_by?: string | null;
+  /**
+   * Telefone de contato do cliente.
+   *
+   * Opcional de proposito: a TRACKen nem sempre tem o contato, e recusar o
+   * acionamento por falta de um dado acessorio faria a solicitacao — que e o
+   * que nao pode ser perdido — deixar de entrar no painel.
+   *
+   * Aceita com ou sem formatacao; o valor e guardado so com digitos.
+   */
+  phone?: string | null;
   tracken_ref?: string | null;
   metadata?: Record<string, unknown> | null;
 };

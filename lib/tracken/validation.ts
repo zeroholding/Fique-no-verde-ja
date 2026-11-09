@@ -43,6 +43,8 @@ export type NormalizedItem = {
   delayReason: string | null;
   requestedBy: string | null;
   trackenRef: string | null;
+  /** Telefone do cliente, so digitos. Nulo quando nao veio ou nao e telefone. */
+  phone: string | null;
 };
 
 export type ItemValidation =
@@ -62,6 +64,31 @@ const truncate = (value: string | null, max: number): string | null =>
 
 const ISO_DATETIME_WITH_OFFSET =
   /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,9}))?)?(Z|[+-]\d{2}:\d{2})$/;
+
+/**
+ * Telefone do cliente.
+ *
+ * Guarda SO DIGITOS: "(11) 98765-4321" e "+55 11 98765-4321" viram
+ * "11987654321" e "5511987654321". A formatacao para leitura e da tela, e
+ * guardar o texto como veio obrigaria todo consumidor a reparsear.
+ *
+ * Nao valida DDI/DDD/operadora: o contrato nao pede isso e uma regra inventada
+ * aqui recusaria telefone legitimo. So descarta o que claramente nao e numero:
+ * menos de 8 digitos (curto demais para qualquer telefone) ou mais de 15
+ * (limite do E.164).
+ *
+ * Nunca recusa o acionamento: campo invalido vira `null` e o atendimento entra
+ * do mesmo jeito.
+ */
+function normalizePhone(value: unknown): string | null {
+  const raw = asTrimmedString(value);
+  if (!raw) return null;
+
+  const digits = raw.replace(/\D+/g, "");
+  if (digits.length < 8 || digits.length > 15) return null;
+
+  return digits;
+}
 
 const parseDate = (value: unknown): Date | null => {
   const raw = asTrimmedString(value);
@@ -268,6 +295,7 @@ export function validateIncomingItem(input: unknown): ItemValidation {
       delayReason: asTrimmedString(item.delay_reason),
       requestedBy: truncate(asTrimmedString(item.requested_by), 200),
       trackenRef: truncate(asTrimmedString(item.tracken_ref), 120),
+      phone: normalizePhone(item.phone),
     },
   };
 }

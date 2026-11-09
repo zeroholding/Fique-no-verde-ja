@@ -287,6 +287,28 @@ Limites vigentes devem ser conferidos em `app/tracken/docapi/page.tsx` e na vali
 
 Datas (`sale_date`, `shipping_deadline` e `shipped_at`) exigem datetime ISO 8601 com hora e offset explícito `Z` ou `±HH:MM`. Segundos e fração são opcionais; date-only e datetime sem offset são rejeitados antes da conversão para `Date`, evitando interpretação pelo fuso do servidor.
 
+### 9.1 Telefone de contato do cliente (`phone`)
+
+Campo **opcional** do item, no nível raiz do objeto (não dentro de `buyer`):
+
+```json
+{ "shipment_id": "...", "order_id": "...", "phone": "11987654321" }
+```
+
+Regras implementadas em `lib/tracken/validation.ts` (`normalizePhone`):
+
+- aceita com ou sem formatação; o valor é **persistido só com dígitos** (DDI + DDD + número);
+- menos de 8 ou mais de 15 dígitos é descartado para `null` (fora do E.164);
+- **nunca recusa o acionamento**: telefone inválido vira `null` e o atendimento entra normalmente;
+- sem DDI/DDD/operadora obrigatórios — inventar essa regra recusaria telefone legítimo.
+
+Persistência: `tracken_tickets.phone` (TEXT, nullable), migration `031_tracken_ticket_phone.sql`.
+
+Exibição: coluna **Contato** na grade do painel, no cartão do mobile e na ficha do atendimento; `lib/tracken/format.ts::formatPhone` devolve a forma legível. O número também entra na busca do painel (comparado só com dígitos) e na exportação CSV.
+
+O telefone **não** é enviado no webhook de saída: `ticket.received` e `ticket.status_changed` mantêm o payload da §7.2.
+
+
 ## 10. Transportadoras
 
 Transportadoras ficam em `tracken_carriers`. O código/nome recebido é associado a uma transportadora existente quando possível; quando não há correspondência nos índices ativos, o helper tenta inserir dentro do savepoint do item e retorna separadamente a linha resolvida e `created`.
@@ -610,6 +632,7 @@ Ao alterar a integração:
 | Alinhamento de status | `database/migrations/024_align_tracken_status_codes.sql` |
 | Isolamento por ambiente (aditivo) | `database/migrations/025_tracken_environment_isolation.sql` |
 | Corte da UNIQUE global | `database/migrations/026_tracken_environment_cutover.sql` |
+| Telefone de contato do cliente | `database/migrations/031_tracken_ticket_phone.sql` |
 | Gestão de credencial | `scripts/tracken_credential.mjs` |
 | Diagnóstico de configurações | `app/api/tracken/settings/route.ts` |
 

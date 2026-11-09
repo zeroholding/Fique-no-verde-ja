@@ -20,6 +20,7 @@ import {
   MessageSquare,
   Package,
   PackageCheck,
+  Phone,
   Receipt,
   RefreshCw,
   Send,
@@ -47,6 +48,7 @@ import { statusIcon } from "./tokens";
 import {
   SERVICE_TYPE_LABELS,
   formatDate,
+  formatPhone,
   formatTime,
 } from "@/lib/tracken/format";
 
@@ -437,6 +439,19 @@ export default function TicketDetailModal({
                   {ticket.buyer_name ?? "-"}
                 </span>
               </Field>
+              {/* Contato so aparece quando existe: uma ficha com "Telefone: -"
+                  em todo atendimento antigo ensina a ignorar o campo. */}
+              {ticket.phone && (
+                <Field label="Contato do cliente" icon={Phone}>
+                  <a
+                    href={`tel:+${ticket.phone}`}
+                    className="tabular-nums hover:underline"
+                    title={`Ligar para ${formatPhone(ticket.phone)}`}
+                  >
+                    {formatPhone(ticket.phone)}
+                  </a>
+                </Field>
+              )}
               <Field label="Seller" icon={Store}>
                 {ticket.seller_name}
                 {ticket.seller_ml_id && (

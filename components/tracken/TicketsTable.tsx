@@ -13,7 +13,7 @@ import {
   STATUS_REQUIRING_DENIAL_REASON,
   denialReasonLabel,
 } from "@/lib/tracken/denial";
-import { SERVICE_TYPE_LABELS } from "@/lib/tracken/format";
+import { SERVICE_TYPE_LABELS, formatPhone } from "@/lib/tracken/format";
 
 /**
  * Grade de atendimentos.
@@ -43,6 +43,9 @@ const COLUMNS: Array<{
   { key: "carrier", label: "Transp.", sortKey: "carrier", width: "w-[112px]" },
   { key: "ids", label: "Envio · Venda", width: "w-[212px]" },
   { key: "parties", label: "Comprador · Seller", width: "w-[248px]" },
+  // Contato do cliente. Fica logo depois de quem e o comprador porque e o
+  // proximo dado que o atendente procura: o numero para falar com ele.
+  { key: "contact", label: "Contato", width: "w-[152px]" },
   { key: "mode", label: "Modalidade", sortKey: "mode", width: "w-[140px]" },
   { key: "deadline", label: "Limite de envio", sortKey: "deadline", width: "w-[178px]" },
   // Sem `hideBelow`: esta coluna passou a carregar o TAMANHO do atraso, que e
@@ -75,9 +78,32 @@ type Props = {
   ) => Promise<void>;
 };
 
-/** Esqueleto durante a primeira carga, para a tela nao piscar vazia. */
-function SkeletonRows() {
+/**
+ * Contato do cliente.
+ *
+ * O telefone e opcional no contrato: quando a TRACKen nao manda, o atendimento
+ * entra do mesmo jeito e a celula mostra um travessao discreto. Sem numero nao
+ * existe o que discar, e escrever "nao informado" em cada linha poluiria a
+ * grade — o travessao e o padrao do resto da tabela.
+ */
+function ContactCell({ phone }: { phone: string | null }) {
+  if (!phone) {
+    return <span className="text-[13.5px] text-slate-400">—</span>;
+  }
+
   return (
+    <a
+      href={`tel:+${phone}`}
+      title={`Ligar para ${formatPhone(phone)}`}
+      className="block truncate text-[13.5px] font-medium text-slate-800 tabular-nums transition-colors hover:text-[var(--tk-brand-strong)] hover:underline"
+    >
+      {formatPhone(phone)}
+    </a>
+  );
+}
+
+/** Esqueleto durante a primeira carga, para a tela nao piscar vazia. */
+function SkeletonRows() {  return (
     <>
       {Array.from({ length: 7 }).map((_, rowIndex) => (
         <tr key={rowIndex} className="border-b border-[var(--tk-line)]">
@@ -189,6 +215,13 @@ function TicketCard({
       <p className="truncate text-[13px] text-slate-500" title={ticket.seller_name}>
         {ticket.seller_name}
       </p>
+
+      {/* No telefone a grade nao existe: o contato precisa aparecer aqui. */}
+      {ticket.phone && (
+        <p className="mt-1 truncate text-[13px] text-slate-600">
+          <ContactCell phone={ticket.phone} />
+        </p>
+      )}
 
       {/* Limite e atraso lado a lado: e a comparacao que decide a prioridade. */}
       <div className="mt-2.5 grid grid-cols-2 gap-2 border-t border-[var(--tk-line)] pt-2.5">
@@ -345,7 +378,7 @@ export default function TicketsTable({
         role="region"
         aria-label="Grade de atendimentos"
       >
-        <table className="w-full min-w-[1150px] border-separate border-spacing-0 text-left">
+        <table className="w-full min-w-[1300px] border-separate border-spacing-0 text-left">
           <caption className="sr-only">
             Atendimentos recebidos da TRACKen, ordenados pelo limite de envio
           </caption>
@@ -469,10 +502,14 @@ export default function TicketsTable({
                   </span>
                 </td>
 
+                {/* Contato do cliente */}
+                <td className="px-3.5 py-3">
+                  <ContactCell phone={ticket.phone} />
+                </td>
+
                 <td className="px-3.5 py-3">
                   <ShippingModeBadge mode={ticket.shipping_mode} />
                 </td>
-
                 <td className="px-3.5 py-3">
                   <DeadlineCell deadline={ticket.shipping_deadline} />
                 </td>

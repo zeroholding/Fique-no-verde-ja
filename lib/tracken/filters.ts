@@ -241,13 +241,20 @@ export function buildTicketFilters(
 
   if (filters.search) {
     const placeholder = push(`%${filters.search}%`);
+    // O telefone entra na busca so com digitos; quem digita "(11) 98765" nao
+    // acharia nada, entao a busca tambem tenta a versao sem formatacao.
+    const digitsOnly = filters.search.replace(/\D+/g, "");
+    const phoneClause = digitsOnly
+      ? ` OR t.phone LIKE ${push(`%${digitsOnly}%`)}`
+      : "";
+
     conditions.push(
       `(t.shipment_id ILIKE ${placeholder}
         OR t.order_id ILIKE ${placeholder}
         OR t.buyer_nickname ILIKE ${placeholder}
         OR t.buyer_name ILIKE ${placeholder}
         OR t.seller_name ILIKE ${placeholder}
-        OR t.tracking_number ILIKE ${placeholder})`
+        OR t.tracking_number ILIKE ${placeholder}${phoneClause})`
     );
   }
 

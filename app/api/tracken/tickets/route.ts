@@ -48,6 +48,8 @@ type TicketListRow = {
   ml_claim_id: string | null;
   /** Codigo do motivo, quando o atendimento foi negado. */
   denial_reason: string | null;
+  /** Telefone do cliente, so digitos. Nulo quando o acionamento nao trouxe. */
+  phone: string | null;
 };
 
 export async function GET(request: NextRequest) {
@@ -96,7 +98,7 @@ export async function GET(request: NextRequest) {
                 t.service_type, t.assigned_user_id,
                 NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), '')
                   AS assigned_user_name,
-                t.ml_claim_id, t.denial_reason
+                t.ml_claim_id, t.denial_reason, t.phone
            FROM tracken_tickets t
            LEFT JOIN tracken_carriers c ON c.id = t.carrier_id
            LEFT JOIN tracken_status_map sm ON sm.code = t.status

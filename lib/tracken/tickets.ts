@@ -332,10 +332,10 @@ export async function createTicketsBatch(
              sale_date, shipping_deadline, shipped_at, shipping_mode,
              status, service_type,
              tracking_number, pack_id, delay_reason, requested_by,
-             payload_raw, credential_id, environment
+             payload_raw, credential_id, environment, phone
            ) VALUES (
              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
-             $13, $14, $15, $16, $17, $18, $19::jsonb, $20, $21
+             $13, $14, $15, $16, $17, $18, $19::jsonb, $20, $21, $22
            )
            ON CONFLICT (environment, shipment_id) DO NOTHING
            RETURNING id, status`,
@@ -363,6 +363,8 @@ export async function createTicketsBatch(
             JSON.stringify(rawPayload ?? {}),
             context.credentialId,
             context.environment,
+            // Telefone e opcional: nulo nao impede o atendimento de entrar.
+            normalized.phone,
           ]
         );
 

@@ -46,7 +46,7 @@ export async function GET(
               t.started_at, t.finished_at, t.resolution_note, t.ml_claim_id,
               t.denial_reason,
               t.service_type, t.tracking_number, t.pack_id,
-              t.delay_reason, t.requested_by
+              t.delay_reason, t.requested_by, t.phone
          FROM tracken_tickets t
          LEFT JOIN tracken_carriers c ON c.id = t.carrier_id
          LEFT JOIN tracken_status_map sm ON sm.code = t.status

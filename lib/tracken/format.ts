@@ -165,3 +165,41 @@ export const SERVICE_TYPE_LABELS: Record<string, string> = {
   reclamacao: "Reclamacao",
   cancelado: "Cancelado",
 };
+
+/**
+ * Telefone para leitura.
+ *
+ * O banco guarda so digitos (ver `normalizePhone` em validation.ts). Aqui o
+ * numero volta a ter forma de telefone, porque "11987654321" na tela nao e
+ * lido como telefone por ninguem.
+ *
+ * Formatos cobertos, sem inventar DDI:
+ *   11 digitos  -> (11) 98765-4321   celular com DDD
+ *   10 digitos  -> (11) 3456-7890    fixo com DDD
+ *   com DDI 55  -> +55 (11) 98765-4321
+ *
+ * Qualquer outro tamanho sai como veio: e melhor mostrar o numero cru do que
+ * exibir uma formatacao que nao corresponde ao que a TRACKen mandou.
+ */
+export function formatPhone(value: string | null | undefined): string {
+  const digits = (value ?? "").replace(/\D+/g, "");
+  if (!digits) return "";
+
+  // DDI 55 so e retirado quando o que sobra tem tamanho de numero brasileiro.
+  const semDdi =
+    digits.startsWith("55") && (digits.length === 12 || digits.length === 13)
+      ? digits.slice(2)
+      : null;
+
+  const nacional = semDdi ?? digits;
+  const prefixo = semDdi ? "+55 " : "";
+
+  if (nacional.length === 11) {
+    return `${prefixo}(${nacional.slice(0, 2)}) ${nacional.slice(2, 7)}-${nacional.slice(7)}`;
+  }
+  if (nacional.length === 10) {
+    return `${prefixo}(${nacional.slice(0, 2)}) ${nacional.slice(2, 6)}-${nacional.slice(6)}`;
+  }
+
+  return prefixo ? `${prefixo}${nacional}` : digits;
+}

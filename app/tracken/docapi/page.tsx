@@ -129,6 +129,13 @@ const CAMPOS: FieldRow[] = [
     description: "Nome do comprador.",
   },
   {
+    name: "phone",
+    type: "string",
+    required: false,
+    description:
+      "Telefone de contato do cliente, para o atendente falar com ele. Aceita com ou sem formatação — (11) 98765-4321, +55 11 98765-4321 ou 11987654321 — e é guardado só com dígitos. Recomendado: é o único canal de contato do cliente no painel. Quando não vem, o atendimento entra normalmente e a coluna fica vazia.",
+  },
+  {
     name: "seller.ml_id",
     type: "string",
     required: false,
@@ -223,6 +230,7 @@ const REQUEST_EXAMPLE = `{
         "nickname": "joao_ml",
         "name": "João da Silva"
       },
+      "phone": "11987654321",
       "seller": {
         "name": "Loja Exemplo",
         "ml_id": "123456789"
@@ -267,7 +275,7 @@ const RESPONSE_EXAMPLE = `{
 }`;
 
 const CURL_EXAMPLE = `# 1) Monte o corpo
-BODY='{"items":[{"shipment_id":"44998877665","order_id":"2000009876543210","carrier_name":"TM Transportes","seller":{"name":"Loja Exemplo"},"shipping_mode":"self_service","sale_date":"2026-09-02T09:15:00-03:00","shipping_deadline":"2026-09-03T14:24:00-03:00"}]}'
+BODY='{"items":[{"shipment_id":"44998877665","order_id":"2000009876543210","carrier_name":"TM Transportes","seller":{"name":"Loja Exemplo"},"phone":"11987654321","shipping_mode":"self_service","sale_date":"2026-09-02T09:15:00-03:00","shipping_deadline":"2026-09-03T14:24:00-03:00"}]}'
 
 # 2) Assine: HMAC-SHA256 de "<timestamp>.<corpo>"
 TS=$(date +%s)
@@ -335,6 +343,7 @@ const GET_ONE_EXAMPLE = `{
     "seller_name": "Loja Exemplo",
     "buyer_nickname": "joao_ml",
     "buyer_name": "João da Silva",
+    "phone": "11987654321",
     "assigned_to": "Bruna Castro",
     "sale_date": "2026-09-02T12:15:00.000Z",
     "shipping_deadline": "2026-09-03T17:24:00.000Z",

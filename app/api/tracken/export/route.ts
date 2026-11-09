@@ -32,6 +32,7 @@ const HEADERS = [
   "Numero da Venda",
   "Apelido do Comprador",
   "Nome do Comprador",
+  "Telefone de Contato",
   "Seller",
   "Servico",
   "Modalidade de Envio",
@@ -70,6 +71,7 @@ type ExportRow = {
   order_id: string;
   buyer_nickname: string | null;
   buyer_name: string | null;
+  phone: string | null;
   seller_name: string;
   service_type: string;
   shipping_mode: string | null;
@@ -95,7 +97,7 @@ export async function GET(request: NextRequest) {
 
     const result = await trackenQuery<ExportRow>(
       `SELECT c.code AS carrier_code, t.shipment_id, t.order_id,
-              t.buyer_nickname, t.buyer_name, t.seller_name, t.service_type,
+              t.buyer_nickname, t.buyer_name, t.phone, t.seller_name, t.service_type,
               t.shipping_mode,
               t.sale_date, t.shipping_deadline, t.shipped_at,
               sm.label AS status_label, t.status, t.received_at,
@@ -142,6 +144,7 @@ export async function GET(request: NextRequest) {
           row.order_id,
           row.buyer_nickname,
           row.buyer_name,
+          row.phone,
           row.seller_name,
           row.service_type,
           mode?.label ?? "",

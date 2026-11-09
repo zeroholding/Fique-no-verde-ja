@@ -31,6 +31,8 @@ export type PanelTicket = {
   carrier_color: string | null;
   buyer_nickname: string | null;
   buyer_name: string | null;
+  /** Telefone de contato do cliente, so digitos. Nulo quando nao foi enviado. */
+  phone: string | null;
   seller_name: string;
   sale_date: string;
   shipping_deadline: string | null;
