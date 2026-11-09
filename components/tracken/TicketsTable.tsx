@@ -13,20 +13,26 @@ import {
   STATUS_REQUIRING_DENIAL_REASON,
   denialReasonLabel,
 } from "@/lib/tracken/denial";
-import { SERVICE_TYPE_LABELS, formatPhone } from "@/lib/tracken/format";
+import { SERVICE_TYPE_LABELS, formatDate, formatPhone, formatTime } from "@/lib/tracken/format";
 
 /**
  * Grade de atendimentos.
  *
- * Sao oito colunas, nao doze. Data da venda e data de recebimento sairam da
- * grade e vivem no detalhe: quem trabalha a fila decide pelo LIMITE de envio,
- * nao por quando a venda aconteceu. Os dois identificadores e as duas partes
- * (comprador e seller) foram empilhados em uma coluna cada, porque sao lidos
- * juntos.
+ * Data da VENDA continua só no detalhe: quem trabalha a fila decide pelo
+ * limite de envio, não por quando a venda aconteceu.
  *
- * Sem regua vertical entre colunas: e a linha vertical que da aparencia de
- * planilha. A separacao e horizontal, o cabecalho fica fixo na rolagem e a
- * acao da linha aparece ao passar o mouse.
+ * Data de RECEBIMENTO voltou para a grade. Ela tinha saído por ser "data de
+ * integração", mas é ela que responde a pergunta mais frequente da operação
+ * quando o cliente cobra: "quando isso chegou aqui?". Sem a coluna, era preciso
+ * abrir a ficha de cada atendimento para descobrir — e o modal mostrava um dado
+ * que a lista escondia.
+ *
+ * Os dois identificadores e as duas partes (comprador e seller) seguem
+ * empilhados em uma coluna cada, porque são lidos juntos.
+ *
+ * Sem régua vertical entre colunas: é a linha vertical que dá aparência de
+ * planilha. A separação é horizontal, o cabeçalho fica fixo na rolagem e a
+ * ação da linha aparece ao passar o mouse.
  */
 
 const COLUMNS: Array<{
@@ -57,6 +63,14 @@ const COLUMNS: Array<{
     sortKey: "shipped",
     width: "w-[172px]",
   },
+  // Quando o acionamento chegou. Ordenavel: "o que entrou por ultimo" e uma
+  // leitura legitima da fila, e antes so dava para fazer isso pela API.
+  {
+    key: "received",
+    label: "Recebido em",
+    sortKey: "received",
+    width: "w-[150px]",
+  },
   { key: "status", label: "Status", sortKey: "status", width: "w-[196px]" },
   { key: "actions", label: "", align: "right", width: "w-[92px]" },
 ];
@@ -77,6 +91,28 @@ type Props = {
     denialReason?: string | null
   ) => Promise<void>;
 };
+
+/**
+ * Quando o acionamento chegou.
+ *
+ * Data em cima e hora embaixo, como na ficha: numa coluna de 150px a data e a
+ * hora lado a lado ficariam coladas, e a hora e o que separa dois atendimentos
+ * do mesmo dia.
+ */
+function ReceivedCell({ receivedAt }: { receivedAt: string | null }) {
+  if (!receivedAt) {
+    return <span className="text-[13.5px] text-slate-400">—</span>;
+  }
+
+  return (
+    <span className="block text-[13.5px] font-medium tabular-nums text-slate-800">
+      {formatDate(receivedAt)}
+      <span className="block text-[12.5px] font-normal text-slate-500">
+        {formatTime(receivedAt)}
+      </span>
+    </span>
+  );
+}
 
 /**
  * Contato do cliente.
@@ -242,6 +278,14 @@ function TicketCard({
         </div>
       </div>
 
+      {/* Quando chegou: no telefone nao existe a coluna da grade. */}
+      <p className="mt-2 text-[12.5px] text-slate-500">
+        Recebido em{" "}
+        <span className="font-medium tabular-nums text-slate-700">
+          {formatDate(ticket.received_at)} {formatTime(ticket.received_at)}
+        </span>
+      </p>
+
       <div className="mt-2.5 flex items-end justify-between gap-2 border-t border-[var(--tk-line)] pt-2.5">
         <span className="min-w-0">
           <span className="block truncate text-[12.5px] text-slate-500">
@@ -378,7 +422,7 @@ export default function TicketsTable({
         role="region"
         aria-label="Grade de atendimentos"
       >
-        <table className="w-full min-w-[1300px] border-separate border-spacing-0 text-left">
+        <table className="w-full min-w-[1450px] border-separate border-spacing-0 text-left">
           <caption className="sr-only">
             Atendimentos recebidos da TRACKen, ordenados pelo limite de envio
           </caption>
@@ -519,6 +563,11 @@ export default function TicketsTable({
                     shippedAt={ticket.shipped_at}
                     deadline={ticket.shipping_deadline}
                   />
+                </td>
+
+                {/* Quando o acionamento chegou ao FNVJ */}
+                <td className="px-3.5 py-3">
+                  <ReceivedCell receivedAt={ticket.received_at} />
                 </td>
 
                 <td className="px-3.5 py-3">
